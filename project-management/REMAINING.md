@@ -18,3 +18,6 @@ User order (2026-10-17): implement all functions and visual surfaces first; comp
 
 ## Final acceptance phase (only after feature completion)
 Execute all existing/new unit tests, PG integration + tenant isolation and booking concurrency, authenticated API E2E, browser UI, Meta test-number interaction/Flows, security/privacy, backup/restore, load testing. Fix findings and rerun until truly acceptable.
+
+### Bot settings progress
+A draft/publish/version backend and editable Settings UI now exist, but full nested menu builder, company media, team invitations, user-level permissions UI, WhatsApp Cloud delivery/Flows and provider publishing are still incomplete.
