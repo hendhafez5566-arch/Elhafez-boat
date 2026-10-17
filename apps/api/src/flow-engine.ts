@@ -20,7 +20,8 @@ export type FlowNode =
  | {id:string;type:'LINK';text:string;url:string;next:string}
  | {id:string;type:'HANDOFF';text:string}
  | {id:string;type:'END';text:string};
-export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>};
+export type FlowGroup={id:string;title:string;nodeIds:string[]};
+export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>;groups?:FlowGroup[]};
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[]};
 export type FlowMessage={type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
 export type FlowAdvance={state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;waiting?:{seconds:number;next:string}};
@@ -113,7 +114,24 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   requireTrue(seen.has(id)&&plain(pos)&&typeof pos.x==='number'&&typeof pos.y==='number'&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&Math.abs(pos.x)<=10000&&Math.abs(pos.y)<=10000,'Invalid canvas position');
   Object.defineProperty(layout,id,{value:{x:pos.x,y:pos.y},enumerable:true});
  }
- return {name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[],layout};
+ const groups:FlowGroup[]=[];
+ if(input.groups!==undefined){
+  requireTrue(Array.isArray(input.groups)&&input.groups.length<=20,'Flow can have up to 20 visual groups');
+  const groupIds=new Set<string>(),members=new Set<string>();
+  for(const rawGroup of input.groups){
+   requireTrue(plain(rawGroup)&&typeof rawGroup.id==='string'&&ident.test(rawGroup.id)&&!groupIds.has(rawGroup.id),'Invalid group ID');
+   groupIds.add(rawGroup.id);
+   requireTrue(bounded(rawGroup.title,60,2),'Invalid group title (2–60 characters)');
+   requireTrue(Array.isArray(rawGroup.nodeIds)&&rawGroup.nodeIds.length>=2&&rawGroup.nodeIds.length<=30,'Groups contain 2–30 steps');
+   const nodeIds:string[]=[];
+   for(const nodeId of rawGroup.nodeIds){
+    requireTrue(typeof nodeId==='string'&&seen.has(nodeId)&&!members.has(nodeId),'Overlapping or unknown grouped step');
+    members.add(nodeId);nodeIds.push(nodeId);
+   }
+   groups.push({id:rawGroup.id,title:rawGroup.title.trim(),nodeIds});
+  }
+ }
+ return {name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[],layout,groups};
 }
 export function initialFlowState():FlowState{return {at:null,answers:{},tags:[]}}
 export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TEXT'|'CHOICE';value:string}):FlowAdvance{
