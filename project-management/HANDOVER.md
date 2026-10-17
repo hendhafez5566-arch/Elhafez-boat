@@ -1,31 +1,42 @@
-# READ FIRST — Elhafez Boat Handover, 2026-10-17
+# READ FIRST — Elhafez Boat cross-chat handover (2026-10-17)
 
-**Goal:** independent commercial, multi-tenant, Arabic RTL tourism/Umrah/Hajj WhatsApp sales SaaS. Not the old Elhafez ERP. Companies manage programs/bookings/offers/customers; travelers browse official WhatsApp lists/buttons/Flows; AI fallback must be grounded, and human takeover stops bot replies.
+## Product
+Independent multi-tenant, Arabic RTL tourism SaaS for agency staff. Customers use native official WhatsApp Cloud API lists/buttons and optional published WhatsApp Flows for Umrah/Hajj/tourism booking requests. Free-text AI may assist only using grounded facts, never invent prices or confirm bookings. Internal dashboard handles program catalog, hotels/travel dates, leads/customers, booking approval, staff/handoff, offers, followups, subscription, admin. NOT the legacy Elhafez offline ERP.
 
-Repo `hendhafez5566-arch/Elhafez-boat`, branch `feat/stage0-foundation`, draft PR #1. PUBLIC by owner's explicit decision until later. **Do not ask again about privacy, and NEVER commit tokens, passwords or real customer PII.** Before edits inspect actual GitHub HEAD, AGENTS.md, docs/01-MASTER-PLAN.md, docs/13-WHATSAPP-OPERATIONS.md, docs/14-COMMERCIAL-RELEASE-GAPS.md and current source.
+## Repository and owner decisions
+- GitHub: `hendhafez5566-arch/Elhafez-boat` (PUBLIC *by owner's explicit choice*, not change privately without asking).
+- Active branch: `feat/stage0-foundation`. PR #1 OPEN, DRAFT, unmerged.
+- User wants **implementation first, ONE formal comprehensive acceptance cycle at the end**. Lightweight syntax/TypeScript checks permitted while coding; no invented test results.
+- GitHub plan/current status/handover must stay current so next chat can continue without repeating requirements.
+- Never put secrets, Meta tokens, customer PII, receipts or real traveler IDs into this PUBLIC repo.
+- No Meta connection, real hosting/database, verified provider delivery or production deployment has been established.
 
-## User's execution policy
+## Source work committed, not release-tested
+- `apps/api/src/services.ts`: role/tenant-scoped catalog and bookings; optional departure and room package IDs; price snapshot, atomic confirmation and capacity release on cancel; subscription limits.
+- `apps/api/src/inventory.ts`: travel dates + contracted hotel room types, nights, rates, occupancy and total units.
+- `apps/api/src/sales.ts`: tenant customers, offers, followups and INTERNAL staff conversation notes.
+- `apps/api/src/bot-config.ts`: editable drafts with immutable published menu revisions.
+- `apps/api/src/whatsapp.ts`: official Meta phone connection verified with Graph; encrypted token, signature-verified inbound webhook, deduped messages, menus, human handoff, STOP/START and staff inbox; optional Meta Flow and approved FAQ exact-match routing.
+- `apps/api/src/flows.ts`: one-time tenant and conversation bound Meta booking Flow response handler. `meta/booking-flow-template.json` is a DRAFT asset, NOT uploaded to Meta.
+- `apps/api/src/knowledge.ts`: tenant reviewed FAQ, deterministic exact-match answers. **No actual LLM integration.**
+- `apps/api/src/templates.ts`: Meta-approved variable-free template registry, explicit documented opt-in, single-recipient queue with 24-hour per-customer cap.
+- `apps/api/src/team.ts`: invite/accept/revoke/role change; manually share one-time link.
+- `apps/api/src/platform.ts`: platform owner auth, create tenants, owner invitation and MANUAL subscription status. Billing provider not integrated.
+- `apps/api/src/server.ts`: endpoints for above services with role/subscription gates.
+- `apps/worker/main.ts`: durable PostgreSQL outbound queue, retry/unknown reconciliation states, service-window cutoff, template opt-in, subscription enforcement and expired-job rejection.
+- `packages/database/migrations/0001..0012`: schema, RLS, WhatsApp, platform, inventory and template consent.
+- `apps/web/public/index.html`, `app.js`, `operations.js`, `operations.css`: Arabic agency dashboard + explicit browser-only demo, inventory/departure/rooms, bookings, approved templates, WhatsApp inbox, employee management, company subscription.
+- `apps/web/public/platform.html/js`, `join.html/js`: separate owner console and invite acceptance.
+- `Dockerfile`, `deploy/compose.platform.yaml`, `deploy/scripts/backup-postgres.sh`, `deploy/README.md`: reference operations scaffold only, UNVERIFIED.
+- `docs/13-WHATSAPP-OPERATIONS.md`, `docs/14-COMMERCIAL-RELEASE-GAPS.md` and project-management/* explain the architecture and remaining work.
 
-**Build the entire feature set first; perform the formal end-to-end acceptance suite ONCE near the end**, not after each build batch. Routine compile/syntax checking permitted. Do NOT claim tests passed without actual evidence. Keep this file and CURRENT-STATUS/REMAINING/CHANGELOG current every session; new chat should not ask user to restate completed requirements.
+## Absolute truth about execution
+- GitHub contents were committed using connector; the branch has NOT been merged.
+- No clean `npm install`/lockfile/build over checked-out GitHub repo, live migrations 0001–0012, actual tenant RLS integration, real browser acceptance, Meta sandbox/live account, full message delivery, PostgreSQL backup/restore or production deployment was completed.
+- Local isolated TS/syntax safeguards passed for some source drafts. That is NOT a production test. No final formal acceptance was run by owner's deliberate request.
 
-## Latest implementation on GitHub, NOT production validated
+## NEXT ACTION (do not ask for repeat)
+Continue code and user-visible workflows: finish full WhatsApp program/departure/room selection, customer contact/traveler fields in Flow, approval/cancellation/refund business policies, inbox worker reconciliation, optional grounded AI and payment/billing architecture (provider credentials unavailable). Complete end-user screens without fake buttons. Build standard deploy/runbook and usage metering. Keep requirements and branch unchanged.
+Only AFTER feature scope is ready: one combined formal acceptance with real Postgres/RLS, HTTP/browser, Meta test number, event dedupe, concurrency, billing provider, restore/security/performance, then review PR and deploy. Never claim commercial readiness before evidence.
 
-`apps/api/src/server.ts`: secured tenant routes, public Meta signed webhooks, public invitation acceptance, separate platform owner routes.
-`apps/api/src/whatsapp.ts`: Meta token/phone verification, AES-GCM encrypted token, inbound state machine, automatic published menus, program details and provisional booking, human handoff, STOP/START consent, inbox/agent replies, optional Flow config.
-`apps/api/src/flows.ts`: Meta Flow token binding, one-time validation and booking submission.
-`apps/api/src/team.ts`: employee invitation/acceptance/revoke/role updates.
-`apps/api/src/platform.ts`: platform owner login, tenants, plans, manual subscriptions, first-owner onboarding.
-`apps/api/src/knowledge.ts`: reviewed FAQ draft/publish and exact published matching. **Not generative AI.**
-`apps/worker/main.ts`: database-backed outbound Meta Cloud API worker with service-window protection.
-`packages/database/migrations/0006..0010`: WhatsApp, staff, owner onboarding, Flow and reviewed FAQ data.
-`apps/web/public/index.html`, `app.js`, `operations.js`, `operations.css`, `platform.html/js`, `join.html/js`: Arabic panels and separate console.
-`meta/booking-flow-template.json`: draft Flow template for Meta; not yet published.
-`docs/13-WHATSAPP-OPERATIONS.md`, `docs/14-COMMERCIAL-RELEASE-GAPS.md`: operational and remaining-release detail.
-
-## Verification truth
-
-Source committed via GitHub connector. Local check on *isolated new modules with stubs* using tsc was successful, as were standalone JS syntax checks; this does **not prove full repository build**. No live DB migrations, official Meta Cloud API, Flows or email, deployed dashboard, subscription billing, E2E or browser acceptance performed. Previous historical 29 unit tests from earlier batch were not re-run as part of this integration.
-
-## Next action, without asking for things already decided
-
-Continue implementing missing features: multi-departure/room packages, staff notifications and inbox assignment, approved templates and opt-in workflows, safe AI provider optional, commercial usage tracking, platform billing integration pending user/provider selection, runbooks. Resolve known security/permission and concurrency gaps before final release. Keep branch draft until full endgame acceptance. Never fabricate readiness percentages or claim live integration from simulation.
+Read `AGENTS.md`, `docs/01-MASTER-PLAN.md`, `docs/14-COMMERCIAL-RELEASE-GAPS.md`, `project-management/CURRENT-STATUS.md` and actual code; verify HEAD/PR before work. Update this file and CHANGELOG at end of each turn.
