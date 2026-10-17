@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
 import { HttpFailure, withTenantTransaction, listPrograms, createProgram, publishProgram, listBookings, createBooking, confirmBooking, type SqlPool, type SqlClient } from './services.js';
 import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, listOffers, addOffer, publishOffer, listFollowups, addFollowup, completeFollowup, listConversations, createInternalConversation, listInternalMessages, addInternalMessage, getSummary } from './sales.js';
+import { botConfig, saveBotDraft, publishBotDraft, botVersions, teamMembers } from './bot-config.js';
 const require=createRequire(import.meta.url);
 // pg is a runtime dependency loaded after npm install; query access is abstracted for unit tests.
 const { Pool } = require('pg') as { Pool: new (options: { connectionString: string; max: number }) => SqlPool & SqlClient & { end(): Promise<void> } };
@@ -63,6 +64,11 @@ const server=createServer(async(req,res)=>{
     const threadNotes=/^\/api\/v1\/conversations\/([^/]+)\/messages$/.exec(pathname);
     if(req.method==='GET'&&threadNotes)return json(res,200,await run(tx=>listInternalMessages(tx,actor,threadNotes[1])));
     if(req.method==='POST'&&threadNotes)return json(res,201,await runBody((tx,input)=>addInternalMessage(tx,actor,threadNotes[1],input)));
+    if(req.method==='GET'&&pathname==='/api/v1/bot/config')return json(res,200,await run(tx=>botConfig(tx,actor)));
+    if(req.method==='PUT'&&pathname==='/api/v1/bot/draft')return json(res,200,await runBody((tx,input)=>saveBotDraft(tx,actor,input)));
+    if(req.method==='POST'&&pathname==='/api/v1/bot/publish')return json(res,200,await run(tx=>publishBotDraft(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/bot/versions')return json(res,200,await run(tx=>botVersions(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/team')return json(res,200,await run(tx=>teamMembers(tx,actor)));
     return json(res,404,{error:'Not found'});
   }catch(error){if(error instanceof HttpFailure)return json(res,error.status,{error:error.message});if((error as {code?:string}).code==='23505')return json(res,409,{error:'This record already exists'});if((error as {code?:string}).code==='23503')return json(res,404,{error:'Linked record not found'});console.error('Request failed',error instanceof Error?error.message:'unknown');return json(res,500,{error:'Internal server error'});}
 });
