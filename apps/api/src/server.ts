@@ -1,3 +1,4 @@
+import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions} from './flow-service.js';
 import { listLeads, leadSummary, updateLeadStage } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
@@ -94,6 +95,14 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&waDisconnect)return json(res,200,await run(tx=>disconnectWhatsApp(tx,actor,waDisconnect[1])));
+    if(req.method==='GET'&&pathname==='/api/v1/catalog')return json(res,200,await run(tx=>listCatalog(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/catalog')return json(res,201,await runBody((tx,input)=>createCatalog(tx,actor,input)));
+    const itemRoute=/^\/api\/v1\/catalog\/([^/]+)$/.exec(pathname);
+    if(req.method==='PUT'&&itemRoute)return json(res,200,await runBody((tx,input)=>updateCatalog(tx,actor,itemRoute[1],input)));
+    const publishItem=/^\/api\/v1\/catalog\/([^/]+)\/publish$/.exec(pathname);
+    if(req.method==='POST'&&publishItem)return json(res,200,await run(tx=>changeCatalogStatus(tx,actor,publishItem[1],'PUBLISHED')));
+    const archiveItem=/^\/api\/v1\/catalog\/([^/]+)\/archive$/.exec(pathname);
+    if(req.method==='POST'&&archiveItem)return json(res,200,await run(tx=>changeCatalogStatus(tx,actor,archiveItem[1],'ARCHIVED')));
     if(req.method==='GET'&&pathname==='/api/v1/flows')return json(res,200,await run(tx=>getFlowConfig(tx,actor)));
     if(req.method==='PUT'&&pathname==='/api/v1/flows/draft')return json(res,200,await runBody((tx,input)=>saveFlowDraft(tx,actor,input)));
     if(req.method==='POST'&&pathname==='/api/v1/flows/publish')return json(res,200,await run(tx=>publishFlowDraft(tx,actor)));
