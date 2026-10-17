@@ -24,3 +24,19 @@ This is an API foundation, not a production-ready service. Meta WhatsApp, Flows,
 Database migrations have not yet been applied or tested against an actual PostgreSQL instance in the execution environment. Tests use SQL fake clients to check transaction boundaries and SQL intent, not full PostgreSQL behavior. Separate end-to-end DB RLS and concurrency tests are mandatory before production.
 
 Rate limits in API process memory are only an initial safeguard; implement centralized limits before multi-instance rollout. Add TLS termination, structured audit, admin invitations, account recovery, email verification, monitoring and credential rotation before production.
+
+### Current sales workspace additions (migrations 0003 and 0004)
+
+Authenticated endpoints for staff:
+
+- `GET/POST /api/v1/contacts`; `PATCH /api/v1/contacts/:id/status`; `GET/POST /api/v1/contacts/:id/notes`.
+- `GET/POST /api/v1/offers`; `PATCH /api/v1/offers/:id/publish`.
+- `GET/POST /api/v1/followups`; `PATCH /api/v1/followups/:id/complete`.
+- `GET/POST /api/v1/conversations`; `GET/POST /api/v1/conversations/:id/messages` — **internal notes only**, not provider messaging.
+- `GET /api/v1/summary` — tenant-scoped operational counters.
+
+Program create accepts optional `summary`, `hotelName`, `durationDays` and ISO8601 `departureAt`, migrated as `summary`, `hotel_name`, `duration_days`, `departure_at`.
+
+Browser-only design demo: press "استعراض التصميم ببيانات تجريبية" on the login screen. It is isolated in JavaScript memory, not connected to DB/API/WhatsApp, clearly marked and safe for preview. It is NOT a real data acceptance test.
+
+Formal acceptance (PostgreSQL, browser, WhatsApp sandbox) is intentionally deferred to a single final phase by user direction. Maintain routine compile/syntax safeguards and honest status until then.
