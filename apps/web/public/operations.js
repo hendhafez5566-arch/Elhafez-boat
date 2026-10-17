@@ -35,7 +35,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
  }
  async function inbox(){
    clear('wa-threads');
-   if(state.demo){msg($('wa-threads'),'دي معاينة شكل صندوق واتساب. البيانات الحقيقية هتظهر بعد ربط Meta.');return;}
+   if(state.demo){inboxCache=[];msg($('wa-threads'),'دي معاينة شكل صندوق واتساب. البيانات الحقيقية هتظهر بعد ربط Meta.');return;}
    inboxCache=await api('/whatsapp/inbox');
    renderInboxRows();
  }
