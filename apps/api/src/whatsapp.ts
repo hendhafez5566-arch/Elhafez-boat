@@ -185,9 +185,9 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  }
  if(action.startsWith('program:')&&isUuid(action.slice(8))){
   const r=await db.query(`SELECT id,title,summary,hotel_name,duration_days,departure_at,price_minor,currency,available_seats,booked_seats FROM programs
-   WHERE tenant_id=$1 AND id=$2 AND status='PUBLISHED' AND available_seats>booked_seats`,[tenantId,action.slice(8)]);
+   WHERE tenant_id=$1 AND id=$2 AND status='PUBLISHED'`,[tenantId,action.slice(8)]);
   if(r.rowCount!==1)return respond(textPayload('البرنامج ده مش متاح. اكتب "القائمة" لعرض الخيارات.'));
-  const p=r.rows[0];const desc=[String(p.title),p.summary?String(p.summary):'',p.hotel_name?'الفندق: '+p.hotel_name:'',p.duration_days?'المدة: '+p.duration_days+' يوم':'',p.departure_at?'السفر: '+String(p.departure_at).slice(0,10):'',`السعر الأساسي الاسترشادي: ${(Number(p.price_minor)/100).toFixed(2)} ${p.currency} (السعر النهائي حسب الموعد والغرفة)`].filter(Boolean).join('\n');
+  const p=r.rows[0];const desc=[String(p.title),p.summary?String(p.summary):'',p.hotel_name?'الفندق: '+p.hotel_name:'',p.duration_days?'المدة: '+p.duration_days+' يوم':'',p.departure_at?'السفر: '+String(p.departure_at).slice(0,10):'',`السعر الأساسي الاسترشادي: ${(Number(p.price_minor)/100).toFixed(2)} ${p.currency} (التفاصيل والتوافر يراجعها الموظف)`].filter(Boolean).join('\n');
   await respond(buttonPayload(desc+'\n\nالأسعار والمواعيد حسب بيانات الشركة؛ الموظف هو المسؤول عن الحجز النهائي.',[{id:'interest:'+p.id,title:'أنا مهتم'},{id:'home',title:'القائمة'},{id:'handoff',title:'موظف'}]));return;
  }
  if(action.startsWith('category:')){
