@@ -1,37 +1,17 @@
-# Remaining after 2026-10-17 large build
+# REMAINING — chatbot-only product (2026-10-17)
 
-## Feature development remaining (code not yet delivered or incomplete)
-- Genuine optional grounded LLM integration with approved tenant catalog/FAQ tools and robust escalation/evaluation; current deterministic FAQ is NOT AI.
-- Native WhatsApp customer Flow/departure/room-tier choices and richer traveler data; published Meta Flow JSON/version/status integration. Current inbound booking usually uses base-program price, not specific room.
-- Full room inventory business policy (occupancy edge cases, contracted supplier allotments, shared/partial allocations), financial/payment/refunds and cancellation rules; private media/documents.
-- Agent inbox assignment locks/presence, search, alerting, message receipts reconciliation, service template with parameter support; opted-in campaigns/scheduled followups with approved message templates.
-- Commercial subscriptions: automated payment/invoice/taxes/metering, plan enforcement for all quotas, owner support. Prices and billing currently placeholders, subscriptions manually operated.
-- Reliability/security: secure DB roles/grants, request throttling in shared store, proper session lifecycle, customer data export/deletion and privacy policy, backups ENCRYPTED offsite, restore runbooks, monitoring/alerts and CI reproducibility.
-- Deployment: clean lockfile, actual Docker build, dedicated domain/TLS, public webhook config, Meta WABA/number approval, verified API tokens and version-specific Flow validation.
+Authoritative scope: `docs/00-SCOPE-CHATBOT-ONLY.md`. **Previous booking/finance/ERP to-do items are CANCELED, not incomplete. Do not implement them.**
 
-## Already coded but NOT verified in real environment
-- Program departures and hotel room packages with per-tier price, optional selection in staff booking UI, confirmation with program/departure/room allocation and cancellation release.
-- Meta webhook, inbox, sender worker, published Flow handling, reviewed FAQs and consent-controlled static approved template sends.
-- Platform owner tenancy, manual subscription controls, employee invitation/roles and Arabic dashboard.
-- Docker/Compose reference and backup script.
+## Core chatbot improvements still needed
+- Reliable answer selection across natural Egyptian-Arabic questions, confusion handling, company-specific information grounding and useful noninvasive clarification. Current implementation is published exact-match FAQ + basic keyword category detection, **NOT yet real generative AI**.
+- More helpful program/service matching based on expressed needs (date/budget/people) only when approved data actually exists; never fabricate price or availability.
+- Clean staff lead board and WhatsApp inbox operational UX: focus on READY leads, context summary, employee pickup, SLA/new-lead notifications and practical search.
+- Meta Cloud API real enrollment, signed webhook/provider operations with actual test number, key rotation and robust message failure reconciliation.
+- Minimal tenant onboarding, privacy/opt-out, staff roles, bot subscription activation and simple usage measurements.
+- Safely remove/archive dormant old booking/inventory/financial UI/backend modules and adjust stale documents/tests while preserving migration history.
 
-## Final acceptance plan (once, after remaining feature work)
-1. Fresh checkout and pinned dependencies; real PostgreSQL migration 0001–0012 and non-owner RLS tests.
-2. Full HTTP API, backend services, responsive browser/mobile UI, tenant role/cross-company isolation, concurrency and booking capacity/accounting invariants.
-3. Official Meta test number, actual signed webhook/menu/Flow/template and status reconciliation, 24h rules/consent/opt-out and throttling.
-4. Billing provider and subscription E2E once selected, real monitoring, encrypted backup/restore, performance and failure injection.
-5. Resolve defects; only then review/merge draft PR #1 and prepare commercial pilot.
+## Not part of this chatbot (not in backlog)
+Booking confirmation, seat/room allocation, payment/refund records, invoices, bank/accounting, traveler passports/files, supplier contracts, broad CRM or billing engine. Human employee performs reservations and followup OUTSIDE bot.
 
-Owner explicitly requests final comprehensive acceptance ONLY after complete feature build. Routine syntax/type checks allowed. Current app is NOT sellable/deployed.
-
-
-## 2026-10-17 update
-
-**Moved from unimplemented to written but NOT acceptance-verified:** WhatsApp customer date/room selection before Flow or text booking; server-side per-person price/currency snapshots, departure/room capacity checks, employee booking parity, recent booking status lookup using verified sender number, agent assignment lock and per-assignee reply permissions. Migration 0013 is new and UNAPPLIED. See `docs/15-WHATSAPP-BOOKING-CHOICES.md`.
-
-**Still missing before complete feature scope:** traveler document/passport fields and privacy/storage controls; advanced financial deposits/refunds, optional published Flow dynamic selectors, agency inbox notifications/search and escalation; actual grounded AI vs reviewed FAQ, subscription payments/invoicing/metering; official Meta enrollment and approved Flow provisioning; production safety/backups/alerts and clean install/lockfile. No final acceptance yet as requested.
-
-
-### Latest inbox/status update
-- Basic customer booking-status lookup from verified Meta number and agency inbox search/filter/manager assignment have source code; NOT provider-verified.
-- Still requires true push notifications, search pagination over large histories, fair agent load balancing and SLA escalations; these are NOT done.
+## Final verification (once after feature build, per owner)
+Complete fresh checkout/install + PostgreSQL/RLS, browser/mobile experience, real Meta provider message-to-lead-to-agent E2E, role & tenant security, duplicate webhooks, handoff race conditions, failure/restore, privacy and performance. Only then merge draft PR and pilot. Current refactor not yet accepted/tested on real systems.
