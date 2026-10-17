@@ -1,52 +1,24 @@
-# Elhafez Boat — Current status | 2026-10-17
+# CURRENT STATUS — chatbot-only pivot, 2026-10-17
 
-**Status: LARGE FEATURE BUILD COMMITTED, PRODUCT INCOMPLETE, NOT TEST-ACCEPTED.**
-Repo: `hendhafez5566-arch/Elhafez-boat` PUBLIC by explicit owner decision. Branch: `feat/stage0-foundation`; draft PR #1 is OPEN and **NOT MERGED**. No production deployment. Latest commit must be rechecked via GitHub each session.
+**PRODUCT:** Elhafez Boat is an independent, Arabic RTL, multi-agency WhatsApp sales-assistant CHATBOT — NOT an ERP, booking engine or financial system. Authoritative product document: `docs/00-SCOPE-CHATBOT-ONLY.md`.
 
-## Delivered as source code on development branch
+**GitHub:** `hendhafez5566-arch/Elhafez-boat`, public by owner choice; work on `feat/stage0-foundation`, draft PR #1, not merged or deployed.
 
-- Arabic RTL responsive agency UI: programs, optional travel departures and hotel/room rates, bookings with confirmation/cancellation, CRM, offers, followups, internal notes, reports, bot settings, FAQ, staff/team and WhatsApp inbox/link, subscription and approved-template page.
-- Multi-tenant PostgreSQL schema migrations 0001–0012: tenant/program/booking RLS, user session, bot versions, sales and CRM, WhatsApp signed-webhook receipts, encrypted account refs, state/outbox, staff invitations, platform owners/subscriptions, booking Flows, knowledge base, capacity-constrained departures/rooms, marketing opt-in and Meta-approved templates.
-- Tenant authentication, role checks, entitlement read/write gates, program and booking services; staff invites and role updates, manual plan provisioning/owner invitations.
-- WhatsApp Cloud API connector code: HMAC-verified webhook, tenant routing, deduplication, native interactive menus, category/program selection, provisional bookings, optional verified published Meta Flow, staff takeover/reply, delivery events and queue worker with 24h guard.
-- Only approved human-authored FAQ exact-match answers; **NO generative AI provider**.
-- Template registration verifies approval at Meta, stores variable-free approved templates; one per contact/24h; requires affirmative documented WhatsApp consent and customer not opted out. STOP revokes marketing consent. Worker double-checks entitlement/consent and rejects stale templates.
-- Local admin platform console and separate invitation acceptance page; subscription status updates are **manual** with placeholder plan prices. Docker image, reference Compose and pg_dump script/readme committed.
-- Program departure/room package CRUD and optional booking selection in dashboard. Confirmation reserves program seats/departure seats/room units transactionally; cancellation releases capacity.
+## What changed in this scope correction (SOURCE COMMITTED)
+- Dedicated `chatbot_leads` schema, migration `0014_chatbot_leads_only.sql`, tenant RLS and qualification stages.
+- Bot now only reads company-approved service cards and FAQ, recognizes common Arabic tourism categories, handles `interest:` / previously issued `book:` buttons as **interest only**.
+- Asks how many travelers and approximate time (both may be unknown), records `INTERESTED` then `READY_FOR_AGENT` lead and transfers conversation to HUMAN. Explicit staff request bypasses questions.
+- Human takeover prevents further bot messages; agent may view context/claim thread and reply. Staff can mark lead CONTACTED / CLOSED.
+- Staff APIs added `/api/v1/leads` and `/api/v1/leads/summary`; booking creation/confirmation/cancellation and departure/room inventory API routes disabled.
+- Lean Arabic dashboard navigation: overview, qualified leads, WhatsApp inbox, program/service information, offers, bot simulator, approved settings/FAQ, WhatsApp link and staff. Staff inbox now shows the service, party size and preferred time.
+- Browser-only demo creates **fake leads in memory, never fake bookings**.
+- Approved program publish is no longer gated on seat counts. **Bot never confirms places, payments, or reservations.**
+
+## Technical debt / remaining simplification
+Earlier migrations 0001–0013 and inactive source still include a larger booking/room/financial vision. They are NOT active scope and must be safely retired instead of finished. The current SQL schema history remains to avoid breaking existing migration chains. Some dormant browser forms remain in DOM for old renderer compatibility; they are not in the main navigation.
 
 ## Verification truth
+Files committed to GitHub. **No clean checkout build/CI or real PostgreSQL 0014 migration, real Meta interaction, complete browser E2E, or final acceptance has been executed on this new scoped version**. No production Meta number, hosting or live AI provider. Do not infer readiness from file commits.
 
-Feature files and documentation have been written via GitHub connector; **no complete checkout build and no formal acceptance** in this batch. Isolated local TypeScript compilation with stub dependencies and syntax checks on some JS modules succeeded earlier in the batch but DO NOT prove the full repository, migrations or live provider. No PostgreSQL DB, Meta number, Meta Flow published instance, SMTP, payment provider, hosting or TLS has been used. **No real messages sent.**
-Formal unit + integration + browser + Meta + security + concurrency + backup/restore testing is DELIBERATELY deferred to a final combined acceptance phase at owner's instruction.
-
-## Still missing for product completion
-
-- Real Meta app onboarding, confirmed number/permissions/approved published Flow, media and rich WhatsApp templates, realistic per-departure/room selection in *customer WhatsApp* flows and end-to-end provider lifecycle.
-- Travel business detail beyond basic inventory: occupancy pricing variants, multi-traveler records, contracts, flight/hotel inventory source and optional partial refund/payment/document management.
-- AI provider for grounded natural language (currently approved FAQ only), quality guardrails/evaluation.
-- Staff collision prevention/presence, message templates with variables, safe consent-based campaign planning, notifications and message search.
-- Production-ready subscriptions with chosen payment provider, billing invoices, usage quota enforcement across every module, cancellation/dunning and owner support tools.
-- Complete security/reliability: rate limiting across processes, RLS runtime grants, privacy/export/deletion, media access, retries/reconciliation, backup encryption+restore, alerts, CI lockfile, reproducible Docker build, deployments.
-- Full final acceptance; none of this is a commercial release.
-
-## Exact next implementation direction (without re-asking known requirements)
-
-Continue selected missing core features and harden role/capacity security; preserve PR as draft and do not merge. Prefer next: real customer WhatsApp departure/room selection + template/Flow coherence and inbox controls; then optional AI and billing only after provider architecture/requirements established. Keep project-management/HANDOVER.md current. Formal acceptance LAST.
-
-
-## Latest continuation — 2026-10-17, customer WhatsApp departure/room choice
-
-**New source committed:** `apps/api/src/booking-choice.ts` and migration `0013_whatsapp_booking_choices.sql`. WhatsApp menu now guides customer through currently available program -> travel date -> hotel/room (paged lists) -> optional Meta Flow or name/party-size text, with one-time Flow token carrying server-validated selections. A shared booking service re-checks date, capacity, room units, room fare/currency and stores snapshot only as a **provisional** request. Employee bookings now require a configured departure/room when appropriate and list the selected itinerary.
-
-**Additional inbox improvements:** "متابعة حجوزاتي" shows only the verified WhatsApp sender's recent request statuses for this company; agent takeover uses row locking and assigned agents cannot reply to each other's conversations. Browser-only simulator offers a clearly labeled demo status view.
-
-**Verification truth:** files were committed through GitHub. Local `tsc --noEmit` on the *isolated new* `booking-choice.ts` and `flows.ts` with development source types completed without errors. **This is not** a full clean checkout build, database migration run, Meta sandbox exercise, UI E2E, or final comprehensive acceptance. Full tests remain deferred by owner. No live Meta number or deployment. Latest exact commit must be checked on GitHub before continuing.
-
-**Next feature work:** traveler-level fields and policies, richer staff inbox notifications/assignment workflow, true grounded optional AI and subscription/metering. Complete provider-specific enrollment once external credentials are available. Final formal acceptance LAST.
-
-
-### Follow-on UI/customer status (2026-10-17)
-- Main WhatsApp menu now includes customer-facing "متابعة حجوزاتي": up to five tenant-scoped recent statuses for the number supplied by Meta signed webhook, rather than accepting a typed phone number.
-- Browser-only demo simulator includes a separately labeled booking-status screen.
-- Live agency inbox UI gained client-side name/phone search, HUMAN/OPEN filters, and manager/owner reassignment to a named team member. It clears previously displayed chat data when switching inbox contexts.
-- Status/assignment backend rules remain only **committed source**, not tested against a running PostgreSQL/Meta endpoint. Latest branch head should be read from GitHub.
+## Next within CORRECT scope
+Tighten natural Arabic intent recognition with an optional grounded provider, simplify old dormant code without regressions, staff handoff/lead notifications and usability polish. After chatbot scope is feature-complete, **ONE final comprehensive acceptance phase** (owner request), then possible merge and pilot.
