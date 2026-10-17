@@ -43,6 +43,7 @@
       <button class="nav" data-page="reports"><span class="nav-icon">▥</span><span>التقارير</span></button>
       <button class="nav" data-page="simulator"><span class="nav-icon">☷</span><span>معاينة البوت</span></button>
       <button class="nav" data-page="team"><span class="nav-icon">♧</span><span>الموظفون</span></button>
+      <button class="nav" data-page="templates"><span class="nav-icon">✉</span><span>قوالب واتساب</span></button>
       <button class="nav" data-page="wa-connect"><span class="nav-icon">☏</span><span>ربط واتساب</span></button>
       <button class="nav" data-page="subscription"><span class="nav-icon">◈</span><span>الاشتراك</span></button>
       <button class="nav" data-page="settings"><span class="nav-icon">⚙</span><span>الإعدادات</span></button>
@@ -127,6 +128,38 @@
               <form id="wa-reply-form" class="ops-form" style="flex:1"><label>رسالة الموظف<textarea name="body" rows="2" maxlength="2000" required placeholder="اكتب الرد للعميل"></textarea></label><button class="primary" type="submit" id="wa-reply" disabled>إضافة لطابور الإرسال</button></form></div>
             <div class="ops-note">إرسال الرسالة لا يعني وصولها؛ التسليم يُتابَع من إشعارات Meta. بعد 24 ساعة من آخر رسالة للعميل يلزم قالب واتساب معتمد.</div>
           </div></div>
+      </section>
+
+      <section id="templates" class="page" hidden>
+        <div class="section-heading"><div><h2>قوالب رسائل واتساب وموافقة العملاء</h2>
+          <p>رسائل فردية بقوالب معتمدة من Meta، ولا يمكن إرسالها قبل تسجيل موافقة العميل الصريحة.</p></div></div>
+        <div class="ops-layout">
+          <div class="ops-panel"><h3>إضافة قالب معتمد</h3>
+            <form id="template-register-form" class="ops-form">
+              <label>رقم واتساب المرتبط<select id="template-account" name="accountId" required></select></label>
+              <label>اسم القالب كما في Meta<input name="name" pattern="[a-z0-9_]{2,120}" placeholder="trip_followup" required></label>
+              <label>اللغة<input name="language" value="ar" pattern="[a-z]{2}(_[A-Z]{2})?" required></label>
+              <button type="submit" class="primary">التحقق من موافقة Meta وحفظ القالب</button>
+            </form>
+            <div class="ops-note">يتم التحقق من Meta عند تسجيل القالب. القوالب ذات المتغيرات لا يدعمها مرسل النسخة الحالية. الربط يحتاج رقمًا مفعلًا وتصاريح فعلية.</div>
+            <h3>قوالب الشركة</h3><div id="approved-template-list" class="ops-stack"></div>
+          </div>
+          <div class="ops-panel"><h3>موافقة العميل</h3>
+            <form id="template-consent-form" class="ops-form">
+              <label>العميل<select id="template-consent-contact" name="contactId" required></select></label>
+              <label>الحالة<select name="optIn"><option value="true">وافق صراحة على رسائل واتساب</option><option value="false">سحب موافقته</option></select></label>
+              <label>دليل الموافقة<textarea name="evidence" minlength="8" maxlength="400" rows="2" required placeholder="تاريخ الموافقة ومصدرها أو القناة التي وافق منها العميل"></textarea></label>
+              <button type="submit" class="secondary">حفظ موافقة العميل</button>
+            </form>
+            <h3>إرسال قالب فردي</h3>
+            <form id="template-send-form" class="ops-form">
+              <label>العميل<select id="template-send-contact" name="contactId" required></select></label>
+              <label>قالب موافق عليه<select id="template-send-template" name="templateId" required></select></label>
+              <button type="submit" class="primary">إضافة رسالة واحدة للطابور</button>
+            </form>
+            <div class="ops-note">إرسال رسالة لقائمة كاملة غير متاح من الشاشة دي. يتم التحقق من الموافقة قبل الإرسال ومنع أكثر من قالب في 24 ساعة لنفس العميل. إضافة الرسالة للطابور لا تعني وصولها.</div>
+          </div>
+        </div>
       </section>
       <section id="wa-connect" class="page" hidden>
         <div class="section-heading"><div><h2>ربط واتساب الرسمي</h2><p>الاتصال عبر Meta WhatsApp Cloud API؛ لا نستخدم أي وسائل دخول غير رسمية.</p></div></div>
