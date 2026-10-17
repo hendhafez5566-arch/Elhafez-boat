@@ -23,3 +23,9 @@ After approved build scope is closed, run unit/integration, fresh PostgreSQL mig
 CI run 39072771700 on 7fc3626 passed 28/28 tests, all migrations and the PostgreSQL catalog-isolation/RLS gate. This is a development check, not this comprehensive acceptance campaign. Historical e38fbdb booking failures were addressed by retiring the obsolete product and replacing its coverage, not by reviving booking code or excluding current chatbot/security tests. See docs/17-LEGACY-RETIREMENT.md.
 
 No merge, commercial deploy or readiness claim is authorized by the current evidence.
+
+
+## 2026-10-18 scope update
+**Now implemented, pending final acceptance:** linear reusable section library with tenant RLS, API and flow-builder UI; Shift+multi-select **visual grouping** (no nested execution); limited **Meta-approved image/video MARKETING carousel templates**, with per-card values, validation and editor UI. Development CI 43/43 and migration 0023/RLS gate passed on `13a3da3`.
+
+**Still intentionally open:** true linked/nested subflows (current reuse is copied, not linked); provider-specific carousel variants such as catalog/OTP/authentication; dedicated Google Sheets/CRM/ecommerce OAuth connectors; additional social adapters; privacy-retention/media malware scanning; production-grade multi-instance throttling, browser/provider/load/backup acceptance. Do not label any of those finished. Refer to `docs/18-FLOW-REUSE-AND-CAROUSEL.md`.
