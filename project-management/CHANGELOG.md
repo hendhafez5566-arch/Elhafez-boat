@@ -32,3 +32,11 @@
 - Updated AGENTS, README, master plan and project management handover/remaining. Source written/pushed on draft PR; real PostgreSQL/Meta/browser acceptance NOT executed.
 
 Earlier extensive tourism booking and ERP changes in git history are obsolete, not future requirements.
+
+
+## 2026-10-18 — Reusable flow sections, visual groups, Meta-approved carousels
+- Added reusable linear-section library with tenant RLS migration 0023, RBAC and audit; safe copy-to-flow insert/clone in actual canvas editor.
+- Added Shift multi-selection and named visual groups; immutable published versions preserve group labels without changing execution.
+- Added official approved CAROUSEL component compiler for marketing image/video card templates and card-by-card UI values; unsupported templates remain blocked.
+- Added 15 tests and cross-tenant PostgreSQL RLS coverage. CI SUCCESS on 13a3da3: 43 tests pass, migration 0023 and RLS gate pass. No live Meta/browser/commercial acceptance.
+- Detailed limitations and operation: docs/18-FLOW-REUSE-AND-CAROUSEL.md.
