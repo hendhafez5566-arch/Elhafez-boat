@@ -26,3 +26,15 @@ Apply migration 0022 after previous migrations, configure grants/environment, th
 Implementation commit: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/7fc36262f120560582d86c9614ded23e71fd3aa1
 CI evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700
 See VERIFICATION-2026-10-18.md for exact limits of those checks.
+
+
+## Continuation 2026-10-18: reusable sections, canvas groups, approved Meta carousel
+
+- Branch `feat/stage0-foundation`, PR #1 remains DRAFT/UNMERGED.
+- New `apps/api/src/flow-reuse.ts` and `packages/database/migrations/0023_reusable_flow_sections.sql`. Library is strict linear copied fragments only, max 100 per tenant, max 20 steps/entry, per-tenant RLS/FORCE and audited RBAC.
+- `apps/api/src/flow-engine.ts` now validates optional `groups` metadata; `apps/web/public/flow-canvas.js`, `flow-builder.js`, `flow-builder.css` implement Shift-selection/grouping and reusable-fragment saving/inserting via real API.
+- `apps/api/src/template-components.ts`, `templates.ts`, `apps/web/public/workspace-ui.js`, `style.css` support only Meta-approved MARKETING IMAGE/VIDEO CAROUSEL with 2–10 fixed approved cards, card-specific HTTPS/media/body/button values. Existing consent/queue/Meta provider approval remain required; unsupported variants rejected.
+- Added `tests/flow-reuse.test.mjs` (7), `tests/template-carousel.test.mjs` (8), updated PostgreSQL `tests/db-integration.mjs`.
+- Development CI run [39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) SUCCESS: **43/43**, migration **0023** applied, RLS/FORCE snippet and catalog isolation. Latest documentation commit unverified separately; check HEAD and CI before next action.
+- Read `docs/18-FLOW-REUSE-AND-CAROUSEL.md` for exact limitations, especially **copies rather than linked subflows** and **NO real Meta carousel delivery proof**.
+- Next source opportunities: true linked subflows, dedicated connector adapters for Sheets/CRM/ecommerce (OAuth/credentials required), other Meta template shapes if explicitly supported, retention/security controls. Keep owner request: one formal comprehensive final acceptance after feature build, no ERP/reservation expansion.
