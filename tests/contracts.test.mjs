@@ -1,0 +1,17 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+const ts = createRequire(import.meta.url)("typescript");
+const source = readFileSync(new URL("../packages/contracts/src/menu.ts", import.meta.url),"utf8");
+const js = ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
+const module = {exports:{}};
+new Function("module","exports",js)(module,module.exports);
+const { publishedPrograms, validateMenu, createProvisionalBooking } = module.exports;
+const p={id:"p1",tenantId:"t1",category:"UMRAH",title:"عمرة",priceMinor:10000,currency:"EGP",published:true,availableSeats:2};
+test("tenant isolation and published catalog",()=>{assert.deepEqual(publishedPrograms([p,{...p,id:"p2",tenantId:"t2"}],"t1","UMRAH").map(x=>x.id),["p1"]);});
+test("no unavailable or draft programs",()=>{assert.equal(publishedPrograms([{...p,published:false},{...p,availableSeats:0}],"t1","UMRAH").length,0);});
+test("stable action IDs validated",()=>{assert.ok(validateMenu({id:"m",title:"menu",options:[{label:"A",action:{id:"x",type:"HOME"}},{label:"B",action:{id:"x",type:"HOME"}}]}).includes("Duplicate action ID"));});
+test("booking is provisional and snapshots price",()=>{const b=createProvisionalBooking({id:"b1",tenantId:"t1",programId:"p1",customerName:"Test",customerPhone:"010",partySize:1},[p]);assert.equal(b.status,"PENDING_REVIEW");assert.equal(b.priceMinorSnapshot,10000);});
+test("reject cross-tenant booking",()=>{assert.throws(()=>createProvisionalBooking({id:"b1",tenantId:"t2",programId:"p1",customerName:"Test",customerPhone:"010",partySize:1},[p]));});
+test("reject overselling",()=>{assert.throws(()=>createProvisionalBooking({id:"b1",tenantId:"t1",programId:"p1",customerName:"Test",customerPhone:"010",partySize:3},[p]));});
