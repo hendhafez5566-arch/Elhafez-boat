@@ -191,10 +191,10 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
    }
    const rows=bookings.rows.map((b:Record<string,unknown>)=>
       '• '+String(b.title).slice(0,65)+' | رقم '+String(b.id).slice(0,8)+
-      '\\n  الحالة: '+(statusLabels[String(b.status)]||'تحت المراجعة')+
+      '\n  الحالة: '+(statusLabels[String(b.status)]||'تحت المراجعة')+
       (b.depart_at?' | السفر: '+localTravelDate(b.depart_at):''));
-   await respond(textPayload('آخر طلبات الحجز المرتبطة برقمك:\\n'+rows.join('\\n')+
-     '\\n\\nالطلب المبدئي مش تأكيد للحجز. اكتب "القائمة" أو "موظف" للمساعدة.'));return;
+   await respond(textPayload('آخر طلبات الحجز المرتبطة برقمك:\n'+rows.join('\n')+
+     '\n\nالطلب المبدئي مش تأكيد للحجز. اكتب "القائمة" أو "موظف" للمساعدة.'));return;
  }
  if(action==='handoff'||/^(موظف|خدمة العملاء)$/i.test(body)){
   await db.query(`UPDATE conversations SET status='HUMAN' WHERE tenant_id=$1 AND id=$2`,[tenantId,conversationId]);
