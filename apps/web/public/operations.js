@@ -50,6 +50,11 @@ export function initOperations({state,api,notify,execute,canEdit}) {
     summary.append(node('p','الخدمة: '+(item.interested_program||'استفسار عام')+
       ' • الأفراد: '+(item.party_size??'غير محدد')+
       ' • السفر: '+(item.travel_preference||'غير محدد')));
+    const captured=item.custom_fields&&typeof item.custom_fields==='object'&&!Array.isArray(item.custom_fields)
+      ?Object.entries(item.custom_fields).slice(0,8)
+        .map(([key,value])=>key+': '+String(value).slice(0,120)).join(' • '):'';
+    if(captured)summary.append(node('p','إجابات العميل: '+captured));
+
   }else summary.hidden=true;
 
   const messages=await api('/whatsapp/inbox/'+item.id+'/messages');
@@ -184,7 +189,10 @@ export function initOperations({state,api,notify,execute,canEdit}) {
   }
   for(const lead of rows){
    const tr=node('tr');
-   const fields=[lead.customer_name+' — '+lead.phone,lead.program_title||'استفسار عام',
+   const answerSummary=lead.custom_fields&&typeof lead.custom_fields==='object'
+     ?Object.entries(lead.custom_fields).slice(0,3).map(([key,value])=>key+': '+String(value).slice(0,80)).join(' • '):'';
+   const fields=[lead.customer_name+' — '+lead.phone,(lead.program_title||lead.interested_program||'استفسار عام')+
+     (answerSummary?' | '+answerSummary:''),
      lead.party_size??'لسه مش محدد',lead.travel_preference||'لسه مش محدد',
      leadLabels[lead.stage]||lead.stage];
    for(const value of fields)tr.append(node('td',value));
