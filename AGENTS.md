@@ -7,7 +7,7 @@
 - The same flow builder works for retail, clinics, real estate, restaurants, education, tourism and other industries. Do not hardcode UMRAH/HAJJ as universal categories.
 - Platform facilitates communication, collects intent and hands off to employees. Employees handle actual orders, bookings, payments, refunds and fulfilment outside this software.
 - Maintain per-tenant isolation, least privilege, Meta policy compliance, secure secrets and signed webhooks. No fictional offer/price/availability.
-- WhatsApp Cloud API first, other channels are future adapters, not promises of existing integration.
+- WhatsApp Cloud API and Website Chat now have source adapters; live acceptance is still separate. Other social channels remain future adapters, not promises of existing integration.
 - Preserve git history and safely retire previous booking/room/finance overbuild; **do not extend it**.
 
 ## Workflow

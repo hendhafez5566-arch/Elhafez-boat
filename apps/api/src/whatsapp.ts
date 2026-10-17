@@ -144,7 +144,8 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  // Approved answers are permitted only when the exact company-approved question matches.
  const waiting=await db.query(`SELECT 1 FROM chatbot_flow_sessions s JOIN chatbot_flow_versions v ON v.tenant_id=s.tenant_id AND v.version=s.version CROSS JOIN LATERAL jsonb_array_elements(v.definition->'nodes') node WHERE s.tenant_id=$1 AND s.conversation_id=$2 AND node->>'id'=s.node_id AND node->>'type' IN ('INPUT','QUESTION') LIMIT 1`,[tenantId,conversationId]);
  const explicitHandoff=/^(موظف|عايز موظف|عاوز موظف|خدمة العملاء|كلموني|عايز حد|عاوز حد|human|agent)$/i.test(body.trim());
- const triggered=msgType==='text'?await matchTrigger(db,tenantId,body,false):undefined;
+ const hasFlowSession=await db.query('SELECT 1 FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,conversationId]);
+ const triggered=msgType==='text'||msgType==='button'?await matchTrigger(db,tenantId,body,!hasFlowSession.rowCount):undefined;
  if(msgType==='text'&&!action&&!waiting.rowCount&&!explicitHandoff&&!triggered){
   const answer=await findApprovedAnswer(db,tenantId,body);
   if(answer){await respond(textPayload(answer));return;}

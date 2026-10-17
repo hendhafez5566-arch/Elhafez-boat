@@ -7,6 +7,7 @@
 - Added company usage/admin caps, live inbox/notification polling, per-message reads, editable replies, encrypted integration credentials, optimistic draft saves and durable Meta PROCESSING/UNCERTAIN recovery.
 - Rebuilt RTL app with real APIs; removed dummy tourism workspace and retired package; preserved historical SQL/data. Added migration 0022 and clean-build step.
 - Build/install/JS/DOM/HTTP safeguards passed. CI on 7fc3626 passed 28/28 unit tests, all 22 migrations and PostgreSQL catalog-isolation/RLS gate (run 39072771700). Final acceptance remains deferred.
+- Follow-up also gives first-message triggers priority over exact FAQs on WhatsApp and aligns the channel scope docs with implemented website source.
 - Startup follow-up now runs compiled API/worker JS after one root build and loads root .env for web; removed unused placeholder worker.
 
 
