@@ -218,11 +218,13 @@ export function initOperations({state,api,notify,execute,canEdit}) {
     const updated=await api('/whatsapp/inbox/'+selected.id+'/handoff',{
       method:'PATCH',body:{status:'HUMAN',assignedUserId}
     });
-    selected={...selected,...updated};
-    await selectThread(selected);await inbox();notify('تم إسناد المحادثة للموظف المحدد');
+    const selectedId=String(updated.id);
+    await inbox();const refreshed=inboxCache.find(x=>x.id===selectedId);
+    if(refreshed)await selectThread(refreshed);
+    notify('تم إسناد المحادثة للموظف المحدد');
  });
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
- $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});selected.status=status;await selectThread(selected);await inbox();notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
+ $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});const selectedId=selected.id;await inbox();const refreshed=inboxCache.find(x=>x.id===selectedId);if(refreshed)await selectThread(refreshed);notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
  $('team-invite-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const input=getForm(e.currentTarget);const invited=await api('/team/invitations',{method:'POST',body:input});const link=location.origin+'/join.html#team.'+invited.inviteToken;$('team-invite-link').value=link;$('team-invite-result').hidden=false;await staff();notify('الدعوة اتعملت. انسخ الرابط وشاركه بأمان؛ مفيش إيميل تلقائي.')})});
  $('team-copy-invite').onclick=()=>execute(async()=>{const v=$('team-invite-link').value;if(!v)return;await navigator.clipboard.writeText(v);notify('تم نسخ رابط الدعوة')});
