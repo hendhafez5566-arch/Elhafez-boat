@@ -119,7 +119,6 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
   VALUES($1,$2,'INBOUND',$3,$4)`,[tenantId,conversationId,body,messageId]);
  await db.query(`INSERT INTO whatsapp_conversation_states(tenant_id,conversation_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,[tenantId,conversationId]);
  const row=(await db.query(`SELECT * FROM whatsapp_conversation_states WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId])).rows[0];
- if(status==='HUMAN')return; // never speak over human handoff
  const respond=(payload:Record<string,unknown>)=>queue(db,tenantId,accountId,conversationId,from,payload);
  if(/^(stop|unsubscribe|إلغاء الرسائل|إيقاف الرسائل)$/i.test(body.trim())){
    await db.query('UPDATE contacts SET do_not_contact=true WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
@@ -133,6 +132,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
    await respond(await showMenu(db,tenantId,row,'HOME',0));return;
  }
  if(contact.rows[0].do_not_contact)return;
+ if(status==='HUMAN')return; // no bot takeover while human handles thread
  const cfg=await publishedConfig(db,tenantId);
  if(interactive.type==='nfm_reply'){
    try{
