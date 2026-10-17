@@ -106,9 +106,9 @@ export async function publishProgram(db: SqlClient, actor: Actor, programId: str
   allow(actor,['OWNER','MANAGER']);
   if (!isUuid(programId)) throw new HttpFailure(400,'Invalid program ID');
   const result=await db.query(`UPDATE programs SET status='PUBLISHED',updated_at=now() WHERE tenant_id=$1 AND id=$2
-    AND status IN ('DRAFT','PUBLISHED') AND available_seats>booked_seats
+    AND status IN ('DRAFT','PUBLISHED')
     RETURNING id,status`,[actor.tenantId,programId]);
-  if (result.rowCount!==1) throw new HttpFailure(409,'Program unavailable or no remaining capacity');
+  if (result.rowCount!==1) throw new HttpFailure(409,'Program cannot be published');
   return result.rows[0];
 }
 export async function listBookings(db: SqlClient, actor: Actor): Promise<Record<string, unknown>[]> {
