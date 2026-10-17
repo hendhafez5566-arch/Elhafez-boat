@@ -94,6 +94,14 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&inviteRevoke)return json(res,200,await run(tx=>revokeTeamInvite(tx,actor,inviteRevoke[1])));
     const teamRole=/^\/api\/v1\/team\/members\/([^/]+)\/role$/.exec(pathname);
     if(req.method==='PATCH'&&teamRole)return json(res,200,await runBody((tx,input)=>updateTeamRole(tx,actor,teamRole[1],input)));
+    if(req.method==='GET'&&pathname==='/api/v1/subscription'){
+      return json(res,200,await run(async tx=>{
+        const r=await tx.query(`SELECT s.plan_code AS "planCode",p.title,s.status,s.current_period_ends_at AS "currentPeriodEndsAt",
+          p.max_staff AS "maxStaff",p.max_programs AS "maxPrograms" FROM tenant_subscriptions s
+          JOIN subscription_plans p ON p.code=s.plan_code WHERE s.tenant_id=$1`,[actor.tenantId]);
+        return r.rows[0]??{status:'NOT_CONFIGURED',planCode:null};
+      }));
+    }
     if(req.method==='GET'&&pathname==='/api/v1/summary')return json(res,200,await run(tx=>getSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/contacts')return json(res,200,await run(tx=>listContacts(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/contacts')return json(res,201,await runBody((tx,input)=>addContact(tx,actor,input)));
