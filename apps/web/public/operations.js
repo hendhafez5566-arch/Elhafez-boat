@@ -18,17 +18,42 @@ export function initOperations({state,api,notify,execute,canEdit}) {
   if(!result.length){msg($('wa-connections'),'لا يوجد رقم متصل. الربط يتطلب حساب Meta Cloud API ورمز صلاحية حقيقي.');return;}
   result.forEach(item=>{const box=node('div',undefined,'ops-card');box.append(node('strong',item.displayPhone||item.phoneNumberId),node('p','Meta ID: '+item.phoneNumberId+' • '+item.status));if(item.status==='CONNECTED'&&state.role==='OWNER')box.append(button('فصل الاتصال',async()=>{if(!confirm('فصل رقم واتساب عن الشركة؟'))return;await api('/whatsapp/connection/'+item.id,{method:'DELETE'});notify('تم فصل الرقم');await connection()},'danger'));$('wa-connections').append(box);});
  }
+ let inboxCache=[];
+ function renderInboxRows(){
+   const target=$('wa-threads');target.replaceChildren();
+   const term=$('wa-inbox-search').value.trim().toLowerCase();
+   const filter=$('wa-inbox-filter').value;
+   const filtered=inboxCache.filter(x=>(filter==='ALL'||x.status===filter)&&
+     (String(x.customer_name||'').toLowerCase().includes(term)||String(x.phone||'').includes(term)));
+   if(!filtered.length)msg(target,'لا توجد محادثات تطابق البحث والتصفية.');
+   for(const item of filtered){
+     const card=button(item.customer_name+' — '+item.phone,()=>selectThread(item),'ops-thread');
+     card.append(node('small',item.status==='HUMAN'?'مع موظف':'البوت نشط أو في انتظار الموظف'));
+     if(item.do_not_contact)card.append(node('small','العميل أوقف التواصل'));
+     target.append(card);
+   }
+ }
  async function inbox(){
-  clear('wa-threads');if(state.demo){msg($('wa-threads'),'دي معاينة شكل صندوق واتساب. البيانات الحقيقية هتظهر بعد ربط Meta.');return;}
-  const items=await api('/whatsapp/inbox');if(!items.length){msg($('wa-threads'),'مافيش رسائل واردة من واتساب حتى الآن.');return;}
-  for(const item of items){const card=button(item.customer_name+' — '+item.phone,()=>selectThread(item), 'ops-thread');card.append(node('small',item.status==='HUMAN'?'مع موظف':'البوت نشط'));$('wa-threads').append(card);}
+   clear('wa-threads');
+   if(state.demo){msg($('wa-threads'),'دي معاينة شكل صندوق واتساب. البيانات الحقيقية هتظهر بعد ربط Meta.');return;}
+   inboxCache=await api('/whatsapp/inbox');
+   renderInboxRows();
  }
  let selected=null;
  async function selectThread(item){
   selected=item;const target=$('wa-chat'),title=$('wa-chat-title');title.textContent=item.customer_name+' • '+item.phone;target.replaceChildren();
   const messages=await api('/whatsapp/inbox/'+item.id+'/messages');
   messages.forEach(message=>{const div=node('div',undefined,'ops-bubble '+(message.kind==='INBOUND'?'incoming':'outgoing'));div.append(node('p',message.body),node('small',message.delivery_status||message.kind));target.append(div);});
-  $('wa-handoff').textContent=item.status==='HUMAN'?'تسليم للبوت':'استلام المحادثة';$('wa-reply').disabled=item.status!=='HUMAN';$('wa-chat-tools').hidden=false;target.scrollTop=target.scrollHeight;
+  $('wa-handoff').textContent=item.status==='HUMAN'?'تسليم للبوت':'استلام المحادثة';
+  $('wa-reply').disabled=item.status!=='HUMAN';$('wa-chat-tools').hidden=false;
+  const managers=state.role==='OWNER'||state.role==='MANAGER';
+  $('wa-assign-tools').hidden=!managers;
+  const select=$('wa-assignee');select.replaceChildren();
+  if(managers)for(const m of (state.team||[]).filter(m=>m.role!=='VIEWER')){
+    const option=node('option',m.email+' — '+(roleTitles[m.role]||m.role));option.value=m.id;select.append(option);
+  }
+  if(item.assigned_user_id&&[...select.options].some(o=>o.value===item.assigned_user_id))select.value=item.assigned_user_id;
+  target.scrollTop=target.scrollHeight;
  }
  async function staff(){
   const target=$('team-invitations');target.replaceChildren();const roles=$('team-role-controls');roles.replaceChildren();
@@ -179,6 +204,19 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId}});
    notify('تمت إضافة رسالة واحدة للطابور، وليست تأكيد تسليم من واتساب.');
  })});
+ $('wa-inbox-search').addEventListener('input',renderInboxRows);
+ $('wa-inbox-filter').addEventListener('change',renderInboxRows);
+ $('wa-assign').onclick=()=>execute(async()=>{
+    if(!selected||state.demo)return noLive();
+    if(!(state.role==='OWNER'||state.role==='MANAGER'))throw new Error('فقط الإدارة تقدر تعيد توزيع المحادثات');
+    const assignedUserId=$('wa-assignee').value;
+    if(!assignedUserId)throw new Error('اختار موظفًا أولًا');
+    const updated=await api('/whatsapp/inbox/'+selected.id+'/handoff',{
+      method:'PATCH',body:{status:'HUMAN',assignedUserId}
+    });
+    selected={...selected,...updated};
+    await selectThread(selected);await inbox();notify('تم إسناد المحادثة للموظف المحدد');
+ });
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});selected.status=status;await selectThread(selected);await inbox();notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
