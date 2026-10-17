@@ -213,9 +213,30 @@ export function initOperations({state,api,notify,execute,canEdit}) {
   leadsCache=await api('/leads');renderLeadRows();
   await leadsSummary();
  }
+ const kindNames={PRODUCT:'منتج',SERVICE:'خدمة',OFFER:'عرض',OTHER:'معلومة'};
+ async function catalog(){
+   const host=$('catalog-items');host.replaceChildren();
+   const items=await api('/catalog');
+   if(!items.length){msg(host,'مفيش منتجات أو خدمات اتضافت لسه. استخدم النموذج علشان تضيف أول معلومة.');return;}
+   for(const item of items){
+     const card=node('div',undefined,'ops-card');
+     card.append(node('strong',item.title),node('small',(kindNames[item.kind]||'معلومة')+
+       (item.categoryLabel?' • '+item.categoryLabel:'')+' • '+(item.status==='PUBLISHED'?'منشور':'مسودة')));
+     if(item.description)card.append(node('p',item.description));
+     if(item.priceText)card.append(node('p','السعر المعلن: '+item.priceText));
+     if(item.status==='DRAFT'&&canEdit())card.append(button('اعتماد ونشر',async()=>{
+       await api('/catalog/'+item.id+'/publish',{method:'POST'});await catalog();notify('اتنشر المحتوى المعتمد');
+     }));
+     if(item.status!=='ARCHIVED'&&canEdit())card.append(button('أرشفة',async()=>{
+       if(!confirm('أرشفة العنصر ومنع البوت من استخدام معلوماته؟'))return;
+       await api('/catalog/'+item.id+'/archive',{method:'POST'});await catalog();notify('تمت الأرشفة');
+     },'secondary'));
+     host.append(card);
+   }
+ }
  async function onPage(page){
-  if(!['overview','leads','wa-inbox','wa-connect','team','subscription','settings'].includes(page))return;
-  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='overview')await leadsSummary();if(page==='leads')await leadsView();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();if(page==='templates')await templates();}
+  if(!['overview','leads','catalog','wa-inbox','wa-connect','team','subscription','settings'].includes(page))return;
+  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='overview')await leadsSummary();if(page==='leads')await leadsView();if(page==='catalog')await catalog();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();if(page==='templates')await templates();}
   catch(e){notify(e.message||'تعذر تحميل الصفحة','error');}
  }
  $('wa-connect-form')?.addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();const form=e.currentTarget;execute(async()=>{const d=getForm(form);await api('/whatsapp/connection',{method:'POST',body:d});form.reset();await connection();notify('تم التحقق من رقم Meta وحفظه مشفرًا')})});
@@ -281,6 +302,17 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    });
  });
  $('leads-refresh').onclick=()=>execute(leadsView);
+ $('catalog-refresh').onclick=()=>execute(catalog);
+ $('catalog-form').addEventListener('submit',event=>{event.preventDefault();execute(async()=>{
+   const form=event.currentTarget,data=getForm(form);
+   if(!canEdit()){notify('إضافة المحتوى متاحة للمدير والمالك فقط','error');return}
+   await api('/catalog',{method:'POST',body:{
+     kind:data.kind,title:data.title,categoryLabel:data.categoryLabel,
+     description:data.description,priceText:data.priceText,imageUrl:data.imageUrl,
+     externalUrl:data.externalUrl
+   }});
+   form.reset();await catalog();notify('تم حفظ المنتج أو الخدمة كمسودة');
+ })});
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});const selectedId=selected.id;await inbox();const refreshed=inboxCache.find(x=>x.id===selectedId);if(refreshed)await selectThread(refreshed);notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
