@@ -331,25 +331,45 @@ export async function whatsappThread(db:SqlClient,actor:Actor,conversationId:str
  WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC,id DESC LIMIT 150`,[actor.tenantId,conversationId])).rows.reverse();
 }
 export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,input:unknown){
- allow(actor,['OWNER','MANAGER','AGENT']);if(!isUuid(id))throw new HttpFailure(400,'Invalid conversation');
- const d=asObject(input);if(d.status!=='HUMAN'&&d.status!=='OPEN')throw new HttpFailure(400,'Invalid handoff status');
- const assigned=d.assignedUserId===null||d.assignedUserId===undefined?actor.userId:d.assignedUserId;
- if(!isUuid(assigned))throw new HttpFailure(400,'Invalid assignee');
- const member=await db.query(`SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2`,[actor.tenantId,assigned]);if(member.rowCount!==1)throw new HttpFailure(404,'Assignee not in company');
- const r=await db.query(`UPDATE conversations SET status=$3,assigned_user_id=$4 WHERE tenant_id=$1 AND id=$2 AND channel='WHATSAPP' RETURNING id,status,assigned_user_id`,[actor.tenantId,id,d.status,assigned]);
+ allow(actor,['OWNER','MANAGER','AGENT']);
+ if(!isUuid(id))throw new HttpFailure(400,'Invalid conversation');
+ const d=asObject(input);
+ if(d.status!=='HUMAN'&&d.status!=='OPEN')throw new HttpFailure(400,'Invalid handoff status');
+ // The conversation lock prevents two agents from simultaneously taking ownership.
+ const previous=await db.query(`SELECT status,assigned_user_id FROM conversations
+   WHERE tenant_id=$1 AND id=$2 AND channel='WHATSAPP' FOR UPDATE`,[actor.tenantId,id]);
+ if(previous.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
+ const current=previous.rows[0],myAssignment=String(current.assigned_user_id||'')===actor.userId;
+ if(actor.role==='AGENT'&&current.status==='HUMAN'&&current.assigned_user_id&&!myAssignment)
+   throw new HttpFailure(409,'Conversation already assigned to another agent');
+ if(actor.role==='AGENT'&&d.assignedUserId!==undefined&&d.assignedUserId!==actor.userId)
+   throw new HttpFailure(403,'Agents can only assign a conversation to themselves');
+ const assigned=d.status==='OPEN'?null:(d.assignedUserId===undefined?actor.userId:d.assignedUserId);
+ if(assigned!==null){
+  if(!isUuid(assigned))throw new HttpFailure(400,'Invalid assignee');
+  const member=await db.query(`SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2`,[actor.tenantId,assigned]);
+  if(member.rowCount!==1||member.rows[0].role==='VIEWER')throw new HttpFailure(404,'Active staff assignee not found');
+ }
+ const r=await db.query(`UPDATE conversations SET status=$3,assigned_user_id=$4
+   WHERE tenant_id=$1 AND id=$2 AND channel='WHATSAPP'
+   RETURNING id,status,assigned_user_id`,[actor.tenantId,id,d.status,assigned]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
- await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_HANDOFF_CHANGED','conversation',$3)`,[actor.tenantId,actor.userId,id]);return r.rows[0];
+ await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id)
+ VALUES($1,$2,'WHATSAPP_HANDOFF_CHANGED','conversation',$3)`,[actor.tenantId,actor.userId,id]);
+ return r.rows[0];
 }
 export async function replyWhatsApp(db:SqlClient,actor:Actor,id:string,input:unknown){
  allow(actor,['OWNER','MANAGER','AGENT']);if(!isUuid(id))throw new HttpFailure(400,'Invalid conversation');
  const body=limited(asObject(input).body,2000);if(!body)throw new HttpFailure(400,'Empty reply');
- const c=await db.query(`SELECT c.id,c.status,c.last_customer_message_at,k.phone,k.do_not_contact,a.id AS account_id
+ const c=await db.query(`SELECT c.id,c.status,c.assigned_user_id,c.last_customer_message_at,k.phone,k.do_not_contact,a.id AS account_id
   FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
   JOIN whatsapp_accounts a ON a.tenant_id=c.tenant_id AND a.id=c.whatsapp_account_id AND a.status='CONNECTED'
   WHERE c.tenant_id=$1 AND c.id=$2 AND c.channel='WHATSAPP' ORDER BY a.created_at DESC LIMIT 1 FOR UPDATE OF c`,[actor.tenantId,id]);
  if(c.rowCount!==1)throw new HttpFailure(404,'Connected WhatsApp conversation not found');const row=c.rows[0];
  if(row.do_not_contact)throw new HttpFailure(409,'Contact opted out');
  if(row.status!=='HUMAN')throw new HttpFailure(409,'Take over conversation before replying');
+ if(actor.role==='AGENT'&&String(row.assigned_user_id||'')!==actor.userId)
+  throw new HttpFailure(403,'Only the assigned agent may reply to this conversation');
  if(!row.last_customer_message_at||Date.now()-new Date(String(row.last_customer_message_at)).getTime()>24*3600_000)
   throw new HttpFailure(409,'Outside 24-hour service window. Approved templates are required and not yet configured.');
  await queue(db,actor.tenantId,String(row.account_id),id,String(row.phone).replace('+',''),textPayload(body));
