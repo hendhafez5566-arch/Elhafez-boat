@@ -60,6 +60,11 @@ export async function updateSubscription(ownerId:string,id:string,input:unknown)
  try{await tx.query('BEGIN');begun=true;
  const r=await tx.query(`INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at) VALUES($1,$2,$3,$4)
  ON CONFLICT(tenant_id) DO UPDATE SET plan_code=EXCLUDED.plan_code,status=EXCLUDED.status,current_period_ends_at=EXCLUDED.current_period_ends_at,updated_at=now() RETURNING tenant_id,plan_code,status,current_period_ends_at`,[id,plan,status,new Date(ends).toISOString()]);
+ if(!['TRIAL','ACTIVE'].includes(String(status)) || new Date(ends).getTime()<=Date.now()){
+   // Paid account suspension must not silently send already queued outbound messages on later reactivation.
+   await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Subscription is not active'
+     WHERE tenant_id=$1 AND status='PENDING'`,[id]);
+ }
  await tx.query(`INSERT INTO platform_audit_events(owner_id,action,tenant_id) VALUES($1,'SUBSCRIPTION_UPDATED',$2)`,[ownerId,id]);
  await tx.query('COMMIT');return r.rows[0];
  }catch(e){if(begun)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
