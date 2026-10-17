@@ -25,3 +25,6 @@
 - Prevented simultaneous unrelated agents from taking over the same human-held conversation; restricted employee replies to assigned agent.
 - Removed programs with solely expired/unavailable contracted departures from WhatsApp menus; clarified base prices as indicative.
 - Wrote `docs/15-WHATSAPP-BOOKING-CHOICES.md`. Changes pushed to draft PR; no real PostgreSQL/Meta, provider E2E or formal acceptance performed.
+
+
+- Continued 2026-10-17: WhatsApp main menu customer-status lookup, browser-only status simulator, searchable/filtered inbox and owner/manager reassign interface. Staff handoff remains transactionally guarded; no new final tests.
