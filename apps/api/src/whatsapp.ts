@@ -1,6 +1,5 @@
+import { registerInterest, setLeadPartySize, readyForAgent } from './chatbot-leads.js';
 import { findApprovedAnswer } from './knowledge.js';
-import { makeBookingFlow, finishBookingFlow } from './flows.js';
-import { hasDepartures, departurePage, hasRoomPackages, roomPage, validateDepartureChoice, validateRoomChoice, createCustomerBooking } from './booking-choice.js';
 /** Official Meta Cloud API; no unofficial WhatsApp libraries or browser automation. */
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { allow, HttpFailure, isUuid, type Actor, type SqlClient, type SqlPool } from './services.js';
@@ -91,44 +90,15 @@ async function publishedConfig(db:SqlClient,tenantId:string){
 }
 async function showMenu(db:SqlClient,tenantId:string,state:Record<string,unknown>,category:string,page:number){
  const cfg=await publishedConfig(db,tenantId);
- if(category==='HOME')return listPayload(cfg.welcomeText,[...cfg.enabledCategories.map(k=>({id:'category:'+k,title:categoryTitles[k]||k,description:'البرامج المتاحة'})),{id:'my-bookings',title:'متابعة حجوزاتي',description:'معرفة حالة طلبات الحجز السابقة'}, {id:'handoff',title:'موظف المبيعات',description:'التحدث مع مسؤول الحجز'}]);
+ if(category==='HOME')return listPayload(cfg.welcomeText,[...cfg.enabledCategories.map(k=>({id:'category:'+k,title:categoryTitles[k]||k,description:'البرامج المتاحة'})),{id:'handoff',title:'موظف المبيعات',description:'التحدث مع مسؤول الحجز'}]);
  if(!categoryOk(category)||!cfg.enabledCategories.includes(category))return showMenu(db,tenantId,state,'HOME',0);
- const result=await db.query(`SELECT id,title,price_minor,currency FROM programs p WHERE p.tenant_id=$1 AND p.category=$2 AND p.status='PUBLISHED' AND p.available_seats>p.booked_seats
-   AND (NOT EXISTS(SELECT 1 FROM program_departures d0 WHERE d0.tenant_id=p.tenant_id AND d0.program_id=p.id)
-     OR EXISTS(SELECT 1 FROM program_departures d1 WHERE d1.tenant_id=p.tenant_id AND d1.program_id=p.id
-       AND d1.status='ACTIVE' AND d1.depart_at>now() AND d1.seats_total>d1.seats_booked))
+ const result=await db.query(`SELECT id,title,price_minor,currency FROM programs p WHERE p.tenant_id=$1 AND p.category=$2 AND p.status='PUBLISHED'
   ORDER BY p.departure_at NULLS LAST,p.created_at DESC LIMIT 9 OFFSET $3`,[tenantId,category,page*8]);
- const entries=result.rows.slice(0,8).map(p=>({id:'program:'+p.id,title:String(p.title),description:`سعر أساسي ${(Number(p.price_minor)/100).toFixed(2)} ${p.currency}`}));
+ const entries=result.rows.slice(0,8).map(p=>({id:'program:'+p.id,title:String(p.title),description:`سعر معلن ${(Number(p.price_minor)/100).toFixed(2)} ${p.currency}`}));
  if(page>0)entries.push({id:`page:${category}:${page-1}`,title:'السابق',description:'رجوع للصفحة السابقة'});
  if(result.rows.length>8)entries.push({id:`page:${category}:${page+1}`,title:'التالي',description:'المزيد من البرامج'});
  if(entries.length===0)return textPayload('لا توجد برامج متاحة حاليًا. اكتب "القائمة" للعودة أو اطلب موظف المبيعات.');
  return listPayload('اختر البرنامج المناسب لك:',entries);
-}
-const localTravelDate=(value:unknown)=>new Date(String(value)).toLocaleDateString('ar-EG',{timeZone:'Africa/Cairo',day:'numeric',month:'short',year:'numeric'});
-async function departureMenu(db:SqlClient,tenantId:string,programId:string,page:number) {
- const result=await departurePage(db,tenantId,programId,page);
- const options=result.items.map(item=>({
-  id:'departure:'+item.id,
-  title:('سفر '+localTravelDate(item.depart_at)).slice(0,24),
-  description:'عودة '+localTravelDate(item.return_at)+' • متاح '+(Number(item.seats_total)-Number(item.seats_booked))+' مقعد'
- }));
- if(page>0)options.push({id:'dep-page:'+(page-1),title:'السابق',description:'مواعيد سابقة'});
- if(result.next)options.push({id:'dep-page:'+(page+1),title:'التالي',description:'مواعيد أخرى'});
- options.push({id:'home',title:'الرئيسية',description:'العودة للقائمة الرئيسية'});
- return result.items.length?listPayload('اختار موعد السفر قبل تسجيل طلب الحجز:',options):textPayload('لا توجد مواعيد متاحة حاليًا للبرنامج. اكتب "القائمة" أو اطلب موظف المبيعات.');
-}
-const roomTitles:Record<string,string>={SINGLE:'فردي',DOUBLE:'ثنائي',TRIPLE:'ثلاثي',QUAD:'رباعي',FAMILY:'عائلي'};
-async function roomMenu(db:SqlClient,tenantId:string,programId:string,departureId:string,page:number) {
- const result=await roomPage(db,tenantId,programId,departureId,page);
- const options=result.items.map(item=>({
-   id:'room:'+item.id,
-   title:(item.hotel_name+' '+(roomTitles[item.room_type]||item.room_type)).slice(0,24),
-   description:(Number(item.price_minor)/100).toFixed(2)+' '+item.currency+' للفرد • '+(Number(item.units_total)-Number(item.units_booked))+' غرف'
- }));
- if(page>0)options.push({id:'room-page:'+(page-1),title:'السابق',description:'غرف سابقة'});
- if(result.next)options.push({id:'room-page:'+(page+1),title:'التالي',description:'أنواع غرف أخرى'});
- options.push({id:'dep-page:0',title:'تغيير موعد السفر',description:'الرجوع للمواعيد'});
- return result.items.length?listPayload('اختار الفندق ونوع الغرفة؛ السعر للفرد:',options):textPayload('لا توجد غرف متاحة حاليًا لهذا الموعد. اكتب "القائمة" أو اطلب موظف المبيعات.');
 }
 async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,message:Record<string,unknown>,profile:Record<string,unknown>){
  const messageId=limited(message.id,256),from=str(message.from);if(!messageId||!customerPhonePattern.test(from))return;
@@ -164,134 +134,65 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  if(contact.rows[0].do_not_contact)return;
  if(status==='HUMAN')return; // no bot takeover while human handles thread
  const cfg=await publishedConfig(db,tenantId);
+ // Product scope: chatbot answers and qualifies enquiries; NEVER creates reservations.
  if(interactive.type==='nfm_reply'){
-   try{
-     const bookingId=await finishBookingFlow(db,tenantId,accountId,conversationId,asObject(interactive.nfm_reply).response_json,from);
-     await db.query(`UPDATE whatsapp_conversation_states SET awaiting='NONE',booking_program_id=NULL,
-       booking_departure_id=NULL,booking_room_package_id=NULL,booking_name=NULL,page_number=0
-       WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);
-     await respond(textPayload('تم تسجيل طلب حجز مبدئي رقم '+bookingId+'. ستراجع الشركة التوافر وتتواصل معاك. الطلب غير مؤكد.'));
-   }catch(error){
-     if(error instanceof HttpFailure)await respond(textPayload('تعذر تسجيل النموذج: '+error.message+'. اكتب القائمة للمحاولة مرة ثانية.'));
-     else throw error;
+  await respond(textPayload('للاستفسارات أو طلب التواصل مع المبيعات، اكتب "موظف". الحجز الفعلي بيتولاه موظف الشركة.'));
+  return;
+ }
+ if(action==='handoff'||/^(موظف|خدمة العملاء|عايز حد|كلمني|كلموني|عايز أحجز|عايز احجز)$/i.test(body.trim())){
+   const leadId=row.lead_id?String(row.lead_id):await registerInterest(db,tenantId,conversationId,contactId,null);
+   await readyForAgent(db,tenantId,leadId,conversationId,null);
+   await respond(textPayload('وصلت رسالتك لفريق المبيعات. الموظف هيتابع معاك ويساعدك في الحجز أو الخدمة المطلوبة. أنا مش بعمل حجز بنفسي.'));
+   return;
+ }
+ if(action==='home'||/^(القائمة|الرئيسية|ابدأ)$/i.test(body.trim())){
+   await db.query(`UPDATE whatsapp_conversation_states SET current_menu='HOME',page_number=0,
+     lead_stage='NONE',menu_version=$3 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,cfg.version]);
+   await respond(await showMenu(db,tenantId,row,'HOME',0));return;
+ }
+ if(row.lead_stage==='AWAIT_PARTY'&&!action){
+   const answer=body.trim();
+   if(!/^(?:[1-9]|[1-9][0-9]|100)$/.test(answer)&&!/^(مش محدد|لسه مش عارف|مش عارف|غير محدد|لا أعرف)$/i.test(answer)){
+     await respond(textPayload('تقريبًا كام فرد؟ اكتب رقم من 1 إلى 100، أو "مش محدد".'));return;
    }
+   if(!row.lead_id)throw new HttpFailure(409,'Lead session not found');
+   await setLeadPartySize(db,tenantId,String(row.lead_id),/^\d+$/.test(answer)?Number(answer):null);
+   await db.query(`UPDATE whatsapp_conversation_states SET lead_stage='AWAIT_TRAVEL'
+     WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);
+   await respond(textPayload('تمام. إمتى تقريبًا حابب تسافر؟ اكتب الشهر أو الميعاد، أو "مش محدد".'));return;
+ }
+ if(row.lead_stage==='AWAIT_TRAVEL'&&!action){
+   if(!row.lead_id)throw new HttpFailure(409,'Lead session not found');
+   const travel=body.trim().slice(0,160);
+   const flexible=/^(مش محدد|لسه مش عارف|مش عارف|غير محدد|لا أعرف)$/i.test(travel);
+   await readyForAgent(db,tenantId,String(row.lead_id),conversationId,flexible?null:travel);
+   await respond(textPayload('تمام، وصلت اهتماماتك لفريق الشركة ✅ موظف المبيعات هيتواصل معاك ويكمل التفاصيل بنفسه. مفيش أي حجز اتعمل من البوت.'));
+   return;
+ }
+ if((action.startsWith('interest:')&&isUuid(action.slice(9)))||(action.startsWith('book:')&&isUuid(action.slice(5)))){
+   // Old "book" buttons from previous bot versions are intentionally remapped to lead interest, never booking.
+   const programId=action.startsWith('interest:')?action.slice(9):action.slice(5);
+   const leadId=await registerInterest(db,tenantId,conversationId,contactId,programId);
+   await db.query(`UPDATE whatsapp_conversation_states SET lead_id=$3,lead_stage='AWAIT_PARTY'
+     WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,leadId]);
+   await respond(textPayload('تمام، هبلّغ الموظف إنك مهتم بالبرنامج ده. عشان يساعدك أسرع، حوالي كام فرد؟ اكتب رقم أو "مش محدد". ولو عايز الموظف دلوقتي اكتب "موظف".'));
    return;
  }
  if(action==='my-bookings'||/^(حجوزاتي|حالة الحجز|متابعة الحجز)$/i.test(body.trim())){
-   // The sender number comes from Meta's verified webhook, never a user-entered phone.
-   const bookings=await db.query(`SELECT b.id,b.status,p.title,d.depart_at
-     FROM booking_requests b JOIN programs p ON p.tenant_id=b.tenant_id AND p.id=b.program_id
-     LEFT JOIN program_departures d ON d.tenant_id=b.tenant_id AND d.id=b.departure_id
-     WHERE b.tenant_id=$1 AND regexp_replace(b.customer_phone,'^\\+','')=$2
-     ORDER BY b.created_at DESC LIMIT 5`,[tenantId,from]);
-   const statusLabels:Record<string,string>={PENDING_REVIEW:'قيد مراجعة الشركة',CONFIRMED:'مؤكد من الشركة',
-     REJECTED:'مرفوض',CANCELLED:'ملغي'};
-   if(!bookings.rows.length){
-     await respond(textPayload('لا توجد طلبات حجز مسجلة لهذا الرقم في الشركة. اكتب "القائمة" لعرض البرامج أو اطلب موظفًا.'));return;
-   }
-   const rows=bookings.rows.map((b:Record<string,unknown>)=>
-      '• '+String(b.title).slice(0,65)+' | رقم '+String(b.id).slice(0,8)+
-      '\n  الحالة: '+(statusLabels[String(b.status)]||'تحت المراجعة')+
-      (b.depart_at?' | السفر: '+localTravelDate(b.depart_at):''));
-   await respond(textPayload('آخر طلبات الحجز المرتبطة برقمك:\n'+rows.join('\n')+
-     '\n\nالطلب المبدئي مش تأكيد للحجز. اكتب "القائمة" أو "موظف" للمساعدة.'));return;
- }
- if(action==='handoff'||/^(موظف|خدمة العملاء)$/i.test(body)){
-  await db.query(`UPDATE conversations SET status='HUMAN' WHERE tenant_id=$1 AND id=$2`,[tenantId,conversationId]);
-  await respond(textPayload('تم تحويل طلبك لفريق المبيعات. هيرد عليك موظف قريبًا.'));return;
- }
- if(action==='home'||/^(القائمة|الرئيسية|ابدأ)$/i.test(body)){
-  await db.query(`UPDATE whatsapp_conversation_states SET current_menu='HOME',page_number=0,awaiting='NONE',booking_program_id=NULL,booking_departure_id=NULL,booking_room_package_id=NULL,booking_name=NULL,menu_version=$3 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,cfg.version]);
-  await respond(await showMenu(db,tenantId,row,'HOME',0));return;
- }
- if(row.awaiting==='BOOKING_NAME'&&!action){
-  if(body.length<2||body.length>120)return respond(textPayload('اكتب اسمك الكامل من فضلك (على الأقل حرفين).'));
-  await db.query(`UPDATE whatsapp_conversation_states SET awaiting='BOOKING_PARTY',booking_name=$3 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,body]);
-  await respond(textPayload('تمام، الحجز باسم '+body+'. كام فرد؟ اكتب رقم من 1 إلى 100.'));return;
- }
- if(row.awaiting==='BOOKING_PARTY'&&!action){
-  if(!/^(?:[1-9]|[1-9][0-9]|100)$/.test(body.trim()))return respond(textPayload('اكتب عدد أفراد صحيح من 1 إلى 100.'));
-  const partySize=Number(body.trim());
-  let bookingId:string;
-  try {
-   bookingId=await createCustomerBooking(db,tenantId,from,String(row.booking_name||''),partySize,{
-    programId:String(row.booking_program_id||''),
-    departureId:row.booking_departure_id?String(row.booking_departure_id):null,
-    roomPackageId:row.booking_room_package_id?String(row.booking_room_package_id):null
-   });
-  }catch(error) {
-   if(error instanceof HttpFailure)return respond(textPayload('مش قادر أسجل العدد ده حاليًا: '+error.message+'. اكتب عدد أقل أو ارجع للقائمة وغيّر الموعد.'));
-   throw error;
-  }
-  await db.query(`UPDATE whatsapp_conversation_states SET awaiting='NONE',booking_program_id=NULL,
-   booking_departure_id=NULL,booking_room_package_id=NULL,booking_name=NULL,page_number=0
-   WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);
-  await respond(textPayload(`تم تسجيل طلب حجز مبدئي رقم ${bookingId}. فريق الشركة هيراجع التوافر ويتواصل معاك. *الطلب غير مؤكد ولسه مفيش دفع مطلوب.*`));return;
- }
- const startForm=async(programId:string,departureId:string|null,roomId:string|null)=>{
-  const flow=await db.query(`SELECT flow_id,screen_id FROM whatsapp_flow_settings WHERE tenant_id=$1 AND account_id=$2 AND enabled=true`,[tenantId,accountId]);
-  if(flow.rowCount===1){
-    await db.query(`UPDATE whatsapp_conversation_states SET awaiting='NONE',booking_name=NULL WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);
-    return respond(await makeBookingFlow(db,tenantId,accountId,conversationId,programId,
-      String(flow.rows[0].flow_id),String(flow.rows[0].screen_id),{departureId,roomPackageId:roomId}));
-  }
-  await db.query(`UPDATE whatsapp_conversation_states SET awaiting='BOOKING_NAME',booking_name=NULL WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);
-  return respond(textPayload('حاضر، اكتب الاسم الكامل لصاحب طلب الحجز.'));
- };
- if(action.startsWith('dep-page:')&&row.booking_program_id && (row.awaiting==='BOOKING_DEPARTURE'||row.awaiting==='BOOKING_ROOM')){
-  const pageText=action.slice(9),page=Number(pageText);
-  if(!/^(0|[1-9][0-9]{0,2})$/.test(pageText)||!Number.isSafeInteger(page))return respond(textPayload('الصفحة المطلوبة غير صحيحة. اكتب "القائمة" للعودة.'));
-  await db.query(`UPDATE whatsapp_conversation_states SET awaiting='BOOKING_DEPARTURE',page_number=$3,
-    booking_departure_id=NULL,booking_room_package_id=NULL WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,page]);
-  await respond(await departureMenu(db,tenantId,String(row.booking_program_id),page));return;
- }
- if(action.startsWith('room-page:')&&row.booking_program_id&&row.booking_departure_id&&row.awaiting==='BOOKING_ROOM'){
-  const pageText=action.slice(10),page=Number(pageText);
-  if(!/^(0|[1-9][0-9]{0,2})$/.test(pageText)||!Number.isSafeInteger(page))return respond(textPayload('الصفحة المطلوبة غير صحيحة. اكتب "القائمة" للعودة.'));
-  await db.query(`UPDATE whatsapp_conversation_states SET page_number=$3 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,page]);
-  await respond(await roomMenu(db,tenantId,String(row.booking_program_id),String(row.booking_departure_id),page));return;
- }
- if(action.startsWith('departure:')&&row.booking_program_id&&row.awaiting==='BOOKING_DEPARTURE'){
-  const departureId=action.slice(10),programId=String(row.booking_program_id);
-  if(!await validateDepartureChoice(db,tenantId,programId,departureId)){
-    await respond(textPayload('الموعد لم يعد متاحًا. اختر موعدًا آخر من القائمة.'));return;
-  }
-  const hasRooms=await hasRoomPackages(db,tenantId,programId,departureId);
-  await db.query(`UPDATE whatsapp_conversation_states SET booking_departure_id=$3,booking_room_package_id=NULL,
-    awaiting=$4,page_number=0 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,departureId,hasRooms?'BOOKING_ROOM':'NONE']);
-  if(hasRooms){await respond(await roomMenu(db,tenantId,programId,departureId,0));return;}
-  await startForm(programId,departureId,null);return;
- }
- if(action.startsWith('room:')&&row.booking_program_id&&row.booking_departure_id&&row.awaiting==='BOOKING_ROOM'){
-  const roomId=action.slice(5),programId=String(row.booking_program_id),departureId=String(row.booking_departure_id);
-  if(!await validateRoomChoice(db,tenantId,programId,departureId,roomId)){
-    await respond(textPayload('الغرفة لم تعد متاحة. اختار غرفة أخرى من القائمة.'));return;
-  }
-  await db.query(`UPDATE whatsapp_conversation_states SET booking_room_package_id=$3,
-    page_number=0 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,roomId]);
-  await startForm(programId,departureId,roomId);return;
- }
- if(action.startsWith('book:')&&isUuid(action.slice(5))){
-  const programId=action.slice(5);
-  const p=await db.query(`SELECT id FROM programs WHERE tenant_id=$1 AND id=$2 AND status='PUBLISHED' AND available_seats>booked_seats`,[tenantId,programId]);
-  if(p.rowCount!==1)return respond(textPayload('البرنامج مش متاح دلوقتي. اكتب "القائمة" لإظهار المتاح.'));
-  const needsDeparture=await hasDepartures(db,tenantId,programId);
-  await db.query(`UPDATE whatsapp_conversation_states SET booking_program_id=$3,booking_departure_id=NULL,
-    booking_room_package_id=NULL,booking_name=NULL,awaiting=$4,page_number=0 WHERE tenant_id=$1 AND conversation_id=$2`,
-    [tenantId,conversationId,programId,needsDeparture?'BOOKING_DEPARTURE':'NONE']);
-  if(needsDeparture){await respond(await departureMenu(db,tenantId,programId,0));return;}
-  await startForm(programId,null,null);return;
+   await respond(buttonPayload('الحجز والمتابعة الفعلية مسؤولية موظف الشركة، مش الشات بوت. تحب أكلمك حد من الفريق؟',[
+      {id:'handoff',title:'التواصل مع موظف'},{id:'home',title:'القائمة'}]));
+   return;
  }
  if(action.startsWith('program:')&&isUuid(action.slice(8))){
   const r=await db.query(`SELECT id,title,summary,hotel_name,duration_days,departure_at,price_minor,currency,available_seats,booked_seats FROM programs
    WHERE tenant_id=$1 AND id=$2 AND status='PUBLISHED' AND available_seats>booked_seats`,[tenantId,action.slice(8)]);
   if(r.rowCount!==1)return respond(textPayload('البرنامج ده مش متاح. اكتب "القائمة" لعرض الخيارات.'));
   const p=r.rows[0];const desc=[String(p.title),p.summary?String(p.summary):'',p.hotel_name?'الفندق: '+p.hotel_name:'',p.duration_days?'المدة: '+p.duration_days+' يوم':'',p.departure_at?'السفر: '+String(p.departure_at).slice(0,10):'',`السعر الأساسي الاسترشادي: ${(Number(p.price_minor)/100).toFixed(2)} ${p.currency} (السعر النهائي حسب الموعد والغرفة)`].filter(Boolean).join('\n');
-  await respond(buttonPayload(desc,[{id:'book:'+p.id,title:'طلب حجز'},{id:'home',title:'القائمة'},{id:'handoff',title:'موظف'}]));return;
+  await respond(buttonPayload(desc+'\n\nالأسعار والمواعيد حسب بيانات الشركة؛ الموظف هو المسؤول عن الحجز النهائي.',[{id:'interest:'+p.id,title:'أنا مهتم'},{id:'home',title:'القائمة'},{id:'handoff',title:'موظف'}]));return;
  }
  if(action.startsWith('category:')){
   const category=action.slice(9);if(categoryOk(category)&&cfg.enabledCategories.includes(category)){
-   await db.query(`UPDATE whatsapp_conversation_states SET current_menu=$3,page_number=0,awaiting='NONE',booking_program_id=NULL,booking_departure_id=NULL,booking_room_package_id=NULL,booking_name=NULL,menu_version=$4 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,category,cfg.version]);
+   await db.query(`UPDATE whatsapp_conversation_states SET current_menu=$3,page_number=0,lead_stage='NONE',menu_version=$4 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,category,cfg.version]);
    await respond(await showMenu(db,tenantId,row,category,0));return;
   }
  }
@@ -308,6 +209,19 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  if(!action&&msgType==='text'){
    const approved=await findApprovedAnswer(db,tenantId,body);
    if(approved){await respond(textPayload(approved));return;}
+ }
+ // Lightweight Arabic topic detection only; approved catalog remains the sole factual source.
+ if(msgType==='text'&&!action){
+  const question=body.toLowerCase();
+  const candidate=/عمرة|عمره|العمرة|العمره/.test(question)?'UMRAH'
+   :/حج|الحج/.test(question)?'HAJJ'
+   :/شرم|الغردقة|دهب|العين السخنة|الساحل|رحلات داخل|داخلي/.test(question)?'DOMESTIC'
+   :/تركيا|دبي|الخارج|دولي|خارجية/.test(question)?'INTERNATIONAL':null;
+  if(candidate&&cfg.enabledCategories.includes(candidate)){
+   await db.query(`UPDATE whatsapp_conversation_states SET current_menu=$3,page_number=0,lead_stage='NONE'
+    WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,candidate]);
+   await respond(await showMenu(db,tenantId,row,candidate,0));return;
+  }
  }
  await respond(await showMenu(db,tenantId,row,'HOME',0));
 }
