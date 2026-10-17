@@ -1,7 +1,6 @@
 # Changelog
 
-2026-10-17 — Product specification, architecture, persistent cross-chat handover.
-2026-10-17 — Initial TS workspace, menu contracts, pure engine/pagination, initial SQL schema, 15 unit tests and CI skeleton.
-2026-10-17 — Reconstructed baseline locally and ran 15/15 menu and booking tests successfully.
-2026-10-17 — Added and pushed secure login/session foundations, tenant-scoped program and booking API, 2nd migration, transactional confirmation, CLI scripts, Arabic RTL admin UI and same-origin proxy.
-2026-10-17 — 29/29 local tests PASS, TS typecheck PASS, frontend syntax and static HTTP smoke PASS. Added PostgreSQL RLS/concurrency CI integration test but it was NOT executed due unavailable PostgreSQL and no confirmed GitHub Actions run.
+2026-10-17 — Master architecture, GitHub handover and code foundation.
+2026-10-17 — Base tenant auth, PostgreSQL program/bookings migrations, 29 historical local unit test results, initial Arabic dashboard and menu simulator.
+2026-10-17 — User opted to delay comprehensive testing until the product build is complete.
+2026-10-17 — Built richer company dashboard with visually separate modules: summary, catalog, bookings, offers, CRM, internal inbox, followups, reports, bot simulator, team/settings placeholders, and explicitly labeled browser-only demo mode. Added tenant-scoped sales workspace SQL + API and program travel details. No Meta connection or PostgreSQL acceptance.
