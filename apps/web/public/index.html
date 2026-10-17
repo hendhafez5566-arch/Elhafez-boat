@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light"><meta name="description" content="Elhafez Boat — لوحة إدارة المبيعات والحجوزات السياحية">
 <title>Elhafez Boat | منصة إدارة السياحة</title>
-<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/operations.css">
 </head>
 <body>
 <div id="login" class="login-wrap">
@@ -33,6 +33,7 @@
       <button class="nav" data-page="offers"><span class="nav-icon">◇</span><span>العروض</span></button>
       <button class="nav" data-page="bookings"><span class="nav-icon">▦</span><span>الحجوزات</span><span id="nav-pending" class="nav-counter" hidden>0</span></button>
       <button class="nav" data-page="inbox"><span class="nav-icon">▣</span><span>المحادثات</span></button>
+      <button class="nav" data-page="wa-inbox"><span class="nav-icon">◉</span><span>صندوق واتساب</span></button>
       <button class="nav" data-page="customers"><span class="nav-icon">♙</span><span>العملاء</span></button>
       <button class="nav" data-page="followups"><span class="nav-icon">◷</span><span>المتابعات</span></button>
     </nav>
@@ -41,6 +42,8 @@
       <button class="nav" data-page="reports"><span class="nav-icon">▥</span><span>التقارير</span></button>
       <button class="nav" data-page="simulator"><span class="nav-icon">☷</span><span>معاينة البوت</span></button>
       <button class="nav" data-page="team"><span class="nav-icon">♧</span><span>الموظفون</span></button>
+      <button class="nav" data-page="wa-connect"><span class="nav-icon">☏</span><span>ربط واتساب</span></button>
+      <button class="nav" data-page="subscription"><span class="nav-icon">◈</span><span>الاشتراك</span></button>
       <button class="nav" data-page="settings"><span class="nav-icon">⚙</span><span>الإعدادات</span></button>
     </nav>
     <div class="sidebar-spacer"></div>
@@ -72,7 +75,41 @@
       <section id="team" class="page" hidden>
         <div class="section-heading"><div><h2>الموظفون والصلاحيات</h2><p>عرض أعضاء الشركة وصلاحياتهم الحالية</p></div></div>
         <div class="panel table-panel"><div class="panel-heading"><div><h3>أعضاء الفريق</h3><p>إضافة الموظفين وإرسال الدعوات الرسمية جزء قادم من البناء</p></div><span class="chip subtle">قراءة فقط</span></div><div class="table-scroll"><table><thead><tr><th>الموظف</th><th>البريد الإلكتروني</th><th>الدور</th></tr></thead><tbody id="team-body"></tbody></table></div></div>
-        <div class="info-box panel-spacing">لا يوجد زر إضافة موظف وهمي؛ دعوات الموظفين واسترداد كلمات المرور سيتم بناؤها مع إجراءاتها الآمنة.</div>
+
+        <div class="ops-layout" style="margin-top:20px">
+          <div class="ops-panel"><h3>دعوة موظف</h3><form id="team-invite-form" class="ops-form">
+            <label>بريد الموظف<input type="email" name="email" required></label>
+            <label>الدور<select name="role"><option value="AGENT">موظف مبيعات</option><option value="VIEWER">عرض فقط</option><option value="MANAGER">مدير</option></select></label>
+            <button class="primary" type="submit">إنشاء دعوة</button></form>
+            <div id="team-invite-result" class="ops-result" hidden><strong>رابط الدعوة (يظهر مرة واحدة)</strong><input id="team-invite-link" readonly>
+              <button type="button" id="team-copy-invite" class="secondary">نسخ الرابط</button></div></div>
+          <div class="ops-panel"><h3>الدعوات السابقة</h3><div id="team-invitations"></div><h3>تعديل أدوار الفريق</h3><div id="team-role-controls"></div></div>
+        </div>
+
+      </section>
+
+      <section id="wa-inbox" class="page" hidden>
+        <div class="section-heading"><div><h2>صندوق محادثات واتساب</h2><p>الرسائل الحقيقية من رقم Meta المربوط بالشركة فقط. الردود في نافذة الخدمة المسموحة.</p></div><button class="secondary" type="button" id="wa-inbox-refresh">تحديث الرسائل</button></div>
+        <div class="ops-layout"><div class="ops-panel"><h3>المحادثات</h3><div id="wa-threads" aria-live="polite"></div></div>
+          <div class="ops-panel"><h3 id="wa-chat-title">اختار محادثة لعرض رسائلها</h3><div id="wa-chat" class="ops-chat"><p class="ops-muted">صندوق الوارد الحقيقي يبدأ في استقبال الرسائل بعد ربط WhatsApp Cloud API والتحقق من Webhook.</p></div>
+            <div class="ops-actions" id="wa-chat-tools" hidden><button id="wa-handoff" type="button" class="secondary">استلام المحادثة</button>
+              <form id="wa-reply-form" class="ops-form" style="flex:1"><label>رسالة الموظف<textarea name="body" rows="2" maxlength="2000" required placeholder="اكتب الرد للعميل"></textarea></label><button class="primary" type="submit" id="wa-reply" disabled>إضافة لطابور الإرسال</button></form></div>
+            <div class="ops-note">إرسال الرسالة لا يعني وصولها؛ التسليم يُتابَع من إشعارات Meta. بعد 24 ساعة من آخر رسالة للعميل يلزم قالب واتساب معتمد.</div>
+          </div></div>
+      </section>
+      <section id="wa-connect" class="page" hidden>
+        <div class="section-heading"><div><h2>ربط واتساب الرسمي</h2><p>الاتصال عبر Meta WhatsApp Cloud API؛ لا نستخدم أي وسائل دخول غير رسمية.</p></div></div>
+        <div class="ops-layout"><div class="ops-panel"><h3>ربط رقم جديد</h3>
+          <form class="ops-form" id="wa-connect-form"><label>Phone Number ID من Meta<input name="phoneNumberId" inputmode="numeric" pattern="[0-9]{5,30}" required></label>
+            <label>WhatsApp Business Account ID<input name="wabaId" inputmode="numeric" pattern="[0-9]{5,30}" required></label>
+            <label>Access Token (يُشفّر في الخادم)<input name="accessToken" type="password" minlength="20" autocomplete="off" required></label>
+            <button class="primary" type="submit">تحقق من Meta واربط الرقم</button></form>
+          <div class="ops-security">لا تضع التوكن في GitHub أو في ملاحظات الفريق. استخدام البيانات الحقيقية يحتاج إعداد Meta App Secret ومفتاح تشفير بالخادم.</div></div>
+          <div class="ops-panel"><h3>الأرقام المرتبطة</h3><div id="wa-connections"></div><div class="ops-note">الرابط لا يفعل الحساب التجاري أو موافقة Meta تلقائيًا؛ يجب إكمال إعداد الـWebhook وتصاريح Cloud API لدى Meta.</div></div></div>
+      </section>
+      <section id="subscription" class="page" hidden>
+        <div class="section-heading"><div><h2>اشتراك الشركة</h2><p>تفاصيل الباقة الحالية والحدود المسموح بها — إدارة الاشتراكات من حساب مالك المنصة.</p></div></div>
+        <div class="ops-panel" id="company-subscription"></div><p class="ops-note">الدفع الإلكتروني والفواتير التلقائية لم يتم تفعيلهما بعد؛ الحالة الحالية تُدار يدويًا من حساب مالك المنصة.</p>
       </section>
       <section id="settings" class="page" hidden>
         <div class="section-heading"><div><h2>إعدادات البوت والشركة</h2><p>عدّل مسودة رسالة الترحيب والأقسام المتاحة وانشرها كإصدار ثابت</p></div></div>
