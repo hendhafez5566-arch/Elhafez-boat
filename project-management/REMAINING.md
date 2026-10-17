@@ -1,19 +1,20 @@
-# Remaining / acceptance gates
+# Remaining before commercial delivery
 
-## Immediately blocking verified Stage 0 completion
-- Clean npm install and deterministic package-lock.json; verify scripts on checked out repository.
-- Execute migration 0001/0002 on isolated PostgreSQL and pass RLS/concurrency integration tests, fix any failures.
-- Complete API and Arabic dashboard real database E2E acceptance with non-superuser runtime role.
-- Write audit event records within mutating transactions; verify permission failures.
-- Add reliable deployment/runbook; confirm backups and restore.
+User order (2026-10-17): implement all functions and visual surfaces first; comprehensive acceptance suite is the FINAL phase, not intermittent phases.
 
-## Stage 1 after foundation verified
-- Real program attributes: departures, travel dates, room types, hotels, capacity / fare variants, images and offer snapshots.
-- Official Meta Cloud API onboarding/webhook signatures/idempotency and outbound queue; WhatsApp template/window rules.
-- Tenant configurable versioned menus and official WhatsApp Flows, booking forms and support takeover.
-- E2E with Meta test number then approved production number.
+## Incomplete business functionality
+- Departure-based programs: schedules, hotels, room allocation, pricing tiers, contracted/available seats, real booking rules and full change audit.
+- Automated WhatsApp: official Meta connection and webhook verify/signature/idempotency; outbound jobs, delivery receipts, service window and opt-in/template policies, WhatsApp Flows.
+- Conversation state and human agent routing; genuine customer chat and assignment. Current inbox is INTERNAL NOTES only.
+- Offers and packages beyond simple linked promotional announcements; media library.
+- Tenant invitation & password recovery; permission administration; reports/exports; intelligent grounded AI with permitted tools.
+- Owner platform: agency onboarding, billing/subscriptions, quotas and support.
+- Production readiness: backup, restore, alerting, migrations, DB grants, retained logs, performance/monitoring.
 
-## Subsequent stages
-Customer CRM, inbox, assignments, follow-ups and reports; grounded AI; owner superadmin and subscriptions; SaaS hardening and pilot.
+## Implemented partially, not final
+- Base programs, provisional booking/confirmation, customers, offers, follow-ups, internal conversation notes, Arabic dashboard and local-only demo simulator.
+- Team/settings pages currently explicit placeholders rather than real APIs.
+- SQL migration coverage: code written through 0004 but **no real PostgreSQL migration execution verified**.
 
-See docs/01-MASTER-PLAN.md. Do not mark DONE for code that was only written without actual runtime verification.
+## Final acceptance phase (only after feature completion)
+Execute all existing/new unit tests, PG integration + tenant isolation and booking concurrency, authenticated API E2E, browser UI, Meta test-number interaction/Flows, security/privacy, backup/restore, load testing. Fix findings and rerun until truly acceptable.
