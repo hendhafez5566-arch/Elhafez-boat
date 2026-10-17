@@ -46,7 +46,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
    JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
    LEFT JOIN tenant_subscriptions sub ON sub.tenant_id=j.tenant_id
    WHERE j.tenant_id=$1 AND j.status='PENDING' AND j.next_attempt_at<=now()
-   AND a.status='CONNECTED' AND (sub.tenant_id IS NULL OR (sub.status IN ('TRIAL','ACTIVE') AND sub.current_period_ends_at>now())) ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j SKIP LOCKED`,[tenantId]);
+   AND a.status='CONNECTED' AND sub.status IN ('TRIAL','ACTIVE') AND sub.current_period_ends_at>now() ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j SKIP LOCKED`,[tenantId]);
   if(pending.rowCount!==1){await tx.query('COMMIT');return false;}
   const job=pending.rows[0];
   // Interactive/text messages must not be dispatched after the WhatsApp 24h service window.
