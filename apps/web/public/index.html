@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light"><meta name="description" content="Elhafez Boat — مساعد المبيعات على واتساب">
 <title>Elhafez Boat | مساعد مبيعات واتساب</title>
-<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/operations.css">
+<link rel="stylesheet" href="/style.css"><link rel="stylesheet" href="/operations.css"><link rel="stylesheet" href="/flow-builder.css">
 </head>
 <body>
 <div id="login" class="login-wrap">
@@ -33,6 +33,7 @@
       <button class="nav" data-page="wa-inbox"><span class="nav-icon">◉</span><span>محادثات واتساب</span></button>
       <button class="nav" data-page="programs"><span class="nav-icon">▤</span><span>معلومات البرامج</span></button>
       <button class="nav" data-page="offers"><span class="nav-icon">◇</span><span>العروض</span></button>
+      <button class="nav" data-page="flow-builder"><span class="nav-icon">⑂</span><span>مصمم الشات بوت</span></button>
       <button class="nav" data-page="simulator"><span class="nav-icon">☷</span><span>معاينة ردود البوت</span></button>
     </nav>
     <div class="nav-section-label second">الإعدادات</div>
@@ -212,6 +213,44 @@
       <section id="subscription" class="page" hidden>
         <div class="section-heading"><div><h2>اشتراك الشركة</h2><p>تفاصيل الباقة الحالية والحدود المسموح بها — إدارة الاشتراكات من حساب مالك المنصة.</p></div></div>
         <div class="ops-panel" id="company-subscription"></div><p class="ops-note">الدفع الإلكتروني والفواتير التلقائية لم يتم تفعيلهما بعد؛ الحالة الحالية تُدار يدويًا من حساب مالك المنصة.</p>
+      </section>
+      <section id="flow-builder" class="page" hidden>
+        <div class="section-heading"><div><h2>مصمم الشات بوت — كل الأنشطة</h2>
+          <p>أنشئ تجربة عملائك بنفسك: رسائل، أزرار، قوائم، أسئلة، شروط، تصنيفات وتحويل لموظف. مناسب لأي شركة أو محل.</p></div>
+          <div class="builder-status"><span id="builder-version">لم يتم النشر</span><span id="builder-unsaved">مسودة</span></div>
+        </div>
+        <div class="builder-toolbar">
+          <label>نوع النشاط (قالب اختياري)<select id="builder-industry">
+            <option value="general">عام — أي نشاط</option><option value="shop">محل وتجارة</option>
+            <option value="restaurant">مطعم أو كافيه</option><option value="clinic">عيادة وخدمات</option>
+            <option value="realestate">عقارات</option><option value="education">تعليم وكورسات</option>
+            <option value="tourism">سياحة ورحلات</option>
+          </select></label>
+          <button class="secondary" id="builder-load-preset" type="button">استخدام قالب النشاط</button>
+          <label>اسم مسار المحادثة<input id="builder-name" maxlength="100" value="مساعد العملاء"></label>
+          <button class="primary" id="builder-save" type="button">حفظ المسودة</button>
+          <button class="primary" id="builder-publish" type="button">نشر البوت</button>
+        </div>
+        <div class="builder-layout">
+          <div class="builder-column"><h3>خطوات المحادثة</h3>
+            <div id="builder-nodes"></div><div class="builder-toolbar">
+            <label>نوع خطوة جديدة<select id="builder-add-type">
+              <option value="TEXT">رسالة نصية</option><option value="BUTTONS">أزرار الرد</option>
+              <option value="LIST">قائمة اختيارات</option><option value="INPUT">سؤال وجمع بيانات</option>
+              <option value="CONDITION">شرط وتفرع</option><option value="TAG">تصنيف عميل</option>
+              <option value="HANDOFF">تحويل لموظف</option><option value="END">نهاية</option>
+            </select></label><button id="builder-add" type="button" class="secondary">إضافة خطوة</button></div>
+          </div>
+          <div class="builder-column"><h3>خصائص الخطوة</h3><div id="builder-editor"></div></div>
+          <div class="builder-column"><h3>معاينة المحادثة</h3>
+            <p class="ops-muted">معاينة داخل المتصفح؛ لا ترسل رسائل حقيقية ولا تحفظ معلومات عملاء.</p>
+            <div id="builder-preview" class="builder-preview-window"></div>
+            <div id="builder-preview-options"></div>
+            <div class="builder-toolbar"><button type="button" id="builder-preview-reset" class="secondary">بدء المحادثة من الأول</button>
+              <button type="button" id="builder-export" class="secondary">نسخ تعريف البوت</button></div>
+            <p class="ops-note">القوائم والأزرار الفعلية تظهر بواجهة واتساب الرسمية عند ربط رقم Meta. معاينة المصمم ليست واتساب حقيقيًا.</p>
+          </div>
+        </div>
       </section>
       <section id="settings" class="page" hidden>
         <div class="section-heading"><div><h2>إعدادات البوت والشركة</h2><p>عدّل مسودة رسالة الترحيب والأقسام المتاحة وانشرها كإصدار ثابت</p></div></div>
