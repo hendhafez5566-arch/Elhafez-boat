@@ -1,3 +1,4 @@
+import {findPublishedCatalogAnswer} from './catalog.js';
 import {respondToFlow} from './flow-service.js';
 import { registerInterest, setLeadPartySize, readyForAgent } from './chatbot-leads.js';
 import { findApprovedAnswer } from './knowledge.js';
@@ -139,11 +140,31 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  }
  if(contact.rows[0].do_not_contact)return;
  if(status==='HUMAN')return; // Human takeover is always authoritative.
+ const catalogInterest=/^catalog-interest:([0-9a-f-]{36})$/i.exec(action);
+ if(catalogInterest){
+   const result=await db.query('SELECT id FROM chatbot_catalog_items WHERE tenant_id=$1 AND id=$2 AND status=$3',
+     [tenantId,catalogInterest[1],'PUBLISHED']);
+   if(result.rowCount!==1){await respond(textPayload('العرض ده مش متاح دلوقتي. اكتب القائمة علشان تشوف الخدمات.'));return;}
+   const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
+   await db.query('UPDATE chatbot_leads SET catalog_item_id=$3 WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,catalogInterest[1]]);
+   await readyForAgent(db,tenantId,leadId,conversationId,null);
+   await respond(textPayload('تمام، وصلت اهتماماتك للموظف المختص، وهيكمل معاك التفاصيل بنفسه.'));
+   return;
+ }
+
  // Generic published workflows take priority over old tourism-specific navigation.
  // Approved answers are permitted only when the exact company-approved question matches.
  if(msgType==='text'&&!action){
   const answer=await findApprovedAnswer(db,tenantId,body);
   if(answer){await respond(textPayload(answer));return;}
+  const catalog=await findPublishedCatalogAnswer(db,tenantId,body);
+  if(catalog){
+    await respond(buttonPayload(catalog.text,[
+      {id:'catalog-interest:'+catalog.id,title:'أنا مهتم'},
+      {id:'flow:restart',title:'القائمة'},
+      {id:'handoff',title:'موظف'}
+    ]));return;
+  }
  }
  const flowOutput=await respondToFlow(db,{
    tenantId,conversationId,contactId,
