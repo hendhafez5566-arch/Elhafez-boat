@@ -1,31 +1,32 @@
-# Revised master plan — WhatsApp chatbot only (2026-10-17)
+# Master Plan — Industry-neutral chatbot builder
 
-**The owner's explicit correction replaces all earlier broad tourism ERP/booking SaaS plans.** Primary source: [00-SCOPE-CHATBOT-ONLY.md](00-SCOPE-CHATBOT-ONLY.md).
+Authoritative scope: [universal chatbot SaaS](00-SCOPE-CHATBOT-ONLY.md). **All previous travel booking, payments, finance and ERP plans are obsolete.**
 
-## A. Chatbot and information (feature build)
-- Company connects official Meta WhatsApp Business Cloud API number.
-- Company enters only relevant **program/service info** (title, category, description, advertised price/dates), published FAQ and welcome/menu configuration.
-- Bot answers repetitive customer questions accurately, understands short Egyptian-Arabic utterances when possible, shows helpful interactive choices and knows when to ask for clarification.
-- Optional external LLM is allowed only to interpret natural-language intent **grounded** in approved company data; if provider unavailable, deterministic fallback menu/FAQ still works.
-- Never reserve seats, charge money, manage traveler documents or confirm a booking.
+## 1. Core generic engine and builder — IN PROGRESS
+- Unified flow node schema: TEXT / BUTTONS / LIST / INPUT / CONDITION / TAG / LINK / MEDIA / HANDOFF / END.
+- Industry presets and browser-only preview; validation of node links, choices, publish rules and no immediate infinite loops.
+- Tenant-specific mutable drafts, immutable published revisions and pinned conversational sessions.
+- Friendly visual editor with editable node properties and connections (card-based now; drag-and-drop canvas later).
+- Generic catalog of approved products, services and offers; company-defined category labels, optional descriptions, price text and HTTPS links.
 
-## B. Lead qualification and human handoff
-- Customer can mark **interest** in a program or ask for staff at any point.
-- Ask minimal relevant optional qualification questions (party size, rough timing; later budget only if demonstrably useful).
-- Store lead linked to real verified WhatsApp sender, contact, conversation and program; stages **INTERESTED / READY_FOR_AGENT / CONTACTED / CLOSED**.
-- Staff sees leads, preferences and chat, claims conversation; bot stops. Employee books/follows up outside this product.
+## 2. Customer communication
+- Official WhatsApp Business Cloud API webhook signature validation, interactive replies, dynamic published flows, human handoff, message queues and customer opt-out.
+- Reply keyword/trigger rules, segment tags and custom fields; approved response knowledge base.
+- Optional template and consent management, broadcasts and scheduled messages strictly according to Meta policy (not mandatory MVP).
 
-## C. Lean multi-agency operations
-- One intuitive Arabic RTL dashboard for leads, inbox, programs/services, offers, approved FAQ, basic staff roles and WhatsApp connection.
-- Minimal platform owner tenant/account activation and basic subscription control only to support selling the bot separately to companies. No billing ledger or automatic invoice/payments system.
-- Least-privilege company isolation, secure provider token storage, webhook signature verification, idempotency, consent/opt-out.
+## 3. Team and lead workspace
+- Shared inbox; customer details, captured custom answers and tags, lead stages, agent assignment and handoff.
+- Analytics for inquiry flow completions, leads and staff workload; simple permissions.
+- Company onboarding and tenant isolation; platform owner subscriptions only as needed to operate the SaaS.
 
-## D. Finish feature development then ONE final acceptance stage
-- Keep basic syntax/type safeguards as needed while editing.
-- One formal combined acceptance phase at the end: clean checkout/build, PostgreSQL migration + tenant RLS, Meta provider webhook and bot replies, qualified lead + human takeover, browser/mobile UX, security/load/failure recovery, privacy.
-- Fix defects and only then merge PR, provision hosting/domain and launch pilot.
+## 4. Extensions after the core is clean
+- Rich WhatsApp-specific Flows, template variations, interactive catalog previews, safe API/webhook/Sheets/Shopify/WooCommerce integrations and optional grounded AI provider.
+- Add channels later through adapters (website, Facebook, Instagram, Telegram) without coupling generic engine to any industry.
 
-## Explicitly removed from scope
-Booking/reservation APIs; payment/refund accounting; traveler documents; supplier allotments, multi-room inventory; automatic campaigns; advanced ERP features; finance and automated subscriptions/billing. Previous code related to these is legacy overbuild to retire, **not a feature backlog to finish**.
+## 5. Final acceptance as ONE stage (owner instruction)
+- Fresh code checkout, clean npm install/lockfile, migrations 0001–0016 and real PostgreSQL/RLS tests.
+- Visual/mobile flow builder, actual published WhatsApp lists/buttons/media, lead capture/handoff, consent/security, concurrency and message retries.
+- Meta test number and supported channel restrictions, privacy, performance, monitoring and backup/restore.
+- Only then merge draft PR, deploy pilot and assess commercial readiness.
 
-Status as of 2026-10-17: partial code exists in draft branch, including lead queue and bot handoff. **No verified live deployment or complete final acceptance yet.**
+**DO NOT BUILD** an internal reservation, inventory, payment, invoicing, supplier, accounting or traveler-document system.
