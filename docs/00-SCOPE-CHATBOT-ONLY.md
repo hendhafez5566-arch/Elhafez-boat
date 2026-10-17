@@ -1,35 +1,32 @@
-# AUTHORITATIVE PRODUCT SCOPE — WHATSAPP SALES ASSISTANT ONLY
+# AUTHORITATIVE PRODUCT SCOPE — GENERAL-PURPOSE CHATBOT SaaS
+**Updated by the owner 2026-10-17. This supersedes ALL previous tourism-only and broad ERP plans.**
 
-**Owner correction — 2026-10-17. Overrides conflicting older planning, master-plan, PR summaries or implementation assumptions.**
+## Vision
+**Elhafez Boat** is a flexible SaaS chatbot-building platform for **all companies and shops**, not merely tourism: retailers, restaurants, clinics, education, real estate, services, tourism and any other industry.
 
-## What Elhafez Boat IS
+Inspired by the broad **configurability** of platforms such as BotSailor, not a copy of their source code or design. A company connects its official messaging account, creates conversational experiences from blocks, answers FAQs, presents its own products/services and collects customer requests. Employees handle anything needing actual human sales, booking, payments or fulfilment in their existing company system. The platform is a customer communication/automation tool — **not a built-in ERP**.
 
-A lightweight, independent, multi-agency WhatsApp **sales-assistant chatbot** for tourism and Umrah/Hajj companies. Its value is answering repetitive questions, understanding what a customer wants, recommending agency-approved services/offers, and delivering a **qualified, actionable lead** to a human staff member. The bot replaces repetitive customer-chat handling, **not the company's reservation/accounting/operations software**.
+## Company-configurable building blocks
+- Text message and approved knowledge-base response.
+- WhatsApp quick reply buttons (at most 3), interactive lists (at most 10 rows), generic labels and arbitrary follow-up links.
+- Customer input: customizable field ID, text prompt and stored answer.
+- Conditions on stored fields; tags/labels, branch actions; human handoff; end.
+- HTTPS media: image, video, document or audio; HTTPS links.
+- Reusable industry presets but **no hardcoded industry, category, or product type in the flow engine**.
+- Draft, validation, versioned atomic publish and customer sessions pinned to a stable published revision.
+- Internal visual card-based builder and browser-only simulator; drag-and-drop canvas is **not yet implemented**.
+- Contact/lead fields and staff inbox, role-based access and customer opt-out.
+- Program/product/service content must be entered or approved by each company. Never invent prices, guarantees, availability or offers.
+- Optional future richer nodes: advanced CTA, product catalog dynamic blocks, WhatsApp Flows, schedules, keyword triggers, outbound webhooks with safe allowlists, integrations, approved templates and consent-based campaigns, grounded AI.
 
-### Customer journey
+## Platforms and channels
+Official **Meta WhatsApp Business Cloud API first**; keep a channel-neutral workflow engine capable of future website chat, Messenger/Instagram or Telegram adaptors. Do not claim those integrations are available until built and verified.
 
-1. Customer messages the company's own official WhatsApp number.
-2. Bot greets, understands the question or guides via official lists/buttons. Responds only using approved company program/service information, prices and policies; ask clarifying questions when necessary. Optional grounded AI can handle natural Arabic text.
-3. Bot identifies intent: what service/category/program interests the customer, approximate travel timing, party size, budget or preferences **only if useful and voluntarily provided**.
-4. Bot asks whether the customer wants a sales employee to contact/assist. A clear click/request marks **qualified lead / ready for human**.
-5. Staff dashboard/inbox displays customer identity/WhatsApp, interests, key answers, relevant company program, last messages and lead stage. Staff claims/replies and performs the **actual booking, payment and follow-up externally** using existing company processes.
-6. Human takeover stops automatic bot replies. Customer can request staff at any time. No false booking confirmation.
+## Data/architecture
+Multi-tenant SaaS, company-specific workflows and catalog, row level security, permissions, secrets stored securely, Meta webhook signatures, queue/idempotency, staff handoff. Platform owner can provision companies; a separate billing provider can be plugged in later if desired. **Do not build accounting, reservations, passports, supplier contracts, refunds, inventory, or an ERP.**
 
-### Minimum agency dashboard
-- WhatsApp connection, bot messages/menus, approved Q&A and service/program cards with informative dates/prices.
-- Unified WhatsApp inbox showing **New / Interested / Ready for staff / Handed off / Closed** leads, search, assignee and short context summary; optional minimal team roles.
-- Lightweight statistics: inquiries handled, interests, qualified leads, employee handoffs, unattended conversations.
-- Platform-level agency accounts/subscription permissions only if required to sell this chatbot to multiple companies. Do **not** build a general ERP.
-- Arabic-first, simple RTL UX and a meaningful browser-only bot simulator clearly marked DEMO.
+## The main customer story
+Shop connects WhatsApp -> owner builds a greeting with **Products / Prices / Contact employee** buttons -> customer taps a menu or asks a question -> bot gives approved product/service facts or asks for custom details -> qualified lead appears in the company's inbox -> staff takes over. A clinic configures the exact same engine with **Services / Working hours / Ask receptionist**. A tourism firm uses it for travel packages. No code changes per industry.
 
-### Strict boundaries / MUST NOT BUILD
-- No booking/reservation execution, booking approvals, capacity allocation, final traveler booking records or confirmed service status inside bot.
-- No invoices, ledgers, bank/payments, refunds, tourism financial accounting, supplier contracts, passports, visas, traveler documents or complex room allotment logic.
-- No automatic customer order/payment follow-up. Human does that.
-- No automated marketing campaigns without distinct future approval. Consent and Meta's message rules still apply for service messages.
-- Prior code for bookings, departure/room allocation, commercial billing, complex workflows **is legacy overbuild** and NOT the intended MVP. Preserve git history but remove it from customer bot flow and primary UI/API surface; do not keep expanding it. The presence of code does not mean owner approved feature scope.
-
-### The product acceptance scenario (final testing stage ONLY)
-Company edits service card/approved FAQ -> customer asks in natural Arabic or selects menu -> bot replies accurately -> client indicates interest -> bot captures relevant answers -> **qualified lead** appears in employee inbox -> employee takes over and uses the company's own reservation workflow. Confirm that **no booking/payment/financial action** was performed by Elhafez Boat.
-
-**Process:** Owner wants feature implementation first, one formal end-to-end acceptance phase at the end. Lightweight build/type checking during construction is allowed; never claim full readiness without evidence. Repo stays PUBLIC by owner's preference; never commit real secrets or customer data.
+## Delivery and verification
+Owner prefers implementing the full agreed chatbot-building feature set first, followed by **one formal comprehensive acceptance campaign**. Lightweight TypeScript and JS syntax checks during development are fine. Real Meta provider access and PostgreSQL credentials not yet connected. Never assert a prototype is fully equivalent to BotSailor or commercially approved.
