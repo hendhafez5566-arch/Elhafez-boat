@@ -1,3 +1,4 @@
+import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp, getFlowSettings, saveFlowSettings } from './whatsapp.js';
 import { createTeamInvite, listTeamInvitations, revokeTeamInvite, updateTeamRole, acceptTeamInvite } from './team.js';
 import { platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
@@ -104,6 +105,10 @@ const server=createServer(async(req,res)=>{
         return r.rows[0]??{status:'NOT_CONFIGURED',planCode:null};
       }));
     }
+    if(req.method==='GET'&&pathname==='/api/v1/knowledge')return json(res,200,await run(tx=>listKnowledge(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/knowledge')return json(res,201,await runBody((tx,input)=>createKnowledge(tx,actor,input)));
+    const kbPublish=/^\/api\/v1\/knowledge\/([^/]+)\/publish$/.exec(pathname);
+    if(req.method==='PATCH'&&kbPublish)return json(res,200,await run(tx=>publishKnowledge(tx,actor,kbPublish[1])));
     if(req.method==='GET'&&pathname==='/api/v1/summary')return json(res,200,await run(tx=>getSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/contacts')return json(res,200,await run(tx=>listContacts(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/contacts')return json(res,201,await runBody((tx,input)=>addContact(tx,actor,input)));
