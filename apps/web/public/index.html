@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>Elhafez Boat | إدارة شركات السياحة</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+<div id="login" class="login-wrap">
+  <form id="login-form" class="login-card">
+    <div class="brand-icon">E</div>
+    <h1>Elhafez Boat</h1>
+    <p>منصة إدارة المبيعات والحجوزات السياحية</p>
+    <label>رمز الشركة<input name="tenantSlug" autocomplete="organization" placeholder="agency-name" required maxlength="120" /></label>
+    <label>البريد الإلكتروني<input name="email" type="email" autocomplete="username" required maxlength="254" /></label>
+    <label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required minlength="12" /></label>
+    <button type="submit" class="primary">دخول لوحة التحكم</button>
+    <p class="hint">بيئة تطوير — يلزم تشغيل الـ API وقاعدة البيانات أولًا.</p>
+    <div id="login-error" role="alert" class="error" hidden></div>
+  </form>
+</div>
+<div id="app" class="layout" hidden>
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">E</div><div><b>Elhafez Boat</b><small>Tourism Sales Platform</small></div></div>
+    <nav aria-label="أقسام لوحة التحكم">
+      <button type="button" class="nav active" data-page="overview">⌂ <span>الرئيسية</span></button>
+      <button type="button" class="nav" data-page="programs">▤ <span>البرامج السياحية</span></button>
+      <button type="button" class="nav" data-page="bookings">▣ <span>طلبات الحجز</span></button>
+      <button type="button" class="nav" data-page="simulator">☏ <span>معاينة قوائم واتساب</span></button>
+    </nav>
+    <div class="sidebar-note">نسخة تطوير أولية<br />الربط المباشر بواتساب غير مفعّل</div>
+    <button id="logout" class="logout">تسجيل الخروج</button>
+  </aside>
+  <div class="workspace">
+    <header class="topbar"><div><small id="crumb">لوحة المتابعة</small><h1 id="page-title">نظرة عامة</h1></div><div class="identity"><span class="dot"></span><span id="user-role">مستخدم</span></div></header>
+    <main>
+      <div id="notice" class="notice" role="status"></div>
+      <section id="overview" class="page">
+        <div class="metric-grid"><div class="metric"><small>البرامج المنشورة</small><strong id="metric-active">—</strong><span>متاحة للحجز المبدئي</span></div><div class="metric"><small>طلبات جديدة</small><strong id="metric-pending">—</strong><span>بانتظار المراجعة</span></div><div class="metric"><small>الحجوزات المؤكدة</small><strong id="metric-confirmed">—</strong><span>بعد فحص السعة</span></div></div>
+        <div class="panel"><h2>البدء السريع</h2><p>أنشئ برنامجًا سياحيًا، وانشره، ثم سجل طلب حجز من قسم الحجوزات. صفحة المعاينة تعرض القوائم الداخلية فقط؛ الربط الرسمي بواتساب مرحلة منفصلة.</p><div class="actions"><button type="button" class="primary" data-goto="programs">إدارة البرامج</button><button type="button" class="secondary" data-goto="bookings">عرض الطلبات</button></div></div>
+      </section>
+      <section id="programs" class="page" hidden>
+        <div class="section-heading"><div><h2>البرامج السياحية</h2><p>العمرة، الحج، والرحلات الداخلية والخارجية</p></div><button id="toggle-program-form" type="button" class="primary">+ إضافة برنامج</button></div>
+        <form id="program-form" class="panel form-grid" hidden>
+          <label class="wide">اسم البرنامج<input name="title" required maxlength="160" placeholder="مثال: عمرة شهر رمضان" /></label>
+          <label>نوع البرنامج<select name="category"><option value="UMRAH">عمرة</option><option value="HAJJ">حج</option><option value="DOMESTIC">سياحة داخلية</option><option value="INTERNATIONAL">سياحة خارجية</option></select></label>
+          <label>العملة<select name="currency"><option>EGP</option><option>SAR</option><option>USD</option><option>EUR</option><option>AED</option></select></label>
+          <label>السعر للفرد<input name="price" type="number" min="0" max="90071992547409" step="0.01" required /></label>
+          <label>إجمالي المقاعد<input name="availableSeats" type="number" min="0" max="100000" step="1" required /></label>
+          <div class="wide actions"><button type="submit" class="primary">حفظ كمسودة</button><button type="button" class="secondary" id="cancel-program">إلغاء</button></div>
+        </form>
+        <div class="panel table-panel"><table><thead><tr><th>البرنامج</th><th>النوع</th><th>السعر</th><th>السعة المتبقية</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="programs-body"></tbody></table></div>
+      </section>
+      <section id="bookings" class="page" hidden>
+        <div class="section-heading"><div><h2>طلبات الحجز</h2><p>الطلب المبدئي لا يعني الحجز المؤكد</p></div><button id="toggle-booking-form" type="button" class="primary">+ طلب حجز</button></div>
+        <form id="booking-form" class="panel form-grid" hidden>
+          <label class="wide">البرنامج<select name="programId" id="booking-programs" required></select></label>
+          <label>اسم العميل<input name="customerName" required minlength="2" maxlength="120" /></label>
+          <label>رقم الهاتف<input name="customerPhone" required pattern="\+?[0-9]{8,15}" placeholder="201xxxxxxxxx" /></label>
+          <label>عدد الأفراد<input name="partySize" type="number" min="1" max="100" step="1" value="1" required /></label>
+          <div class="wide actions"><button type="submit" class="primary">تسجيل طلب مبدئي</button><button type="button" class="secondary" id="cancel-booking">إلغاء</button></div>
+        </form>
+        <div class="panel table-panel"><table><thead><tr><th>العميل</th><th>البرنامج</th><th>الأفراد</th><th>السعر المرجعي</th><th>الحالة</th><th>إجراء</th></tr></thead><tbody id="bookings-body"></tbody></table></div>
+      </section>
+      <section id="simulator" class="page" hidden><div class="section-heading"><div><h2>معاينة القوائم</h2><p>محاكاة داخلية، وليست رسالة واتساب حقيقية</p></div></div><div class="phone"><div class="phone-head">Elhafez Boat <small>نموذج تفاعلي</small></div><div id="sim-messages" class="chat"><div class="bubble">أهلًا بيك 👋 اختار نوع الرحلة اللي بتدور عليها.</div></div><div class="sim-options"><button type="button" data-category="UMRAH">برامج العمرة</button><button type="button" data-category="HAJJ">برامج الحج</button><button type="button" data-category="DOMESTIC">السياحة الداخلية</button><button type="button" data-category="INTERNATIONAL">السياحة الخارجية</button></div></div></section>
+    </main>
+  </div>
+</div>
+<script type="module" src="/app.js"></script>
+</body>
+</html>
