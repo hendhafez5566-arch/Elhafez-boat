@@ -1,0 +1,8 @@
+{
+  "name": "@elhafez/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --experimental-strip-types src/server.ts"
+  }
+}
