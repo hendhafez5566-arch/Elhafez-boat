@@ -1,3 +1,4 @@
+import {respondToFlow} from './flow-service.js';
 import { registerInterest, setLeadPartySize, readyForAgent } from './chatbot-leads.js';
 import { findApprovedAnswer } from './knowledge.js';
 /** Official Meta Cloud API; no unofficial WhatsApp libraries or browser automation. */
@@ -129,10 +130,29 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  if(/^(start|اشترك|تفعيل الرسائل)$/i.test(body.trim())){
    await db.query('UPDATE contacts SET do_not_contact=false WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
    await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',true,'Customer requested service-message resumption only')`,[tenantId,contactId]);
-   await respond(await showMenu(db,tenantId,row,'HOME',0));return;
+   if(status==='HUMAN'){
+     await respond(textPayload('تم تفعيل الردود الخدمية. الموظف المسؤول هيتابع محادثتك.'));return;
+   }
+   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true});
+   for(const payload of restarted.payloads)await respond(payload);
+   return;
  }
  if(contact.rows[0].do_not_contact)return;
- if(status==='HUMAN')return; // no bot takeover while human handles thread
+ if(status==='HUMAN')return; // Human takeover is always authoritative.
+ // Generic published workflows take priority over old tourism-specific navigation.
+ // Approved answers are permitted only when the exact company-approved question matches.
+ if(msgType==='text'&&!action){
+  const answer=await findApprovedAnswer(db,tenantId,body);
+  if(answer){await respond(textPayload(answer));return;}
+ }
+ const flowOutput=await respondToFlow(db,{
+   tenantId,conversationId,contactId,
+   actionId:action==='home'?'flow:restart':action,
+   body,fromWhatsApp:true
+ });
+ for(const payload of flowOutput.payloads)await respond(payload);
+ return;
+
  const cfg=await publishedConfig(db,tenantId);
  // Product scope: chatbot answers and qualifies enquiries; NEVER creates reservations.
  if(interactive.type==='nfm_reply'){
