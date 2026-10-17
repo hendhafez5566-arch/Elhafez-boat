@@ -4,7 +4,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
  const idPattern=/^[a-z][a-z0-9_-]{0,31}$/;
- const types={START:'بداية',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',HANDOFF:'تحويل لموظف',END:'نهاية'};
+ const types={START:'بداية',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
  const deep=v=>JSON.parse(JSON.stringify(v));
  const preset=(industry='general')=>{
    const cards={general:['الخدمات','العروض'],shop:['المنتجات','الأسعار والمقاسات'],tourism:['البرامج','الأسعار والمواعيد'],clinic:['خدمات العيادة','ساعات العمل'],restaurant:['المنيو','فروع المطعم'],realestate:['العقارات','استفسار عن زيارة'],education:['الكورسات','مواعيد التسجيل']};
@@ -67,6 +67,8 @@ export function initFlowBuilder({state,api,notify,execute}){
        :kind==='BUTTONS'||kind==='LIST'?{id:node.id,type:kind,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]}
        :kind==='INPUT'?{id:node.id,type:'INPUT',text:'ما هي المعلومة التي نحتاجها؟',field:'customer_need',next}
        :kind==='TAG'?{id:node.id,type:'TAG',tag:'interested',next}
+       :kind==='MEDIA'?{id:node.id,type:'MEDIA',mediaKind:'image',url:'https://example.com/image.jpg',caption:'',next}
+       :kind==='LINK'?{id:node.id,type:'LINK',text:'تفاصيل إضافية',url:'https://example.com',next}
        :kind==='END'||kind==='HANDOFF'?{id:node.id,type:kind,text:kind==='END'?'شكرًا لتواصلك معانا.':'هحوّلك للموظف المسؤول.'}
        :{...generic,type:'TEXT'};
      markDirty();renderAll();
@@ -119,6 +121,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    else if(type==='INPUT')flow.nodes.push({id,type,text:'اكتب إجابتك من فضلك',field:'answer_'+n,next});
    else if(type==='CONDITION')flow.nodes.push({id,type,field:'answer_'+n,operator:'exists',yes:next,no:next});
    else if(type==='TAG')flow.nodes.push({id,type,tag:'interested',next});
+   else if(type==='MEDIA')flow.nodes.push({id,type,mediaKind:'image',url:'https://example.com/image.jpg',caption:'',next});
+   else if(type==='LINK')flow.nodes.push({id,type,text:'اعرف التفاصيل من الرابط',url:'https://example.com',next});
    else if(type==='HANDOFF'||type==='END')flow.nodes.push({id,type,text:type==='HANDOFF'?'هحوّل كلامك لموظف يساعدك.':'شكرًا لتواصلك معانا.'});
    else flow.nodes.push({id,type:'TEXT',text:'اكتب رسالة للعميل هنا',next});
    selected=id;markDirty();renderAll();
@@ -141,8 +145,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    for(let steps=0;steps<30;steps++){
      const node=map.get(id);if(!node){bubble('الرابط مش صحيح: '+id);return}
-     if(node.type==='START'||node.type==='TAG'||node.type==='TEXT'){
-       if(node.type==='TEXT')bubble(node.text);
+     if(node.type==='START'||node.type==='TAG'||node.type==='TEXT'||node.type==='MEDIA'||node.type==='LINK'){
+       if(node.type==='TEXT')bubble(node.text);if(node.type==='LINK')bubble(node.text+'\n'+node.url);if(node.type==='MEDIA')bubble('['+node.mediaKind+'] '+node.url+(node.caption?'\n'+node.caption:''));
        if(node.type==='TAG'&&!preview.tags.includes(node.tag))preview.tags.push(node.tag);
        id=node.next;continue;
      }
