@@ -255,10 +255,18 @@ export async function handleVerifiedWebhook(pool:SqlPool&SqlClient,payload:unkno
 export async function whatsappInbox(db:SqlClient,actor:Actor){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
  return (await db.query(`SELECT c.id,c.status,c.assigned_user_id,c.last_message_at,c.last_customer_message_at,
-  k.full_name AS customer_name,k.phone,k.do_not_contact,coalesce((SELECT count(*) FROM conversation_messages m
+  k.full_name AS customer_name,k.phone,k.do_not_contact,
+  l.id AS lead_id,l.stage AS lead_stage,l.party_size,l.travel_preference,
+  p.title AS interested_program,
+  coalesce((SELECT count(*) FROM conversation_messages m
    WHERE m.tenant_id=c.tenant_id AND m.conversation_id=c.id AND m.kind='INBOUND'),0)::int AS inbound_count
-  FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
-  WHERE c.tenant_id=$1 AND c.channel='WHATSAPP' ORDER BY c.last_message_at DESC NULLS LAST LIMIT 150`,[actor.tenantId])).rows;
+  FROM conversations c
+  JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
+  LEFT JOIN chatbot_leads l ON l.tenant_id=c.tenant_id AND l.conversation_id=c.id
+  LEFT JOIN programs p ON p.tenant_id=c.tenant_id AND p.id=l.program_id
+  WHERE c.tenant_id=$1 AND c.channel='WHATSAPP'
+  ORDER BY CASE WHEN l.stage='READY_FOR_AGENT' THEN 0 ELSE 1 END,
+   c.last_message_at DESC NULLS LAST LIMIT 150`,[actor.tenantId])).rows;
 }
 export async function whatsappThread(db:SqlClient,actor:Actor,conversationId:string){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);if(!isUuid(conversationId))throw new HttpFailure(400,'Invalid conversation ID');
