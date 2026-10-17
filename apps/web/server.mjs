@@ -3,7 +3,17 @@ import { readFile } from 'node:fs/promises';
 const port=Number(process.env.WEB_PORT??3000);
 const api=new URL(process.env.API_INTERNAL_ORIGIN??'http://127.0.0.1:4000');
 if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an internal http URL behind trusted network boundaries');
-const assets={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8']};
+const assets={
+ '/':['index.html','text/html; charset=utf-8'],
+ '/app.js':['app.js','text/javascript; charset=utf-8'],
+ '/style.css':['style.css','text/css; charset=utf-8'],
+ '/operations.js':['operations.js','text/javascript; charset=utf-8'],
+ '/operations.css':['operations.css','text/css; charset=utf-8'],
+ '/platform.html':['platform.html','text/html; charset=utf-8'],
+ '/platform.js':['platform.js','text/javascript; charset=utf-8'],
+ '/join.html':['join.html','text/html; charset=utf-8'],
+ '/join.js':['join.js','text/javascript; charset=utf-8']
+};
 const server=createServer(async(req,res)=>{
  const path=new URL(req.url??'/',`http://localhost:${port}`).pathname;
  if(path.startsWith('/api/')||path==='/health'){
@@ -13,6 +23,6 @@ const server=createServer(async(req,res)=>{
    req.pipe(upstream);return;
  }
  if(req.method!=='GET'||!(path in assets)){res.writeHead(404);res.end('Not found');return}
- const [filename,type]=assets[path];try{const body=await readFile(new URL('public/'+filename,import.meta.url));res.writeHead(200,{'content-type':type,'x-content-type-options':'nosniff','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'cache-control':'no-store'});res.end(body)}catch{res.writeHead(500);res.end('Asset unavailable')}
+ const [filename,type]=assets[path];try{const body=await readFile(new URL('public/'+filename,import.meta.url));res.writeHead(200,{'content-type':type,'x-content-type-options':'nosniff','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'cache-control':'no-store','referrer-policy':'no-referrer','x-frame-options':'DENY'});res.end(body)}catch{res.writeHead(500);res.end('Asset unavailable')}
 });
 server.listen(port,()=>console.log('Elhafez Boat dashboard http://127.0.0.1:'+port));
