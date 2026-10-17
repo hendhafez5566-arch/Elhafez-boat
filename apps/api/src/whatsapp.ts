@@ -297,7 +297,7 @@ export async function whatsappInbox(db:SqlClient,actor:Actor){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
  return (await db.query(`SELECT c.id,c.status,c.assigned_user_id,c.last_message_at,c.last_customer_message_at,
   k.full_name AS customer_name,k.phone,k.do_not_contact,
-  l.id AS lead_id,l.stage AS lead_stage,l.party_size,l.travel_preference,
+  l.id AS lead_id,l.stage AS lead_stage,l.party_size,l.travel_preference,l.custom_fields,
   p.title AS interested_program,
   coalesce((SELECT count(*) FROM conversation_messages m
    WHERE m.tenant_id=c.tenant_id AND m.conversation_id=c.id AND m.kind='INBOUND'),0)::int AS inbound_count
