@@ -93,9 +93,12 @@ async function showMenu(db:SqlClient,tenantId:string,state:Record<string,unknown
  const cfg=await publishedConfig(db,tenantId);
  if(category==='HOME')return listPayload(cfg.welcomeText,[...cfg.enabledCategories.map(k=>({id:'category:'+k,title:categoryTitles[k]||k,description:'البرامج المتاحة'})),{id:'handoff',title:'موظف المبيعات',description:'التحدث مع مسؤول الحجز'}]);
  if(!categoryOk(category)||!cfg.enabledCategories.includes(category))return showMenu(db,tenantId,state,'HOME',0);
- const result=await db.query(`SELECT id,title,price_minor,currency FROM programs WHERE tenant_id=$1 AND category=$2 AND status='PUBLISHED' AND available_seats>booked_seats
-  ORDER BY departure_at NULLS LAST,created_at DESC LIMIT 9 OFFSET $3`,[tenantId,category,page*8]);
- const entries=result.rows.slice(0,8).map(p=>({id:'program:'+p.id,title:String(p.title),description:`${(Number(p.price_minor)/100).toFixed(2)} ${p.currency}`}));
+ const result=await db.query(`SELECT id,title,price_minor,currency FROM programs p WHERE p.tenant_id=$1 AND p.category=$2 AND p.status='PUBLISHED' AND p.available_seats>p.booked_seats
+   AND (NOT EXISTS(SELECT 1 FROM program_departures d0 WHERE d0.tenant_id=p.tenant_id AND d0.program_id=p.id)
+     OR EXISTS(SELECT 1 FROM program_departures d1 WHERE d1.tenant_id=p.tenant_id AND d1.program_id=p.id
+       AND d1.status='ACTIVE' AND d1.depart_at>now() AND d1.seats_total>d1.seats_booked))
+  ORDER BY p.departure_at NULLS LAST,p.created_at DESC LIMIT 9 OFFSET $3`,[tenantId,category,page*8]);
+ const entries=result.rows.slice(0,8).map(p=>({id:'program:'+p.id,title:String(p.title),description:`سعر أساسي ${(Number(p.price_minor)/100).toFixed(2)} ${p.currency}`}));
  if(page>0)entries.push({id:`page:${category}:${page-1}`,title:'السابق',description:'رجوع للصفحة السابقة'});
  if(result.rows.length>8)entries.push({id:`page:${category}:${page+1}`,title:'التالي',description:'المزيد من البرامج'});
  if(entries.length===0)return textPayload('لا توجد برامج متاحة حاليًا. اكتب "القائمة" للعودة أو اطلب موظف المبيعات.');
