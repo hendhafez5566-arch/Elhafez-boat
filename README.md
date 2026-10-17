@@ -49,3 +49,19 @@ npm run dev:web
 Provide all environment variables in an untracked secret store and review `.env.example`. Separate privileged migration/platform roles from non-owner runtime roles; **never run with production credentials during local work**.
 
 **Acceptance strategy:** user requested one complete formal acceptance round after the entire feature scope is built. Existing tests remain committed but full DB/browser/Meta/provider tests have not been executed for this build. No merge or commercial deployment should happen before their proof.
+
+
+## Development branch overview — October 17, 2026 (not release-tested)
+
+Source on `feat/stage0-foundation` now includes:
+- Agency admin dashboard: tourism programs, departures, hotel/room packages, provisional/confirmed/cancelled bookings, offers, CRM and followups; Arabic RTL design and local browser-only demo.
+- Official WhatsApp Cloud API adapter and sender worker (signed webhook, encrypted connection, inbound/outbound conversation, native menus/buttons, optional published Meta Flow, staff handoff).
+- Approved knowledge/FAQ and separately consent-controlled, Meta-approved static template registration and single-recipient sending.
+- Team invitation acceptance and role administration; separate platform owner tenant console and manually managed subscription plans.
+- PostgreSQL migrations through **0012** (unapplied here), API/service implementation, reference Docker and backup ops runbook.
+
+**Not implemented/live**: real Meta number/Flow onboarding and sandbox acceptance, genuine generative AI model integration, automatic subscription billing/invoices, complete traveler/financial workflow, production deployment and monitoring; final real DB/browser/provider/security/load/restore acceptance. Refer to [current status](project-management/CURRENT-STATUS.md), [remaining](project-management/REMAINING.md), [handover](project-management/HANDOVER.md).
+
+Dev/reference operations: [deploy/README.md](deploy/README.md). WhatsApp instructions: [docs/13-WHATSAPP-OPERATIONS.md](docs/13-WHATSAPP-OPERATIONS.md).
+
+The repository remains PUBLIC by owner request; do not commit tokens, payment secrets or actual personal data.
