@@ -125,12 +125,19 @@ export async function createBooking(db: SqlClient, actor: Actor, data: unknown):
   if(found.rowCount!==1)throw new HttpFailure(404,'Published program not found');
   const p=found.rows[0];
   if(b.partySize>Number(p.available_seats)-Number(p.booked_seats))throw new HttpFailure(409,'Insufficient remaining program capacity');
+  const departureExists=await db.query('SELECT 1 FROM program_departures WHERE tenant_id=$1 AND program_id=$2 LIMIT 1',[actor.tenantId,b.programId]);
+  if(departureExists.rowCount && !b.departureId)throw new HttpFailure(409,'Select a departure for this program');
+  if(b.departureId && !departureExists.rowCount)throw new HttpFailure(409,'Program does not have selectable departures');
   if(b.departureId){
-    const departure=await db.query(`SELECT seats_total,seats_booked FROM program_departures WHERE tenant_id=$1 AND program_id=$2 AND id=$3 AND status='ACTIVE' FOR SHARE`,[actor.tenantId,b.programId,b.departureId]);
+    const departure=await db.query(`SELECT seats_total,seats_booked FROM program_departures WHERE tenant_id=$1 AND program_id=$2 AND id=$3 AND status='ACTIVE' AND depart_at>now() FOR SHARE`,[actor.tenantId,b.programId,b.departureId]);
     if(departure.rowCount!==1)throw new HttpFailure(404,'Active departure not found');
     if(b.partySize>Number(departure.rows[0].seats_total)-Number(departure.rows[0].seats_booked))throw new HttpFailure(409,'Insufficient departure capacity');
   }
   let rateMinor=p.price_minor,rateCurrency=p.currency,roomUnits:number|null=null;
+  if(b.departureId){
+    const roomExists=await db.query('SELECT 1 FROM program_room_packages WHERE tenant_id=$1 AND program_id=$2 AND departure_id=$3 LIMIT 1',[actor.tenantId,b.programId,b.departureId]);
+    if(roomExists.rowCount && !b.roomPackageId)throw new HttpFailure(409,'Select a room for this departure');
+  }
   if(b.roomPackageId){
     const room=await db.query(`SELECT occupancy,units_total,units_booked,price_minor,currency FROM program_room_packages WHERE tenant_id=$1 AND program_id=$2 AND departure_id=$3 AND id=$4 FOR SHARE`,[actor.tenantId,b.programId,b.departureId,b.roomPackageId]);
     if(room.rowCount!==1)throw new HttpFailure(404,'Room package not found');
