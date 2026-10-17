@@ -163,9 +163,53 @@ export function initOperations({state,api,notify,execute,canEdit}) {
     const o=node('option',t.name+' ('+t.language+')');o.value=t.id;$('template-send-template').append(o);
   }
  }
+ const leadLabels={INTERESTED:'مهتم — البوت يجمع التفاصيل',READY_FOR_AGENT:'جاهز لموظف',CONTACTED:'تم التواصل',CLOSED:'مغلق'};
+ let leadsCache=[],leadFilter='ALL';
+ function renderLeadRows(){
+  const target=$('lead-list-body');target.replaceChildren();
+  const term=$('lead-search').value.trim().toLowerCase();
+  const rows=leadsCache.filter(l=>(leadFilter==='ALL'||l.stage===leadFilter)&&
+    (String(l.customer_name||'').toLowerCase().includes(term)||String(l.phone||'').includes(term)||
+      String(l.program_title||'').toLowerCase().includes(term)));
+  $('lead-list-count').textContent=rows.length+' عميل';
+  if(!rows.length){
+    const tr=node('tr');const td=node('td','لا توجد اهتمامات في هذا التصنيف');td.colSpan=6;tr.append(td);target.append(tr);
+    return;
+  }
+  for(const lead of rows){
+   const tr=node('tr');
+   const fields=[lead.customer_name+' — '+lead.phone,lead.program_title||'استفسار عام',
+     lead.party_size??'لسه مش محدد',lead.travel_preference||'لسه مش محدد',
+     leadLabels[lead.stage]||lead.stage];
+   for(const value of fields)tr.append(node('td',value));
+   const actions=node('td');
+   if(lead.stage==='READY_FOR_AGENT'){
+      actions.append(button('عرض واتساب',async()=>{document.querySelector('[data-page="wa-inbox"]')?.click()}));
+   }
+   if(lead.stage!=='CLOSED'&&state.role!=='VIEWER'){
+     actions.append(button(lead.stage==='CONTACTED'?'إغلاق':'تم التواصل',async()=>{
+       const next=lead.stage==='CONTACTED'?'CLOSED':'CONTACTED';
+       await api('/leads/'+lead.id+'/stage',{method:'PATCH',body:{stage:next}});
+       await leadsView();notify('تم تحديث مرحلة اهتمام العميل — بدون إجراء حجز');
+     }));
+   }
+   tr.append(actions);target.append(tr);
+  }
+ }
+ async function leadsSummary(){
+  const value=await api('/leads/summary');
+  for(const [key,id] of [['total','lead-metric-total'],['ready','lead-metric-ready'],
+    ['contacted','lead-metric-contacted'],['interested','lead-metric-interested']]){
+    $(id).textContent=String(value[key]??0);
+  }
+ }
+ async function leadsView(){
+  leadsCache=await api('/leads');renderLeadRows();
+  await leadsSummary();
+ }
  async function onPage(page){
-  if(!['wa-inbox','wa-connect','team','subscription','settings','inventory','bookings','templates'].includes(page))return;
-  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();if(page==='templates')await templates();}
+  if(!['overview','leads','wa-inbox','wa-connect','team','subscription','settings'].includes(page))return;
+  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='overview')await leadsSummary();if(page==='leads')await leadsView();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();if(page==='templates')await templates();}
   catch(e){notify(e.message||'تعذر تحميل الصفحة','error');}
  }
  $('wa-connect-form')?.addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();const form=e.currentTarget;execute(async()=>{const d=getForm(form);await api('/whatsapp/connection',{method:'POST',body:d});form.reset();await connection();notify('تم التحقق من رقم Meta وحفظه مشفرًا')})});
@@ -223,6 +267,15 @@ export function initOperations({state,api,notify,execute,canEdit}) {
     if(refreshed)await selectThread(refreshed);
     notify('تم إسناد المحادثة للموظف المحدد');
  });
+ $('lead-search').addEventListener('input',renderLeadRows);
+ $('lead-filters').querySelectorAll('[data-lead-stage]').forEach(btn=>{
+   btn.addEventListener('click',()=>{
+      leadFilter=btn.dataset.leadStage;
+      $('lead-filters').querySelectorAll('[data-lead-stage]').forEach(x=>x.classList.toggle('active',x===btn));
+      renderLeadRows();
+   });
+ });
+ $('leads-refresh').onclick=()=>execute(leadsView);
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});const selectedId=selected.id;await inbox();const refreshed=inboxCache.find(x=>x.id===selectedId);if(refreshed)await selectThread(refreshed);notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
