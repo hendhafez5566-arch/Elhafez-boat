@@ -14,3 +14,14 @@
 - Subscription write gates and worker subscription enforcement, stale template-job expiry, quarantine of queued traffic on suspension; bootstrap trial subscription.
 - Added reference Docker stack, private-backup script and operations runbook; these assets were NOT built/deployed or restore-tested.
 - Refreshed cross-chat status and handover. No formal acceptance run. Draft PR #1 unchanged/unmerged.
+
+
+## 2026-10-17 — WhatsApp booking selection + inbox assignment
+
+- Created tenant-scoped `booking-choice.ts` and migration 0013: date/room state columns, Flow-bound selection IDs.
+- Added paginated native WhatsApp travel dates and hotel rooms before booking, database quote/capacity revalidation, immutable provisional fare snapshot, and Flow/text fallback parity.
+- Employee booking creation now requires date/room when catalog contains them. Booking lists display selected itinerary, room and locked per-person fare.
+- Added customer request-status menu based on verified Meta sender phone and company scope.
+- Prevented simultaneous unrelated agents from taking over the same human-held conversation; restricted employee replies to assigned agent.
+- Removed programs with solely expired/unavailable contracted departures from WhatsApp menus; clarified base prices as indicative.
+- Wrote `docs/15-WHATSAPP-BOOKING-CHOICES.md`. Changes pushed to draft PR; no real PostgreSQL/Meta, provider E2E or formal acceptance performed.
