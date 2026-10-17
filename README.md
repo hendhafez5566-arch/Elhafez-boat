@@ -1,27 +1,22 @@
-# Elhafez Boat — WhatsApp sales-assistant chatbot
+# Elhafez Boat — General-Purpose Chatbot Building Platform
 
-> **Scope corrected by product owner on 2026-10-17: This is a CHATBOT, NOT a tourism management/booking system.** Read [authoritative chatbot-only scope](docs/00-SCOPE-CHATBOT-ONLY.md).
+A multi-company, Arabic-first platform where **any shop or business** can build its own conversational assistant. Inspired by configurable chatbot tools like BotSailor, but built as an original, separate product. A tourism firm is one example of an industry, **not the default product**.
 
-Elhafez Boat is an Arabic-first, multi-company assistant connected to an agency's official WhatsApp Business number. It handles repetitive questions about the company's own programs and services, figures out what the customer is interested in, asks brief clarifying questions, and sends a clear **qualified sales lead** to an agency employee.
+## What businesses can configure
+- Visual card-based conversational flow builder: text, **interactive WhatsApp buttons/lists**, custom input questions, branching conditions, tags, image/video/audio/document links, HTTPS website links, human handoff and end.
+- Company catalog of **products, services and offers** with completely custom categories and optional advertised price text.
+- Approved FAQs, shared WhatsApp inbox, customer interests, captured custom data and staff assignment.
+- Multiple tenants, basic team roles, official Meta WhatsApp Cloud API integration code and queue.
+- Draft/edit/publish flows, atomic revisions and per-conversation version pinning.
 
-**The employee** contacts the customer, books the service and manages everything afterwards with the company's existing workflow. Elhafez Boat **never reserves places, issues invoices, handles payments or stores travel documents**.
+The platform **does not** run a business's booking system, process payments, issue invoices or administer inventory.
 
-## Simple staff dashboard
-- **العملاء المهتمون**: interested, ready for agent, contacted and closed, including service, party size and timing.
-- **محادثات واتساب**: actual customer messages and handoff to named staff.
-- **معلومات البرامج والعروض**: facts that the bot can quote; not an inventory or booking engine.
-- **إعدادات البوت والأسئلة الشائعة**: approved business answers and menu versions.
-- **ربط واتساب / الموظفون**: Meta account and simple access control.
+## Current build state (October 2026)
+Source for the generic flow engine/editor, catalog, APIs and migration 0015–0016 is committed to the **development branch**. It is not an all-feature BotSailor clone, and the clean checkout/real PostgreSQL migration, real WhatsApp registration, live provider tests and full commercial acceptance are **not verified**.
 
-## Development mode
-- Current branch: `feat/stage0-foundation` (draft PR #1).
-- Start local HTML demo: `node apps/web/server.mjs`, then open `http://localhost:3000` and click **استعراض التصميم ببيانات تجريبية**. Sample leads are browser-only and are never sent to Meta.
-- See [setup](docs/11-LOCAL-SETUP.md) and [handover](project-management/HANDOVER.md) for backend operation and blockers.
-- App is NOT yet deployed or acceptance-tested against a real PostgreSQL database or Meta number. Scope refinement was implemented as new source and reduced navigation/API; older dormant reservation source remains pending cleanup.
-- Public GitHub repository by owner request: NEVER commit Meta access tokens, secret keys, or real customer data.
+Browser-only demo: `node apps/web/server.mjs` (Node 22+), open `http://localhost:3000`, choose **استعراض التصميم ببيانات تجريبية** and go to **مصمم الشات بوت**. Demo does not send actual messages or persist server data. Draft/publish requires authenticated business, configured database and official WhatsApp number to become live.
 
-## Acceptance policy
-After **feature development** is complete, run one combined end-to-end acceptance phase: real Meta webhook/menu and employee handoff, published program accuracy, lead qualification/inbox, tenant isolation, failure handling and responsive UI. Do not claim a finished live bot based solely on code commits.
+### Project references
+[Current status](project-management/CURRENT-STATUS.md) | [Handover](project-management/HANDOVER.md) | [Remaining](project-management/REMAINING.md) | [Generic product scope](docs/00-SCOPE-CHATBOT-ONLY.md) | [Master plan](docs/01-MASTER-PLAN.md)
 
-## Project notes
-[Current status](project-management/CURRENT-STATUS.md) | [Remaining](project-management/REMAINING.md) | [Authoritative plan](docs/01-MASTER-PLAN.md)
+Keep the PUBLIC repo free of customer PII, secrets and Meta credentials. User prefers one final comprehensive acceptance phase after approved feature development.
