@@ -1,0 +1,21 @@
+{
+  "name": "elhafez-boat",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "dev:web": "npm run dev -w @elhafez/web",
+    "dev:api": "npm run dev -w @elhafez/api"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "@types/node": "^22.15.0"
+  }
+}
