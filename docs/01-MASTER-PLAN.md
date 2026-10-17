@@ -1,50 +1,31 @@
-# Master implementation plan
+# Revised master plan — WhatsApp chatbot only (2026-10-17)
 
-Status values: NOT STARTED, IN PROGRESS, BLOCKED, VERIFIED DONE. Numerous stages now have feature-source implementations on draft branch, but **NO STAGE HAS VERIFIED DONE STATUS** because formal acceptance is deliberately reserved for final cycle. See CURRENT-STATUS and REMAINING for accurate completion and limitations.
+**The owner's explicit correction replaces all earlier broad tourism ERP/booking SaaS plans.** Primary source: [00-SCOPE-CHATBOT-ONLY.md](00-SCOPE-CHATBOT-ONLY.md).
 
-## Stage 0 — Specification and foundation
-- [ ] Confirm data model, role matrix, exact booking rules, customer UX and visual design.
-- [ ] Establish TypeScript monorepo, package manager lockfile, lint/format/typecheck, CI, test runner, env templates, local Docker setup, migrations, seed fixtures.
-- [ ] Define API contracts, WhatsApp adapter interfaces, action IDs and workflow schemas.
-- [ ] Add security baseline and tenant-scoped authorization tests.
-**Gate:** clean install, CI passing, migrations and tenant isolation tested.
+## A. Chatbot and information (feature build)
+- Company connects official Meta WhatsApp Business Cloud API number.
+- Company enters only relevant **program/service info** (title, category, description, advertised price/dates), published FAQ and welcome/menu configuration.
+- Bot answers repetitive customer questions accurately, understands short Egyptian-Arabic utterances when possible, shows helpful interactive choices and knows when to ask for clarification.
+- Optional external LLM is allowed only to interpret natural-language intent **grounded** in approved company data; if provider unavailable, deterministic fallback menu/FAQ still works.
+- Never reserve seats, charge money, manage traveler documents or confirm a booking.
 
-## Stage 1 — Vertical slice
-- [ ] Tenant and user auth/roles.
-- [ ] Programs CRUD, images, price tiers, dates, availability and publish/unpublish.
-- [ ] Versioned menu engine, interactive list/reply-button renderer and simulator.
-- [ ] WhatsApp webhook verify/receive/send adapter with idempotency, signature checks and queue.
-- [ ] WhatsApp Flow form mapping, submission validation and draft booking creation.
-- [ ] Booking inbox with human review/confirmation and immutable price/terms snapshot.
-**Gate:** add published Umrah program -> list shown -> customer selects -> sees details -> submits Flow -> provisional booking appears for staff. Verify first in simulator, then live API after credentials/eligibility.
+## B. Lead qualification and human handoff
+- Customer can mark **interest** in a program or ask for staff at any point.
+- Ask minimal relevant optional qualification questions (party size, rough timing; later budget only if demonstrably useful).
+- Store lead linked to real verified WhatsApp sender, contact, conversation and program; stages **INTERESTED / READY_FOR_AGENT / CONTACTED / CLOSED**.
+- Staff sees leads, preferences and chat, claims conversation; bot stops. Employee books/follows up outside this product.
 
-## Stage 2 — Sales operations
-- [ ] Unified inbox, assignment, takeover/handoff, internal notes, customer CRM, statuses, follow-up tasks, reporting.
-- [ ] Offers/campaigns, opt-in and opt-out, template management and 24h service-window policy.
-**Gate:** multi-agent handoff, no duplicate sends, compliant follow-up and audit trail tested.
+## C. Lean multi-agency operations
+- One intuitive Arabic RTL dashboard for leads, inbox, programs/services, offers, approved FAQ, basic staff roles and WhatsApp connection.
+- Minimal platform owner tenant/account activation and basic subscription control only to support selling the bot separately to companies. No billing ledger or automatic invoice/payments system.
+- Least-privilege company isolation, secure provider token storage, webhook signature verification, idempotency, consent/opt-out.
 
-## Stage 3 — Grounded AI
-- [ ] Knowledge base, safe retrieval, tools for program search, availability and lead qualification.
-- [ ] Guardrails for prices, booking/payment actions and escalation; AI evaluation set in Arabic.
-**Gate:** no fabricated business facts in adversarial and regression tests.
+## D. Finish feature development then ONE final acceptance stage
+- Keep basic syntax/type safeguards as needed while editing.
+- One formal combined acceptance phase at the end: clean checkout/build, PostgreSQL migration + tenant RLS, Meta provider webhook and bot replies, qualified lead + human takeover, browser/mobile UX, security/load/failure recovery, privacy.
+- Fix defects and only then merge PR, provision hosting/domain and launch pilot.
 
-## Stage 4 — Multi-tenant commercial release
-- [ ] Self-service company onboarding and WhatsApp connection where supported, subscription/billing, quotas and usage visibility.
-- [ ] Monitoring, backups + restore drill, retention/deletion, load tests, rate limits, runbooks, disaster recovery.
-- [ ] Pilot with real companies; fix verified defects before sale.
-**Gate:** independent tenant security, E2E WhatsApp acceptance, recovery, performance and operational signoff.
+## Explicitly removed from scope
+Booking/reservation APIs; payment/refund accounting; traveler documents; supplier allotments, multi-room inventory; automatic campaigns; advanced ERP features; finance and automated subscriptions/billing. Previous code related to these is legacy overbuild to retire, **not a feature backlog to finish**.
 
-## Out of scope initially
-Automatic payment confirmation without verified payment provider; guaranteed availability without inventory check; ERP coupling; unapproved bulk messaging; arbitrary unvalidated customer-authored executable flows.
-
-Each gate needs evidence (commands, test results, screenshots where applicable) and explicit owner approval. No invented completion percentages.
-
-
-## Current source progress (not formal stage completion), 2026-10-17
-
-- Foundations: typed service modules, multiple migrations, tenant authorization and Arabic dashboard written; clean install, actual DB, lockfile and CI gate remain unverified.
-- WhatsApp booking vertical: signed webhook, multi-tenant conversation routing, interactive native lists, program views, opt-in-aware templates, optional Meta Flow and queue worker in source. Real Meta approval, number hookup and provider E2E remain.
-- Sales operations: programs, catalog travel dates and hotel rooms, manual reservations with atomic capacity/cancellation, customers, offers, followups, human inbox, team invites and approved knowledge FAQ largely have code, but missing rich traveler/financial policies and formal acceptance.
-- Commercial multi-tenancy: platform owner and manual subscriptions, some plan enforcement, sample Docker and backups. Payment provider, invoices, automated quotas and production hardening missing.
-- Genuine grounded AI with LLM is NOT implemented; approved FAQ exact-match fallback does not equal LLM AI.
-- Owner explicitly wants **one final comprehensive acceptance phase after remaining feature work**, not continuous formal acceptance per stage. Routine syntax/type safeguards still allowed.
+Status as of 2026-10-17: partial code exists in draft branch, including lead queue and bot handoff. **No verified live deployment or complete final acceptance yet.**
