@@ -2,7 +2,7 @@
 
 This is an API foundation, not a production-ready service. Meta WhatsApp, Flows, tenant invitation and deployed dashboard are not yet connected.
 
-1. Node.js 22+, npm, PostgreSQL 16+ and Redis; copy `.env.example` to `.env`. **Do not commit `.env`.**
+1. Node.js 22+, npm, PostgreSQL 16+ and Redis; copy `.env.example` to `.env`; Node 22 loads `.env` in the npm commands. **Do not commit `.env`.**
 2. `npm install` (generates lockfile; commit after validation). `npm run check` for typecheck, build and pure/unit tests.
 3. `docker compose up -d postgres redis` for local services if Docker is available.
 4. Create a non-owner, non-superuser, non-BYPASSRLS role for the **runtime** connection. A separate privileged migration connection applies schema. For example, as DB admin, create `elhafez_runtime` with a unique secret password, grant `CONNECT` and `USAGE ON SCHEMA public`, and after migrations grant specific `SELECT/INSERT/UPDATE/DELETE` on required tables plus appropriate sequences. Never give runtime role ownership or BYPASSRLS.
