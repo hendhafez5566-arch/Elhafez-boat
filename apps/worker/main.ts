@@ -40,16 +40,24 @@ async function processTenant(tenantId:string):Promise<boolean>{
   await tx.query('BEGIN');began=true;
   await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
   // Row-level locking reserves one job among concurrent worker processes.
-  const pending=await tx.query(`SELECT j.*,a.phone_number_id,a.access_token_encrypted,c.last_customer_message_at
+  const pending=await tx.query(`SELECT j.*,a.phone_number_id,a.access_token_encrypted,c.last_customer_message_at,k.do_not_contact,k.marketing_opt_in
    FROM whatsapp_outbox j JOIN whatsapp_accounts a ON a.tenant_id=j.tenant_id AND a.id=j.account_id
    JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id
+   JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
+   LEFT JOIN tenant_subscriptions sub ON sub.tenant_id=j.tenant_id
    WHERE j.tenant_id=$1 AND j.status='PENDING' AND j.next_attempt_at<=now()
-   AND a.status='CONNECTED' ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j SKIP LOCKED`,[tenantId]);
+   AND a.status='CONNECTED' AND (sub.tenant_id IS NULL OR (sub.status IN ('TRIAL','ACTIVE') AND sub.current_period_ends_at>now())) ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j SKIP LOCKED`,[tenantId]);
   if(pending.rowCount!==1){await tx.query('COMMIT');return false;}
   const job=pending.rows[0];
   // Interactive/text messages must not be dispatched after the WhatsApp 24h service window.
   const windowAge=job.last_customer_message_at ? Date.now()-new Date(String(job.last_customer_message_at)).getTime() : Infinity;
-  if(windowAge>24*3600_000){
+  const payload=job.payload as {type?:string};
+  const template=payload.type==='template';
+  if(Boolean(job.do_not_contact)||(template&&!job.marketing_opt_in)){
+   await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Customer opted out or consent missing' WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);
+   await tx.query('COMMIT');return true;
+  }
+  if(!template&&windowAge>24*3600_000){
    await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Customer service window expired; approved template required'
      WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);
    await tx.query('COMMIT');return true;
@@ -65,7 +73,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
     await tx.query(`UPDATE whatsapp_outbox SET status='SENT',provider_message_id=$3,attempt_count=attempt_count+1,locked_at=NULL
       WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,providerId]);
     const source=job.payload as {type?:string;text?:{body?:string};interactive?:{body?:{text?:string}}};
-    const message=source.text?.body||source.interactive?.body?.text||'[رسالة تفاعلية]';
+    const message=source.text?.body||source.interactive?.body?.text||(source.type==='template'?'[قالب واتساب معتمد]':'[رسالة تفاعلية]');
     await tx.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,delivery_status)
       VALUES($1,$2,'OUTBOUND',$3,$4,'sent')`,[tenantId,job.conversation_id,message,providerId]);
     await tx.query(`UPDATE conversations SET last_message_at=now() WHERE tenant_id=$1 AND id=$2`,[tenantId,job.conversation_id]);
