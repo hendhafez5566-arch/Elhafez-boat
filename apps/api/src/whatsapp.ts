@@ -91,7 +91,7 @@ async function publishedConfig(db:SqlClient,tenantId:string){
 }
 async function showMenu(db:SqlClient,tenantId:string,state:Record<string,unknown>,category:string,page:number){
  const cfg=await publishedConfig(db,tenantId);
- if(category==='HOME')return listPayload(cfg.welcomeText,[...cfg.enabledCategories.map(k=>({id:'category:'+k,title:categoryTitles[k]||k,description:'البرامج المتاحة'})),{id:'handoff',title:'موظف المبيعات',description:'التحدث مع مسؤول الحجز'}]);
+ if(category==='HOME')return listPayload(cfg.welcomeText,[...cfg.enabledCategories.map(k=>({id:'category:'+k,title:categoryTitles[k]||k,description:'البرامج المتاحة'})),{id:'my-bookings',title:'متابعة حجوزاتي',description:'معرفة حالة طلبات الحجز السابقة'}, {id:'handoff',title:'موظف المبيعات',description:'التحدث مع مسؤول الحجز'}]);
  if(!categoryOk(category)||!cfg.enabledCategories.includes(category))return showMenu(db,tenantId,state,'HOME',0);
  const result=await db.query(`SELECT id,title,price_minor,currency FROM programs p WHERE p.tenant_id=$1 AND p.category=$2 AND p.status='PUBLISHED' AND p.available_seats>p.booked_seats
    AND (NOT EXISTS(SELECT 1 FROM program_departures d0 WHERE d0.tenant_id=p.tenant_id AND d0.program_id=p.id)
@@ -176,6 +176,25 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
      else throw error;
    }
    return;
+ }
+ if(action==='my-bookings'||/^(حجوزاتي|حالة الحجز|متابعة الحجز)$/i.test(body.trim())){
+   // The sender number comes from Meta's verified webhook, never a user-entered phone.
+   const bookings=await db.query(`SELECT b.id,b.status,p.title,d.depart_at
+     FROM booking_requests b JOIN programs p ON p.tenant_id=b.tenant_id AND p.id=b.program_id
+     LEFT JOIN program_departures d ON d.tenant_id=b.tenant_id AND d.id=b.departure_id
+     WHERE b.tenant_id=$1 AND regexp_replace(b.customer_phone,'^\\+','')=$2
+     ORDER BY b.created_at DESC LIMIT 5`,[tenantId,from]);
+   const statusLabels:Record<string,string>={PENDING_REVIEW:'قيد مراجعة الشركة',CONFIRMED:'مؤكد من الشركة',
+     REJECTED:'مرفوض',CANCELLED:'ملغي'};
+   if(!bookings.rows.length){
+     await respond(textPayload('لا توجد طلبات حجز مسجلة لهذا الرقم في الشركة. اكتب "القائمة" لعرض البرامج أو اطلب موظفًا.'));return;
+   }
+   const rows=bookings.rows.map((b:Record<string,unknown>)=>
+      '• '+String(b.title).slice(0,65)+' | رقم '+String(b.id).slice(0,8)+
+      '\\n  الحالة: '+(statusLabels[String(b.status)]||'تحت المراجعة')+
+      (b.depart_at?' | السفر: '+localTravelDate(b.depart_at):''));
+   await respond(textPayload('آخر طلبات الحجز المرتبطة برقمك:\\n'+rows.join('\\n')+
+     '\\n\\nالطلب المبدئي مش تأكيد للحجز. اكتب "القائمة" أو "موظف" للمساعدة.'));return;
  }
  if(action==='handoff'||/^(موظف|خدمة العملاء)$/i.test(body)){
   await db.query(`UPDATE conversations SET status='HUMAN' WHERE tenant_id=$1 AND id=$2`,[tenantId,conversationId]);
