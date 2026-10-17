@@ -1,24 +1,29 @@
-# CURRENT STATUS — chatbot-only pivot, 2026-10-17
+# CURRENT STATUS — General-purpose chatbot SaaS (2026-10-17)
 
-**PRODUCT:** Elhafez Boat is an independent, Arabic RTL, multi-agency WhatsApp sales-assistant CHATBOT — NOT an ERP, booking engine or financial system. Authoritative product document: `docs/00-SCOPE-CHATBOT-ONLY.md`.
+**Owner's newest decision:** Elhafez Boat is a configurable chatbot-building SaaS for **ALL industries**, not a tourism-specific tool. It is still **NOT** an ERP or booking/accounting application. Scope: `docs/00-SCOPE-CHATBOT-ONLY.md`, which supersedes older tourism instructions.
 
-**GitHub:** `hendhafez5566-arch/Elhafez-boat`, public by owner choice; work on `feat/stage0-foundation`, draft PR #1, not merged or deployed.
+Repository: `hendhafez5566-arch/Elhafez-boat` PUBLIC by choice; branch `feat/stage0-foundation`; DRAFT PR #1, not merged, not deployed.
 
-## What changed in this scope correction (SOURCE COMMITTED)
-- Dedicated `chatbot_leads` schema, migration `0014_chatbot_leads_only.sql`, tenant RLS and qualification stages.
-- Bot now only reads company-approved service cards and FAQ, recognizes common Arabic tourism categories, handles `interest:` / previously issued `book:` buttons as **interest only**.
-- Asks how many travelers and approximate time (both may be unknown), records `INTERESTED` then `READY_FOR_AGENT` lead and transfers conversation to HUMAN. Explicit staff request bypasses questions.
-- Human takeover prevents further bot messages; agent may view context/claim thread and reply. Staff can mark lead CONTACTED / CLOSED.
-- Staff APIs added `/api/v1/leads` and `/api/v1/leads/summary`; booking creation/confirmation/cancellation and departure/room inventory API routes disabled.
-- Lean Arabic dashboard navigation: overview, qualified leads, WhatsApp inbox, program/service information, offers, bot simulator, approved settings/FAQ, WhatsApp link and staff. Staff inbox now shows the service, party size and preferred time.
-- Browser-only demo creates **fake leads in memory, never fake bookings**.
-- Approved program publish is no longer gated on seat counts. **Bot never confirms places, payments, or reservations.**
+## Generic feature code written on branch
+- `apps/api/src/flow-engine.ts`: industry-neutral flow definition, validation, deterministic interpreter with nodes for START, TEXT, BUTTONS (max 3), LIST (max 10), INPUT/custom field, CONDITION, TAG, MEDIA (image/video/audio/document over HTTPS), LINK, HANDOFF, END. Validates IDs/destinations, reachable blocks and automatic loops.
+- `apps/api/src/flow-service.ts`: tenant draft, published versioning, version-pinned conversation state, choice ID validation, saved answers/tags, human-handoff leads; default general preset when no flow is published. Actual WhatsApp signed webhook calls this service; legacy tourism-specific fallback is presently unreachable code to clean up.
+- `packages/database/migrations/0015_generic_flows.sql`: tenant-isolated drafts, immutable published versions, conversation snapshots and lead custom fields.
+- `apps/web/public/flow-builder.js`, `flow-builder.css`: visual block-list and per-node editor (NOT drag-and-drop yet), options, links, preview and save/publish; accessed from company's dashboard.
+- `packages/database/migrations/0016_generic_catalog.sql` and `apps/api/src/catalog.ts`: arbitrary company products/services/offers, custom categories, description, advertised price text and links; draft/publish/archive. Not inventory or a purchase engine.
+- Catalog responses match approved, published full item titles in customer text and offer direct interest/handoff, no invented facts.
+- Staff inbox/qualified leads include dynamic custom answers; company UI nav now shows generic catalog and flow builder instead of tourism-only catalog. Old unsupported travel UI source remains dormant/historical.
+- Presets for general business, shop, restaurant, clinic, real estate, education and tourism (as ONE example).
+- Existing Meta signed webhook, outbox worker, basic team inbox/roles, customer consent and opt-out remain in development code.
 
-## Technical debt / remaining simplification
-Earlier migrations 0001–0013 and inactive source still include a larger booking/room/financial vision. They are NOT active scope and must be safely retired instead of finished. The current SQL schema history remains to avoid breaking existing migration chains. Some dormant browser forms remain in DOM for old renderer compatibility; they are not in the main navigation.
+## Verification honesty
+Files committed through GitHub connector. Development-time isolated TypeScript/JavaScript syntax safeguards run on new engine/editor source; **NO clean checkout of the integrated repo, full database migration 0015–0016, live Meta sandbox, authenticated browser E2E or full acceptance has been executed**. No credentials or live customer messages.
 
-## Verification truth
-Files committed to GitHub. **No clean checkout build/CI or real PostgreSQL 0014 migration, real Meta interaction, complete browser E2E, or final acceptance has been executed on this new scoped version**. No production Meta number, hosting or live AI provider. Do not infer readiness from file commits.
+## Important limitations / not done
+- Card-style builder works with editable connections; **free canvas drag-and-drop has NOT been built**.
+- No scheduled sequence builder, omnichannel live connectors, contact segmentation-based campaigns, full approved media template/carousel support or external safe API/Webhook workflow node yet.
+- No true grounded LLM; published FAQ plus deterministic flows and exact approved catalog match only.
+- Generic catalog currently supports approved text replies, not an auto-populated list node in published flows; company can manually author LIST choices.
+- Many legacy reservation/inventory/finance modules remain in git history and some dead source. Don't revive them; safely retire before release.
+- Need clean build with dependency lockfile and user-selected Meta business account setup after feature scope completed.
 
-## Next within CORRECT scope
-Tighten natural Arabic intent recognition with an optional grounded provider, simplify old dormant code without regressions, staff handoff/lead notifications and usability polish. After chatbot scope is feature-complete, **ONE final comprehensive acceptance phase** (owner request), then possible merge and pilot.
+**Owner testing policy:** one final formal acceptance phase AFTER features are finished. No production-readiness claim now.
