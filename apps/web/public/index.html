@@ -128,7 +128,16 @@
             <div class="wide form-actions"><button type="submit" class="primary" id="bot-save-draft">حفظ المسودة</button><button type="button" class="secondary" id="bot-publish">نشر الإعدادات</button></div>
           </form></div>
           <div class="panel"><div class="panel-heading"><div><h3>الإصدار المنشور</h3><p>إصدار القوائم المعتمد حاليًا للمعاينة الداخلية</p></div></div><div id="bot-current-version" class="publish-status"></div><h3>آخر الإصدارات</h3><div id="bot-version-list" class="version-list"></div><div class="info-box">النشر هنا يحدّث إعدادات المنصة، لكنه لا يفعّل رقم واتساب أو يرسل رسالة. ربط Meta سيُنفّذ لاحقًا.</div></div></div>
-      </section>
+      
+        <div class="ops-panel" style="margin-top:20px">
+          <h3>قاعدة المعرفة المعتمدة (الأسئلة الشائعة)</h3>
+          <p>البوت يرد على السؤال المطابق فقط بعد نشر الإجابة بواسطة الشركة. الأسئلة غير المعروفة ترجع للقائمة أو الموظف، بدون اختراع أسعار أو معلومات.</p>
+          <form class="ops-form" id="faq-form"><label>السؤال<input name="question" minlength="5" maxlength="300" required placeholder="مثلاً: ما مواعيد العمل؟"></label>
+          <label>الإجابة المعتمدة<textarea name="answer" minlength="5" maxlength="2000" rows="3" required></textarea></label>
+          <button class="primary" type="submit">إضافة إجابة كمسودة</button></form>
+          <div id="faq-list" class="ops-stack" style="margin-top:18px"></div>
+        </div>
+</section>
     </main>
   </div>
 </div>
