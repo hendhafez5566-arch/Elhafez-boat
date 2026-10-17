@@ -13,6 +13,8 @@ try{
   const tenant=await db.query('INSERT INTO tenants(slug,name) VALUES($1,$2) RETURNING id',[BOOTSTRAP_TENANT_SLUG,BOOTSTRAP_TENANT_NAME]);
   const user=await db.query('INSERT INTO users(email,password_hash) VALUES(lower($1),$2) RETURNING id',[BOOTSTRAP_EMAIL,hash]);
   await db.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')",[tenant.rows[0].id,user.rows[0].id]);
+  await db.query(`INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at)
+    VALUES($1,'STARTER','TRIAL',now()+interval '14 days') ON CONFLICT(tenant_id) DO NOTHING`,[tenant.rows[0].id]);
   await db.query('COMMIT');
   console.log('Created tenant and OWNER membership:',BOOTSTRAP_TENANT_SLUG);
 }catch(e){await db.query('ROLLBACK');throw e;}finally{await db.end()}
