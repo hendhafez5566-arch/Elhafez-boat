@@ -1,27 +1,25 @@
-# FIRST READ IN EVERY NEW CHAT — 2026-10-17
+# Handover — Elhafez Boat, 2026-10-17
 
-## CRITICAL OWNER SCOPE CORRECTION
-Read `docs/00-SCOPE-CHATBOT-ONLY.md` first. **Elhafez Boat is just a WhatsApp tourism sales chatbot**, not an ERP, booking engine, accounting, payments or travel reservations system. The owner strongly rejected unnecessary booking, refunds, invoices, traveler documents, broad inventory and complex CRM scope. **Never reintroduce these.**
+## CRITICAL USER SCOPE CORRECTION (newest)
+**GENERAL-PURPOSE chatbot platform for ALL businesses and shops**, inspired by BotSailor's options and configurable flows. Tourism is one optional preset; no hardcoded tourism bot. Still only a chatbot/communication automation SaaS, NOT an ERP, reservation/payment/accounting system.
 
-User expects bot to answer repetitive customer messages, understand approved program/service interest in natural Arabic, gather a couple of optional preferences, and show employees **qualified leads ready for a human**. Human handles all actual booking/follow-up outside Elhafez Boat. When human takes over, bot must stop.
+Read `docs/00-SCOPE-CHATBOT-ONLY.md` and `docs/01-MASTER-PLAN.md` first. Those supersede ALL previous tourism-specific docs and overbuilt booking plans. Owner wants broad chatbot options: customizable buttons, lists, messages, images/media, customer inputs/custom fields, conditions, tags, optional approved AI, workflow builder, staff handoff and future integrations/broadcasts with compliance.
 
-## Repository and state
-- Repo `hendhafez5566-arch/Elhafez-boat`, PUBLIC deliberately.
-- Working branch `feat/stage0-foundation`, DRAFT PR #1 UNMERGED.
-- Latest changes: created `docs/00-SCOPE-CHATBOT-ONLY.md`; migration `0014_chatbot_leads_only.sql` and `apps/api/src/chatbot-leads.ts`; refactored `apps/api/src/whatsapp.ts` to **interest -> optional party count -> rough travel date -> lead READY_FOR_AGENT + HUMAN handoff**. Backward old `book:` buttons become interest, never booking.
-- `apps/api/src/server.ts` no longer exposes booking confirmation, booking creation or hotel/room inventory API routes; added GET `/api/v1/leads`, GET `/api/v1/leads/summary`, PATCH `/api/v1/leads/:id/stage`.
-- Simplified `apps/web/public/index.html`, `app.js`, `operations.js` navigation and dashboard to **العملاء المهتمون / محادثات واتساب / معلومات البرامج / العروض / معاينة البوت / الإعدادات / ربط واتساب / الموظفون**. Staff sees interest, headcount, travel preference and customer number. Demo creates fake browser-memory leads, never fake booking.
-- Service/program publication no longer depends on seat inventory. Published program facts are informational; employee confirms actual availability.
-- Legacy booking/departure/room modules and some archived UI/SQL structures still exist on branch and **must be safely retired/cleaned**, not expanded. Migrations 0001–0013 remain for historical/schema compatibility; 0014 must run after them.
+Repo `hendhafez5566-arch/Elhafez-boat` PUBLIC by user choice. Branch `feat/stage0-foundation`; PR #1 draft, unmerged. Do not switch repos/branches.
 
-## NO FALSE READINESS
-Changes committed to GitHub. No clean checkout compilation, PostgreSQL migration/tenant isolation, live Meta Cloud API or browser E2E was run for latest scope refactor. There is NO live Meta number, production deployment, working actual booking, automated billing or generative AI provider. Some previous isolated checks exist, but are NOT final acceptance proof.
-Owner explicitly wants **ONE FINAL comprehensive acceptance stage only after relevant CHATBOT feature build**; lightweight sanity checks during coding okay.
+## Most recent actual code
+- New generic deterministic TS engine `apps/api/src/flow-engine.ts` with START/TEXT/BUTTONS/LIST/INPUT/CONDITION/TAG/MEDIA/LINK/HANDOFF/END and validations.
+- Tenant versioned flow persistence/runtime in `apps/api/src/flow-service.ts`, migration `0015_generic_flows.sql`; webhook adapter in `apps/api/src/whatsapp.ts` prioritizes generic published flows (or general default) and approved FAQ/catalog. Older hardcoded tourism conversation switch remains **unreachable legacy source**, to retire safely.
+- Generic catalog schema `0016_generic_catalog.sql`, service `apps/api/src/catalog.ts` and authenticated `/api/v1/catalog` routes. Owner can create/publish product/service/offer with free-form category and informational price string. Customer question matching published exact full title triggers approved response and optional staff interest. No transactions, checkout or stock.
+- React-free visual company editor: `apps/web/public/flow-builder.js` + CSS + new `flow-builder` section in `index.html`. Company picks industry preset or makes own graph of blocks via editable node links. Saves draft, publishes immutable revision, previews with browser-only messages. NOT actual drag-and-drop yet.
+- Company catalog UI under `catalog`; old tourism category form hidden. Lead/inbox displays captured custom fields/tags. App JS demo uses memory data only.
+- `apps/web/server.mjs` serves new static assets with same-origin CSP.
+- `README.md`, `AGENTS.md`, `docs/00-SCOPE-CHATBOT-ONLY.md`, `docs/01-MASTER-PLAN.md` rewritten to reflect universal B2B SaaS.
 
-## Actual NEXT work
-1. Safely retire dormant overbuilt modules/screens without breaking minimal chatbot app or migration path.
-2. Polish bot natural-language intent for Egyptian customers and response grounding on approved catalog/FAQ; optional LLM only when approved/configured, never fabricate facts.
-3. Refine lead queue, human pickup/notifications, concise agent context, filters, simple statistics and provider error handling.
-4. Once feature scope is complete, run formal acceptance as one final round and then review/merge/deploy pilot.
+## Verification / operational truth
+New code was committed to GitHub using connector. Only isolated development TypeScript/JS syntax checks are available for new source; no clean entire repo npm install/build, actual Postgres migrations 0015–0016, Meta test number/provider acceptance, browser/mobile E2E or commercial deployment verified. No live Meta credentials provided. PR stays draft/unmerged. User explicitly wants **one formal full acceptance test campaign after ALL chatbot features are built**.
 
-Review actual commit/branch/PR each session. Never ask user again whether they want booking/invoicing; **they do not**. Keep `CURRENT-STATUS.md` and `REMAINING.md` updated.
+## Actual next task
+Continue generic options based on scope, without industry logic: rich visual canvas drag/drop and connections, dynamically populated catalog LIST node, keyword triggers, media management and approved templates, tag/field filters, automated sequences with WhatsApp window and opt-in, safe integration API/webhook connectors and optional grounded AI. Safely retire old booking/tourism overbuild, preserve migration history. Polish RTL/mobile company UX and reusable presets. Finally one combined acceptance + release, not per-batch formal testing.
+
+Never claim a feature is live if only a schema/module exists. Keep GitHub tracking files current.
