@@ -4,6 +4,11 @@
 export type Choice = {id:string;title:string;description?:string;next:string};
 export type FlowNode =
  | {id:string;type:'START';next:string}
+ | {id:string;type:'CATALOG';category?:string;next:string}
+ | {id:string;type:'WEBHOOK';integrationId:string;next:string}
+ | {id:string;type:'AI';field:string;next:string}
+ | {id:string;type:'KEYWORD';keywords:string[];yes:string;no:string}
+ | {id:string;type:'QUESTION';text:string;field:string;next:string}
  | {id:string;type:'TEXT';text:string;next:string}
  | {id:string;type:'BUTTONS';text:string;choices:Choice[]}
  | {id:string;type:'LIST';text:string;buttonText?:string;choices:Choice[]}
@@ -14,17 +19,17 @@ export type FlowNode =
  | {id:string;type:'LINK';text:string;url:string;next:string}
  | {id:string;type:'HANDOFF';text:string}
  | {id:string;type:'END';text:string};
-export type FlowDefinition={name:string;startId:string;nodes:FlowNode[]};
+export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>};
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[]};
 export type FlowMessage={type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
-export type FlowAdvance={state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean};
+export type FlowAdvance={state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean};
 const key=/^[a-z][a-z0-9_]{0,39}$/;
 const ident=/^[a-z][a-z0-9_-]{0,31}$/;
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
 function plain(v:unknown):v is Record<string,unknown>{return typeof v==='object'&&v!==null&&!Array.isArray(v)}
 function bounded(v:unknown,max:number,min=1):v is string{return typeof v==='string'&&v.trim().length>=min&&v.length<=max}
 function requireTrue(v:unknown,message:string):asserts v{if(!v)throw new Error(message)}
-export function validateFlow(input:unknown):FlowDefinition{
+export function validateFlow(input:unknown,options:{draft?:boolean}={}):FlowDefinition{
  requireTrue(plain(input),'Flow must be an object');
  requireTrue(bounded(input.name,100,2),'Flow name must be 2–100 characters');
  requireTrue(typeof input.startId==='string'&&ident.test(input.startId),'Invalid start node ID');
@@ -35,12 +40,16 @@ export function validateFlow(input:unknown):FlowDefinition{
   requireTrue(typeof raw.id==='string'&&ident.test(raw.id)&&!seen.has(raw.id),'Duplicate or invalid node ID');
   seen.add(raw.id);
   const type=raw.type;
-  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END'].includes(String(type)),'Unsupported node type');
+  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK'].includes(String(type)),'Unsupported node type');
   if(type==='START'){startCount++;}
-  if(['TEXT','BUTTONS','LIST','INPUT','HANDOFF','END','LINK'].includes(String(type))){
+  if(type==='WEBHOOK')requireTrue(typeof raw.integrationId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.integrationId),'Invalid webhook integration ID');
+  if(type==='CATALOG'&&raw.category!==undefined)requireTrue(bounded(raw.category,80,0),'Invalid catalog category');
+  if(type==='KEYWORD')requireTrue(Array.isArray(raw.keywords)&&raw.keywords.length>0&&raw.keywords.length<=20&&raw.keywords.every(k=>bounded(k,80)),'Invalid keywords');
+
+  if(['TEXT','BUTTONS','LIST','INPUT','HANDOFF','END','LINK','QUESTION'].includes(String(type))){
     requireTrue(bounded(raw.text,type==='BUTTONS'||type==='LIST'?1024:4096),'Message text is required (max 4096 characters)');
   }
-  if(type==='INPUT'||type==='CONDITION'){
+  if(type==='INPUT'||type==='CONDITION'||type==='AI'||type==='QUESTION'){
     requireTrue(typeof raw.field==='string'&&key.test(raw.field),'Custom field must be an alphanumeric key');
     if(type==='INPUT')fields.add(raw.field);
   }
@@ -72,14 +81,15 @@ export function validateFlow(input:unknown):FlowDefinition{
     }
   }
  }
- requireTrue(startCount===1&&seen.has(input.startId),'Flow needs exactly one START matching startId');
+ requireTrue(startCount===1&&input.nodes.some(n=>plain(n)&&n.id===input.startId&&n.type==='START'),'Flow needs exactly one START matching startId');
  const nodes=input.nodes as FlowNode[];
  const edges=(node:FlowNode):string[]=>{
-  if(node.type==='START'||node.type==='TEXT'||node.type==='INPUT'||node.type==='TAG'||node.type==='MEDIA'||node.type==='LINK')return [node.next];
-  if(node.type==='CONDITION')return [node.yes,node.no];
+  if(node.type==='START'||node.type==='TEXT'||node.type==='INPUT'||node.type==='TAG'||node.type==='MEDIA'||node.type==='LINK'||node.type==='CATALOG'||node.type==='AI'||node.type==='QUESTION'||node.type==='WEBHOOK')return [node.next];
+  if(node.type==='CONDITION'||node.type==='KEYWORD')return [node.yes,node.no];
   if(node.type==='BUTTONS'||node.type==='LIST')return node.choices.map(c=>c.next);
   return [];
  };
+ if(!options.draft){
  for(const node of nodes)for(const dest of edges(node))requireTrue(seen.has(dest),'Node '+node.id+' links to missing '+dest);
  // Unreachable blocks are configuration mistakes, not silently ignored.
  const reached=new Set<string>();const visit=(id:string)=>{if(reached.has(id))return;reached.add(id);for(const dest of edges(nodes.find(n=>n.id===id)!))visit(dest)};
@@ -91,16 +101,22 @@ export function validateFlow(input:unknown):FlowDefinition{
   if(visiting.has(id))throw new Error('Flow contains an automatic loop without customer input');
   visiting.add(id);
   const node=nodes.find(n=>n.id===id)!;
-  if(!['BUTTONS','LIST','INPUT','END','HANDOFF'].includes(node.type))for(const dest of edges(node))verifyAuto(dest);
+  if(!['BUTTONS','LIST','INPUT','QUESTION','END','HANDOFF'].includes(node.type))for(const dest of edges(node))verifyAuto(dest);
   visiting.delete(id);done.add(id);
  };
  for(const n of nodes)verifyAuto(n.id);
- return {name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[]};
+ }
+ const layout:Record<string,{x:number;y:number}>={};
+ if(plain(input.layout))for(const [id,pos] of Object.entries(input.layout)){
+  requireTrue(seen.has(id)&&plain(pos)&&typeof pos.x==='number'&&typeof pos.y==='number'&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&Math.abs(pos.x)<=10000&&Math.abs(pos.y)<=10000,'Invalid canvas position');
+  Object.defineProperty(layout,id,{value:{x:pos.x,y:pos.y},enumerable:true});
+ }
+ return {name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[],layout};
 }
 export function initialFlowState():FlowState{return {at:null,answers:{},tags:[]}}
 export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TEXT'|'CHOICE';value:string}):FlowAdvance{
  const nodes=new Map(flow.nodes.map(n=>[n.id,n]));
- const answers={...state.answers},tags=[...state.tags];let at=state.at??flow.startId;
+ const answers:Record<string,string>=Object.assign(Object.create(null),state.answers),tags=[...state.tags];let at=state.at??flow.startId;
  const messages:FlowMessage[]=[];let handoff=false,finished=false;
  const current=nodes.get(at);if(!current)throw new Error('Unknown current flow node');
  if(state.at!==null){
@@ -110,7 +126,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TE
      ? current.choices.find(c=>c.id===input.value.slice(prefix.length)):undefined;
    if(!selected){messages.push({type:current.type,text:current.text,choices:current.choices,buttonText:current.type==='LIST'?current.buttonText:undefined});return {state,messages,handoff,finished}}
    answers['choice_'+current.id]=selected.title;at=selected.next;
-  } else if(current.type==='INPUT'){
+  } else if((current.type==='INPUT'||current.type==='QUESTION')){
    if(input?.kind!=='TEXT'||!bounded(input.value,500)){
     messages.push({type:'TEXT',text:current.text});return {state,messages,handoff,finished};
    }
@@ -121,6 +137,8 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TE
  }
  for(let hops=0;hops<40;hops++){
   const node=nodes.get(at);if(!node)throw new Error('Node destination unavailable');
+  if(node.type==='KEYWORD'){const text=input?.kind==='TEXT'?input.value.toLowerCase():'';at=node.keywords.some(k=>text.includes(k.toLowerCase()))?node.yes:node.no;continue}
+  if(node.type==='CATALOG'||node.type==='AI'||node.type==='WEBHOOK')return {state:{at,answers,tags},messages,handoff,finished,pending:true};
   if(node.type==='START'){at=node.next;continue}
   if(node.type==='TEXT'){messages.push({type:'TEXT',text:node.text});at=node.next;continue}
   if(node.type==='LINK'){messages.push({type:'TEXT',text:node.text+'\n'+node.url});at=node.next;continue}
@@ -131,7 +149,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TE
    const matches=node.operator==='exists'?Boolean(answer):node.operator==='equals'?answer.toLowerCase()===String(node.value).toLowerCase():answer.toLowerCase().includes(String(node.value).toLowerCase());
    at=matches?node.yes:node.no;continue;
   }
-  if(node.type==='INPUT'){messages.push({type:'TEXT',text:node.text});return {state:{at,answers,tags},messages,handoff,finished}}
+  if(node.type==='INPUT'||node.type==='QUESTION'){messages.push({type:'TEXT',text:node.text});return {state:{at,answers,tags},messages,handoff,finished}}
   if(node.type==='BUTTONS'||node.type==='LIST'){messages.push({type:node.type,text:node.text,choices:node.choices,buttonText:node.type==='LIST'?node.buttonText:undefined});return {state:{at,answers,tags},messages,handoff,finished}}
   if(node.type==='HANDOFF'){messages.push({type:'TEXT',text:node.text});handoff=true;return {state:{at,answers,tags},messages,handoff,finished}}
   messages.push({type:'TEXT',text:node.text});finished=true;

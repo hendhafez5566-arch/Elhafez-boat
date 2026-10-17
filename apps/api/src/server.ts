@@ -1,5 +1,11 @@
+import {authenticateAccessKey,listAccessKeys,createAccessKey,revokeAccessKey} from './access-keys.js';
+import {listIntegrations,createIntegration} from './integrations.js';
+import {savedReplies,createSavedReply,deleteSavedReply,inboxNote} from './inbox.js';
+import {aiSettings,saveAiSettings} from './ai.js';
+import {executeFlow} from './flow-service.js';
+import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
-import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions} from './flow-service.js';
+import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import { listLeads, leadSummary, updateLeadStage } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
@@ -71,7 +77,7 @@ const server=createServer(async(req,res)=>{
       if(req.method==='PATCH'&&sub)return json(res,200,await updateSubscription(platformOwnerId,sub[1],await body(req)));
       return json(res,404,{error:'Not found'});
     }
-    const actor=await authenticate(pool,req.headers.authorization);
+    const actor=req.headers.authorization?.startsWith('Bearer ebk_')?await authenticateAccessKey(pool,req.headers.authorization,pathname,req.method||'GET'):await authenticate(pool,req.headers.authorization);
     // Block mutating requests for expired or suspended subscriptions (reads remain available for export/support).
     // This is a business entitlement check, separate from tenant RLS and staff-role authorization.
     if(req.method&& !['GET','HEAD','OPTIONS'].includes(req.method) && pathname!=='/api/v1/auth/logout'){
@@ -84,10 +90,7 @@ const server=createServer(async(req,res)=>{
         throw new HttpFailure(403,'Company subscription inactive or expired; only read-only access is available');
     }
     if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,req.headers.authorization);return json(res,200,{ok:true});}
-    if(req.method==='GET'&&pathname==='/api/v1/programs')return json(res,200,await withTenantTransaction(pool,actor,tx=>listPrograms(tx,actor)));
-    if(req.method==='POST'&&pathname==='/api/v1/programs'){const input=await body(req);return json(res,201,await withTenantTransaction(pool,actor,tx=>createProgram(tx,actor,input)));}
-    const publication=/^\/api\/v1\/programs\/([^/]+)\/publish$/.exec(pathname);
-    if(req.method==='PATCH'&&publication)return json(res,200,await withTenantTransaction(pool,actor,tx=>publishProgram(tx,actor,publication[1])));
+    if(/^\/api\/v1\/(programs|bookings|departures|offers|bot)(\/|$)/.test(pathname))return json(res,410,{error:'Legacy tourism endpoints retired. Use /catalog and /flows.'});
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
     const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
@@ -103,14 +106,41 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&publishItem)return json(res,200,await run(tx=>changeCatalogStatus(tx,actor,publishItem[1],'PUBLISHED')));
     const archiveItem=/^\/api\/v1\/catalog\/([^/]+)\/archive$/.exec(pathname);
     if(req.method==='POST'&&archiveItem)return json(res,200,await run(tx=>changeCatalogStatus(tx,actor,archiveItem[1],'ARCHIVED')));
+    if(req.method==='GET'&&pathname==='/api/v1/access-keys')return json(res,200,await run(tx=>listAccessKeys(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/access-keys')return json(res,201,await runBody((tx,input)=>createAccessKey(tx,actor,input)));
+    const accessKey=/^\/api\/v1\/access-keys\/([^/]+)$/.exec(pathname);
+    if(req.method==='DELETE'&&accessKey)return json(res,200,await run(tx=>revokeAccessKey(tx,actor,accessKey[1])));
+    if(req.method==='GET'&&pathname==='/api/v1/integrations')return json(res,200,await run(tx=>listIntegrations(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/integrations')return json(res,201,await runBody((tx,input)=>createIntegration(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/ai/settings')return json(res,200,await run(tx=>aiSettings(tx,actor)));
+    if(req.method==='PUT'&&pathname==='/api/v1/ai/settings')return json(res,200,await runBody((tx,input)=>saveAiSettings(tx,actor,input)));
+    if(req.method==='POST'&&pathname==='/api/v1/flows/preview')return json(res,200,await runBody(async(tx,input)=>{
+      const d=input as Record<string,unknown>;let flow;try{flow=validateFlow(d.definition)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
+      const state=d.state as ReturnType<typeof initialFlowState>|undefined;
+      if(state&&(!Array.isArray(state.tags)||!state.answers||typeof state.answers!=='object'||Array.isArray(state.answers)||(state.at!==null&&typeof state.at!=='string')))throw new HttpFailure(400,'Invalid preview state');
+      const incoming=d.input as {kind:'TEXT'|'CHOICE';value:string}|undefined;
+      if(incoming&&(!['TEXT','CHOICE'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
+      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished};
+    }));
+    if(req.method==='POST'&&pathname==='/api/v1/flows/validate'){
+      const input=await body(req);try{validateFlow(input);return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
+    }
     if(req.method==='GET'&&pathname==='/api/v1/flows')return json(res,200,await run(tx=>getFlowConfig(tx,actor)));
     if(req.method==='PUT'&&pathname==='/api/v1/flows/draft')return json(res,200,await runBody((tx,input)=>saveFlowDraft(tx,actor,input)));
     if(req.method==='POST'&&pathname==='/api/v1/flows/publish')return json(res,200,await run(tx=>publishFlowDraft(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/flows/versions')return json(res,200,await run(tx=>listFlowVersions(tx,actor)));
+    const rollback=/^\/api\/v1\/flows\/versions\/([0-9]+)\/rollback$/.exec(pathname);
+    if(req.method==='POST'&&rollback)return json(res,200,await run(tx=>rollbackFlow(tx,actor,rollback[1])));
     if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
     const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);
     if(req.method==='PATCH'&&leadStage)return json(res,200,await runBody((tx,input)=>updateLeadStage(tx,actor,leadStage[1],input)));
+    if(req.method==='GET'&&pathname==='/api/v1/saved-replies')return json(res,200,await run(tx=>savedReplies(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/saved-replies')return json(res,201,await runBody((tx,input)=>createSavedReply(tx,actor,input)));
+    const savedReply=/^\/api\/v1\/saved-replies\/([^/]+)$/.exec(pathname);
+    if(req.method==='DELETE'&&savedReply)return json(res,200,await run(tx=>deleteSavedReply(tx,actor,savedReply[1])));
+    const threadNote=/^\/api\/v1\/whatsapp\/inbox\/([^/]+)\/notes$/.exec(pathname);
+    if(req.method==='POST'&&threadNote)return json(res,201,await runBody((tx,input)=>inboxNote(tx,actor,threadNote[1],input)));
     if(req.method==='GET'&&pathname==='/api/v1/whatsapp/inbox')return json(res,200,await run(tx=>whatsappInbox(tx,actor)));
     const waMessages=/^\/api\/v1\/whatsapp\/inbox\/([^/]+)\/messages$/.exec(pathname);
     if(req.method==='GET'&&waMessages)return json(res,200,await run(tx=>whatsappThread(tx,actor,waMessages[1])));

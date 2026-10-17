@@ -1,3 +1,5 @@
+import {enqueueIntegration} from './integrations.js';
+import {groundedReply} from './ai.js';
 /** Tenant-scoped draft/publish operations for industry-independent chatbot flows. */
 import {allow,HttpFailure,type Actor,type SqlClient} from './services.js';
 import {exampleFlow,validateFlow,advanceFlow,initialFlowState,type FlowDefinition,type FlowMessage} from './flow-engine.js';
@@ -14,7 +16,7 @@ export async function getFlowConfig(db:SqlClient,actor:Actor){
 export async function saveFlowDraft(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER','MANAGER']);
  let definition:FlowDefinition;
- try{definition=validateFlow(input)}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
+ try{definition=validateFlow(input,{draft:true})}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
  const saved=await db.query(`INSERT INTO chatbot_flow_drafts(tenant_id,definition,updated_by)
  VALUES($1,$2::jsonb,$3) ON CONFLICT(tenant_id) DO UPDATE
  SET definition=EXCLUDED.definition,draft_revision=chatbot_flow_drafts.draft_revision+1,
@@ -77,7 +79,8 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  };
  // Flow replies are untrusted until matching the current node & option ID.
  const inbound=actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body};
- const result=advanceFlow(flow,state,inbound);
+ const result=await executeFlow(db,tenantId,flow,state,inbound);
+ flow=result.flow;
  await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,updated_at)
  VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,now())
  ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=EXCLUDED.version,node_id=EXCLUDED.node_id,
@@ -106,4 +109,45 @@ export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:F
   if(message.type==='BUTTONS')return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'button',body:{text:message.text},action:{buttons:choices.map(c=>({type:'reply',reply:{id:c.id,title:c.title}}))}}};
   return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'list',body:{text:message.text},action:{button:message.buttonText||'اختار',sections:[{title:'القائمة',rows:choices}]}}};
  });
+}
+/** Rollback creates a new immutable live revision; existing sessions remain pinned. */
+export async function rollbackFlow(db:SqlClient,actor:Actor,version:string){
+ allow(actor,['OWNER','MANAGER']);
+ if(!/^[1-9][0-9]{0,8}$/.test(version))throw new HttpFailure(400,'Invalid version');
+ await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
+ const r=await db.query('SELECT definition FROM chatbot_flow_versions WHERE tenant_id=$1 AND version=$2',[actor.tenantId,Number(version)]);
+ if(r.rowCount!==1)throw new HttpFailure(404,'Version not found');
+ await saveFlowDraft(db,actor,r.rows[0].definition);
+ return publishFlowDraft(db,actor);
+}
+
+/** Resolve approved dynamic content without changing immutable flow definitions. */
+export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefinition,answers:Record<string,string>,incoming:string,onlyId?:string,dryRun=false){
+ const nodes=[];
+ for(const node of flow.nodes){
+  if(node.type==='CATALOG'&&(!onlyId||node.id===onlyId)){
+   const r=await db.query(`SELECT title,description,price_text,external_url FROM chatbot_catalog_items WHERE tenant_id=$1 AND status='PUBLISHED' AND ($2='' OR category_label=$2) ORDER BY updated_at DESC LIMIT 10`,[tenantId,node.category||'']);
+   const text=r.rows.length?r.rows.map(x=>[x.title,x.description,x.price_text,x.external_url].filter(Boolean).join('\n')).join('\n\n'):'لا توجد معلومات منشورة في هذا التصنيف حاليًا. اطلب موظف للاستفسار.';
+   // Text chunks always respect WhatsApp's 4096-character limit.
+   const chunks=text.match(/[\s\S]{1,4000}/g)||[''];
+   for(let i=0;i<chunks.length;i++)nodes.push({id:i?'@catalog:'+node.id+':'+i:node.id,type:'TEXT' as const,text:chunks[i],next:i===chunks.length-1?node.next:'@catalog:'+node.id+':'+(i+1)});
+  }else if(node.type==='WEBHOOK'&&(!onlyId||node.id===onlyId)){
+   if(!dryRun)await enqueueIntegration(db,tenantId,node.integrationId,{event:'FLOW_WEBHOOK',fields:answers});
+   nodes.push({id:node.id,type:'START' as const,next:node.next});
+  }else if(node.type==='AI'&&(!onlyId||node.id===onlyId)){
+   const result=await groundedReply(db,tenantId,answers[node.field]||incoming);
+   nodes.push(result.handoff?{id:node.id,type:'HANDOFF' as const,text:result.text}:{id:node.id,type:'TEXT' as const,text:result.text,next:node.next});
+  }else nodes.push(node);
+ }
+ return {...flow,nodes};
+}
+
+export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:{kind:'TEXT'|'CHOICE';value:string},dryRun=false){
+ let flow=definition,result=advanceFlow(flow,state,input);const messages=[...result.messages];
+ for(let hops=0;result.pending&&hops<20;hops++){
+  flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun);
+  result=advanceFlow(flow,result.state,input);messages.push(...result.messages);
+ }
+ if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
+ return {...result,messages,flow};
 }

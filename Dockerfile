@@ -1,10 +1,10 @@
 FROM node:22-alpine AS build
 WORKDIR /app
-COPY package.json tsconfig.json tsconfig.build.json ./
+COPY package.json package-lock.json tsconfig.json tsconfig.build.json ./
 COPY apps ./apps
 COPY packages ./packages
 COPY scripts ./scripts
-RUN npm install --no-audit --no-fund --ignore-scripts && npm run build
+RUN npm ci --no-audit --no-fund --ignore-scripts && npm run build
 
 FROM node:22-alpine
 ENV NODE_ENV=production

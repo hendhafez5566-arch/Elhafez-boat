@@ -32,7 +32,9 @@
       <button class="nav" data-page="leads"><span class="nav-icon">◎</span><span>العملاء المهتمون</span></button>
       <button class="nav" data-page="wa-inbox"><span class="nav-icon">◉</span><span>محادثات واتساب</span></button>
       <button class="nav" data-page="catalog"><span class="nav-icon">▤</span><span>المنتجات والخدمات</span></button>
-      <button class="nav" data-page="offers"><span class="nav-icon">◇</span><span>العروض</span></button>
+      <button class="nav" data-page="customers"><span class="nav-icon">◎</span><span>العملاء</span></button>
+      <button class="nav" data-page="integrations"><span class="nav-icon">⇄</span><span>التكاملات</span></button>
+      <button class="nav" data-page="ai-settings"><span class="nav-icon">✦</span><span>المساعد الذكي</span></button>
       <button class="nav" data-page="flow-builder"><span class="nav-icon">⑂</span><span>مصمم الشات بوت</span></button>
       
     </nav>
@@ -40,6 +42,8 @@
     <nav aria-label="الإعدادات">
       <button class="nav" data-page="settings"><span class="nav-icon">⚙</span><span>إعدادات البوت والأسئلة</span></button>
       <button class="nav" data-page="wa-connect"><span class="nav-icon">☏</span><span>ربط واتساب</span></button>
+      <button class="nav" data-page="templates"><span class="nav-icon">▣</span><span>قوالب واتساب</span></button>
+      <button class="nav" data-page="subscription"><span class="nav-icon">▤</span><span>الاشتراك</span></button>
       <button class="nav" data-page="team"><span class="nav-icon">♧</span><span>الموظفون</span></button>
     </nav>
     <div class="sidebar-spacer"></div>
@@ -68,9 +72,9 @@
   <div class="metric"><div class="metric-top"><span class="metric-icon purple">☏</span></div><small>مهتمون حاليًا</small><strong id="lead-metric-interested">—</strong><span>في مرحلة تجميع الاحتياجات</span></div>
  </div>
  <div class="panel" style="padding:24px"><div class="panel-heading"><div><h3>المهمة الوحيدة للبوت</h3>
-  <p>ردود دقيقة عن البرامج والأسعار المعتمدة، فهم طلب العميل، وتأهيله وتسليمه لموظف الشركة.</p></div></div>
+  <p>ردود دقيقة عن المنتجات والخدمات والأسعار المعتمدة، فهم طلب العميل، وتأهيله وتسليمه لموظف الشركة.</p></div></div>
   <p>البوت <strong>لا يصدر حجزًا</strong>، ولا يدير فواتير أو مدفوعات أو ملفات مسافرين. كل ده مسؤولية فريق شركتك.</p>
-  <div class="actions"><button class="secondary" data-goto="simulator">جرب محادثة مع البوت</button>
+  <div class="actions"><button class="secondary" data-goto="flow-builder">جرب محادثة مع البوت</button>
     <button class="secondary" data-goto="settings">تعديل ردود البوت</button></div></div>
  <div style="display:none" aria-hidden="true">
         <div class="welcome-hero"><div class="hero-copy"><span class="eyebrow">لوحة متابعة الأعمال</span><h2>كل مبيعات شركتك<br>قدامك في مكان واحد.</h2><p>تابع البرامج والحجوزات والعملاء، وركّز على الفرص اللي محتاجة تدخلك.</p><div class="actions"><button class="hero-button" data-goto="programs">+ إضافة برنامج سياحي</button><button class="hero-link" data-goto="bookings">عرض الحجوزات ←</button></div></div><div class="hero-art"><div class="hero-ring"><div class="hero-center">✈</div></div><div class="hero-floating hero-f1">✓ برنامج جديد</div><div class="hero-floating hero-f2">☏ عميل مهتم</div></div></div>
@@ -80,7 +84,7 @@
       </div>
 </section>
 <section id="leads" class="page" hidden>
- <div class="section-heading"><div><h2>العملاء المهتمون</h2><p>العميل هنا سأل عن خدمة أو برنامج ووضح احتياجاته. الموظف هو اللي يتواصل معاه ويعمل الحجز خارج البوت.</p></div>
+ <div class="section-heading"><div><h2>العملاء المهتمون</h2><p>استفسارات العملاء واحتياجاتهم المعتمدة. فريق الشركة يتولى التواصل والتنفيذ خارج البوت.</p></div>
   <button id="leads-refresh" type="button" class="secondary">تحديث القائمة</button></div>
  <div class="panel table-panel">
   <div class="toolbar"><div class="tab-filters" id="lead-filters">
@@ -90,12 +94,22 @@
    <button type="button" data-lead-stage="CONTACTED" class="filter-tab">تم التواصل</button></div>
    <input id="lead-search" class="search" placeholder="بحث بالاسم أو رقم واتساب" aria-label="بحث العملاء المهتمين">
   </div>
-  <div class="table-scroll"><table><thead><tr><th>العميل</th><th>الاهتمام / البرنامج</th><th>الأفراد</th><th>موعد مناسب</th><th>المرحلة</th><th>الإجراء</th></tr></thead>
+  <div class="table-scroll"><table><thead><tr><th>العميل</th><th>اهتمام العميل</th><th>الحقول المسجلة</th><th>التصنيفات</th><th>المرحلة</th><th>الإجراء</th></tr></thead>
    <tbody id="lead-list-body"></tbody></table></div>
   <div class="table-footer"><span id="lead-list-count"></span><span>الموظف المسؤول يتواصل ويُكمل الحجز بالنظام المعتاد.</span></div>
  </div>
 </section>
-<section id="catalog" class="page" hidden>
+<section id="integrations" class="page" hidden><div class="section-heading"><h2>التكاملات وWebhooks</h2></div><div class="ops-panel"><p>إرسال بيانات المحادثة إلى أنظمة خارجية. يجب اعتماد نطاق الوجهة في إعدادات الخادم. المعاينة لا ترسل بيانات خارجية.</p>
+ <form id="integration-form" class="ops-form"><label>اسم التكامل<input name="name" minlength="2" maxlength="100" required></label><label>رابط HTTPS<input name="url" type="url" required></label><button class="primary">إضافة التكامل</button></form><div id="integration-list"></div><h3>مفاتيح REST — للمالك</h3><p>قراءة الكتالوج والعملاء المهتمين فقط، بصلاحية 90 يومًا. المفتاح يظهر مرة واحدة.</p><form id="access-key-form" class="ops-form"><label>اسم المفتاح<input name="name" required minlength="2" maxlength="100"></label><label>الصلاحية<select name="scope"><option value="catalog:read">قراءة الكتالوج</option><option value="leads:read">قراءة العملاء المهتمين</option></select></label><button class="primary">إنشاء مفتاح</button></form><pre id="access-key-created"></pre><div id="access-key-list"></div></div></section>
+ <section id="ai-settings" class="page" hidden>
+ <div class="section-heading"><h2>المساعد الذكي — معلومات الشركة المعتمدة</h2></div>
+ <div class="ops-panel"><p>المساعد يختار إجابة منشورة من الأسئلة أو الكتالوج. يسجل المصدر، ويحوّل للموظف عند عدم التأكد. تفعيل المزود يحتاج إعدادات الخادم.</p>
+ <form id="ai-form" class="ops-form"><label>الحالة<select name="enabled"><option value="false">متوقف</option><option value="true">مفعّل</option></select></label>
+ <label>تعليمات النشاط<textarea name="instructions" maxlength="2000"></textarea></label>
+ <label>الحد الشهري<input name="monthlyLimit" type="number" min="0" max="100000" value="100"></label>
+ <p id="ai-provider-status"></p><button class="primary">حفظ الإعدادات</button></form></div>
+ </section>
+ <section id="catalog" class="page" hidden>
         <div class="section-heading"><div><h2>معلومات المنتجات والخدمات</h2>
           <p>أضف ما تقدمه شركتك أو محلك من منتجات وخدمات وعروض. المعلومات دي هي المصدر المعتمد لردود البوت — مش نظام مخزون أو مبيعات.</p></div></div>
         <div class="ops-layout">
@@ -180,10 +194,11 @@
         <div class="section-heading"><div><h2>صندوق محادثات واتساب</h2><p>الرسائل الحقيقية من رقم Meta المربوط بالشركة فقط. الردود في نافذة الخدمة المسموحة.</p></div><button class="secondary" type="button" id="wa-inbox-refresh">تحديث الرسائل</button></div>
         <div class="ops-layout"><div class="ops-panel"><h3>المحادثات</h3>
         <input id="wa-inbox-search" class="search" type="search" placeholder="ابحث باسم العميل أو رقم الهاتف" aria-label="بحث محادثات واتساب">
-        <select id="wa-inbox-filter" aria-label="تصفية محادثات واتساب"><option value="ALL">كل المحادثات</option><option value="HUMAN">مع موظف</option><option value="OPEN">البوت أو انتظار الموظف</option></select>
+        <select id="wa-inbox-filter" aria-label="تصفية محادثات واتساب"><option value="ALL">كل المحادثات</option><option value="UNREAD">غير مقروءة</option><option value="ASSIGNED">مسندة لموظف</option><option value="CLOSED">مغلقة</option><option value="HUMAN">مع موظف</option><option value="OPEN">البوت أو انتظار الموظف</option></select>
         <div id="wa-threads" aria-live="polite"></div></div>
           <div class="ops-panel"><h3 id="wa-chat-title">اختار محادثة لعرض رسائلها</h3><div id="wa-lead-context" class="ops-note" hidden></div><div id="wa-chat" class="ops-chat"><p class="ops-muted">صندوق الوارد الحقيقي يبدأ في استقبال الرسائل بعد ربط WhatsApp Cloud API والتحقق من Webhook.</p></div>
             <div class="ops-actions" id="wa-chat-tools" hidden><button id="wa-handoff" type="button" class="secondary">استلام المحادثة</button>
+              <button id="wa-note" type="button" class="secondary">ملاحظة داخلية</button><button id="wa-close" type="button" class="secondary">إغلاق</button><select id="wa-saved" aria-label="الردود المحفوظة"></select><button id="wa-save-reply" type="button" class="secondary">حفظ الرد الحالي</button>
               <div id="wa-assign-tools" hidden><label>الموظف المسؤول<select id="wa-assignee" aria-label="الموظف المسؤول"></select></label>
               <button id="wa-assign" type="button" class="secondary">تعيين المحادثة</button></div>
               <form id="wa-reply-form" class="ops-form" style="flex:1"><label>رسالة الموظف<textarea name="body" rows="2" maxlength="2000" required placeholder="اكتب الرد للعميل"></textarea></label><button class="primary" type="submit" id="wa-reply" disabled>إضافة لطابور الإرسال</button></form></div>
@@ -216,7 +231,7 @@
             <form id="template-send-form" class="ops-form">
               <label>العميل<select id="template-send-contact" name="contactId" required></select></label>
               <label>قالب موافق عليه<select id="template-send-template" name="templateId" required></select></label>
-              <button type="submit" class="primary">إضافة رسالة واحدة للطابور</button>
+              <label>موعد إرسال اختياري<input name="scheduleAt" type="datetime-local"></label><button type="submit" class="primary">إضافة رسالة واحدة للطابور</button>
             </form>
             <div class="ops-note">إرسال رسالة لقائمة كاملة غير متاح من الشاشة دي. يتم التحقق من الموافقة قبل الإرسال ومنع أكثر من قالب في 24 ساعة لنفس العميل. إضافة الرسالة للطابور لا تعني وصولها.</div>
           </div>
@@ -266,7 +281,7 @@
           </div>
           <div class="builder-column"><h3>خصائص الخطوة</h3><div id="builder-editor"></div></div>
           <div class="builder-column"><h3>معاينة المحادثة</h3>
-            <p class="ops-muted">معاينة داخل المتصفح؛ لا ترسل رسائل حقيقية ولا تحفظ معلومات عملاء.</p>
+            <p class="ops-muted">معاينة منفصلة؛ بعد تسجيل الدخول تستخدم محرك الخادم. لا ترسل رسائل واتساب أو Webhooks. خطوات AI قد تستهلك من حد المساعد.</p>
             <div id="builder-preview" class="builder-preview-window"></div>
             <div id="builder-preview-options"></div>
             <div class="builder-toolbar"><button type="button" id="builder-preview-reset" class="secondary">بدء المحادثة من الأول</button>
@@ -276,7 +291,7 @@
         </div>
       </section>
       <section id="settings" class="page" hidden>
-        <div class="section-heading"><div><h2>إعدادات البوت والشركة</h2><p>عدّل مسودة رسالة الترحيب والأقسام المتاحة وانشرها كإصدار ثابت</p></div></div>
+        <div class="section-heading"><div><h2>إعدادات البوت والشركة</h2><p>أضف الأسئلة المعتمدة، وصمم الترحيب والقوائم من مصمم المحادثات.</p></div></div>
         <div class="ops-panel" style="margin-bottom:16px"><h3>صمم قوائم البوت لكل الأنشطة</h3>
          <p>غير مقيد بأقسام السياحة: اضغط «مصمم الشات بوت» لبناء الرسائل والأزرار والقوائم والأسئلة والشروط.</p>
          <button type="button" class="primary" data-goto="flow-builder">فتح مصمم الشات بوت</button></div>

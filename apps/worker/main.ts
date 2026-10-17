@@ -1,3 +1,4 @@
+import {processIntegrationJob} from '../api/src/integrations.js';
 /** Durable WhatsApp outbox worker. Requires trusted non-owner PostgreSQL role. */
 import { createRequire } from 'node:module';
 import { createDecipheriv } from 'node:crypto';
@@ -39,6 +40,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
  try{
   await tx.query('BEGIN');began=true;
   await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
+  await processIntegrationJob(tx,tenantId);
   // Row-level locking reserves one job among concurrent worker processes.
   const pending=await tx.query(`SELECT j.*,a.phone_number_id,a.access_token_encrypted,c.last_customer_message_at,k.do_not_contact,k.marketing_opt_in
    FROM whatsapp_outbox j JOIN whatsapp_accounts a ON a.tenant_id=j.tenant_id AND a.id=j.account_id
@@ -54,7 +56,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
   const payload=job.payload as {type?:string};
   const template=payload.type==='template';
   // Never release stale queued outreach long after an account's suspension/reactivation.
-  const queuedAge=Date.now()-new Date(String(job.created_at)).getTime();
+  const queuedAge=Date.now()-new Date(String(job.scheduled_for||job.created_at)).getTime();
   if(template&&queuedAge>24*3600_000){
     await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Template job expired before dispatch'
       WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);

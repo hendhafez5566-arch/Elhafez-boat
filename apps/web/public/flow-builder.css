@@ -21,4 +21,12 @@
 .builder-option{border:1px solid #008a77;border-radius:9px;padding:9px;background:#fff;color:#007563;display:block;width:100%;margin-top:6px}
 .builder-preview-input{display:flex;gap:6px;margin-top:10px}.builder-preview-input input{min-width:0;flex:1;border:1px solid #c3d0dd;border-radius:8px;padding:8px}
 @media(max-width:1100px){.builder-layout{grid-template-columns:1fr 1fr}.builder-column:last-child{grid-column:1/-1}}
-@media(max-width:690px){.builder-layout{grid-template-columns:1fr}.builder-column:last-child{grid-column:auto}.builder-toolbar>*{flex:1 1 140px}}
+@media(max-width:690px){.builder-layout{grid-template-columns:1fr}.builder-column:last-child{grid-column:auto}.builder-toolbar>*{flex:1 1 140px}}.flow-canvas{grid-column:1/-1;height:540px;overflow:hidden;position:relative;direction:ltr;background-color:#edf3f8;background-image:radial-gradient(#b6c8d9 1px,transparent 1px);background-size:22px 22px;border:1px solid #bbcadb;border-radius:16px;touch-action:none;cursor:grab}
+.flow-stage{position:absolute;left:0;top:0;width:10000px;height:10000px;transform-origin:0 0}
+.flow-lines{position:absolute;width:10000px;height:10000px;pointer-events:none;overflow:visible}
+.flow-lines>path{fill:none;stroke:#087d75;stroke-width:2}
+.canvas-node{position:absolute;width:240px;padding:12px;background:white;border:1px solid #97b9cd;border-radius:12px;box-shadow:0 5px 16px #20436318;color:#183652;cursor:default}
+.canvas-node p{font-size:13px;min-height:32px;margin:8px 0;overflow-wrap:anywhere}.canvas-node button{font:inherit;font-size:12px;border:1px solid #b6cfd5;border-radius:7px;background:#f1faf8;color:#124c49;padding:5px;margin:2px;cursor:pointer}.canvas-node .canvas-title{display:block;width:100%;background:#173f68;color:white;cursor:move;touch-action:none}
+@media(max-width:690px){.flow-canvas{height:420px}}
+
+.builder-layout>.builder-toolbar{grid-column:1/-1}

@@ -23,6 +23,10 @@ services:
     restart: unless-stopped
     command: ["node", ".build/apps/api/src/server.js"]
     environment:
+      AI_BASE_URL: ${AI_BASE_URL:-}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      OUTBOUND_WEBHOOK_HOSTS: ${OUTBOUND_WEBHOOK_HOSTS:-}
       PORT: 4000
       DATABASE_URL: ${DATABASE_URL:?Use a non-owner RLS-enforced PostgreSQL role}
       PLATFORM_DATABASE_URL: ${PLATFORM_DATABASE_URL:?Use a separate restricted platform admin connection}
@@ -46,6 +50,8 @@ services:
     command: ["node", ".build/apps/worker/main.js"]
     environment:
       DATABASE_URL: ${DATABASE_URL:?Use a non-owner RLS-enforced PostgreSQL role}
+      OUTBOUND_WEBHOOK_HOSTS: ${OUTBOUND_WEBHOOK_HOSTS:-}
+      OUTBOUND_WEBHOOK_SIGNING_SECRET: ${OUTBOUND_WEBHOOK_SIGNING_SECRET:-}
       META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v24.0}
       WHATSAPP_TOKEN_ENCRYPTION_KEY: ${WHATSAPP_TOKEN_ENCRYPTION_KEY:?32 bytes encoded in base64 required}
     depends_on:

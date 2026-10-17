@@ -19,11 +19,12 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    const target=$('wa-threads');target.replaceChildren();
    const term=$('wa-inbox-search').value.trim().toLowerCase();
    const filter=$('wa-inbox-filter').value;
-   const filtered=inboxCache.filter(x=>(filter==='ALL'||x.status===filter)&&
+   const filtered=inboxCache.filter(x=>(filter==='ALL'||(filter==='UNREAD'?Number(x.unread_count)>0:filter==='ASSIGNED'?Boolean(x.assigned_user_id):x.status===filter))&&
      (String(x.customer_name||'').toLowerCase().includes(term)||String(x.phone||'').includes(term)));
    if(!filtered.length)msg(target,'لا توجد محادثات تطابق البحث والتصفية.');
    for(const item of filtered){
      const card=button(item.customer_name+' — '+item.phone,()=>selectThread(item),'ops-thread');
+     if(item.unread_count)card.append(node('strong','غير مقروء: '+item.unread_count));
      card.append(node('small',item.lead_stage==='READY_FOR_AGENT'?'★ جاهز لموظف':item.status==='HUMAN'?'مع موظف':'البوت يرد على الاستفسارات'));
      if(item.do_not_contact)card.append(node('small','العميل أوقف التواصل'));
      target.append(card);
@@ -47,9 +48,6 @@ export function initOperations({state,api,notify,execute,canEdit}) {
   if(item.lead_stage){
     summary.hidden=false;
     summary.append(node('strong',item.lead_stage==='READY_FOR_AGENT'?'عميل جاهز لموظف':'اهتمام العميل: '+item.lead_stage));
-    summary.append(node('p','الخدمة: '+(item.interested_program||'استفسار عام')+
-      ' • الأفراد: '+(item.party_size??'غير محدد')+
-      ' • السفر: '+(item.travel_preference||'غير محدد')));
     const captured=item.custom_fields&&typeof item.custom_fields==='object'&&!Array.isArray(item.custom_fields)
       ?Object.entries(item.custom_fields).slice(0,8)
         .map(([key,value])=>key+': '+String(value).slice(0,120)).join(' • '):'';
@@ -58,7 +56,11 @@ export function initOperations({state,api,notify,execute,canEdit}) {
   }else summary.hidden=true;
 
   const messages=await api('/whatsapp/inbox/'+item.id+'/messages');
-  messages.forEach(message=>{const div=node('div',undefined,'ops-bubble '+(message.kind==='INBOUND'?'incoming':'outgoing'));div.append(node('p',message.body),node('small',message.delivery_status||message.kind));target.append(div);});
+  item.unread_count=0;
+  const replies=await api('/saved-replies'),saved=$('wa-saved');saved.replaceChildren();const empty=node('option','اختار ردًا محفوظًا');empty.value='';saved.append(empty);
+  for(const r of replies){const o=node('option',r.title);o.value=r.body;saved.append(o)}
+
+  messages.forEach(message=>{const div=node('div',undefined,'ops-bubble '+(message.kind==='INBOUND'?'incoming':'outgoing'));div.append(node('p',message.body),node('small',message.kind==='INTERNAL_NOTE'?'ملاحظة داخلية':message.delivery_status||message.kind));target.append(div);});
   $('wa-handoff').textContent=item.status==='HUMAN'?'تسليم للبوت':'استلام المحادثة';
   $('wa-reply').disabled=item.status!=='HUMAN';$('wa-chat-tools').hidden=false;
   const managers=state.role==='OWNER'||state.role==='MANAGER';
@@ -86,7 +88,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
   const info=await api('/subscription');c.append(node('h3','الباقة: '+(info.title||info.planCode||'غير محددة')),
     node('p','الحالة: '+(info.status||'لم يتم تفعيل اشتراك')),
     node('p','الحد الأقصى للموظفين: '+(info.maxStaff??'—')),
-    node('p','الحد الأقصى للبرامج: '+(info.maxPrograms??'—')));
+    node('p','الحد الأقصى لعناصر المحتوى: '+(info.maxPrograms??'—')));
   if(info.currentPeriodEndsAt)c.append(node('small','تاريخ نهاية الدورة: '+new Date(info.currentPeriodEndsAt).toLocaleDateString('ar-EG')));
  }
  async function knowledge(){
@@ -193,7 +195,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
      ?Object.entries(lead.custom_fields).slice(0,3).map(([key,value])=>key+': '+String(value).slice(0,80)).join(' • '):'';
    const fields=[lead.customer_name+' — '+lead.phone,(lead.program_title||lead.interested_program||'استفسار عام')+
      (answerSummary?' | '+answerSummary:''),
-     lead.party_size??'لسه مش محدد',lead.travel_preference||'لسه مش محدد',
+     Object.keys(lead.custom_fields||{}).length,lead.custom_fields?.lead_tags||'—',
      leadLabels[lead.stage]||lead.stage];
    for(const value of fields)tr.append(node('td',value));
    const actions=node('td');
@@ -243,7 +245,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    }
  }
  async function onPage(page){
-  if(!['overview','leads','catalog','wa-inbox','wa-connect','team','subscription','settings'].includes(page))return;
+  if(!['overview','leads','catalog','wa-inbox','wa-connect','team','subscription','settings','templates'].includes(page))return;
   try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='overview')await leadsSummary();if(page==='leads')await leadsView();if(page==='catalog')await catalog();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();if(page==='templates')await templates();}
   catch(e){notify(e.message||'تعذر تحميل الصفحة','error');}
  }
@@ -283,7 +285,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
  $('template-send-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
    const d=getForm(event.currentTarget);
    if(!window.confirm('إرسال القالب المعتمد لهذا العميل فقط؟ يجب وجود موافقة موثقة؛ لا يمكن التراجع بعد دخوله طابور الإرسال.'))return;
-   await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId}});
+   await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId,scheduleAt:d.scheduleAt?new Date(d.scheduleAt).toISOString():undefined}});
    notify('تمت إضافة رسالة واحدة للطابور، وليست تأكيد تسليم من واتساب.');
  })});
  $('wa-inbox-search').addEventListener('input',renderInboxRows);
@@ -322,6 +324,10 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    form.reset();await catalog();notify('تم حفظ المنتج أو الخدمة كمسودة');
  })});
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
+ $('wa-saved').onchange=()=>{if($('wa-saved').value)$('wa-reply-form').elements.body.value=$('wa-saved').value};
+ $('wa-save-reply').onclick=()=>execute(async()=>{if(state.demo)return noLive();const body=$('wa-reply-form').elements.body.value.trim();const title=prompt('اسم الرد المحفوظ');if(!title||!body)return;await api('/saved-replies',{method:'POST',body:{title,body}});notify('تم حفظ الرد');if(selected)await selectThread(selected)});
+ $('wa-note').onclick=()=>execute(async()=>{if(!selected||state.demo)return;const body=prompt('ملاحظة داخلية للفريق — لا تُرسل للعميل');if(!body)return;await api('/whatsapp/inbox/'+selected.id+'/notes',{method:'POST',body:{body}});await selectThread(selected)});
+ $('wa-close').onclick=()=>execute(async()=>{if(!selected||state.demo)return;await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status:'CLOSED'}});await inbox();notify('تم إغلاق المحادثة')});
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});const selectedId=selected.id;await inbox();const refreshed=inboxCache.find(x=>x.id===selectedId);if(refreshed)await selectThread(refreshed);notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
  $('team-invite-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const input=getForm(e.currentTarget);const invited=await api('/team/invitations',{method:'POST',body:input});const link=location.origin+'/join.html#team.'+invited.inviteToken;$('team-invite-link').value=link;$('team-invite-result').hidden=false;await staff();notify('الدعوة اتعملت. انسخ الرابط وشاركه بأمان؛ مفيش إيميل تلقائي.')})});

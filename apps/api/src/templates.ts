@@ -60,6 +60,8 @@ export async function recordMarketingConsent(db:SqlClient,actor:Actor,contactId:
 }
 export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER','MANAGER','AGENT']);const d=record(input);const contactId=d.contactId,templateId=d.templateId;
+ let scheduledFor:Date|null=null;
+ if(d.scheduleAt){if(typeof d.scheduleAt!=='string')throw new HttpFailure(400,'Invalid schedule');scheduledFor=new Date(d.scheduleAt);if(!Number.isFinite(scheduledFor.getTime())||scheduledFor.getTime()<Date.now()+60000||scheduledFor.getTime()>Date.now()+30*86400000)throw new HttpFailure(400,'Schedule must be 1 minute to 30 days ahead')}
  if(!isUuid(contactId)||!isUuid(templateId))throw new HttpFailure(400,'Invalid template recipient');
  // Serialize outgoing decisions on customer row to avoid concurrent flood and opt-out races.
  const customer=await db.query(`SELECT phone,do_not_contact,marketing_opt_in FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE`,[actor.tenantId,contactId]);
@@ -78,11 +80,11 @@ export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknow
  DO UPDATE SET whatsapp_account_id=$3 RETURNING id`,[actor.tenantId,contactId,accountId]);
  const conversationId=String(conversation.rows[0].id);
  const payload={messaging_product:'whatsapp',type:'template',template:{name:t.rows[0].template_name,language:{code:t.rows[0].language_code}}};
- await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload)
- VALUES($1,$2,$3,$4,$5::jsonb)`,[actor.tenantId,accountId,conversationId,phone,JSON.stringify(payload)]);
+ await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload,scheduled_for,next_attempt_at)
+ VALUES($1,$2,$3,$4,$5::jsonb,$6,coalesce($6,now()))`,[actor.tenantId,accountId,conversationId,phone,JSON.stringify(payload),scheduledFor?.toISOString()??null]);
  await db.query(`INSERT INTO template_message_activity(tenant_id,contact_id,template_id,conversation_id,sent_by)
  VALUES($1,$2,$3,$4,$5)`,[actor.tenantId,contactId,templateId,conversationId,actor.userId]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id)
  VALUES($1,$2,'TEMPLATE_MESSAGE_QUEUED','contact',$3)`,[actor.tenantId,actor.userId,contactId]);
- return {queued:true,delivered:false,recipient:contactId,template:templateId};
+ return {queued:true,delivered:false,scheduledFor:scheduledFor?.toISOString()??null,recipient:contactId,template:templateId};
 }

@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/*.test.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "check": "npm run typecheck && npm test",
     "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
     "db:bootstrap": "node --env-file-if-exists=.env scripts/bootstrap-owner.mjs",

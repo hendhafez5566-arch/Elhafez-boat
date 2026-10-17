@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {validateFlow,advanceFlow,initialFlowState,exampleFlow} from '../.build/apps/api/src/flow-engine.js';
+import {executeFlow} from '../.build/apps/api/src/flow-service.js';
+import {catalogInput} from '../.build/apps/api/src/catalog.js';
+import {exactGroundedAnswer} from '../.build/apps/api/src/ai.js';
+import {publicIPv4,webhookURL} from '../.build/apps/api/src/integrations.js';
+const flow=()=>({name:'Generic assistant',startId:'start',nodes:[{id:'start',type:'START',next:'question'},{id:'question',type:'QUESTION',text:'ما احتياجك؟',field:'need',next:'end'},{id:'end',type:'END',text:'تم تسجيل طلبك'}]});
+test('publish rejects an invalid startId even when exactly one START exists',()=>{const f=flow();f.startId='question';assert.throws(()=>validateFlow(f),/START/)});
+test('draft keeps incomplete links; publish refuses them',()=>{const f=flow();f.nodes[1].next='missing';assert.doesNotThrow(()=>validateFlow(f,{draft:true}));assert.throws(()=>validateFlow(f),/missing/)});
+test('question captures custom answer and safely ends',()=>{const f=validateFlow(flow());const first=advanceFlow(f,initialFlowState());assert.equal(first.state.at,'question');const next=advanceFlow(f,first.state,{kind:'TEXT',value:'استفسار عن خدمة'});assert.equal(next.state.answers.need,'استفسار عن خدمة');assert.equal(next.finished,true)});
+test('canvas positions survive draft validation',()=>{const f=flow();f.layout={start:{x:10,y:20}};assert.deepEqual(validateFlow(f).layout,f.layout);f.layout.start.x=Infinity;assert.throws(()=>validateFlow(f),/position/)});
+test('approved catalog validates data and rejects executable links',()=>{assert.equal(catalogInput({kind:'SERVICE',title:'استشارة'}).title,'استشارة');assert.throws(()=>catalogInput({kind:'SERVICE',title:'استشارة',externalUrl:'javascript:alert(1)'}),/HTTPS/)});
+test('AI exact fallback accepts approved source only',()=>{const approved={id:'faq:1',question:'أوقات العمل',answer:'من 9 إلى 5'};assert.equal(exactGroundedAnswer([approved],'اوقات العمل')?.answer,approved.answer);assert.equal(exactGroundedAnswer([approved],'خصم 90%؟'),null)});
+test('SSRF refuses private/reserved IPv4 and non-allowlisted destinations',()=>{for(const ip of ['127.0.0.1','10.0.0.1','169.254.169.254','172.16.1.2','192.168.1.1','100.64.0.1','::1','224.0.0.1'])assert.equal(publicIPv4(ip),false);assert.equal(publicIPv4('8.8.8.8'),true);assert.throws(()=>webhookURL('http://127.0.0.1/'));assert.throws(()=>webhookURL('https://unapproved.invalid/'))});
+test('preview webhook node cannot enqueue external side effects',async()=>{const f=validateFlow({name:'Preview integration',startId:'start',nodes:[{id:'start',type:'START',next:'hook'},{id:'hook',type:'WEBHOOK',integrationId:'11111111-1111-4111-8111-111111111111',next:'end'},{id:'end',type:'END',text:'تم'}]});let queries=0;const result=await executeFlow({query:async()=>{queries++;throw new Error('Unexpected side effect')}},'11111111-1111-4111-8111-111111111111',f,initialFlowState(),undefined,true);assert.equal(queries,0);assert.equal(result.finished,true)});
+test('automatic loops remain rejected',()=>{const f=exampleFlow();f.nodes.push({id:'loop',type:'TEXT',text:'loop',next:'loop'});assert.throws(()=>validateFlow(f))});
