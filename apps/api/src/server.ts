@@ -1,3 +1,4 @@
+import { listDepartures, createDeparture, listRoomPackages, addRoomPackage } from './inventory.js';
 import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp, getFlowSettings, saveFlowSettings } from './whatsapp.js';
 import { createTeamInvite, listTeamInvitations, revokeTeamInvite, updateTeamRole, acceptTeamInvite } from './team.js';
@@ -5,7 +6,7 @@ import { platformLogin, platformAuth, platformLogout, platformTenants, platformP
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
-import { HttpFailure, withTenantTransaction, listPrograms, createProgram, publishProgram, listBookings, createBooking, confirmBooking, type SqlPool, type SqlClient } from './services.js';
+import { HttpFailure, withTenantTransaction, listPrograms, createProgram, publishProgram, listBookings, createBooking, confirmBooking, cancelBooking, type SqlPool, type SqlClient } from './services.js';
 import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, listOffers, addOffer, publishOffer, listFollowups, addFollowup, completeFollowup, listConversations, createInternalConversation, listInternalMessages, addInternalMessage, getSummary } from './sales.js';
 import { botConfig, saveBotDraft, publishBotDraft, botVersions, teamMembers } from './bot-config.js';
 const require=createRequire(import.meta.url);
@@ -70,8 +71,16 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/programs'){const input=await body(req);return json(res,201,await withTenantTransaction(pool,actor,tx=>createProgram(tx,actor,input)));}
     const publication=/^\/api\/v1\/programs\/([^/]+)\/publish$/.exec(pathname);
     if(req.method==='PATCH'&&publication)return json(res,200,await withTenantTransaction(pool,actor,tx=>publishProgram(tx,actor,publication[1])));
+    const departures=/^\/api\/v1\/programs\/([^/]+)\/departures$/.exec(pathname);
+    if(req.method==='GET'&&departures)return json(res,200,await withTenantTransaction(pool,actor,tx=>listDepartures(tx,actor,departures[1])));
+    if(req.method==='POST'&&departures)return json(res,201,await withTenantTransaction(pool,actor,async tx=>createDeparture(tx,actor,departures[1],await body(req))));
+    const roomPackages=/^\/api\/v1\/departures\/([^/]+)\/rooms$/.exec(pathname);
+    if(req.method==='GET'&&roomPackages)return json(res,200,await withTenantTransaction(pool,actor,tx=>listRoomPackages(tx,actor,roomPackages[1])));
+    if(req.method==='POST'&&roomPackages)return json(res,201,await withTenantTransaction(pool,actor,async tx=>addRoomPackage(tx,actor,roomPackages[1],await body(req))));
     if(req.method==='GET'&&pathname==='/api/v1/bookings')return json(res,200,await withTenantTransaction(pool,actor,tx=>listBookings(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/bookings'){const input=await body(req);return json(res,201,await withTenantTransaction(pool,actor,tx=>createBooking(tx,actor,input)));}
+    const cancel=/^\/api\/v1\/bookings\/([^/]+)\/cancel$/.exec(pathname);
+    if(req.method==='PATCH'&&cancel)return json(res,200,await withTenantTransaction(pool,actor,tx=>cancelBooking(tx,actor,cancel[1])));
     const confirmation=/^\/api\/v1\/bookings\/([^/]+)\/confirm$/.exec(pathname);
     if(req.method==='PATCH'&&confirmation)return json(res,200,await withTenantTransaction(pool,actor,tx=>confirmBooking(tx,actor,confirmation[1])));
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
