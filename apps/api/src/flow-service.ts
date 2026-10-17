@@ -86,7 +86,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  ]);
  if(result.handoff){
   const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
-  await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify(result.state.answers)]);
+  await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify({...result.state.answers,lead_tags:result.state.tags.join(', ')})]);
   await readyForAgent(db,tenantId,leadId,conversationId,null);
  }
  return {payloads:renderFlowMessages(flow,result.state.at,result.messages),handedOff:result.handoff};
@@ -96,6 +96,11 @@ export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:F
  const node=flow.nodes.find(n=>n.id===at);
  return messages.map(message=>{
   if(message.type==='TEXT')return {messaging_product:'whatsapp',type:'text',text:{preview_url:false,body:message.text}};
+  if(message.type==='MEDIA'){
+    const attachment:Record<string,unknown>={link:message.url};
+    if(message.caption && (message.mediaKind==='image'||message.mediaKind==='video'||message.mediaKind==='document'))attachment.caption=message.caption;
+    return {messaging_product:'whatsapp',type:message.mediaKind,[message.mediaKind]:attachment};
+  }
   if(!node||(node.type!=='BUTTONS'&&node.type!=='LIST'))throw new Error('Flow awaiting node not valid for options');
   const choices=message.choices.map(c=>({id:`flow:${node.id}:${c.id}`,title:c.title,description:c.description||''}));
   if(message.type==='BUTTONS')return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'button',body:{text:message.text},action:{buttons:choices.map(c=>({type:'reply',reply:{id:c.id,title:c.title}}))}}};
