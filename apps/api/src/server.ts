@@ -67,6 +67,17 @@ const server=createServer(async(req,res)=>{
       return json(res,404,{error:'Not found'});
     }
     const actor=await authenticate(pool,req.headers.authorization);
+    // Block mutating requests for expired or suspended subscriptions (reads remain available for export/support).
+    // This is a business entitlement check, separate from tenant RLS and staff-role authorization.
+    if(req.method&& !['GET','HEAD','OPTIONS'].includes(req.method) && pathname!=='/api/v1/auth/logout'){
+      const entitlement=await withTenantTransaction(pool,actor,async tx=>{
+        const r=await tx.query(`SELECT status,current_period_ends_at FROM tenant_subscriptions WHERE tenant_id=$1`,[actor.tenantId]);
+        return r.rows[0]??null;
+      });
+      if(!entitlement||!['TRIAL','ACTIVE'].includes(String(entitlement.status))||
+         new Date(String(entitlement.current_period_ends_at)).getTime()<=Date.now())
+        throw new HttpFailure(403,'Company subscription inactive or expired; only read-only access is available');
+    }
     if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,req.headers.authorization);return json(res,200,{ok:true});}
     if(req.method==='GET'&&pathname==='/api/v1/programs')return json(res,200,await withTenantTransaction(pool,actor,tx=>listPrograms(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/programs'){const input=await body(req);return json(res,201,await withTenantTransaction(pool,actor,tx=>createProgram(tx,actor,input)));}
