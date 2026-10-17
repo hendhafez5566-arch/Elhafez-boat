@@ -12,26 +12,41 @@ export function homeMenu(): MenuView {
     { id: "handoff", title: "التحدث مع موظف", description: "تحويل المحادثة لفريق المبيعات" }
   ] };
 }
-export function categoryMenu(tenantId: string, category: ProgramCategory, programs: readonly Program[]): MenuView {
+export function categoryMenu(tenantId: string, category: ProgramCategory, programs: readonly Program[], page = 0): MenuView {
+  if (!Number.isSafeInteger(page) || page < 0) throw new Error("Invalid page");
   const matches = publishedPrograms(programs,tenantId,category);
-  return { title: "البرامج المتاحة", rows: matches.slice(0,9).map(p => ({
-    id: "program:"+p.id, title: p.title.slice(0,24), description: p.priceMinor / 100 + " " + p.currency
-  })).concat(matches.length > 9 ? [{id:"more:"+category,title:"المزيد",description:"عرض المزيد من البرامج"}] : []) };
+  const start = page * 8;
+  const rows = matches.slice(start,start+8).map(p => ({
+    id: "program:"+p.id, title: p.title.slice(0,24), description: (p.priceMinor / 100).toFixed(2) + " " + p.currency
+  }));
+  if (page > 0) rows.push({id:"page:"+category+":"+(page-1),title:"السابق",description:"الصفحة السابقة"});
+  if (start + 8 < matches.length) rows.push({id:"page:"+category+":"+(page+1),title:"التالي",description:"الصفحة التالية"});
+  return { title: "البرامج المتاحة", rows };
 }
-export type ConversationState = { tenantId: string; status: "BOT" | "HUMAN"; currentMenu: "HOME" | ProgramCategory };
+export type ConversationState = { tenantId: string; status: "BOT" | "HUMAN"; currentMenu: "HOME" | ProgramCategory; page?: number };
 export function transition(state: ConversationState, actionId: string, programs: readonly Program[]): { state: ConversationState; view?: MenuView; program?: Program; handoff?: boolean } {
   if (state.status === "HUMAN") return {state};
   if (actionId === "handoff") return {state:{...state,status:"HUMAN"},handoff:true};
-  if (actionId === "home") return {state:{...state,currentMenu:"HOME"},view:homeMenu()};
+  if (actionId === "home") return {state:{...state,currentMenu:"HOME",page:0},view:homeMenu()};
   if (actionId.startsWith("category:")) {
     const category=actionId.slice(9) as ProgramCategory;
     if (!categories.some(c=>c.id===category)) return {state,view:homeMenu()};
-    return {state:{...state,currentMenu:category},view:categoryMenu(state.tenantId,category,programs)};
+    return {state:{...state,currentMenu:category,page:0},view:categoryMenu(state.tenantId,category,programs)};
+  }
+  if (actionId.startsWith("page:")) {
+    const match=/^page:(UMRAH|HAJJ|DOMESTIC|INTERNATIONAL):(0|[1-9][0-9]*)$/.exec(actionId);
+    if (match && state.currentMenu === match[1]) {
+      const page=Number(match[2]);
+      const total=publishedPrograms(programs,state.tenantId,state.currentMenu).length;
+      if (Number.isSafeInteger(page) && page*8 < total) {
+        return {state:{...state,page},view:categoryMenu(state.tenantId,state.currentMenu,programs,page)};
+      }
+    }
   }
   if (actionId.startsWith("program:")) {
     const id=actionId.slice(8);
     const program=programs.find(p=>p.id===id && p.tenantId===state.tenantId && p.published && p.availableSeats>0);
     if (program) return {state,program};
   }
-  return {state,view:state.currentMenu==="HOME" ? homeMenu() : categoryMenu(state.tenantId,state.currentMenu,programs)};
+  return {state,view:state.currentMenu==="HOME" ? homeMenu() : categoryMenu(state.tenantId,state.currentMenu,programs,state.page ?? 0)};
 }
