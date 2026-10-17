@@ -32,7 +32,10 @@ function throttle(req:IncomingMessage):void{
 const server=createServer(async(req,res)=>{
   try{
     const pathname=new URL(req.url??'/',`http://localhost:${port}`).pathname;
-    if(req.method==='GET'&&pathname==='/health')return json(res,200,{status:'ok',service:'api',whatsappConnected:false});
+    if(req.method==='GET'&&pathname==='/health'){
+      try{await pool.query('SELECT 1');return json(res,200,{status:'ok',service:'api',database:'reachable',whatsappConnected:false});}
+      catch{return json(res,503,{status:'unavailable',service:'api',database:'unreachable'});}
+    }
     if(req.method==='POST'&&pathname==='/api/v1/auth/login'){
       throttle(req);
       return json(res,200,await login(pool,await body(req)));
