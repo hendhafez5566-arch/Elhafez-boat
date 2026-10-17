@@ -1,0 +1,8 @@
+{
+  "name": "@elhafez/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node worker.mjs"
+  }
+}
