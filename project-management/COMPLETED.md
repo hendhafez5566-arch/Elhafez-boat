@@ -1,6 +1,6 @@
-# Verified completed work
+# Completed (verified code presence only)
 
-- Product scope and principal UX decisions agreed in conversation.
-- Master documentation and AI handover scaffold uploaded to repository (documentation only).
+- Master product specification and cross-chat handover files committed on main.
+- Stage 0 skeleton files committed on feat/stage0-foundation: workspace, configs, dev-only placeholders, domain contracts, tests and CI workflow.
 
-No application code or runtime acceptance completed.
+No passing test execution, integration, deployment or completed Stage 0 gate has yet been verified.
