@@ -1,17 +1,24 @@
-# REMAINING — chatbot-only product (2026-10-17)
+# Remaining work — GENERAL chatbot builder SaaS
 
-Authoritative scope: `docs/00-SCOPE-CHATBOT-ONLY.md`. **Previous booking/finance/ERP to-do items are CANCELED, not incomplete. Do not implement them.**
+Owner's latest scope: ALL businesses/shops, not tourism only; no internal ERP. Read `docs/00-SCOPE-CHATBOT-ONLY.md`.
 
-## Core chatbot improvements still needed
-- Reliable answer selection across natural Egyptian-Arabic questions, confusion handling, company-specific information grounding and useful noninvasive clarification. Current implementation is published exact-match FAQ + basic keyword category detection, **NOT yet real generative AI**.
-- More helpful program/service matching based on expressed needs (date/budget/people) only when approved data actually exists; never fabricate price or availability.
-- Clean staff lead board and WhatsApp inbox operational UX: focus on READY leads, context summary, employee pickup, SLA/new-lead notifications and practical search.
-- Meta Cloud API real enrollment, signed webhook/provider operations with actual test number, key rotation and robust message failure reconciliation.
-- Minimal tenant onboarding, privacy/opt-out, staff roles, bot subscription activation and simple usage measurements.
-- Safely remove/archive dormant old booking/inventory/financial UI/backend modules and adjust stale documents/tests while preserving migration history.
+## Built in draft source, NOT acceptance-tested
+- Configurable message/quick-button/list/input/condition/tag/media/link/handoff/end blocks and a visual card-style block editor, draft, publish, preview, saved customer fields and current WhatsApp webhook integration.
+- Company-specific generic catalog CRUD and published FAQ/approved item answers.
+- Shared WhatsApp inbox, qualified leads, employee assignment/handoff, consent and basic tenancy.
 
-## Not part of this chatbot (not in backlog)
-Booking confirmation, seat/room allocation, payment/refund records, invoices, bank/accounting, traveler passports/files, supplier contracts, broad CRM or billing engine. Human employee performs reservations and followup OUTSIDE bot.
+## Remaining core features for a BotSailor-class PRODUCT, not necessarily every provider-specific addon
+1. Flow designer: actual drag-and-drop canvas, zoom/connect lines, draft rollback, block grouping/reuse, duplicate/undo, robust per-node validation and error indicators.
+2. Dynamic catalog rendering and generic trigger/keyword rules, contact-property conditions, menu pagination, working URL/CTA/media behavior verified per channel; upload/support media lifecycle.
+3. Stronger natural Arabic interpretation with optional grounded AI provider, approved business knowledge, hallucination prevention and escalation; per-tenant settings.
+4. Broadcasts and scheduled sequences, approved Meta template sync including variables/media, granular opt-in/opt-out, segmentation/tags and policy-compliant rate controls.
+5. Webhooks/HTTP API actions, Google Sheets/CRM/ecommerce connectors with safe per-tenant secrets, outbound allowlists, retries/audit — never implement an internal business ERP.
+6. Team inbox improvements: saved replies, labels, assignment queues, reminders, notification/analytics and reporting.
+7. Platform admin: company onboarding, self-service Meta enrollment, usage/plan management, documentation, monitoring, safe data retention and backup/restore.
+8. Future optional channels (site chat, Messenger, Instagram, Telegram) via channel adapters; NONE live yet.
+9. Retire old tourism-only and booking/financial business code safely without touching migration compatibility or leaking customer data.
 
-## Final verification (once after feature build, per owner)
-Complete fresh checkout/install + PostgreSQL/RLS, browser/mobile experience, real Meta provider message-to-lead-to-agent E2E, role & tenant security, duplicate webhooks, handoff race conditions, failure/restore, privacy and performance. Only then merge draft PR and pilot. Current refactor not yet accepted/tested on real systems.
+## Final acceptance (ONE comprehensive phase at the end, user decision)
+Clean checkout/npm build and lockfile, real PostgreSQL migration/RLS, actual Meta sandbox and signed webhook/interactive media/lead-to-human tests, responsive browser, tenant & permission security, opt-in restrictions, worker recovery, integration safety, performance and restore. Resolve bugs then review PR and deploy pilot.
+
+**Current branch is NOT feature complete, NOT fully tested, and NOT commercially ready.**
