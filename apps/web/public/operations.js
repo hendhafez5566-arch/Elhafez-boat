@@ -49,12 +49,24 @@ export function initOperations({state,api,notify,execute,canEdit}) {
     node('p','الحد الأقصى للبرامج: '+(info.maxPrograms??'—')));
   if(info.currentPeriodEndsAt)c.append(node('small','تاريخ نهاية الدورة: '+new Date(info.currentPeriodEndsAt).toLocaleDateString('ar-EG')));
  }
+ async function knowledge(){
+  const target=$('faq-list');target.replaceChildren();
+  if(state.demo){msg(target,'في المعاينة، الأسئلة المعتمدة للعرض فقط.');return;}
+  const articles=await api('/knowledge');
+  if(!articles.length)msg(target,'مافيش أسئلة شائعة منشورة أو مسودات بعد.');
+  for(const article of articles){const item=node('div',undefined,'ops-card');
+    item.append(node('strong',article.question),node('p',article.answer),node('small',article.status==='PUBLISHED'?'منشور':'مسودة'));
+    if(article.status==='DRAFT'&&canEdit())item.append(button('اعتماد ونشر',async()=>{await api('/knowledge/'+article.id+'/publish',{method:'PATCH'});await knowledge();notify('تم نشر إجابة البوت المعتمدة')}));
+    target.append(item);
+  }
+ }
  async function onPage(page){
-  if(!['wa-inbox','wa-connect','team','subscription'].includes(page))return;
-  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();}
+  if(!['wa-inbox','wa-connect','team','subscription','settings'].includes(page))return;
+  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();if(page==='settings')await knowledge();}
   catch(e){notify(e.message||'تعذر تحميل الصفحة','error');}
  }
  $('wa-connect-form')?.addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();const form=e.currentTarget;execute(async()=>{const d=getForm(form);await api('/whatsapp/connection',{method:'POST',body:d});form.reset();await connection();notify('تم التحقق من رقم Meta وحفظه مشفرًا')})});
+ $('faq-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const form=e.currentTarget;await api('/knowledge',{method:'POST',body:getForm(form)});form.reset();await knowledge();notify('تم حفظ السؤال والإجابة كمسودة')})});
  $('wa-flow-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const d=getForm(e.currentTarget);await api('/whatsapp/flows',{method:'PUT',body:{accountId:d.accountId,flowId:d.flowId,screenId:d.screenId,enabled:d.enabled==='on'}});await connection();notify('تم حفظ إعداد Flow. النسخة المفعلة تُستخدم بعد تحقق Meta من النشر.')})});
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});selected.status=status;await selectThread(selected);await inbox();notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
