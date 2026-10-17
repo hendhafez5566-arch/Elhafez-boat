@@ -48,8 +48,8 @@ const server=createServer(async(req,res)=>{
       let payload:unknown;try{payload=JSON.parse(raw.toString('utf8'));}catch{throw new HttpFailure(400,'Malformed webhook JSON');}
       await handleVerifiedWebhook(pool,payload);return json(res,200,{received:true});
     }
-    if(req.method==='POST'&&pathname==='/api/v1/team/accept')return json(res,200,await acceptTeamInvite(pool,await body(req)));
-    if(req.method==='POST'&&pathname==='/api/v1/platform/owner/accept')return json(res,200,await acceptFirstOwner(await body(req)));
+    if(req.method==='POST'&&pathname==='/api/v1/team/accept'){throttle(req);return json(res,200,await acceptTeamInvite(pool,await body(req)));}
+    if(req.method==='POST'&&pathname==='/api/v1/platform/owner/accept'){throttle(req);return json(res,200,await acceptFirstOwner(await body(req)));}
     if(req.method==='POST'&&pathname==='/api/v1/platform/auth/login'){
       throttle(req);return json(res,200,await platformLogin(await body(req)));
     }
