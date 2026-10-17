@@ -113,8 +113,14 @@ export async function publishProgram(db: SqlClient, actor: Actor, programId: str
 }
 export async function listBookings(db: SqlClient, actor: Actor): Promise<Record<string, unknown>[]> {
   allow(actor,roles);
-  const result=await db.query(`SELECT id,program_id,customer_name,customer_phone,party_size,price_minor_snapshot::text AS "priceMinorSnapshot",
-    currency_snapshot,status,departure_id,room_package_id,room_units,created_at FROM booking_requests WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200`,[actor.tenantId]);
+  const result=await db.query(`SELECT b.id,b.program_id,b.customer_name,b.customer_phone,b.party_size,
+    b.price_minor_snapshot::text AS "priceMinorSnapshot",b.currency_snapshot,b.status,
+    b.departure_id,b.room_package_id,b.room_units,b.created_at,
+    d.depart_at,d.return_at,r.hotel_name,r.room_type,r.nights AS hotel_nights
+    FROM booking_requests b
+    LEFT JOIN program_departures d ON d.tenant_id=b.tenant_id AND d.id=b.departure_id
+    LEFT JOIN program_room_packages r ON r.tenant_id=b.tenant_id AND r.id=b.room_package_id
+    WHERE b.tenant_id=$1 ORDER BY b.created_at DESC LIMIT 200`,[actor.tenantId]);
   return result.rows;
 }
 export async function createBooking(db: SqlClient, actor: Actor, data: unknown): Promise<Record<string, unknown>> {
