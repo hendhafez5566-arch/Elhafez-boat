@@ -1,13 +1,21 @@
-# Elhafez Boat — Tourism WhatsApp Sales Platform
+# Elhafez Boat — Tourism Sales SaaS
 
-A multi-tenant Arabic-first SaaS for tourism companies. Each company manages programs, offers, customers and booking requests from a simple dashboard; customers use official WhatsApp interactive lists, reply buttons and WhatsApp Flows, with an optional grounded AI assistant and human handoff.
+Independent multi-company, Arabic-first tourism sales platform. Staff create and publish Umrah, Hajj and travel programs, review provisional booking requests and confirm capacity safely. Customer-facing integration will use **official WhatsApp** interactive lists/buttons and WhatsApp Flows, plus grounded AI as an opt-in fallback.
 
-**Status:** Planning/bootstrap only. No application code or live WhatsApp integration implemented.
+## Development status
+Stage 0 foundation is **IN PROGRESS**, not ready for production. There is an early authenticated API, PostgreSQL schema and Arabic dashboard, but real PostgreSQL/UI integration and official WhatsApp setup remain UNVERIFIED/NOT DONE.
 
-## Start here
-1. Read [AGENTS.md](AGENTS.md).
-2. Read [Master Plan](docs/01-MASTER-PLAN.md), [Architecture](docs/02-ARCHITECTURE.md), [Bot & Flows](docs/04-WHATSAPP-BOT.md), and [Dashboard](docs/06-DASHBOARD.md).
-3. Check [Current Status](project-management/CURRENT-STATUS.md) and [Handover](project-management/HANDOVER.md).
-4. Inspect GitHub commits and code before claiming anything is complete.
+Read [AGENTS.md](AGENTS.md), [Master Plan](docs/01-MASTER-PLAN.md), [Current Status](project-management/CURRENT-STATUS.md), [Handover](project-management/HANDOVER.md) and [Setup](docs/11-LOCAL-SETUP.md).
 
-**Important:** This project is independent of the legacy Elhafez accounting/ERP system. No existing business logic is to be copied implicitly.
+## Developer commands (after npm install)
+```sh
+npm run check
+npm run db:migrate
+npm run db:bootstrap
+npm run dev:api
+npm run dev:web
+```
+
+See setup guide for isolated DB, least-privileged credentials and required environment variables. Never commit secrets or traveler data. Code changes remain in draft PR #1 until verified.
+
+**Scope boundaries:** no copy of legacy accounting ERP; no unofficial WhatsApp automation; no fabricated prices or AI-confirmed bookings.
