@@ -25,3 +25,13 @@ Elhafez Boat is an independent SaaS under development, **NOT production-ready or
 ## External inputs deferred (not to invent)
 
 Official Meta credentials, domain/host, payment provider details, approved pricing/subscription policies, tourism business rules for refunds/room tiers and production privacy policy. Never commit secrets to the public repository, per owner choice.
+
+## Updated on 2026-10-17 after inventory/templates/ops batch
+
+Parts of item (1), (2), (5) and (7) above now have additional **UNVERIFIED SOURCE CODE**:
+- Item (1): Meta-approved static template registration, one-at-a-time send queue, explicit customer consent and STOP, plus optional published booking Flow scaffold. Marketing campaigns and actual Meta provider acceptance remain.
+- Item (2): `program_departures` and `program_room_packages` tables and staff UI for dates/hotels/room occupancy and per-person rates. Booking create/confirmation/cancellation allocate/deallocate capacity. **Customer WhatsApp date/room choice and full travel pricing/refund policy still missing.**
+- Item (5): subscription status/read-only gate and some plan quotas. Automatic billing and complete metering not built.
+- Item (7): untested reference `Dockerfile`, `deploy/compose.platform.yaml`, `deploy/scripts/backup-postgres.sh`, runbook; no actual deployment, encrypted backup or restore drill.
+
+The full list of STILL missing deliverables and final acceptance is in `project-management/REMAINING.md`. These code additions have not been tested against live PostgreSQL/Meta and should NOT be portrayed as production-ready.
