@@ -119,6 +119,17 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const row=(await db.query(`SELECT * FROM whatsapp_conversation_states WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId])).rows[0];
  if(status==='HUMAN')return; // never speak over human handoff
  const respond=(payload:Record<string,unknown>)=>queue(db,tenantId,accountId,conversationId,from,payload);
+ if(/^(stop|unsubscribe|إلغاء الرسائل|إيقاف الرسائل)$/i.test(body.trim())){
+   await db.query('UPDATE contacts SET do_not_contact=true WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
+   await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',false,'Customer sent opt-out message')`,[tenantId,contactId]);
+   await respond(textPayload('تم إيقاف الرسائل الآلية. تقدر تكتب START لتفعيل الردود الخدمية مرة تانية.'));
+   return;
+ }
+ if(/^(start|اشترك|تفعيل الرسائل)$/i.test(body.trim())){
+   await db.query('UPDATE contacts SET do_not_contact=false WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
+   await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',true,'Customer requested service-message resumption only')`,[tenantId,contactId]);
+   await respond(await showMenu(db,tenantId,row,'HOME',0));return;
+ }
  if(contact.rows[0].do_not_contact)return;
  const cfg=await publishedConfig(db,tenantId);
  if(action==='handoff'||/^(موظف|خدمة العملاء)$/i.test(body)){
