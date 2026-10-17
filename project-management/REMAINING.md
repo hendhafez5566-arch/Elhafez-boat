@@ -30,3 +30,8 @@ Owner explicitly requests final comprehensive acceptance ONLY after complete fea
 **Moved from unimplemented to written but NOT acceptance-verified:** WhatsApp customer date/room selection before Flow or text booking; server-side per-person price/currency snapshots, departure/room capacity checks, employee booking parity, recent booking status lookup using verified sender number, agent assignment lock and per-assignee reply permissions. Migration 0013 is new and UNAPPLIED. See `docs/15-WHATSAPP-BOOKING-CHOICES.md`.
 
 **Still missing before complete feature scope:** traveler document/passport fields and privacy/storage controls; advanced financial deposits/refunds, optional published Flow dynamic selectors, agency inbox notifications/search and escalation; actual grounded AI vs reviewed FAQ, subscription payments/invoicing/metering; official Meta enrollment and approved Flow provisioning; production safety/backups/alerts and clean install/lockfile. No final acceptance yet as requested.
+
+
+### Latest inbox/status update
+- Basic customer booking-status lookup from verified Meta number and agency inbox search/filter/manager assignment have source code; NOT provider-verified.
+- Still requires true push notifications, search pagination over large histories, fair agent load balancing and SLA escalations; these are NOT done.
