@@ -86,6 +86,12 @@ export async function listPrograms(db: SqlClient, actor: Actor): Promise<Record<
 export async function createProgram(db: SqlClient, actor: Actor, data: unknown): Promise<Record<string, unknown>> {
   allow(actor,['OWNER','MANAGER']);
   const p = cleanProgramInput(data);
+  const subscription=await db.query(`SELECT s.status,p.max_programs FROM tenant_subscriptions s JOIN subscription_plans p ON p.code=s.plan_code WHERE s.tenant_id=$1`,[actor.tenantId]);
+  if(subscription.rowCount){
+    if(['SUSPENDED','CANCELLED'].includes(String(subscription.rows[0].status)))throw new HttpFailure(403,'Company subscription is not active');
+    const used=await db.query('SELECT count(*) AS total FROM programs WHERE tenant_id=$1',[actor.tenantId]);
+    if(Number(used.rows[0].total)>=Number(subscription.rows[0].max_programs))throw new HttpFailure(409,'Program limit reached for current plan');
+  }
   const result = await db.query(`INSERT INTO programs (tenant_id,title,category,currency,price_minor,available_seats,status,summary,hotel_name,duration_days,departure_at)
     VALUES ($1,$2,$3,$4,$5,$6,'DRAFT',$7,$8,$9,$10)
     RETURNING id,title,category,currency,price_minor::text AS "priceMinor",available_seats,status,summary,hotel_name,duration_days,departure_at`,
