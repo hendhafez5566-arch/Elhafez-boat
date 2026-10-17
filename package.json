@@ -1,18 +1,1 @@
-{
-  "name": "elhafez-boat",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "workspaces": ["apps/*", "packages/*"],
-  "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build": "tsc -p tsconfig.build.json",
-    "test": "npm run build && node --test tests/*.test.mjs",
-    "check": "npm run typecheck && npm test",
-    "dev:web": "npm run dev -w @elhafez/web",
-    "dev:api": "npm run dev -w @elhafez/api",
-    "db:migrate": "node scripts/migrate.mjs",
-    "db:bootstrap": "node scripts/bootstrap-owner.mjs"
-  },
-  "devDependencies": {"typescript":"~5.9.3","@types/node":"^22.15.0"}
-}
+The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
