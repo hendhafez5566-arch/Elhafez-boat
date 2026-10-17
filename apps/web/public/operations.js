@@ -115,9 +115,28 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    const rooms=await api('/departures/'+dep+'/rooms');
    selectOptions(room,rooms,r=>r.hotel_name+' — '+(tripLabels[r.room_type]||r.room_type)+' — '+(Number(r.price_minor)/100).toLocaleString('ar-EG')+' '+r.currency,'بدون اختيار غرفة');
  }
+
+ async function templates(){
+  const target=$('approved-template-list');target.replaceChildren();
+  for(const id of ['template-account','template-consent-contact','template-send-contact','template-send-template'])$(id).replaceChildren();
+  const customers=state.contacts||[];
+  for(const item of customers){
+    for(const id of ['template-consent-contact','template-send-contact']){
+      const o=node('option',item.full_name+' — '+item.phone);o.value=item.id;$(id).append(o);
+    }
+  }
+  if(state.demo){msg(target,'المعاينة لا ترسل قوالب حقيقية؛ يجب ربط حساب Meta وتسجيل موافقة العميل أولًا.');return;}
+  const [accounts,registered]=await Promise.all([api('/whatsapp/connection'),api('/whatsapp/templates')]);
+  for(const a of accounts.filter(x=>x.status==='CONNECTED')){const o=node('option',a.displayPhone||a.phoneNumberId);o.value=a.id;$('template-account').append(o);}
+  if(!registered.length)msg(target,'لا توجد قوالب تم التحقق منها عند Meta.');
+  for(const t of registered){
+    const row=node('div',undefined,'ops-card');row.append(node('strong',t.name+' • '+t.language),node('small',t.category+' — آخر تحقق '+new Date(t.lastVerifiedAt).toLocaleDateString('ar-EG')));target.append(row);
+    const o=node('option',t.name+' ('+t.language+')');o.value=t.id;$('template-send-template').append(o);
+  }
+ }
  async function onPage(page){
-  if(!['wa-inbox','wa-connect','team','subscription','settings','inventory','bookings'].includes(page))return;
-  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();}
+  if(!['wa-inbox','wa-connect','team','subscription','settings','inventory','bookings','templates'].includes(page))return;
+  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();if(page==='templates')await templates();}
   catch(e){notify(e.message||'تعذر تحميل الصفحة','error');}
  }
  $('wa-connect-form')?.addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();const form=e.currentTarget;execute(async()=>{const d=getForm(form);await api('/whatsapp/connection',{method:'POST',body:d});form.reset();await connection();notify('تم التحقق من رقم Meta وحفظه مشفرًا')})});
@@ -144,6 +163,22 @@ export function initOperations({state,api,notify,execute,canEdit}) {
  })});
  $('booking-programs').addEventListener('change',()=>execute(bookingDepartures));
  $('booking-departure').addEventListener('change',()=>execute(bookingRooms));
+
+ $('template-register-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
+   await api('/whatsapp/templates',{method:'POST',body:getForm(event.currentTarget)});
+   await templates();notify('تم التحقق من اعتماد القالب لدى Meta وحفظه');
+ })});
+ $('template-consent-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
+   const d=getForm(event.currentTarget);
+   await api('/contacts/'+d.contactId+'/marketing-consent',{method:'PATCH',body:{optIn:d.optIn==='true',evidence:d.evidence}});
+   notify('تم تسجيل الموافقة أو سحبها مع دليلها في سجل العميل');
+ })});
+ $('template-send-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
+   const d=getForm(event.currentTarget);
+   if(!window.confirm('إرسال القالب المعتمد لهذا العميل فقط؟ يجب وجود موافقة موثقة؛ لا يمكن التراجع بعد دخوله طابور الإرسال.'))return;
+   await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId}});
+   notify('تمت إضافة رسالة واحدة للطابور، وليست تأكيد تسليم من واتساب.');
+ })});
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});selected.status=status;await selectThread(selected);await inbox();notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
