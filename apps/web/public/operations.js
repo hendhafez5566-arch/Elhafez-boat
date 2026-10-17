@@ -11,10 +11,6 @@ export function initOperations({state,api,notify,execute,canEdit}) {
  async function connection(){
   clear('wa-connections');if(state.demo){msg($('wa-connections'),'المعاينة فقط — مفيش أرقام واتساب حقيقية مرتبطة.');return;}
   const result=await api('/whatsapp/connection');
-  const options=$('wa-flow-accounts');options.replaceChildren();
-  result.filter(x=>x.status==='CONNECTED').forEach(x=>{const opt=node('option',x.displayPhone||x.phoneNumberId);opt.value=x.id;options.append(opt)});
-  const flows=await api('/whatsapp/flows');
-  $('wa-flow-status').textContent=flows.length?flows.map(f=>(f.displayPhone||f.accountId)+': '+f.flowId+(f.enabled?' — مفعل':' — محفوظ فقط')).join(' | '):'لم يتم إعداد WhatsApp Flow بعد.';
   if(!result.length){msg($('wa-connections'),'لا يوجد رقم متصل. الربط يتطلب حساب Meta Cloud API ورمز صلاحية حقيقي.');return;}
   result.forEach(item=>{const box=node('div',undefined,'ops-card');box.append(node('strong',item.displayPhone||item.phoneNumberId),node('p','Meta ID: '+item.phoneNumberId+' • '+item.status));if(item.status==='CONNECTED'&&state.role==='OWNER')box.append(button('فصل الاتصال',async()=>{if(!confirm('فصل رقم واتساب عن الشركة؟'))return;await api('/whatsapp/connection/'+item.id,{method:'DELETE'});notify('تم فصل الرقم');await connection()},'danger'));$('wa-connections').append(box);});
  }
@@ -214,7 +210,6 @@ export function initOperations({state,api,notify,execute,canEdit}) {
  }
  $('wa-connect-form')?.addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();const form=e.currentTarget;execute(async()=>{const d=getForm(form);await api('/whatsapp/connection',{method:'POST',body:d});form.reset();await connection();notify('تم التحقق من رقم Meta وحفظه مشفرًا')})});
  $('faq-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const form=e.currentTarget;await api('/knowledge',{method:'POST',body:getForm(form)});form.reset();await knowledge();notify('تم حفظ السؤال والإجابة كمسودة')})});
- $('wa-flow-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const d=getForm(e.currentTarget);await api('/whatsapp/flows',{method:'PUT',body:{accountId:d.accountId,flowId:d.flowId,screenId:d.screenId,enabled:d.enabled==='on'}});await connection();notify('تم حفظ إعداد Flow. النسخة المفعلة تُستخدم بعد تحقق Meta من النشر.')})});
  $('inventory-program').addEventListener('change',()=>execute(inventory));
  $('inventory-room-departure').addEventListener('change',()=>execute(()=>roomsForDeparture($('inventory-room-departure').value)));
  $('inventory-departure-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
