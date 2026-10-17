@@ -24,7 +24,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    if(!filtered.length)msg(target,'لا توجد محادثات تطابق البحث والتصفية.');
    for(const item of filtered){
      const card=button(item.customer_name+' — '+item.phone,()=>selectThread(item),'ops-thread');
-     card.append(node('small',item.status==='HUMAN'?'مع موظف':'البوت نشط أو في انتظار الموظف'));
+     card.append(node('small',item.lead_stage==='READY_FOR_AGENT'?'★ جاهز لموظف':item.status==='HUMAN'?'مع موظف':'البوت يرد على الاستفسارات'));
      if(item.do_not_contact)card.append(node('small','العميل أوقف التواصل'));
      target.append(card);
    }
@@ -33,6 +33,7 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    // Prevent customer information from a previous login/tenant remaining on screen.
    selected=null;$('wa-chat-tools').hidden=true;
    $('wa-chat-title').textContent='اختار محادثة لعرض رسائلها';
+   $('wa-lead-context').hidden=true;$('wa-lead-context').replaceChildren();
    $('wa-chat').replaceChildren();
    clear('wa-threads');
    if(state.demo){inboxCache=[];msg($('wa-threads'),'دي معاينة شكل صندوق واتساب. البيانات الحقيقية هتظهر بعد ربط Meta.');return;}
@@ -42,6 +43,15 @@ export function initOperations({state,api,notify,execute,canEdit}) {
  let selected=null;
  async function selectThread(item){
   selected=item;const target=$('wa-chat'),title=$('wa-chat-title');title.textContent=item.customer_name+' • '+item.phone;target.replaceChildren();
+  const summary=$('wa-lead-context');summary.replaceChildren();
+  if(item.lead_stage){
+    summary.hidden=false;
+    summary.append(node('strong',item.lead_stage==='READY_FOR_AGENT'?'عميل جاهز لموظف':'اهتمام العميل: '+item.lead_stage));
+    summary.append(node('p','الخدمة: '+(item.interested_program||'استفسار عام')+
+      ' • الأفراد: '+(item.party_size??'غير محدد')+
+      ' • السفر: '+(item.travel_preference||'غير محدد')));
+  }else summary.hidden=true;
+
   const messages=await api('/whatsapp/inbox/'+item.id+'/messages');
   messages.forEach(message=>{const div=node('div',undefined,'ops-bubble '+(message.kind==='INBOUND'?'incoming':'outgoing'));div.append(node('p',message.body),node('small',message.delivery_status||message.kind));target.append(div);});
   $('wa-handoff').textContent=item.status==='HUMAN'?'تسليم للبوت':'استلام المحادثة';
