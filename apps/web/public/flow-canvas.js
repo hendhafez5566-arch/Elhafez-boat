@@ -7,12 +7,24 @@ export function createCanvas({host,getFlow,select,changed,notify}){
  const transform=()=>{stage.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`};
  const edges=n=>n.choices?n.choices.map((c,i)=>({key:'choice:'+i,to:c.next,label:c.title})):(n.type==='CONDITION'||n.type==='KEYWORD')?[{key:'yes',to:n.yes,label:'نعم'},{key:'no',to:n.no,label:'لا'}]:'next'in n?[{key:'next',to:n.next,label:'التالي'}]:[];
  function draw(){
-  const f=getFlow();f.layout=Object.assign(Object.create(null),f.layout||{});stage.querySelectorAll('.canvas-node').forEach(n=>n.remove());svg.replaceChildren();
+  const f=getFlow();f.layout=Object.assign(Object.create(null),f.layout||{});stage.querySelectorAll('.canvas-node,.canvas-group').forEach(n=>n.remove());svg.replaceChildren();
   const defs=document.createElementNS(ns,'defs'),marker=document.createElementNS(ns,'marker');marker.id='flow-arrow';marker.setAttribute('markerWidth','10');marker.setAttribute('markerHeight','10');marker.setAttribute('refX','9');marker.setAttribute('refY','3');marker.setAttribute('orient','auto');const arrow=document.createElementNS(ns,'path');arrow.setAttribute('d','M0,0 L9,3 L0,6');arrow.setAttribute('fill','#087d75');marker.append(arrow);defs.append(marker);svg.append(defs);
   const positions=Object.fromEntries(f.nodes.map((n,i)=>[n.id,f.layout[n.id]||{x:40+(i%3)*290,y:40+Math.floor(i/3)*220}]));
+  // Groups are visual only: they never alter execution or touch published customer sessions.
+  for(const group of f.groups||[]){
+    const nodes=group.nodeIds.map(id=>positions[id]).filter(Boolean);
+    if(nodes.length<2)continue;
+    const minX=Math.min(...nodes.map(p=>p.x)),minY=Math.min(...nodes.map(p=>p.y));
+    const maxX=Math.max(...nodes.map(p=>p.x)),maxY=Math.max(...nodes.map(p=>p.y));
+    const box=document.createElement('div');box.className='canvas-group';
+    box.style.left=Math.max(0,minX-22)+'px';box.style.top=Math.max(0,minY-38)+'px';
+    box.style.width=(maxX-minX+288)+'px';box.style.height=(maxY-minY+222)+'px';
+    const heading=document.createElement('div');heading.className='canvas-group-title';heading.textContent=group.title;
+    box.append(heading);stage.append(box);
+  }
   for(const n of f.nodes){
    const p=positions[n.id],card=document.createElement('article');card.className='canvas-node';card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
-   const title=document.createElement('button');title.type='button';title.className='canvas-title';title.textContent=n.type+' · '+n.id;title.onclick=()=>select(n.id);card.append(title);
+   const title=document.createElement('button');title.type='button';title.className='canvas-title';title.textContent=n.type+' · '+n.id;title.onclick=event=>select(n.id,event.shiftKey);card.append(title);
    const desc=document.createElement('p');desc.textContent=(n.text||n.field||n.tag||'بداية المحادثة').slice(0,65);card.append(desc);
    const input=document.createElement('button');input.type='button';input.textContent='◉ توصيل هنا';input.onclick=()=>{
     if(!source){notify('اختار مخرج من خطوة أولًا');return}
