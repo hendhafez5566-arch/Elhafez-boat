@@ -34,7 +34,7 @@ export async function readyForAgent(db:SqlClient,tenantId:string,leadId:string,c
 export async function listLeads(db:SqlClient,actor:Actor){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
  return (await db.query(`SELECT l.id,l.stage,l.party_size,l.travel_preference,l.created_at,l.updated_at,l.ready_at,
-  l.conversation_id,c.full_name AS customer_name,c.phone,p.title AS program_title,
+  l.conversation_id,l.custom_fields,c.full_name AS customer_name,c.phone,p.title AS program_title,
   v.assigned_user_id,v.status AS conversation_status
   FROM chatbot_leads l
   JOIN contacts c ON c.tenant_id=l.tenant_id AND c.id=l.contact_id
