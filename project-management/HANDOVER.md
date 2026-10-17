@@ -49,3 +49,10 @@ Added `apps/api/src/booking-choice.ts`, migration `0013_whatsapp_booking_choices
 New complete workflow details: `docs/15-WHATSAPP-BOOKING-CHOICES.md`.
 
 **Important:** migration 0013 is unexecuted. Do not assume the updated bot can start against old DB schema. Requires sequential migrations 0001..0013. Local isolated TS typecheck of newly authored booking-choice and flows source succeeded, NOT full repository / browser / real Meta or PostgreSQL acceptance. Owner wants ONE final full acceptance only after remaining feature build. No production deployment or merge. Continue using branch `feat/stage0-foundation` and draft PR #1; public repo by explicit owner decision. Never write secrets/PII.
+
+
+### Additional workflow / screen changes
+- WhatsApp `showMenu` supports `my-bookings`: SQL matches verified webhook sender and current tenant only; returns short statuses and travel date without exposing unrelated travelers. Staff "MY BOOKINGS" does not authenticate from a user-entered phone.
+- Agency `wa-inbox` has local search/filter and manager reassign UI; backend requires row-locked handoff ownership. Demo chat state is cleared before exposing a new tenant inbox. No WebSocket/live notifications yet.
+- Updated sources: `apps/api/src/whatsapp.ts`, `apps/web/public/operations.js`, `index.html`, `app.js`.
+- New code has not gone through actual complete checkout, real PG migration/provider/browser acceptance; preserve final acceptance stage.
