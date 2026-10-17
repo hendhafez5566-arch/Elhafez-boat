@@ -1,25 +1,29 @@
-# Handover — Elhafez Boat, 2026-10-17
+# Handover — Elhafez Boat, 2026-10-18
 
-## CRITICAL USER SCOPE CORRECTION (newest)
-**GENERAL-PURPOSE chatbot platform for ALL businesses and shops**, inspired by BotSailor's options and configurable flows. Tourism is one optional preset; no hardcoded tourism bot. Still only a chatbot/communication automation SaaS, NOT an ERP, reservation/payment/accounting system.
+## Authoritative scope
+General chatbot SaaS for ALL businesses. No internal reservations, travelers, inventory, accounting, payments or fulfilment. Stay on `feat/stage0-foundation`, PR #1; no merge/commercial deploy.
 
-Read `docs/00-SCOPE-CHATBOT-ONLY.md` and `docs/01-MASTER-PLAN.md` first. Those supersede ALL previous tourism-specific docs and overbuilt booking plans. Owner wants broad chatbot options: customizable buttons, lists, messages, images/media, customer inputs/custom fields, conditions, tags, optional approved AI, workflow builder, staff handoff and future integrations/broadcasts with compliance.
+## Actual execution checkpoint
+Baseline `3f28a2df03174288947e9ed255c1eb41dde43cd5`.
+Source implementation: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/e38fbdb0f7b20769b8746a441eb839b8ca333506
+Read CURRENT-STATUS.md and REMAINING.md before continuing. This delivery is intentionally NOT marked feature complete.
 
-Repo `hendhafez5566-arch/Elhafez-boat` PUBLIC by user choice. Branch `feat/stage0-foundation`; PR #1 draft, unmerged. Do not switch repos/branches.
+## Important source locations
+- `flow-engine.ts`: deterministic graph schema/validation, draft topology option, canvas layout, QUESTION/KEYWORD and pending async-node execution.
+- `flow-service.ts`: draft/publication/rollback, version-pinned sessions, dynamic catalog/AI/webhook resolution and preview dry-run flag. Never remove dry-run suppression of outbound webhook side effects.
+- `catalog.ts`, migration 0016: missing files restored; approved informational items only.
+- `ai.ts`, migration 0017: tenant AI settings, quota, approved source selection/extraction, source audit and fallback. AI provider never supplies factual business response text directly.
+- `inbox.ts`, migration 0018: saved replies and notes; whatsapp.ts adds read markers/filter fields and closure.
+- `integrations.ts`, migration 0019: exact environment host allowlist, DNS validation, pinned IPv4 HTTPS, no redirect, queue/retry/audit and optional HMAC. Idempotency header requires receiver support.
+- `templates.ts`, migration 0020: scheduled individual static templates; worker checks consent/window/subscription at dispatch. No campaigns.
+- `access-keys.ts`, migration 0021: hashed scoped read keys, routing digest table and revocation.
+- `flow-canvas.js`/`flow-builder.js`: canvas + existing properties UI; authenticated preview uses shared server interpreter. Demo is labelled, browser-only and has reduced node simulation.
+- server.ts: active old tourism route families return 410. Historical SQL migrations are untouched; dormant old modules/HTML still need cleanup.
+- tests/generic-flow.test.mjs: new regression coverage prepared. tests/db-integration.mjs now contains actual PostgreSQL RLS checks instead of an invalid reference-error sentence.
 
-## Most recent actual code
-- New generic deterministic TS engine `apps/api/src/flow-engine.ts` with START/TEXT/BUTTONS/LIST/INPUT/CONDITION/TAG/MEDIA/LINK/HANDOFF/END and validations.
-- Tenant versioned flow persistence/runtime in `apps/api/src/flow-service.ts`, migration `0015_generic_flows.sql`; webhook adapter in `apps/api/src/whatsapp.ts` prioritizes generic published flows (or general default) and approved FAQ/catalog. Older hardcoded tourism conversation switch remains **unreachable legacy source**, to retire safely.
-- Generic catalog schema `0016_generic_catalog.sql`, service `apps/api/src/catalog.ts` and authenticated `/api/v1/catalog` routes. Owner can create/publish product/service/offer with free-form category and informational price string. Customer question matching published exact full title triggers approved response and optional staff interest. No transactions, checkout or stock.
-- React-free visual company editor: `apps/web/public/flow-builder.js` + CSS + new `flow-builder` section in `index.html`. Company picks industry preset or makes own graph of blocks via editable node links. Saves draft, publishes immutable revision, previews with browser-only messages. NOT actual drag-and-drop yet.
-- Company catalog UI under `catalog`; old tourism category form hidden. Lead/inbox displays captured custom fields/tags. App JS demo uses memory data only.
-- `apps/web/server.mjs` serves new static assets with same-origin CSP.
-- `README.md`, `AGENTS.md`, `docs/00-SCOPE-CHATBOT-ONLY.md`, `docs/01-MASTER-PLAN.md` rewritten to reflect universal B2B SaaS.
+## Evidence and constraints
+Local build/TypeScript, changed JS syntax, static HTTP serving and git whitespace checks passed. No local unit/DB/browser/provider/performance/restore acceptance executed. PostgreSQL/Docker and live credentials absent; Chromium download failed. Existing CI ran on e38fbdb: 34/38 passed, all nine new regressions passed; four failures in unchanged legacy services. Migration/RLS steps skipped. Run 39070131242 is FAILURE; do not report green CI.
 
-## Verification / operational truth
-New code was committed to GitHub using connector. Only isolated development TypeScript/JS syntax checks are available for new source; no clean entire repo npm install/build, actual Postgres migrations 0015–0016, Meta test number/provider acceptance, browser/mobile E2E or commercial deployment verified. No live Meta credentials provided. PR stays draft/unmerged. User explicitly wants **one formal full acceptance test campaign after ALL chatbot features are built**.
+Direct git push lacks credentials in the shell. Source was uploaded through GitHub Git-data connector, with the created remote tree SHA checked equal to the local code tree. Never force over an unexpected branch head.
 
-## Actual next task
-Continue generic options based on scope, without industry logic: rich visual canvas drag/drop and connections, dynamically populated catalog LIST node, keyword triggers, media management and approved templates, tag/field filters, automated sequences with WhatsApp window and opt-in, safe integration API/webhook connectors and optional grounded AI. Safely retire old booking/tourism overbuild, preserve migration history. Polish RTL/mobile company UX and reusable presets. Finally one combined acceptance + release, not per-batch formal testing.
-
-Never claim a feature is live if only a schema/module exists. Keep GitHub tracking files current.
+Startup: docs/11-LOCAL-SETUP.md. Finish remaining approved build scope, then ONE comprehensive acceptance campaign. No claims of live WhatsApp, AI, website chat or commercial readiness without evidence.

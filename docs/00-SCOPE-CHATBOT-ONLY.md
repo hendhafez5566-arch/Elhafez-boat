@@ -14,7 +14,7 @@ Inspired by the broad **configurability** of platforms such as BotSailor, not a 
 - HTTPS media: image, video, document or audio; HTTPS links.
 - Reusable industry presets but **no hardcoded industry, category, or product type in the flow engine**.
 - Draft, validation, versioned atomic publish and customer sessions pinned to a stable published revision.
-- Internal visual card-based builder and browser-only simulator; drag-and-drop canvas is **not yet implemented**.
+- Visual drag-and-drop canvas, editable ports, zoom/pan, undo/redo/duplicate and shared-server authenticated preview; offline demo is separate. Implementation is not yet browser-acceptance verified.
 - Contact/lead fields and staff inbox, role-based access and customer opt-out.
 - Program/product/service content must be entered or approved by each company. Never invent prices, guarantees, availability or offers.
 - Optional future richer nodes: advanced CTA, product catalog dynamic blocks, WhatsApp Flows, schedules, keyword triggers, outbound webhooks with safe allowlists, integrations, approved templates and consent-based campaigns, grounded AI.

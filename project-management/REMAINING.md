@@ -1,24 +1,32 @@
-# Remaining work — GENERAL chatbot builder SaaS
+# Remaining — owner scope is NOT fully complete
 
-Owner's latest scope: ALL businesses/shops, not tourism only; no internal ERP. Read `docs/00-SCOPE-CHATBOT-ONLY.md`.
+Delivered source and evidence: CURRENT-STATUS.md. No commercial readiness percentage.
 
-## Built in draft source, NOT acceptance-tested
-- Configurable message/quick-button/list/input/condition/tag/media/link/handoff/end blocks and a visual card-style block editor, draft, publish, preview, saved customer fields and current WhatsApp webhook integration.
-- Company-specific generic catalog CRUD and published FAQ/approved item answers.
-- Shared WhatsApp inbox, qualified leads, employee assignment/handoff, consent and basic tenancy.
+## Unresolved CI
 
-## Remaining core features for a BotSailor-class PRODUCT, not necessarily every provider-specific addon
-1. Flow designer: actual drag-and-drop canvas, zoom/connect lines, draft rollback, block grouping/reuse, duplicate/undo, robust per-node validation and error indicators.
-2. Dynamic catalog rendering and generic trigger/keyword rules, contact-property conditions, menu pagination, working URL/CTA/media behavior verified per channel; upload/support media lifecycle.
-3. Stronger natural Arabic interpretation with optional grounded AI provider, approved business knowledge, hallucination prevention and escalation; per-tenant settings.
-4. Broadcasts and scheduled sequences, approved Meta template sync including variables/media, granular opt-in/opt-out, segmentation/tags and policy-compliant rate controls.
-5. Webhooks/HTTP API actions, Google Sheets/CRM/ecommerce connectors with safe per-tenant secrets, outbound allowlists, retries/audit — never implement an internal business ERP.
-6. Team inbox improvements: saved replies, labels, assignment queues, reminders, notification/analytics and reporting.
-7. Platform admin: company onboarding, self-service Meta enrollment, usage/plan management, documentation, monitoring, safe data retention and backup/restore.
-8. Future optional channels (site chat, Messenger, Instagram, Telegram) via channel adapters; NONE live yet.
-9. Retire old tourism-only and booking/financial business code safely without touching migration compatibility or leaking customer data.
+CI run 39070131242 on e38fbdb failed: 34/38 passed; nine new regressions passed, four unchanged legacy tourism/booking tests failed. Migration/RLS steps were skipped. Resolve the legacy retirement/test-compatibility decision without disabling tests or reviving out-of-scope booking features. No green CI claim.
 
-## Final acceptance (ONE comprehensive phase at the end, user decision)
-Clean checkout/npm build and lockfile, real PostgreSQL migration/RLS, actual Meta sandbox and signed webhook/interactive media/lead-to-human tests, responsive browser, tenant & permission security, opt-in restrictions, worker recovery, integration safety, performance and restore. Resolve bugs then review PR and deploy pilot.
+## Independent unfinished build work
+- DELAY node and durable flow-resumption scheduler; visual grouping/reusable blocks.
+- Global event/keyword triggers and campaign/sequence builder; consent-based bulk segmentation, scheduling/cancellation/status UI and shared rate budgets. Current scheduling is individual approved static templates only.
+- Dynamic catalog interactive lists, pagination beyond ten items, native product messages and catalog edit UI. Current dynamic node sends approved text; catalog update API exists.
+- Template variables/media/carousels and provider sync pagination/revocation refresh. Current provider registration is static approved templates only.
+- Media upload/storage/lifecycle, retention and attachment preview; HTTPS media-link nodes already exist.
+- Full generic channel adapter interface, Website Chat widget and inbox, plus future Messenger/Instagram/Telegram connectors. None should be advertised as live.
+- Dedicated Google Sheets/CRM/store connectors and per-integration secret management/rotation. Current outbound webhooks have exact server allowlist and optional environment HMAC, not arbitrary HTTP credentials.
+- Expand scoped REST APIs beyond catalog/lead reads, tenant-wide usage limits/rate budgets and platform monitoring/error/retention screens. Existing owner tenant/team/subscription provisioning remains; consumption management is incomplete outside AI caps.
+- Finish removal of dormant legacy UI/modules after dependency audit; preserve historical schema/data compatibility. Active legacy routes are retired, but source cleanup is not finished.
+- Complete visual polish/mobile/a11y review, notification refresh and richer contextual lead summaries; saved-reply edit/delete UI and integration disable/job inspection UI.
+- Draft concurrency protection and further runtime rate/abuse limits need review before multi-instance deployment.
 
-**Current branch is NOT feature complete, NOT fully tested, and NOT commercially ready.**
+## External activation dependencies
+- Actual PostgreSQL 16+ service; separate privileged migration/platform and least-privilege runtime roles/grants. Migrations 0001–0021 have not been applied locally.
+- Meta developer/business account, Phone Number ID, WABA ID, access token, app secret, webhook verification token, appropriate app permissions and approved templates; secure public HTTPS webhook and preserved encryption key. Provider permissions/approval depend on the chosen Meta setup.
+- Optional AI_BASE_URL, AI_MODEL, AI_API_KEY; provider behaviour/connection remains unverified. Without them deterministic flows, approved exact answers and safe fallback still operate.
+- OUTBOUND_WEBHOOK_HOSTS and a receiver that implements idempotency; optional HMAC secret. Empty allowlist disables outbound destinations.
+- Working Chromium installation/browser runner for real UI/mobile evidence; attempted download here failed.
+
+## ONE final comprehensive acceptance campaign
+After remaining build scope is finished, execute original and added unit tests, clean install/build, all PostgreSQL migrations and non-owner RLS/cross-tenant tests, actual authenticated browser/mobile E2E, flow publish/rollback/session pinning, live Meta sandbox/interactive/template/window/consent checks, AI grounding and quota, inbox concurrency, outbound SSRF/DNS/retry/idempotency, permission/security, performance, recovery and real backup/restore.
+
+Current state: partial implementation delivery, not final acceptance-ready. Do not merge or commercially deploy on this report.

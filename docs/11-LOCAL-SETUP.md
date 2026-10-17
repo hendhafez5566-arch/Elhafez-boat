@@ -1,52 +1,64 @@
-# Local backend setup (implementation in progress)
+# Run the current generic chatbot platform
 
-This is an API foundation, not a production-ready service. Meta WhatsApp, Flows, tenant invitation and deployed dashboard are not yet connected.
+Node.js 22+, npm and PostgreSQL 16+. The source builds; database/browser/live-provider acceptance is still pending. See project-management/REMAINING.md.
 
-1. Node.js 22+, npm, PostgreSQL 16+ and Redis; copy `.env.example` to `.env`; Node 22 loads `.env` in the npm commands. **Do not commit `.env`.**
-2. `npm install` (generates lockfile; commit after validation). `npm run check` for typecheck, build and pure/unit tests.
-3. `docker compose up -d postgres redis` for local services if Docker is available.
-4. Create a non-owner, non-superuser, non-BYPASSRLS role for the **runtime** connection. A separate privileged migration connection applies schema. For example, as DB admin, create `elhafez_runtime` with a unique secret password, grant `CONNECT` and `USAGE ON SCHEMA public`, and after migrations grant specific `SELECT/INSERT/UPDATE/DELETE` on required tables plus appropriate sequences. Never give runtime role ownership or BYPASSRLS.
-5. Set `MIGRATION_DATABASE_URL` using the migration role; run `npm run db:migrate`. Run `npm run build` then set one-time `BOOTSTRAP_*` environment variables (including a strong private password), and run `npm run db:bootstrap`.
-6. Set `DATABASE_URL` with runtime-role credentials; run `npm run dev:api`. Request `GET /health`. Login via `POST /api/v1/auth/login` with `tenantSlug`, `email`, `password`. Use the short-lived bearer token only in memory, transmitted over HTTPS outside localhost.
+## 1. Dependencies and environment
 
-### Available authenticated endpoints
+```
+npm ci --ignore-scripts
+cp .env.example .env
+npm run build
+```
 
-- `GET /api/v1/programs`: list company programs.
-- `POST /api/v1/programs`: create draft (OWNER/MANAGER); fields `title,category,currency,priceMinor,availableSeats`.
-- `PATCH /api/v1/programs/:id/publish`: publish draft (OWNER/MANAGER).
-- `GET /api/v1/bookings`: booking requests.
-- `POST /api/v1/bookings`: provisional request (OWNER/MANAGER/AGENT); fields `programId,customerName,customerPhone,partySize`. This is staff-only; customer-facing webhook authentication is still TODO.
-- `PATCH /api/v1/bookings/:id/confirm`: confirm capacity atomically (OWNER/MANAGER).
-- `POST /api/v1/auth/logout`: revoke current bearer token.
+Fill `.env` privately. Never commit it. `MIGRATION_DATABASE_URL` uses a privileged migration role. `DATABASE_URL` MUST use a separate non-owner, non-superuser, non-BYPASSRLS runtime role. `PLATFORM_DATABASE_URL` is the separately controlled administrative connection. Do not use production/customer data for acceptance.
 
-### Important limitations
+Provide PostgreSQL yourself, or use the repository's local PostgreSQL service (`docker compose up -d postgres`) when Docker is installed. Redis is not required by the current PostgreSQL-backed conversation/outbox runtime.
 
-Database migrations have not yet been applied or tested against an actual PostgreSQL instance in the execution environment. Tests use SQL fake clients to check transaction boundaries and SQL intent, not full PostgreSQL behavior. Separate end-to-end DB RLS and concurrency tests are mandatory before production.
+## 2. Schema and first company
 
-Rate limits in API process memory are only an initial safeguard; implement centralized limits before multi-instance rollout. Add TLS termination, structured audit, admin invitations, account recovery, email verification, monitoring and credential rotation before production.
+```
+npm run db:migrate
+npm run db:bootstrap
+```
 
-### Current sales workspace additions (migrations 0003 and 0004)
+Migrations 0001–0021 preserve historical tables and add the generic chatbot features. Bootstrap requires BOOTSTRAP_TENANT_SLUG, BOOTSTRAP_TENANT_NAME, BOOTSTRAP_EMAIL and BOOTSTRAP_PASSWORD; creates one company, owner membership and 14-day trial. Use unique values; it is not an idempotent account reset. Remove bootstrap secrets after provisioning.
 
-Authenticated endpoints for staff:
+The DB administrator must grant the runtime role schema usage and the table/sequence operations used by these services, including new chatbot tables and opaque routing tables. Do not grant ownership or BYPASSRLS. Table grants/RLS must be checked with the actual runtime role in final acceptance; this environment did not exercise them.
 
-- `GET/POST /api/v1/contacts`; `PATCH /api/v1/contacts/:id/status`; `GET/POST /api/v1/contacts/:id/notes`.
-- `GET/POST /api/v1/offers`; `PATCH /api/v1/offers/:id/publish`.
-- `GET/POST /api/v1/followups`; `PATCH /api/v1/followups/:id/complete`.
-- `GET/POST /api/v1/conversations`; `GET/POST /api/v1/conversations/:id/messages` — **internal notes only**, not provider messaging.
-- `GET /api/v1/summary` — tenant-scoped operational counters.
+## 3. Start three processes
 
-Program create accepts optional `summary`, `hotelName`, `durationDays` and ISO8601 `departureAt`, migrated as `summary`, `hotel_name`, `duration_days`, `departure_at`.
+```
+npm run dev:api
+npm run dev:web
+npm run dev:worker
+```
 
-Browser-only design demo: press "استعراض التصميم ببيانات تجريبية" on the login screen. It is isolated in JavaScript memory, not connected to DB/API/WhatsApp, clearly marked and safe for preview. It is NOT a real data acceptance test.
+Use separate terminals; these load the untracked root `.env`. Default dashboard: http://localhost:3000 . Internal API: http://localhost:4000 . Browser requests are proxied through the web server to the internal API.
 
-Formal acceptance (PostgreSQL, browser, WhatsApp sandbox) is intentionally deferred to a single final phase by user direction. Maintain routine compile/syntax safeguards and honest status until then.
+Log in with the bootstrapped company slug, email and password. No universal/default password is committed. Create catalog drafts and publish them; create FAQ drafts and approve them; design/save/validate/publish a flow. Authenticated preview uses the actual server interpreter and does not send WhatsApp/webhook messages. AI preview may use the optional provider and consumes AI usage. Live customer traffic requires Meta activation below.
 
-### Bot menu configuration (migration 0005)
+The login screen's design preview is explicitly browser-only. It does not prove persistence, tenancy or provider connectivity.
 
-- `GET /api/v1/bot/config`: company display name, current editable draft, latest published version.
-- `PUT /api/v1/bot/draft`: OWNER/MANAGER, body `{displayName, welcomeText, enabledCategories}`. Enforces supported categories and unique values.
-- `POST /api/v1/bot/publish`: OWNER/MANAGER, locks draft, stores immutable published JSON revision, writes audit.
-- `GET /api/v1/bot/versions`: latest 25 published versions.
-- `GET /api/v1/team`: OWNER/MANAGER listing of members only; invitations intentionally not implemented yet.
+## 4. Platform owner
 
-**Publishing is INTERNAL** to the platform at this stage. This is not a live WhatsApp menu deployment and will not trigger external API calls.
+```
+npm run db:platform:bootstrap
+```
+
+Set PLATFORM_DATABASE_URL, PLATFORM_OWNER_EMAIL and PLATFORM_OWNER_PASSWORD privately first. Open http://localhost:3000/platform.html and log in with that separate owner account. Existing company provisioning, invitations and subscription controls are distinct from tenant login. Platform consumption/error-monitoring features remain incomplete.
+
+## 5. Optional external activation
+
+- WhatsApp: configure META_GRAPH_VERSION, META_APP_SECRET, META_WEBHOOK_VERIFY_TOKEN and a preserved base64 32-byte WHATSAPP_TOKEN_ENCRYPTION_KEY. Connect actual Phone Number ID/WABA ID/access token in the company WhatsApp screen. Expose HTTPS `/api/v1/whatsapp/webhook` for Meta verification/subscriptions. App/account permissions and approved templates must be supplied and verified with the actual account. Never publish tokens in Git or screenshots.
+- AI: AI_BASE_URL (OpenAI-compatible base ending in `/v1/` as appropriate), AI_MODEL, AI_API_KEY. Enable per-company AI and set its cap in the UI. Without credentials, exact approved-source answers and fallback remain available. Provider selects approved source IDs; it cannot author business prices.
+- Integrations: set exact hostnames in OUTBOUND_WEBHOOK_HOSTS for API and worker; blank disables destination registration/execution. Optional OUTBOUND_WEBHOOK_SIGNING_SECRET adds HMAC-SHA256 over raw JSON to `x-elhafez-signature`. Receiver must deduplicate `idempotency-key`. Only HTTPS/public IPv4 destinations are supported, without redirects, IP literals, URL credentials or query strings.
+- REST keys: platform company OWNER can issue one-time-visible 90-day keys on the integration screen, restricted to catalog/lead GET reads. Use `Authorization: Bearer ebk_...` and protect the returned key privately.
+- Templates: current sender accepts provider-approved static templates only; individual sends may be scheduled up to 30 days. Consent and subscription restrictions are rechecked on dispatch. No campaign/sequence tool is implemented.
+
+## 6. Verification gates
+
+Routine development safeguards: `npm run typecheck`, `npm run build`, `node --check <changed-js-file>`. These passed locally for this delivery.
+
+After unfinished build scope is completed, run ONE combined acceptance campaign. Entry points include `npm test` and `CI_DB_INTEGRATION=1 node tests/db-integration.mjs` (requires MIGRATION_DATABASE_URL pointing to a disposable migrated database with permission to create a temporary test role). The integration gate rolls back its fixtures/role. It does not substitute for full API/browser/Meta/AI/performance/recovery/backup-restore acceptance.
+
+No live Meta/AI/database/browser success or commercial readiness is asserted by these instructions. Retired `/programs`, `/bookings`, `/departures`, `/offers` and `/bot` routes return 410; use generic `/catalog` and `/flows`.

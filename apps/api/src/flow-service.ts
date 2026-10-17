@@ -1,4 +1,4 @@
-import {enqueueIntegration} from './integrations.js';
+import {enqueueIntegration,webhookURL} from './integrations.js';
 import {groundedReply} from './ai.js';
 /** Tenant-scoped draft/publish operations for industry-independent chatbot flows. */
 import {allow,HttpFailure,type Actor,type SqlClient} from './services.js';
@@ -33,6 +33,11 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor){
  if(draft.rowCount!==1)throw new HttpFailure(409,'Save a draft before publishing');
  let definition:FlowDefinition;
  try{definition=validateFlow(draft.rows[0].definition)}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
+ for(const node of definition.nodes)if(node.type==='WEBHOOK'){
+  const integration=await db.query('SELECT url FROM chatbot_integrations WHERE tenant_id=$1 AND id=$2 AND enabled=true',[actor.tenantId,node.integrationId]);
+  if(!integration.rowCount)throw new HttpFailure(400,'Flow references an unavailable integration');
+  webhookURL(String(integration.rows[0].url));
+ }
  const saved=await db.query(`INSERT INTO chatbot_flow_versions(tenant_id,version,definition,draft_revision,published_by)
  SELECT $1,COALESCE(MAX(version),0)+1,$2::jsonb,$3,$4 FROM chatbot_flow_versions WHERE tenant_id=$1
  RETURNING version,published_at AS "publishedAt"`,[actor.tenantId,JSON.stringify(definition),draft.rows[0].draft_revision,actor.userId]);

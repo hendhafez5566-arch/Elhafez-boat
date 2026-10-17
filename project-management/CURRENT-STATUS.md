@@ -1,29 +1,34 @@
-# CURRENT STATUS — General-purpose chatbot SaaS (2026-10-17)
+# CURRENT STATUS — Elhafez Boat
 
-**Owner's newest decision:** Elhafez Boat is a configurable chatbot-building SaaS for **ALL industries**, not a tourism-specific tool. It is still **NOT** an ERP or booking/accounting application. Scope: `docs/00-SCOPE-CHATBOT-ONLY.md`, which supersedes older tourism instructions.
+Updated 2026-10-18 (Africa/Cairo). General-purpose chatbot SaaS for all businesses. No booking, accounting or fulfilment product.
 
-Repository: `hendhafez5566-arch/Elhafez-boat` PUBLIC by choice; branch `feat/stage0-foundation`; DRAFT PR #1, not merged, not deployed.
+**Status: substantial implementation delivered; NOT feature complete, NOT acceptance approved, NOT commercially ready.**
 
-## Generic feature code written on branch
-- `apps/api/src/flow-engine.ts`: industry-neutral flow definition, validation, deterministic interpreter with nodes for START, TEXT, BUTTONS (max 3), LIST (max 10), INPUT/custom field, CONDITION, TAG, MEDIA (image/video/audio/document over HTTPS), LINK, HANDOFF, END. Validates IDs/destinations, reachable blocks and automatic loops.
-- `apps/api/src/flow-service.ts`: tenant draft, published versioning, version-pinned conversation state, choice ID validation, saved answers/tags, human-handoff leads; default general preset when no flow is published. Actual WhatsApp signed webhook calls this service; legacy tourism-specific fallback is presently unreachable code to clean up.
-- `packages/database/migrations/0015_generic_flows.sql`: tenant-isolated drafts, immutable published versions, conversation snapshots and lead custom fields.
-- `apps/web/public/flow-builder.js`, `flow-builder.css`: visual block-list and per-node editor (NOT drag-and-drop yet), options, links, preview and save/publish; accessed from company's dashboard.
-- `packages/database/migrations/0016_generic_catalog.sql` and `apps/api/src/catalog.ts`: arbitrary company products/services/offers, custom categories, description, advertised price text and links; draft/publish/archive. Not inventory or a purchase engine.
-- Catalog responses match approved, published full item titles in customer text and offer direct interest/handoff, no invented facts.
-- Staff inbox/qualified leads include dynamic custom answers; company UI nav now shows generic catalog and flow builder instead of tourism-only catalog. Old unsupported travel UI source remains dormant/historical.
-- Presets for general business, shop, restaurant, clinic, real estate, education and tourism (as ONE example).
-- Existing Meta signed webhook, outbox worker, basic team inbox/roles, customer consent and opt-out remain in development code.
+Branch `feat/stage0-foundation`, PR #1 remains unmerged. Verified starting GitHub HEAD: `3f28a2df03174288947e9ed255c1eb41dde43cd5`.
+Implementation: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/e38fbdb0f7b20769b8746a441eb839b8ca333506
 
-## Verification honesty
-Files committed through GitHub connector. Development-time isolated TypeScript/JavaScript syntax safeguards run on new engine/editor source; **NO clean checkout of the integrated repo, full database migration 0015–0016, live Meta sandbox, authenticated browser E2E or full acceptance has been executed**. No credentials or live customer messages.
+## Source actually added/connected
+- Restored missing `apps/api/src/catalog.ts` and migration `0016_generic_catalog.sql`; the old status reports incorrectly said these existed. Tenant catalog CRUD/status API and existing company UI now have real source behind their imports. Editing a published item returns it to DRAFT.
+- Canvas with draggable nodes, pointer/touch pan, wheel zoom, arrows, click-to-connect ports, duplicate, bounded undo/redo, saved layout and explicit validation. Editing drafts permits incomplete graph links; publish still strictly validates topology/channel limits.
+- Version history UI and rollback API: rollback creates a new immutable publication; active sessions stay pinned.
+- Added executable QUESTION, KEYWORD, CATALOG, AI and WEBHOOK nodes. Existing START/TEXT/BUTTONS/LIST/INPUT/CONDITION/TAG/MEDIA/LINK/HANDOFF/END remain. Catalog is dynamically rendered as approved text (first ten entries, no pagination). KEYWORD is a graph branch, not a global trigger system.
+- Authenticated preview calls the same server interpreter. Preview does not enqueue webhook jobs or send WhatsApp messages. Optional AI preview consumes logged AI usage. Clearly labelled offline demo stays separate.
+- Optional per-company AI settings, monthly cap, approved FAQ/catalog source selection, source-ID audit, exact-answer fallback, uncertain-answer handoff and environment-configured OpenAI-compatible provider. Provider selects a source ID; business answers are copied from approved content, not generated prices. No live provider was exercised.
+- Inbox per-user unread counts/read markers, closed/assigned/unread filters, saved replies, internal notes and close action. Existing lock-based staff takeover remains. Generic lead presentation no longer uses traveler-specific columns.
+- Outbound HTTPS integration configuration, flow job enqueue, worker delivery with five attempts, audit and idempotency header. Exact host allowlist; public IPv4 DNS validation and pinned lookup; no redirects, IP literals, URL credentials or query secrets. Optional HMAC signing secret is environment-only. Receiver must implement idempotency; retries can deliver more than once.
+- Individual approved static templates can be scheduled 1 minute–30 days ahead. Consent/subscription/window rules are rechecked by existing worker. This is not a bulk campaign or sequence builder.
+- Owner-issued hashed 90-day access keys, scoped to catalog/lead GET endpoints, revocation, audit and one-time display UI.
+- Retired active legacy `/programs`, `/bookings`, `/departures`, `/offers`, `/bot` endpoint families with HTTP 410. Dashboard no longer requests old tourism resources; generic pages are allowlisted. Historical migrations/data and some dormant legacy source/HTML are intentionally preserved.
+- Removed invalid non-code `inventory.ts`. Replaced invalid `tests/db-integration.mjs` placeholder with a real disposable PostgreSQL RLS gate. Added regression tests, dependency lockfile, test build prerequisite and reproducible Docker dependency install.
 
-## Important limitations / not done
-- Card-style builder works with editable connections; **free canvas drag-and-drop has NOT been built**.
-- No scheduled sequence builder, omnichannel live connectors, contact segmentation-based campaigns, full approved media template/carousel support or external safe API/Webhook workflow node yet.
-- No true grounded LLM; published FAQ plus deterministic flows and exact approved catalog match only.
-- Generic catalog currently supports approved text replies, not an auto-populated list node in published flows; company can manually author LIST choices.
-- Many legacy reservation/inventory/finance modules remain in git history and some dead source. Don't revive them; safely retire before release.
-- Need clean build with dependency lockfile and user-selected Meta business account setup after feature scope completed.
+## Verification actually performed
+- Clean `npm ci --ignore-scripts --no-audit --no-fund` succeeded (22 packages); TypeScript/build succeeded.
+- JavaScript syntax checks succeeded for changed browser modules, server and new test entrypoints.
+- Static HTTP smoke: dashboard and `/flow-canvas.js` returned 200 with expected content type in a local server process.
+- `git diff --check` passed.
+- No local unit/integration acceptance run: comprehensive acceptance remains deferred until remaining build scope is completed, per owner instruction. GitHub CI ran independently on `e38fbdb`: 38 tests, 34 passed / 4 failed. All nine new generic-flow regressions passed. Four failures target unchanged legacy program/booking services (createProgram total fixture, invalid booking phone fixtures, confirm query-count expectation); baseline was not rerun, and these are unresolved. DB migration/RLS steps were skipped after the unit failure. Evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39070131242 .
+- PostgreSQL/Docker executables and live database credentials are unavailable here. Real migration/RLS, concurrency and backup/restore were NOT run locally.
+- Playwright package exists but Chromium executable does not. Browser download returned invalid/empty ZIP data; authenticated browser/mobile acceptance and screenshots were NOT obtained.
+- No Meta account/token, provider AI key or approved outbound destination credentials were supplied. No live customer traffic or commercial deployment.
 
-**Owner testing policy:** one final formal acceptance phase AFTER features are finished. No production-readiness claim now.
+See REMAINING.md for explicit unfinished scope and docs/11-LOCAL-SETUP.md for startup.

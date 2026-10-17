@@ -6,7 +6,7 @@ Authoritative scope: [universal chatbot SaaS](00-SCOPE-CHATBOT-ONLY.md). **All p
 - Unified flow node schema: TEXT / BUTTONS / LIST / INPUT / CONDITION / TAG / LINK / MEDIA / HANDOFF / END.
 - Industry presets and browser-only preview; validation of node links, choices, publish rules and no immediate infinite loops.
 - Tenant-specific mutable drafts, immutable published revisions and pinned conversational sessions.
-- Friendly visual editor with editable node properties and connections (card-based now; drag-and-drop canvas later).
+- Friendly visual editor with editable node properties and connections (canvas now implemented; browser acceptance pending).
 - Generic catalog of approved products, services and offers; company-defined category labels, optional descriptions, price text and HTTPS links.
 
 ## 2. Customer communication
@@ -24,7 +24,7 @@ Authoritative scope: [universal chatbot SaaS](00-SCOPE-CHATBOT-ONLY.md). **All p
 - Add channels later through adapters (website, Facebook, Instagram, Telegram) without coupling generic engine to any industry.
 
 ## 5. Final acceptance as ONE stage (owner instruction)
-- Fresh code checkout, clean npm install/lockfile, migrations 0001–0016 and real PostgreSQL/RLS tests.
+- Fresh code checkout, clean npm install/lockfile, migrations 0001–0021 and real PostgreSQL/RLS tests.
 - Visual/mobile flow builder, actual published WhatsApp lists/buttons/media, lead capture/handoff, consent/security, concurrency and message retries.
 - Meta test number and supported channel restrictions, privacy, performance, monitoring and backup/restore.
 - Only then merge draft PR, deploy pilot and assess commercial readiness.

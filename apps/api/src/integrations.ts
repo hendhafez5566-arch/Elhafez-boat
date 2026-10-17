@@ -28,7 +28,7 @@ export async function sendWebhook(raw:string,payload:unknown,id:string){
  if(!addresses.length||addresses.some(a=>!publicIPv4(a.address)))throw new Error('Destination did not resolve exclusively to public IPv4');
  const body=JSON.stringify(payload);if(Buffer.byteLength(body)>65536)throw new Error('Webhook payload too large');
  await new Promise<void>((resolve,reject)=>{
-  const req=request(url,{method:'POST',lookup:(_hostname,_options,cb)=>cb(null,addresses[0].address,4),headers:{'content-type':'application/json','content-length':Buffer.byteLength(body),'idempotency-key':id,...(process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET?{'x-elhafez-signature':'sha256='+createHmac('sha256',process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET).update(body).digest('hex')}:{})},timeout:10000},res=>{
+  const req=request(url,{method:'POST',family:4,lookup:(_hostname,_options,cb)=>cb(null,addresses[0].address,4),headers:{'content-type':'application/json','content-length':Buffer.byteLength(body),'idempotency-key':id,...(process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET?{'x-elhafez-signature':'sha256='+createHmac('sha256',process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET).update(body).digest('hex')}:{})},timeout:10000},res=>{
    // Drain without buffering arbitrary response content.
    let bytes=0;res.on('data',chunk=>{bytes+=chunk.length;if(bytes>65536)res.destroy(new Error('Webhook response too large'))});res.on('error',reject);res.on('end',()=>res.statusCode&&res.statusCode>=200&&res.statusCode<300?resolve():reject(new Error('Webhook HTTP '+res.statusCode)));
   });req.on('timeout',()=>req.destroy(new Error('Webhook timeout')));req.on('error',reject);req.end(body);
