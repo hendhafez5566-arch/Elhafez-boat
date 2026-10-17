@@ -20,11 +20,22 @@ try{
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_catalog_items')).rows[0].n,1);
  await db.query("SELECT set_config('app.tenant_id',$1,true)",[b]);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_catalog_items')).rows[0].n,0);
+ // A reusable section is just as tenant-private as its parent bot flow.
+ await db.query("SELECT set_config('app.tenant_id',$1,true)",[a]);
+ await db.query(`INSERT INTO chatbot_flow_snippets(tenant_id,name,definition,created_by)
+ VALUES($1,'Company A intro','{"name":"Company A intro","steps":[]}'::jsonb,$2)`,[a,user]);
+ await db.query("SELECT set_config('app.tenant_id',$1,true)",[b]);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_flow_snippets')).rows[0].n,0);
+ await db.query('SAVEPOINT snippet_cross_tenant');
+ await assert.rejects(db.query(`INSERT INTO chatbot_flow_snippets(tenant_id,name,definition,created_by)
+ VALUES($1,'Forbidden intro','{}'::jsonb,$2)`,[a,user]),error=>error.code==='42501');
+ await db.query('ROLLBACK TO SAVEPOINT snippet_cross_tenant');
+
  assert.equal((await db.query(`UPDATE chatbot_catalog_items SET title='Cross tenant write' WHERE tenant_id=$1`,[a])).rowCount,0);
  await db.query('SAVEPOINT cross_tenant');
  await assert.rejects(db.query(`INSERT INTO chatbot_catalog_items(tenant_id,kind,title,created_by) VALUES($1,'SERVICE','Forbidden service',$2)`,[a,user]),e=>e.code==='42501');
  await db.query('ROLLBACK TO SAVEPOINT cross_tenant');
- const required=['chatbot_flow_drafts','chatbot_flow_versions','chatbot_flow_sessions','chatbot_catalog_items','chatbot_ai_settings','chatbot_ai_events','chatbot_saved_replies','chatbot_inbox_reads','chatbot_integrations','chatbot_integration_jobs','chatbot_access_keys','chatbot_message_reads','chatbot_delay_jobs','chatbot_triggers','chatbot_widget_settings','chatbot_web_sessions','chatbot_web_receipts','chatbot_media','chatbot_usage_limits','chatbot_usage','chatbot_campaigns','chatbot_campaign_jobs'];
+ const required=['chatbot_flow_drafts','chatbot_flow_versions','chatbot_flow_sessions','chatbot_catalog_items','chatbot_ai_settings','chatbot_ai_events','chatbot_saved_replies','chatbot_inbox_reads','chatbot_integrations','chatbot_integration_jobs','chatbot_access_keys','chatbot_message_reads','chatbot_delay_jobs','chatbot_triggers','chatbot_widget_settings','chatbot_web_sessions','chatbot_web_receipts','chatbot_media','chatbot_usage_limits','chatbot_usage','chatbot_campaigns','chatbot_campaign_jobs','chatbot_flow_snippets'];
  const rls=await db.query('SELECT relname,relrowsecurity,relforcerowsecurity FROM pg_class WHERE relname=ANY($1::text[])',[required]);
  assert.equal(rls.rows.length,required.length);for(const row of rls.rows){assert.equal(row.relrowsecurity,true,row.relname);assert.equal(row.relforcerowsecurity,true,row.relname)}
  console.log('PASS PostgreSQL catalog isolation, cross-tenant read/update/insert denial, and RLS/FORCE flags for all new tenant tables');
