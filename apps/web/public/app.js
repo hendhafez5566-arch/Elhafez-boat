@@ -7,7 +7,7 @@ const cell=(tr,content)=>{const td=el('td');td.append(content instanceof Node?co
 const empty=(tbody,cols,message)=>{const tr=el('tr');const td=cell(tr,message);td.colSpan=cols;td.className='empty';tbody.append(tr)};
 const categories={UMRAH:'عمرة',HAJJ:'حج',DOMESTIC:'سياحة داخلية',INTERNATIONAL:'سياحة خارجية'};
 const statusLabels={DRAFT:'مسودة',PUBLISHED:'منشور',ARCHIVED:'مؤرشف',PENDING_REVIEW:'قيد المراجعة',CONFIRMED:'مؤكد',REJECTED:'مرفوض',CANCELLED:'ملغي',NEW:'جديد',QUALIFIED:'مهتم',CUSTOMER:'عميل',OPEN:'مفتوح',HUMAN:'موظف',DONE:'مكتمل'};
-const state={token:'',role:'',demo:false,tenant:'',programs:[],bookings:[],contacts:[],offers:[],followups:[],conversations:[],summary:{},notes:{},messages:{},page:'overview',filter:'ALL',bookingFilter:'ALL',selectedCustomer:null,selectedThread:null,botConfig:null,team:[],sim:{screen:'home',category:null,page:0,program:null}};
+const state={token:'',role:'',demo:false,tenant:'',programs:[],bookings:[],leads:[],contacts:[],offers:[],followups:[],conversations:[],summary:{},notes:{},messages:{},page:'overview',filter:'ALL',bookingFilter:'ALL',selectedCustomer:null,selectedThread:null,botConfig:null,team:[],sim:{screen:'home',category:null,page:0,program:null}};
 function safeId(){if(typeof crypto.randomUUID==='function')return crypto.randomUUID();const bytes=new Uint8Array(16);crypto.getRandomValues(bytes);bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;const h=Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');return [h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join('-')}
 function show(id,visible){$(id).hidden=!visible}
 function notify(message,type='success'){const box=$('notice');box.textContent=message;box.className='notice '+type;box.hidden=!message;if(message)box.scrollIntoView({block:'nearest',behavior:'smooth'})}
@@ -32,7 +32,15 @@ function seedDemo(){
  state.programs=programs.map((p,i)=>({id:safeId(),title:p[0],category:p[1],priceMinor:String(p[2]),currency:p[3],available_seats:p[4],booked_seats:p[5],status:p[6],duration_days:i===0?10:i===1?8:7,hotel_name:i===0?'فندق 5 نجوم قريب من الحرم':i===1?'فندق 4 نجوم':null,summary:i===0?'الإقامة والنقل الداخلي والإشراف طوال رحلة العمرة.':'',departure_at:new Date(Date.now()+(i+40)*86400000).toISOString(),created_at:new Date(Date.now()-i*86400000).toISOString()}));
  const names=[['أحمد محمد','201001234567','QUALIFIED'],['منى علي','201112233445','NEW'],['خالد إبراهيم','201055566677','CUSTOMER'],['سارة محمود','201223344556','QUALIFIED'],['محمد السيد','201098765432','NEW'],['فاطمة علي','201154443322','CUSTOMER']];
  state.contacts=names.map((c,i)=>({id:safeId(),full_name:c[0],phone:c[1],email:'',source:i%3?'MANUAL':'BOOKING',status:c[2],created_at:new Date(Date.now()-i*86400000).toISOString()}));
- state.bookings=state.contacts.slice(0,5).map((c,i)=>({id:safeId(),program_id:state.programs[i%5].id,customer_name:c.full_name,customer_phone:c.phone,party_size:i%3+1,priceMinorSnapshot:state.programs[i%5].priceMinor,currency_snapshot:'EGP',status:i<2?'PENDING_REVIEW':'CONFIRMED',created_at:new Date(Date.now()-i*90000000).toISOString()}));
+ state.bookings=[]; // User-approved: bot collects interest, never creates reservations.
+ state.leads=[
+   {id:safeId(),customer_name:'أحمد محمد',phone:'201000000001',program_title:state.programs[0].title,
+    party_size:2,travel_preference:'رمضان',stage:'READY_FOR_AGENT',updated_at:new Date().toISOString()},
+   {id:safeId(),customer_name:'منى علي',phone:'201000000002',program_title:state.programs[1].title,
+    party_size:null,travel_preference:null,stage:'INTERESTED',updated_at:new Date().toISOString()},
+   {id:safeId(),customer_name:'سارة محمود',phone:'201000000003',program_title:state.programs[3].title,
+    party_size:4,travel_preference:'الأسبوع القادم',stage:'CONTACTED',updated_at:new Date().toISOString()}
+ ];
  state.offers=[{id:safeId(),title:'عرض العمرة الشتوي',program_id:state.programs[0].id,program_title:state.programs[0].title,details:'خدمة استقبال ومتابعة طوال الرحلة',starts_at:new Date(Date.now()-86400000).toISOString(),ends_at:new Date(Date.now()+15*86400000).toISOString(),status:'PUBLISHED'},{id:safeId(),title:'مميزات حجز مبكر',program_id:state.programs[4].id,program_title:state.programs[4].title,details:'عرض تجريبي لفترة محدودة',starts_at:new Date(Date.now()).toISOString(),ends_at:new Date(Date.now()+30*86400000).toISOString(),status:'DRAFT'}];
  state.followups=state.contacts.slice(0,4).map((c,i)=>({id:safeId(),contact_id:c.id,customer_name:c.full_name,title:['الاتصال لتأكيد اهتمام العميل','إرسال تفاصيل البرنامج','مراجعة عدد المسافرين','تأكيد موعد الزيارة'][i],due_at:new Date(Date.now()+(i-1)*86400000).toISOString(),status:i===3?'DONE':'OPEN'}));
  state.conversations=state.contacts.slice(0,4).map((c,i)=>({id:safeId(),contact_id:c.id,full_name:c.full_name,phone:c.phone,status:'HUMAN',channel:'INTERNAL',last_message_at:new Date(Date.now()-i*3600000).toISOString()}));
@@ -49,6 +57,20 @@ function demoApi(path,method,body){
  if(method==='GET'&&path==='/team')return Promise.resolve([...state.team]);
  if(method==='PUT'&&path==='/bot/draft'){const d=body;if(!d||!d.displayName||!d.welcomeText||!Array.isArray(d.enabledCategories)||!d.enabledCategories.length)throw Error('أكمل بيانات إعدادات البوت');state.botConfig.draft={...d,draftRevision:(state.botConfig.draft.draftRevision||0)+1};return Promise.resolve({saved:true,draftRevision:state.botConfig.draft.draftRevision})}
  if(method==='POST'&&path==='/bot/publish'){const next=(state.botConfig.published?.version||0)+1;const published={version:next,publishedAt:new Date().toISOString(),config:{displayName:state.botConfig.draft.displayName,welcomeText:state.botConfig.draft.welcomeText,enabledCategories:[...state.botConfig.draft.enabledCategories]}};state.botConfig.published=published;state.botConfig.versions.unshift(published);return Promise.resolve(published)}
+ if(method==='GET'&&path==='/leads')return Promise.resolve([...state.leads]);
+ if(method==='GET'&&path==='/leads/summary')return Promise.resolve({
+   total:state.leads.length,interested:state.leads.filter(x=>x.stage==='INTERESTED').length,
+   ready:state.leads.filter(x=>x.stage==='READY_FOR_AGENT').length,
+   contacted:state.leads.filter(x=>x.stage==='CONTACTED').length,
+   closed:state.leads.filter(x=>x.stage==='CLOSED').length
+ });
+ const leadChange=/^\/leads\/([^/]+)\/stage$/.exec(path);
+ if(method==='PATCH'&&leadChange){
+   const lead=state.leads.find(x=>x.id===leadChange[1]);
+   if(!lead)throw new Error('العميل المهتم غير موجود');
+   if(!['CONTACTED','CLOSED','READY_FOR_AGENT'].includes(body.stage))throw new Error('المرحلة غير صحيحة');
+   lead.stage=body.stage;lead.updated_at=new Date().toISOString();return Promise.resolve(lead);
+ }
  if(method==='GET'&&path==='/summary')return Promise.resolve(sumFromData());
  if(method==='GET'&&path in list)return Promise.resolve([...list[path]]);
  let r;
@@ -108,26 +130,42 @@ async function openThread(id){state.selectedThread=id;renderInbox();const c=stat
 function renderReports(){const s=getSummary(),items=[['البرامج المنشورة',s.published_programs,'blue'],['العروض النشطة',s.active_offers,'purple'],['مهام مفتوحة',s.open_tasks,'amber'],['محادثات داخلية',s.open_conversations,'green']];const root=$('report-metrics');root.replaceChildren();for(const [label,count,color] of items){root.append(attach(el('div',undefined,'metric'),attach(el('div',undefined,'metric-top'),el('span','▥','metric-icon '+color)),el('small',label),el('strong',count)))}const grouped=[['قيد المراجعة',state.bookings.filter(x=>x.status==='PENDING_REVIEW').length],['مؤكدة',state.bookings.filter(x=>x.status==='CONFIRMED').length],['أخرى',state.bookings.filter(x=>!['PENDING_REVIEW','CONFIRMED'].includes(x.status)).length]];const max=Math.max(...grouped.map(x=>x[1]),1);$('booking-breakdown').replaceChildren(...grouped.map(([name,count])=>tinyBar(name,count,max)));$('report-highlights').replaceChildren(...[['البرامج في المسودة',s.draft_programs],['عدد العملاء',s.contacts],['الطلبات المؤكدة',s.confirmed_bookings],['المحادثات المفتوحة',s.open_conversations]].map(([name,value])=>attach(el('div',undefined,'report-row'),el('span',name),el('b',value))))}
 function currentBotConfig(){return state.botConfig?.published?.config||{displayName:state.botConfig?.companyName||'شركة السياحة',welcomeText:'أهلًا وسهلًا بيك 👋\nاختار القسم من القائمة:',enabledCategories:['UMRAH','HAJJ','DOMESTIC','INTERNATIONAL']}}
 function renderSim(){const chat=$('sim-messages'),options=$('sim-options');chat.replaceChildren();options.replaceChildren();const bubble=(text,cls)=>chat.append(el('div',text,'bubble'+(cls?' '+cls:'')));const opt=(label,action)=>{const btn=el('button',label);btn.onclick=action;options.append(btn)};const sim=state.sim;const config=currentBotConfig();$('sim-company-name').textContent=config.displayName;
- if(sim.screen==='home'){bubble(config.welcomeText);for(const [key,title] of Object.entries(categories).filter(([key])=>config.enabledCategories.includes(key)))opt(title,()=>{sim.screen='category';sim.category=key;sim.page=0;renderSim()});opt('متابعة حجوزاتي',()=>{sim.screen='my-bookings';renderSim()});opt('التحدث مع موظف',()=>{sim.screen='handoff';renderSim()});}
+ if(sim.screen==='home'){bubble(config.welcomeText);for(const [key,title] of Object.entries(categories).filter(([key])=>config.enabledCategories.includes(key)))opt(title,()=>{sim.screen='category';sim.category=key;sim.page=0;renderSim()});opt('التحدث مع موظف',()=>{sim.screen='handoff';renderSim()});}
  else if(sim.screen==='category'){const matches=state.programs.filter(p=>p.category===sim.category&&p.status==='PUBLISHED'&&Number(p.available_seats)>Number(p.booked_seats||0));bubble('اختار البرنامج المناسب من '+categories[sim.category]+':');if(!matches.length)bubble('لا توجد برامج منشورة متاحة حاليًا.');matches.slice(sim.page*8,sim.page*8+8).forEach(p=>opt(p.title+' — '+money(p.priceMinor,p.currency),()=>{sim.program=p.id;sim.screen='program';renderSim()}));if(sim.page>0)opt('← الصفحة السابقة',()=>{sim.page--;renderSim()});if((sim.page+1)*8<matches.length)opt('الصفحة التالية ←',()=>{sim.page++;renderSim()});opt('العودة للرئيسية',()=>{sim.screen='home';renderSim()});}
- else if(sim.screen==='program'){const p=state.programs.find(p=>p.id===sim.program);if(!p||p.status!=='PUBLISHED'){sim.screen='home';return renderSim()}bubble('✦ '+p.title+'\nنوع الرحلة: '+categories[p.category]+'\nالسعر للفرد: '+money(p.priceMinor,p.currency)+'\nالمقاعد المتبقية: '+(p.available_seats-p.booked_seats)+'\nموعد السفر: '+humanDate(p.departure_at)+'\nمدة الرحلة: '+(p.duration_days||'غير محددة')+' أيام'+'\nالفندق: '+(p.hotel_name||'يحدد لاحقًا')+(p.summary?'\n'+p.summary:'')+'\n\nهذه المعلومات لأغراض المعاينة، وليست حجزًا مؤكدًا.');opt('طلب حجز مبدئي (معاينة)',()=>{if(!state.demo){notify('نموذج الحجز الفعلي عبر واتساب لم يُربط بعد. استخدم وضع المعاينة للتجربة.','error');return}const booking={id:safeId(),program_id:p.id,customer_name:'عميل تجريبي',customer_phone:'201000000000',party_size:1,priceMinorSnapshot:p.priceMinor,currency_snapshot:p.currency,status:'PENDING_REVIEW',created_at:new Date().toISOString()};state.bookings.unshift(booking);sim.screen='submitted';refresh().then(()=>{notify('تم إنشاء طلب تجريبي داخل المتصفح فقط.');renderSim()}).catch(err=>notify(err.message,'error'))});opt('برامج أخرى',()=>{sim.screen='category';renderSim()});opt('الرئيسية',()=>{sim.screen='home';renderSim()});}
- else if(sim.screen==='my-bookings'){
-  bubble('معاينة طلبات الحجز المسجلة لرقم العميل التجريبي 201000000000 (داخل الذاكرة فقط).');
-  const items=state.bookings.filter(b=>String(b.customer_phone||'').replace('+','')==='201000000000').slice(0,5);
-  if(!items.length)bubble('مافيش طلبات تخص العميل التجريبي الحالي.');
-  const labels={PENDING_REVIEW:'قيد المراجعة',CONFIRMED:'مؤكد',CANCELLED:'ملغي',REJECTED:'مرفوض'};
-  for(const item of items)bubble((state.programs.find(p=>p.id===item.program_id)?.title||'البرنامج')+
-    ' — '+(labels[item.status]||item.status));
-  opt('الرئيسية',()=>{sim.screen='home';renderSim()});
+ else if(sim.screen==='program'){const p=state.programs.find(p=>p.id===sim.program);if(!p||p.status!=='PUBLISHED'){sim.screen='home';return renderSim()}bubble('✦ '+p.title+'\nنوع الرحلة: '+categories[p.category]+'\nالسعر للفرد: '+money(p.priceMinor,p.currency)+'\nالمقاعد المتبقية: '+(p.available_seats-p.booked_seats)+'\nموعد السفر: '+humanDate(p.departure_at)+'\nمدة الرحلة: '+(p.duration_days||'غير محددة')+' أيام'+'\nالفندق: '+(p.hotel_name||'يحدد لاحقًا')+(p.summary?'\n'+p.summary:'')+'\n\nهذه المعلومات لأغراض المعاينة، وليست حجزًا مؤكدًا.');opt('أنا مهتم — تواصل مع موظف',()=>{sim.screen='qualify-party';renderSim()});opt('برامج أخرى',()=>{sim.screen='category';renderSim()});opt('الرئيسية',()=>{sim.screen='home';renderSim()});}
+ else if(sim.screen==='qualify-party'){
+   bubble('علشان الموظف يساعدك أسرع: كم فرد تقريبًا مهتمين بالرحلة؟');
+   for(const [label,num] of [['فرد واحد',1],['فردين',2],['3 أفراد أو أكثر',3],['لسه مش محدد',null]]){
+     opt(label,()=>{sim.partySize=num;sim.screen='qualify-travel';renderSim()});
+   }
  }
- else if(sim.screen==='submitted'){bubble('✓ تم تسجيل طلب تجريبي بنجاح\nسيظهر في شاشة الحجوزات بوضع المعاينة فقط.\nلم يتم إرسال أي بيانات لواتساب أو للخادم.');opt('العودة للقائمة الرئيسية',()=>{sim.screen='home';renderSim()});}
- else{bubble('أنت اخترت التحدث مع موظف.\nهذا عرض تصوري؛ التحويل الحقيقي داخل واتساب قيد التطوير.');opt('العودة للقائمة الرئيسية',()=>{sim.screen='home';renderSim()})}
+ else if(sim.screen==='qualify-travel'){
+   bubble('إمتى حابب تسافر تقريبًا؟ ولو مش محدد، عادي.');
+   for(const timing of ['خلال شهر','بعد شهرين','لسه مش محدد']){
+     opt(timing,()=>{
+       const p=state.programs.find(x=>x.id===sim.program);
+       state.leads.unshift({
+         id:safeId(),customer_name:'عميل من معاينة البوت',phone:'201000000000',
+         program_title:p?.title||'استفسار عام',party_size:sim.partySize,
+         travel_preference:timing==='لسه مش محدد'?null:timing,
+         stage:'READY_FOR_AGENT',updated_at:new Date().toISOString()
+       });
+       sim.screen='submitted';renderSim();
+     });
+   }
+ }
+ else if(sim.screen==='submitted'){
+   bubble('✓ تم تسجيل اهتمام العميل في المعاينة فقط.\nموظف الشركة هيشوف البرنامج وعدد الأفراد وموعد السفر المناسب، وهو اللي يتواصل ويعمل الحجز خارج البوت.');
+   opt('عرض العملاء المهتمين',()=>{document.querySelector('[data-page="leads"]')?.click()});
+   opt('العودة للرئيسية',()=>{sim.screen='home';renderSim()});
+ }
+ else{bubble('تم طلب التواصل مع موظف الشركة. في التشغيل الحقيقي بيستلم الموظف المحادثة ويكمل الحجز بنفسه. دي معاينة فقط.');opt('العودة للقائمة الرئيسية',()=>{sim.screen='home';renderSim()})}
 }
 function renderTeam(){const tbody=$('team-body');tbody.replaceChildren();if(!state.team.length)empty(tbody,3,canEdit()?'لا يوجد أعضاء ظاهرون':'هذه القائمة متاحة للمدير والمالك فقط');for(const member of state.team){const tr=el('tr');cell(tr,attach(el('div',undefined,'name-cell'),el('span',initials(member.email),'name-avatar'),el('strong',member.email.split('@')[0])));cell(tr,member.email);cell(tr,pillar(member.role));tbody.append(tr)}}
 function renderBotSettings(){const cfg=state.botConfig;if(!cfg)return;const draft=cfg.draft||{},pub=cfg.published;const form=$('bot-config-form');form.elements.displayName.value=draft.displayName||cfg.companyName||'';form.elements.welcomeText.value=draft.welcomeText||'';form.querySelectorAll('[name=enabledCategories]').forEach(x=>x.checked=(draft.enabledCategories||[]).includes(x.value));$('bot-published-status').textContent=pub?'منشور — نسخة '+pub.version:'لم يتم النشر';$('bot-current-version').replaceChildren(attach(el('div'),el('strong',pub?'الإصدار '+pub.version:'لا توجد نسخة منشورة'),el('small',pub?'تاريخ النشر: '+humanDate(pub.publishedAt):'احفظ مسودة الإعدادات ثم انشرها للمعاينة')));const list=$('bot-version-list');list.replaceChildren();for(const v of (cfg.versions||[]).slice(0,5)){list.append(attach(el('div',undefined,'version-entry'),el('span','الإصدار '+v.version),el('small',humanDate(v.publishedAt))))}if(!list.children.length)list.append(el('div','لا توجد إصدارات سابقة','empty-state'));form.querySelectorAll('input,textarea,button').forEach(input=>input.disabled=!canEdit());$('bot-publish').disabled=!canEdit()}
 function renderAll(){renderOverview();renderPrograms();renderBookings();renderOffers();renderCustomers();renderFollowups();renderInbox();renderReports();renderTeam();renderBotSettings();updateCustomerSelects();renderSim()}
-async function refresh(){const paths=['programs','bookings','contacts','offers','followups','conversations'];const all=await Promise.all([...paths.map(p=>api('/'+p)),api('/summary'),api('/bot/config'),...(canEdit()?[api('/team')]:[])]);paths.forEach((p,i)=>state[p]=all[i]);state.summary=all[paths.length];state.botConfig=all[paths.length+1];if(state.botConfig)state.botConfig.versions=await api('/bot/versions');state.team=canEdit()?all[paths.length+2]:[];renderAll()}
-function choose(page){state.page=page;document.querySelectorAll('.page').forEach(node=>node.hidden=node.id!==page);document.querySelectorAll('[data-page]').forEach(node=>node.classList.toggle('active',node.dataset.page===page));const names={overview:'نظرة عامة',programs:'البرامج السياحية',inventory:'المواعيد والغرف',offers:'العروض',bookings:'الحجوزات',inbox:'المحادثات',customers:'العملاء',followups:'المتابعات',reports:'التقارير',simulator:'معاينة البوت',team:'الموظفون',settings:'الإعدادات','wa-inbox':'صندوق واتساب','wa-connect':'ربط واتساب',templates:'قوالب واتساب',subscription:'الاشتراك'};$('page-title').textContent=names[page]||'مساحة العمل';$('crumb').textContent='مساحة العمل / '+(names[page]||'');window.scrollTo({top:0,behavior:'instant'});if(['wa-inbox','wa-connect','team','subscription','settings','inventory','bookings','templates'].includes(page))void operations.onPage(page);}
+async function refresh(){const paths=['programs','contacts','offers','followups','conversations'];state.bookings=[];const all=await Promise.all([...paths.map(p=>api('/'+p)),api('/summary'),api('/bot/config'),...(canEdit()?[api('/team')]:[])]);paths.forEach((p,i)=>state[p]=all[i]);state.summary=all[paths.length];state.botConfig=all[paths.length+1];if(state.botConfig)state.botConfig.versions=await api('/bot/versions');state.team=canEdit()?all[paths.length+2]:[];renderAll()}
+function choose(page){state.page=page;document.querySelectorAll('.page').forEach(node=>node.hidden=node.id!==page);document.querySelectorAll('[data-page]').forEach(node=>node.classList.toggle('active',node.dataset.page===page));const names={overview:'لوحة البوت',leads:'العملاء المهتمون',programs:'البرامج السياحية',inventory:'المواعيد والغرف',offers:'العروض',bookings:'الحجوزات',inbox:'المحادثات',customers:'العملاء',followups:'المتابعات',reports:'التقارير',simulator:'معاينة البوت',team:'الموظفون',settings:'الإعدادات','wa-inbox':'صندوق واتساب','wa-connect':'ربط واتساب',templates:'قوالب واتساب',subscription:'الاشتراك'};$('page-title').textContent=names[page]||'مساحة العمل';$('crumb').textContent='مساحة العمل / '+(names[page]||'');window.scrollTo({top:0,behavior:'instant'});if(['overview','leads','wa-inbox','wa-connect','team','subscription','settings'].includes(page))void operations.onPage(page);}
 function startSession(demo,session){state.demo=demo;state.token=session.token||'';state.role=session.role||'OWNER';state.tenant=session.tenantSlug||'الشركة السياحية';$('side-company').textContent=demo?'شركة الرحلات السياحية':state.tenant;$('user-role').textContent=roleLabels[state.role]||'موظف';$('sidebar-role').textContent=roleLabels[state.role]||'موظف';$('sidebar-mode').textContent=demo?'بيانات تجريبية':'البيانات الحقيقية';show('demo-badge',demo);show('login',false);show('app',true);choose('overview');}
 async function execute(fn){try{await fn()}catch(error){notify(error.message||'حدث خطأ غير متوقع','error')}}
 function registerToggle(toggle,panel){$(toggle).onclick=()=>show(panel,$(panel).hidden)}
