@@ -1,5 +1,3 @@
-# Remaining work
+# Remaining
 
-All implementation stages in docs/01-MASTER-PLAN.md remain open.
-Immediate: repo privacy; Stage 0 monorepo and CI; database schema; tenant auth; provider-neutral menu simulator; then Stage 1 vertical slice.
-External dependencies later: Meta business/API onboarding and credentials, domain/hosting, real-number eligibility, company data, pilot testers.
+Immediate: run install/typecheck/tests and resolve failures, add lockfile, tenant auth and database schema/migrations. Stage 0 still IN PROGRESS. Full vertical slice and all later stages remain NOT STARTED. See docs/01-MASTER-PLAN.md.
