@@ -40,12 +40,20 @@ async function processTenant(tenantId:string):Promise<boolean>{
   await tx.query('BEGIN');began=true;
   await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
   // Row-level locking reserves one job among concurrent worker processes.
-  const pending=await tx.query(`SELECT j.*,a.phone_number_id,a.access_token_encrypted
+  const pending=await tx.query(`SELECT j.*,a.phone_number_id,a.access_token_encrypted,c.last_customer_message_at
    FROM whatsapp_outbox j JOIN whatsapp_accounts a ON a.tenant_id=j.tenant_id AND a.id=j.account_id
+   JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id
    WHERE j.tenant_id=$1 AND j.status='PENDING' AND j.next_attempt_at<=now()
    AND a.status='CONNECTED' ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j SKIP LOCKED`,[tenantId]);
   if(pending.rowCount!==1){await tx.query('COMMIT');return false;}
   const job=pending.rows[0];
+  // Interactive/text messages must not be dispatched after the WhatsApp 24h service window.
+  const windowAge=job.last_customer_message_at ? Date.now()-new Date(String(job.last_customer_message_at)).getTime() : Infinity;
+  if(windowAge>24*3600_000){
+   await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Customer service window expired; approved template required'
+     WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);
+   await tx.query('COMMIT');return true;
+  }
   // Keep lock while outbound API completes: blocks duplicate concurrent dispatch in healthy processes.
   // A timeout may mean provider received the request. To avoid an accidental duplicate charge/send,
   // do NOT retry unknown network outcomes automatically (mark UNCERTAIN for manual reconciliation).
