@@ -19,6 +19,10 @@ AGENTS.md, docs/00-SCOPE-CHATBOT-ONLY.md, CURRENT-STATUS.md, REMAINING.md and do
 - services now contains security/transaction primitives only; team-directory replaces obsolete bot-config. Removed booking-choice/flows/contracts workspace, legacy UI and associated obsolete tests. Historical migrations/data remain intact. scripts/clean-build.mjs prevents old emitted JS shipping.
 
 ## Evidence and next action
-Clean npm ci (21 packages), build/TypeScript, 12 JS syntax checks, DOM reference/ID safeguards, static HTTP serving for nine assets and diff checks passed. No local comprehensive unit/DB/browser/provider/performance/restore acceptance. Inspect current GitHub CI for its exact head/result; do not reuse earlier results. Newly added tests include core regression and the PostgreSQL RLS gate now includes all new tenant runtime tables.
+Clean npm ci (21 packages), build/TypeScript, 12 JS syntax checks, DOM reference/ID safeguards, static HTTP serving for nine assets and diff checks passed. No local comprehensive unit/DB/browser/provider/performance/restore acceptance. CI on 7fc36262f120560582d86c9614ded23e71fd3aa1 passed 28/28 unit tests, migrations 0001–0022 and PostgreSQL catalog-isolation/RLS gate (run 39072771700). Follow-up startup scripts use compiled JS; latest-head CI must be read separately. Newly added tests include core regression and the PostgreSQL RLS gate now includes all new tenant runtime tables.
 
 Apply migration 0022 after previous migrations, configure grants/environment, then use docs/11-LOCAL-SETUP.md. Remaining native connectors/advanced formats/retention and final acceptance are explicitly open. No commercial readiness percentage, no merge or deployment.
+
+Implementation commit: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/7fc36262f120560582d86c9614ded23e71fd3aa1
+CI evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700
+See VERIFICATION-2026-10-18.md for exact limits of those checks.

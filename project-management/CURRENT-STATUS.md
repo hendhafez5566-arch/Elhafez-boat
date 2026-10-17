@@ -1,6 +1,6 @@
 # CURRENT STATUS — Elhafez Boat, 2026-10-18
 
-General chatbot SaaS for all businesses. Branch `feat/stage0-foundation`, draft PR #1, unmerged and not deployed. Verified remote starting HEAD for this delivery: `d31c20e31ce6d92cf86829d14ef65574b01d0b2c`. See PR #1 for the delivered implementation commit.
+General chatbot SaaS for all businesses. Branch `feat/stage0-foundation`, draft PR #1, unmerged and not deployed. Verified remote starting HEAD for this delivery: `d31c20e31ce6d92cf86829d14ef65574b01d0b2c`. Delivered implementation: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/7fc36262f120560582d86c9614ded23e71fd3aa1.
 
 **Implementation advanced substantially. Final acceptance is DEFERRED, not PASS. Do not claim commercial readiness.**
 
@@ -24,7 +24,9 @@ General chatbot SaaS for all businesses. Branch `feat/stage0-foundation`, draft 
 - Syntax safeguards passed for 12 changed JS/test entrypoints; static DOM IDs/references passed; git diff whitespace checks passed.
 - Local static HTTP smoke returned 200 for dashboard and eight current assets, including widget and workspace modules.
 - New regression cases were written for delay, catalog pagination/snapshot, forged choices, template parameter/media validation, sequences, media types, widget origins/roles, encryption and draft conflict. They were NOT run locally as a final acceptance campaign.
-- Existing GitHub CI will independently run on the uploaded commit; record its exact result below/at handover. The earlier 34/38 result on e38fbdb is historical and is not this delivery's result.
+- GitHub CI on 7fc3626 succeeded: 28/28 unit tests, TypeScript/build, all 22 PostgreSQL migrations, catalog cross-tenant read/update/insert denial and the tenant-table RLS/FORCE flag gate. Evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700. The earlier 34/38 booking failure is superseded for the retired product scope.
 - No local PostgreSQL service/Docker, authenticated browser/mobile, actual Meta/AI/external endpoint, performance or backup/restore acceptance. No screenshots were produced; no renewed browser installation attempt.
 
 The remaining scope and external activation prerequisites are explicit in REMAINING.md. All source implementation entries above remain subject to the one final comprehensive acceptance campaign.
+
+Detailed evidence: VERIFICATION-2026-10-18.md. Startup follow-up uses compiled API/worker JS after one root build; web loads root .env; unused placeholder worker removed. Final comprehensive acceptance still deferred.

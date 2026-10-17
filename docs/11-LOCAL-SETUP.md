@@ -33,7 +33,7 @@ npm run dev:web
 npm run dev:worker
 ```
 
-Use separate terminals; these load the untracked root `.env`. Default dashboard: http://localhost:3000 . Internal API: http://localhost:4000 . Browser requests are proxied through the web server to the internal API.
+Run `npm run build` ONCE first, then use separate terminals; these load the untracked root `.env`. Restart after rebuilding source changes; API/worker dev commands execute compiled JS and do not concurrently delete/rebuild output. Default dashboard: http://localhost:3000 . Internal API: http://localhost:4000 . Browser requests are proxied through the web server to the internal API.
 
 Log in with the bootstrapped company slug, email and password. No universal/default password is committed. Create catalog drafts and publish them; create FAQ drafts and approve them; design/save/validate/publish a flow. Authenticated preview uses the actual server interpreter and does not send WhatsApp/webhook messages. AI preview may use the optional provider and consumes AI usage. Live customer traffic requires Meta activation below.
 

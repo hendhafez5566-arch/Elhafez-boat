@@ -20,6 +20,6 @@
 ## ONE final comprehensive acceptance campaign
 After approved build scope is closed, run unit/integration, fresh PostgreSQL migration and RLS/cross-tenant checks, actual browser/mobile, delay crash/restart/session pinning, dynamic pagination, trigger/hand-off/inbox ownership, website CORS/token/dedupe/security, media ACL/quota/type/deletion, consent/campaign cancel/limits/template delivery, AI grounding/quota, outbound DNS/SSRF/secrets/idempotency, worker fault injection/reconciliation, realistic performance and real backup/restore. Fix failures from source; no test masking.
 
-Existing CI runs automatically and is a development check, not this comprehensive acceptance campaign. Historical e38fbdb booking failures were addressed by retiring the obsolete product and replacing its coverage, not by reviving booking code or excluding current chatbot/security tests. See docs/17-LEGACY-RETIREMENT.md.
+CI run 39072771700 on 7fc3626 passed 28/28 tests, all migrations and the PostgreSQL catalog-isolation/RLS gate. This is a development check, not this comprehensive acceptance campaign. Historical e38fbdb booking failures were addressed by retiring the obsolete product and replacing its coverage, not by reviving booking code or excluding current chatbot/security tests. See docs/17-LEGACY-RETIREMENT.md.
 
 No merge, commercial deploy or readiness claim is authorized by the current evidence.

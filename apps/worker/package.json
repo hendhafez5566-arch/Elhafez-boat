@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node --env-file-if-exists=../../.env --experimental-strip-types main.ts",
+    "dev": "node --env-file-if-exists=../../.env ../../.build/apps/worker/main.js",
     "start": "node --env-file-if-exists=../../.env ../../.build/apps/worker/main.js"
   },
   "dependencies": {

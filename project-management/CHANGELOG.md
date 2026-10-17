@@ -6,7 +6,8 @@
 - Added managed media, validated interactive template parameters and consent-filtered campaigns/sequences with worker jobs, limits and cancellation.
 - Added company usage/admin caps, live inbox/notification polling, per-message reads, editable replies, encrypted integration credentials, optimistic draft saves and durable Meta PROCESSING/UNCERTAIN recovery.
 - Rebuilt RTL app with real APIs; removed dummy tourism workspace and retired package; preserved historical SQL/data. Added migration 0022 and clean-build step.
-- Build, clean install, JS/DOM and static HTTP safeguards passed. Final acceptance remains deferred. Actual CI result must be read for the new commit.
+- Build/install/JS/DOM/HTTP safeguards passed. CI on 7fc3626 passed 28/28 unit tests, all 22 migrations and PostgreSQL catalog-isolation/RLS gate (run 39072771700). Final acceptance remains deferred.
+- Startup follow-up now runs compiled API/worker JS after one root build and loads root .env for web; removed unused placeholder worker.
 
 
 ## 2026-10-18 — Generic chatbot implementation batch

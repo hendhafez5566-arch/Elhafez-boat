@@ -13,3 +13,5 @@ Current batch continues d31c20e on the same branch/PR.
 - Rebuilt actual-data RTL workspace; removed seeded tourism UI and stale compiled-code risk; optimistic flow draft revisions.
 
 Locally confirmed: clean dependency install, TypeScript/build, JS syntax, static DOM checks and HTTP asset serving. This list means source is implemented, not database/browser/live-provider/commercial acceptance passed. See CURRENT-STATUS.md and REMAINING.md for exact evidence and limitations.
+
+Confirmed remote CI on 7fc3626: 28/28 unit tests, all 22 migrations and real PostgreSQL catalog-isolation/RLS gate passed. Evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700. No full final acceptance claim.
