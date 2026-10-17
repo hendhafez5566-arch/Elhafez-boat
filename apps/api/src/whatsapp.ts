@@ -1,3 +1,4 @@
+import { findApprovedAnswer } from './knowledge.js';
 import { makeBookingFlow, finishBookingFlow } from './flows.js';
 /** Official Meta Cloud API; no unofficial WhatsApp libraries or browser automation. */
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
@@ -202,7 +203,12 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
    await respond(await showMenu(db,tenantId,row,nav[1],page));return;
   }
  }
- // Safe fallback: published menu, no invented answer from AI.
+ // An EXACT match against a human-published tenant FAQ can be returned safely.
+ // Unknown questions never trigger a made-up AI business answer.
+ if(!action&&msgType==='text'){
+   const approved=await findApprovedAnswer(db,tenantId,body);
+   if(approved){await respond(textPayload(approved));return;}
+ }
  await respond(await showMenu(db,tenantId,row,'HOME',0));
 }
 export async function handleVerifiedWebhook(pool:SqlPool&SqlClient,payload:unknown):Promise<void>{
