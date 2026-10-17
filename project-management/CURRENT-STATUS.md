@@ -30,3 +30,17 @@ General chatbot SaaS for all businesses. Branch `feat/stage0-foundation`, draft 
 The remaining scope and external activation prerequisites are explicit in REMAINING.md. All source implementation entries above remain subject to the one final comprehensive acceptance campaign.
 
 Detailed evidence: VERIFICATION-2026-10-18.md. Startup follow-up uses compiled API/worker JS after one root build; web loads root .env; unused placeholder worker removed. Final comprehensive acceptance still deferred.
+
+
+## 2026-10-18 — advanced additions: reusable flow sections + visual groups + Meta carousel
+
+**Implemented and committed in source:**
+- PostgreSQL migration **0023_reusable_flow_sections.sql** adds RLS/FORCE tenant-private named reusable *linear* flow sections.
+- `apps/api/src/flow-reuse.ts` validates, captures and clones 1–20 sequential nodes with unique IDs and a single restored exit. Library routes `/api/v1/flows/snippets` are RBAC controlled, audited and capped at 100 per company.
+- Flow engine now validates and persists up to 20 non-overlapping visual groups in drafts and immutable versions; canvas has Shift+multi-select, grouping, outlined labels and ungroup.
+- Flow editor has a real authenticated reusable-library panel (save/import/delete) and a separate in-memory demo mode. Imported copies mark only the draft dirty; published revisions and other companies are unaffected.
+- WhatsApp template compiler accepts only provider-approved MARKETING carousels with 2–10 IMAGE/VIDEO cards, positional body parameters and narrowly supported button types. Per-card form controls and tenant-owned managed media validation are wired to the existing consent/queue flow.
+- **No arbitrary free-form carousel** or unsupported catalog/OTP/provider template is enabled.
+
+**CI evidence:** GitHub run [39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) on test commit `13a3da3` completed SUCCESS: **43/43 unit tests**, all migrations **0001–0023**, PostgreSQL cross-company catalog/snippet write denial and RLS/FORCE. Source/docs commit after that run still requires its own CI check. No real Meta carousel/provider delivery, browser/mobile acceptance or commercial release.
+Details: `docs/18-FLOW-REUSE-AND-CAROUSEL.md`. Full final acceptance remains deferred by owner's choice.
