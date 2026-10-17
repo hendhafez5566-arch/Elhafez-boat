@@ -1,33 +1,25 @@
-# CURRENT STATUS — 2026-10-17
+# CURRENT STATUS — October 17, 2026
 
-Repository: `hendhafez5566-arch/Elhafez-boat`. PUBLIC by explicit user choice. Working branch: `feat/stage0-foundation`. Draft PR #1 remains unmerged. Actual HEAD SHA: verify with GitHub before resuming.
+**Phase:** feature implementation, NOT FINAL. **Branch:** `feat/stage0-foundation`, **Draft PR:** #1. **Repository:** `hendhafez5566-arch/Elhafez-boat` (PUBLIC by owner choice). No merge or production deployment.
 
-## In repository now
-- TypeScript modular monorepo, API and worker skeleton, initial tenant and booking business services, authentication and sessions, program/booking PostgreSQL schema (migrations 0001/0002).
-- New multi-section sales workspace implementation: migration `0003_sales_workspace.sql` for tenant-isolated contacts/notes, offers, internal conversations/messages, follow-up tasks; migration `0004_program_trip_details.sql` for hotel/travel/date/summary fields.
-- API services in `apps/api/src/sales.ts`, exposed by authenticated and tenant-scoped routes in `apps/api/src/server.ts`: contacts, status, notes; offers; follow-ups; **internal-only** threads; metrics.
-- Program create/list services extended with optional trip fields.
-- Redesigned Arabic RTL dashboard in `apps/web/public/{index.html,style.css,app.js}`: overview, programs, offers, bookings, CRM, internal inbox, follow-ups, reports, bot simulator and design-only team/settings sections.
-- Browser-only demo mode is explicitly labeled and does not call API or WhatsApp.
+## Code implemented/pushed in this batch
 
-## Verification policy and evidence
-User explicitly requested **ONE final comprehensive testing phase after all features are built**. No new full test suite/acceptance gate was run for this increment. Limited local `node --check` and TypeScript compilation checks were run to catch basic syntax/type errors; that does not constitute an acceptance pass. Previous 29 local tests from prior session are historical, not release certification.
-A browser-based demo screen was rendered locally for visual preview, but it was not a real PostgreSQL-backed or Meta-connected end-to-end test. PostgreSQL migrations 0001-0004 have NOT been verified on a real database. CI status and clean npm install not established.
+- Official Meta WhatsApp integration foundation: server-verified signed webhooks + challenge, phone->tenant routing, encrypted business access token storage (AES-256-GCM), persistent inbound messages, idempotent receipts, conversation state machine, published catalog lists and provisional bookings, STOP/START, staff takeover/reply, delivery statuses.
+- Separate outbound WhatsApp worker with tenant/RLS-scoped database queue, locking, retry classification, uncertain send quarantine and 24h service-window check. No actual message sent to a Meta number in this environment.
+- Meta published WhatsApp Flow configuration plus one-time booking form token, vetted inbound form submission and fallback text booking. `meta/booking-flow-template.json` is a **draft template**; it is NOT registered/published with Meta.
+- Team: invitation create/revoke, token acceptance for new/existing user, role edit and session revocation; invitation delivery is manual, not automated email.
+- Platform owner: separate authentication/session, tenant onboarding/owner invite, plan listing and manual subscription updates with separate privileged DB credentials.
+- Tenant-approved FAQ drafts/publish; exact-match safe answers, no LLM integration.
+- Arabic UI additions for live inbox, Meta link, Flow config, invitations/team role controls, company subscription, approved FAQs, and separate platform/join pages.
+- SQL migrations 0006–0010 and environment/setup guidance for new modules.
 
-## NOT COMPLETE
-Official WhatsApp integration, real chat inbox, live WhatsApp Flows/booking, per-departure inventory/rates, actual payment provider, media upload, tenant onboarding, team invitations, global subscription superadmin, production deployment, full acceptance tests and SaaS reliability.
+## Evidence and limitations
 
-## NEXT DEVELOPMENT ACTIONS (not test milestones)
-1. Build per-departure/room/hotel inventory models and pricing snapshot workflow.
-2. Add bot menu publisher and provider-neutral WhatsApp adapters with simulated inbound event persistence.
-3. Implement real team management, media library and WhatsApp account onboarding contracts.
-4. Continue functional dashboard completeness and owner superadmin.
-5. Only after full build: one final comprehensive acceptance campaign with real PostgreSQL, Playwright, tenant isolation, WhatsApp sandbox, load/performance and recovery; repair all findings then release.
+- GitHub file commits exist on `feat/stage0-foundation`; no merge to main.
+- Lightweight checks in local development on isolated new TS files using TypeScript with replacement typings for existing services, and `node --check` on standalone UI modules were successful. This is **NOT** a clean checkout build, comprehensive tests or real DB/provider acceptance.
+- **No PostgreSQL instance used to apply 0006–0010 here.** No real Meta token/number was provisioned, no webhook provider event received, no emails sent, no billing charges, no payment processing, no live deployment.
+- Actual full product incomplete; see docs/14-COMMERCIAL-RELEASE-GAPS.md.
 
-Never claim the project is fully built or live based on mocked demo screenshots. Keep this file and HANDOVER updated each batch.
+## NEXT
 
-## Additional latest implementation
-- Migration `0005_bot_configuration.sql`: RLS tenant bot draft and immutable published revisions.
-- `apps/api/src/bot-config.ts`: editable draft settings, validated category visibility, concurrency-safe revision publishing and audit, plus staff membership listing.
-- Dashboard Settings now supports editing/saving/publishing bot configuration; local simulator uses latest published version only. Team page displays membership list as read-only, with invitations explicitly pending.
-- Only syntax/type consistency safeguards done for this incremental work. **No final acceptance suite run.**
+Continue business-feature build (departure/room inventory, templates, messaging consent, advanced inbox, grounded AI optional provider, admin usage/metering, production ops). Preserve and extend code; DO NOT start final acceptance early per user. At release readiness, run one comprehensive final acceptance phase with real Postgres, HTTP, browser, official Meta provider, isolation, performance/restore and deployment proof. Then review PR for merge.
