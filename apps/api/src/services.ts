@@ -21,7 +21,7 @@ export function allow(actor: Actor, accepted: readonly Role[]): void {
   assertActor(actor);
   if (!accepted.includes(actor.role)) throw new HttpFailure(403,'Insufficient permissions');
 }
-export function cleanProgramInput(data: unknown): { title: string; category: string; currency: string; priceMinor: number; availableSeats: number } {
+export function cleanProgramInput(data: unknown): { title: string; category: string; currency: string; priceMinor: number; availableSeats: number; summary: string; hotelName: string | null; durationDays: number | null; departureAt: string | null } {
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new HttpFailure(400,'Invalid program data');
   const d = data as Record<string, unknown>;
   const title = typeof d.title === 'string' ? d.title.trim() : '';
@@ -30,7 +30,20 @@ export function cleanProgramInput(data: unknown): { title: string; category: str
   if (!currencies.has(d.currency as string)) throw new HttpFailure(400,'Invalid currency');
   if (!Number.isSafeInteger(d.priceMinor) || (d.priceMinor as number) < 0) throw new HttpFailure(400,'Invalid price');
   if (!Number.isSafeInteger(d.availableSeats) || (d.availableSeats as number) < 0 || (d.availableSeats as number)>100000) throw new HttpFailure(400,'Invalid capacity');
-  return { title, category: d.category as string, currency: d.currency as string, priceMinor: d.priceMinor as number, availableSeats: d.availableSeats as number };
+  const summary = d.summary === undefined || d.summary === null ? '' : typeof d.summary === 'string' ? d.summary.trim() : null;
+  if(summary===null || summary.length>2000)throw new HttpFailure(400,'Invalid program summary');
+  const hotelName = d.hotelName === undefined || d.hotelName === null || d.hotelName === '' ? null : typeof d.hotelName === 'string' ? d.hotelName.trim() : null;
+  if(hotelName!==null && (hotelName.length<2||hotelName.length>160))throw new HttpFailure(400,'Invalid hotel name');
+  const durationDays = d.durationDays === undefined || d.durationDays === null || d.durationDays === '' ? null : Number(d.durationDays);
+  if(durationDays!==null && (!Number.isSafeInteger(durationDays)||durationDays<1||durationDays>90))throw new HttpFailure(400,'Invalid duration');
+  let departureAt: string|null = null;
+  if(d.departureAt !== undefined && d.departureAt !== null && d.departureAt !== '') {
+    if(typeof d.departureAt!=='string'||!/^\d{4}-\d{2}-\d{2}T/.test(d.departureAt))throw new HttpFailure(400,'Invalid departure date');
+    const timestamp=new Date(d.departureAt);
+    if(!Number.isFinite(timestamp.getTime()))throw new HttpFailure(400,'Invalid departure date');
+    departureAt=timestamp.toISOString();
+  }
+  return { title, category: d.category as string, currency: d.currency as string, priceMinor: d.priceMinor as number, availableSeats: d.availableSeats as number, summary, hotelName, durationDays, departureAt };
 }
 export function cleanBookingInput(data: unknown): { programId: string; customerName: string; customerPhone: string; partySize: number } {
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new HttpFailure(400,'Invalid booking');
@@ -67,15 +80,16 @@ export async function withTenantTransaction<T>(pool: SqlPool, actor: Actor, task
 export async function listPrograms(db: SqlClient, actor: Actor): Promise<Record<string, unknown>[]> {
   allow(actor, roles);
   const result = await db.query(`SELECT id, title, category, currency, price_minor::text AS "priceMinor",
-    available_seats, booked_seats, status FROM programs WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200`,[actor.tenantId]);
+    available_seats, booked_seats, status,summary,hotel_name,duration_days,departure_at FROM programs WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200`,[actor.tenantId]);
   return result.rows;
 }
 export async function createProgram(db: SqlClient, actor: Actor, data: unknown): Promise<Record<string, unknown>> {
   allow(actor,['OWNER','MANAGER']);
   const p = cleanProgramInput(data);
-  const result = await db.query(`INSERT INTO programs (tenant_id,title,category,currency,price_minor,available_seats,status)
-    VALUES ($1,$2,$3,$4,$5,$6,'DRAFT') RETURNING id,title,category,currency,price_minor::text AS "priceMinor",available_seats,status`,
-    [actor.tenantId,p.title,p.category,p.currency,p.priceMinor,p.availableSeats]);
+  const result = await db.query(`INSERT INTO programs (tenant_id,title,category,currency,price_minor,available_seats,status,summary,hotel_name,duration_days,departure_at)
+    VALUES ($1,$2,$3,$4,$5,$6,'DRAFT',$7,$8,$9,$10)
+    RETURNING id,title,category,currency,price_minor::text AS "priceMinor",available_seats,status,summary,hotel_name,duration_days,departure_at`,
+    [actor.tenantId,p.title,p.category,p.currency,p.priceMinor,p.availableSeats,p.summary,p.hotelName,p.durationDays,p.departureAt]);
   return result.rows[0];
 }
 export async function publishProgram(db: SqlClient, actor: Actor, programId: string): Promise<Record<string, unknown>> {
