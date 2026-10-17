@@ -105,7 +105,16 @@
             <label>Access Token (يُشفّر في الخادم)<input name="accessToken" type="password" minlength="20" autocomplete="off" required></label>
             <button class="primary" type="submit">تحقق من Meta واربط الرقم</button></form>
           <div class="ops-security">لا تضع التوكن في GitHub أو في ملاحظات الفريق. استخدام البيانات الحقيقية يحتاج إعداد Meta App Secret ومفتاح تشفير بالخادم.</div></div>
-          <div class="ops-panel"><h3>الأرقام المرتبطة</h3><div id="wa-connections"></div><div class="ops-note">الرابط لا يفعل الحساب التجاري أو موافقة Meta تلقائيًا؛ يجب إكمال إعداد الـWebhook وتصاريح Cloud API لدى Meta.</div></div></div>
+          <div class="ops-panel"><h3>الأرقام المرتبطة</h3><div id="wa-connections"></div><div class="ops-note">الرابط لا يفعل الحساب التجاري أو موافقة Meta تلقائيًا؛ يجب إكمال إعداد الـWebhook وتصاريح Cloud API لدى Meta.</div>
+          <hr><h3>نموذج الحجز داخل واتساب (Flows)</h3>
+          <form class="ops-form" id="wa-flow-form">
+            <label>رقم واتساب<select name="accountId" id="wa-flow-accounts" required></select></label>
+            <label>Meta Published Flow ID<input name="flowId" inputmode="numeric" pattern="[0-9]{5,30}" required></label>
+            <label>Screen ID<input name="screenId" value="BOOKING" pattern="[A-Z][A-Z0-9_]{1,40}" required></label>
+            <label><input name="enabled" type="checkbox" style="width:auto;margin-left:8px"> تفعيل النموذج بعد التحقق من نشره في Meta</label>
+            <button class="primary" type="submit">حفظ إعداد نموذج الحجز</button>
+          </form>
+          <div id="wa-flow-status" class="ops-note">تحتاج نشر Flow JSON في Meta أولًا؛ إن لم يوجد Flow منشور، يكمّل العميل طلبه برسائل البوت المعتادة.</div></div></div>
       </section>
       <section id="subscription" class="page" hidden>
         <div class="section-heading"><div><h2>اشتراك الشركة</h2><p>تفاصيل الباقة الحالية والحدود المسموح بها — إدارة الاشتراكات من حساب مالك المنصة.</p></div></div>
