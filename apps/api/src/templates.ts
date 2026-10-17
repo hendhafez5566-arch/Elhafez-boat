@@ -39,7 +39,17 @@ export async function registerApprovedTemplate(db:SqlClient,actor:Actor,input:un
  if(!categories.includes(template.category as typeof categories[number]))throw new HttpFailure(409,'Template category not supported for outreach');
  const parts=Array.isArray(template.components)?template.components.map(record):[];
  // Registration stores provider structure. Sending validates required values against it.
- if(parts.some(p=>!['BODY','HEADER','FOOTER','BUTTONS'].includes(String(p.type))))throw new HttpFailure(409,'Template has unsupported carousel/authentication components');
+ if(parts.some(p=>!['BODY','HEADER','FOOTER','BUTTONS','CAROUSEL'].includes(String(p.type))))
+   throw new HttpFailure(409,'Template has unsupported authentication or catalog components');
+ const carousel=parts.filter(p=>p.type==='CAROUSEL');
+ if(carousel.length>1||carousel.length&&template.category!=='MARKETING')
+   throw new HttpFailure(409,'Carousel is only supported in approved marketing templates');
+ if(carousel.length){
+   const cards=carousel[0].cards;
+   if(!Array.isArray(cards)||cards.length<2||cards.length>10||
+     cards.some(card=>!Array.isArray((card as {components?:unknown}).components)))
+     throw new HttpFailure(409,'Unsupported approved carousel card metadata');
+ }
  const saved=await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components)
  VALUES($1,$2,$3,$4,$5,$6::jsonb)
  ON CONFLICT(tenant_id,account_id,template_name,language_code) DO UPDATE SET category=EXCLUDED.category,components=EXCLUDED.components,last_provider_verification=now()
@@ -83,6 +93,17 @@ export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknow
 
  const components=templateComponents(t.rows[0].components,d.parameters as TemplateValues|undefined);
  if((d.parameters as TemplateValues|undefined)?.mediaUrl){const header=(t.rows[0].components as {type:string;format?:string}[]).find(p=>p.type==='HEADER');if(header?.format)await validateManagedMedia(db,actor.tenantId,String((d.parameters as TemplateValues).mediaUrl),header.format.toLowerCase())}
+ const cardValues=(d.parameters as TemplateValues|undefined)?.cards;
+ if(cardValues){
+   const parts=t.rows[0].components as {type:string;cards?:{components?:{type:string;format?:string}[]}[]}[];
+   const carousel=parts.find(p=>p.type==='CAROUSEL');
+   if(!carousel||carousel.cards?.length!==cardValues.length)throw new HttpFailure(400,'Carousel metadata or card values mismatch');
+   for(const [i,card] of cardValues.entries()){
+     const header=carousel.cards[i].components?.find(p=>p.type==='HEADER');
+     if(!header?.format)throw new HttpFailure(400,'Invalid approved card media');
+     await validateManagedMedia(db,actor.tenantId,card.mediaUrl,header.format.toLowerCase());
+   }
+ }
  if(customer.rows[0].do_not_contact)throw new HttpFailure(403,'Customer has opted out of WhatsApp messages');
  if(!customer.rows[0].marketing_opt_in)throw new HttpFailure(403,'Explicit marketing opt-in is required');
  const activity=await db.query(`SELECT count(*) AS n FROM template_message_activity WHERE tenant_id=$1 AND contact_id=$2 AND queued_at>now()-interval '24 hours'`,[actor.tenantId,contactId]);
