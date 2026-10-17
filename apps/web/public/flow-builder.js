@@ -65,6 +65,88 @@ export function initFlowBuilder({state,api,notify,execute}){
   })));tools.after(panel);
  })));
 
+ const reuseKinds=new Set(['TEXT','QUESTION','INPUT','TAG','MEDIA','LINK','DELAY','AI','WEBHOOK','CATALOG']);
+ const reuseHost=el('section',undefined,'builder-reuse');
+ reuseHost.append(el('h4','مكتبة خطوات قابلة لإعادة الاستخدام'),
+  el('p','احفظ خطوات متتابعة ثم أدرج نسخة منها في أي محادثة. التعديل لا يغيّر الإصدارات المنشورة.'));
+ const reuseFields=el('div',undefined,'builder-reuse-fields');
+ const nameField=el('input');nameField.placeholder='اسم المجموعة المحفوظة';nameField.maxLength=80;
+ const countField=el('input');countField.type='number';countField.min='1';countField.max='20';countField.value='1';
+ const snippetSelect=el('select');
+ const labelInput=(title,input)=>{const l=el('label');l.append(el('span',title),input);return l};
+ reuseFields.append(labelInput('اسم القسم',nameField),labelInput('عدد الخطوات المتتابعة',countField),
+  labelInput('اختار قسمًا محفوظًا',snippetSelect));
+ const reuseActions=el('div',undefined,'builder-reuse-actions');
+ const redrawSnippets=()=>{
+  const selectedValue=snippetSelect.value;snippetSelect.replaceChildren();
+  for(const item of snippets){const opt=el('option',item.name+' — '+item.definition.steps.length+' خطوة');opt.value=item.id;snippetSelect.append(opt)}
+  if([...snippetSelect.options].some(x=>x.value===selectedValue))snippetSelect.value=selectedValue;
+  if(!snippets.length){const none=el('option','لا توجد مجموعات محفوظة');none.value='';snippetSelect.append(none)}
+ };
+ async function loadSnippets(){
+  snippets=state.demo?[]:await api('/flows/snippets');
+  redrawSnippets();
+ }
+ const saveSnippet=button('حفظ سلسلة خطوات',()=>execute(async()=>{
+   const count=Number(countField.value),name=nameField.value.trim();
+   if(!Number.isInteger(count)||count<1||count>20||name.length<2||name.length>80)
+    throw new Error('اسم من حرفين إلى 80، وعدد من خطوة واحدة إلى 20');
+   const map=new Map(flow.nodes.map(node=>[node.id,node]));
+   let id=selected;const seen=new Set(),steps=[];
+   for(let i=0;i<count;i++){
+    const n=map.get(id);
+    if(!n||!reuseKinds.has(n.type)||!('next'in n)||seen.has(id))
+     throw new Error('اختار خطوة متتابعة (ليست بداية أو نهاية أو تفرعًا) ثم عددًا صحيحًا من الخطوات');
+    seen.add(id);steps.push(deep(n));id=n.next;
+   }
+   steps[steps.length-1].next='__exit__';
+   const definition={name,steps};
+   if(state.demo){
+    snippets.unshift({id:'demo'+Date.now().toString(36),name,definition});
+   }else{
+    const created=await api('/flows/snippets',{method:'POST',body:definition});
+    snippets.unshift(created);
+   }
+   redrawSnippets();
+   notify('تم حفظ نسخة من الخطوات؛ الإصدارات المنشورة لم تتغير');
+ }));
+ const insertSaved=button('إدراج بعد المحدد',()=>{
+  const item=snippets.find(s=>s.id===snippetSelect.value);
+  if(!item){notify('احفظ أو اختار قسمًا أولًا','error');return}
+  const anchor=flow.nodes.find(n=>n.id===selected);
+  if(!anchor||!('next'in anchor)){notify('اختار خطوة لها مخرج «التالي»','error');return}
+  const steps=item.definition.steps||[];
+  if(flow.nodes.length+steps.length>100){notify('المسار تجاوز 100 خطوة','error');return}
+  const occupied=new Set(flow.nodes.map(n=>n.id)),ids=new Map();let serial=1;
+  for(const step of steps){let id;do{id='reuse'+serial++}while(occupied.has(id));occupied.add(id);ids.set(step.id,id)}
+  const downstream=anchor.next;
+  const copies=steps.map((step,i)=>{
+   const copy=deep(step);copy.id=ids.get(step.id);
+   copy.next=i===steps.length-1?downstream:ids.get(step.next);
+   return copy;
+  });
+  if(!copies.length)return;
+  anchor.next=copies[0].id;
+  flow.nodes.push(...copies);
+  if(flow.layout?.[selected]){
+   const p=flow.layout[selected];for(const [i,n] of copies.entries()){
+    flow.layout[n.id]={x:Math.min(9500,p.x+290*(i+1)),y:p.y};
+   }
+  }
+  selected=copies[0].id;selectedNodes=new Set([selected]);markDirty();renderAll();resetPreview();
+  notify('تم إدراج نسخة قابلة للتعديل. احفظ المسودة وانشرها لاحقًا عندما تكون جاهزًا');
+ });
+ const deleteSaved=button('حذف من المكتبة',()=>execute(async()=>{
+  const item=snippets.find(s=>s.id===snippetSelect.value);
+  if(!item)return;
+  if(!confirm('حذف القسم المحفوظ من المكتبة؟ الخطوات الموجودة في مسوداتك لن تُحذف.'))return;
+  if(!state.demo)await api('/flows/snippets/'+item.id,{method:'DELETE'});
+  snippets=snippets.filter(s=>s.id!==item.id);redrawSnippets();
+  notify('تم حذف المكتبة فقط دون تغيير المسارات أو الإصدارات المنشورة');
+ }),'danger');
+ reuseActions.append(saveSnippet,insertSaved,deleteSaved);
+ reuseHost.append(reuseFields,reuseActions);
+ tools.after(reuseHost);
  const markDirty=()=>{dirty=true;checkpoint();renderStatus()};
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
@@ -262,9 +344,9 @@ export function initFlowBuilder({state,api,notify,execute}){
  }
  function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
  async function load(){
-   if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';renderAll();resetPreview();return}
+   if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
    const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
-   history=[deep(flow)];cursor=0;renderAll();resetPreview();
+   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();resetPreview();
  }
  $('builder-load-preset').onclick=()=>{
    if(dirty&&!confirm('استبدال التعديلات غير المحفوظة بقالب جديد؟'))return;
