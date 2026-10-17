@@ -1,6 +1,6 @@
 # Master implementation plan
 
-Status values: NOT STARTED, IN PROGRESS, BLOCKED, VERIFIED DONE. All work currently NOT STARTED except documentation bootstrap.
+Status values: NOT STARTED, IN PROGRESS, BLOCKED, VERIFIED DONE. Numerous stages now have feature-source implementations on draft branch, but **NO STAGE HAS VERIFIED DONE STATUS** because formal acceptance is deliberately reserved for final cycle. See CURRENT-STATUS and REMAINING for accurate completion and limitations.
 
 ## Stage 0 — Specification and foundation
 - [ ] Confirm data model, role matrix, exact booking rules, customer UX and visual design.
@@ -38,3 +38,13 @@ Status values: NOT STARTED, IN PROGRESS, BLOCKED, VERIFIED DONE. All work curren
 Automatic payment confirmation without verified payment provider; guaranteed availability without inventory check; ERP coupling; unapproved bulk messaging; arbitrary unvalidated customer-authored executable flows.
 
 Each gate needs evidence (commands, test results, screenshots where applicable) and explicit owner approval. No invented completion percentages.
+
+
+## Current source progress (not formal stage completion), 2026-10-17
+
+- Foundations: typed service modules, multiple migrations, tenant authorization and Arabic dashboard written; clean install, actual DB, lockfile and CI gate remain unverified.
+- WhatsApp booking vertical: signed webhook, multi-tenant conversation routing, interactive native lists, program views, opt-in-aware templates, optional Meta Flow and queue worker in source. Real Meta approval, number hookup and provider E2E remain.
+- Sales operations: programs, catalog travel dates and hotel rooms, manual reservations with atomic capacity/cancellation, customers, offers, followups, human inbox, team invites and approved knowledge FAQ largely have code, but missing rich traveler/financial policies and formal acceptance.
+- Commercial multi-tenancy: platform owner and manual subscriptions, some plan enforcement, sample Docker and backups. Payment provider, invoices, automated quotas and production hardening missing.
+- Genuine grounded AI with LLM is NOT implemented; approved FAQ exact-match fallback does not equal LLM AI.
+- Owner explicitly wants **one final comprehensive acceptance phase after remaining feature work**, not continuous formal acceptance per stage. Routine syntax/type safeguards still allowed.
