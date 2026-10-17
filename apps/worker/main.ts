@@ -53,6 +53,13 @@ async function processTenant(tenantId:string):Promise<boolean>{
   const windowAge=job.last_customer_message_at ? Date.now()-new Date(String(job.last_customer_message_at)).getTime() : Infinity;
   const payload=job.payload as {type?:string};
   const template=payload.type==='template';
+  // Never release stale queued outreach long after an account's suspension/reactivation.
+  const queuedAge=Date.now()-new Date(String(job.created_at)).getTime();
+  if(template&&queuedAge>24*3600_000){
+    await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Template job expired before dispatch'
+      WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);
+    await tx.query('COMMIT');return true;
+  }
   if(Boolean(job.do_not_contact)||(template&&!job.marketing_opt_in)){
    await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Customer opted out or consent missing' WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);
    await tx.query('COMMIT');return true;
