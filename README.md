@@ -36,3 +36,8 @@ Official WhatsApp Cloud API source includes signed webhooks, receipts, outbox, w
 Confirmed locally: clean install/build, JS/DOM safeguards and static HTTP serving. GitHub CI on [7fc3626](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/7fc36262f120560582d86c9614ded23e71fd3aa1) passed **28/28 unit tests**, migrations 0001–0022 and a real PostgreSQL catalog-isolation/RLS gate ([run](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700)). Authenticated browser/mobile, live provider, performance and backup/restore acceptance remain unverified. Full evidence: project-management/VERIFICATION-2026-10-18.md.
 
 Current continuation includes migration 0022. Configure MEDIA_PUBLIC_ORIGIN, widget origins and INTEGRATION_SECRET_ENCRYPTION_KEY as applicable. Native Sheets/CRM/store connectors and advanced template formats remain unsupported; final acceptance remains deferred. See docs/17-LEGACY-RETIREMENT.md for the clean CI/test scope migration.
+
+
+## Advanced builder additions — 2026-10-18
+Company-specific reusable **linear sections** can be saved/imported from the Flow Builder; **Shift+click** canvas nodes to visually group them. Editing imported copies does not change published versions. Approved **Meta MARKETING image/video carousel templates** (2–10 provider-defined cards) can be filled card by card in the template editor. Both features are source-implemented; real Meta carousel delivery has not been verified.
+Read [implementation and limitations](docs/18-FLOW-REUSE-AND-CAROUSEL.md). Development CI [run 39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) passed 43/43 tests, migration 0023 and tenant RLS; **final acceptance is still outstanding**.
