@@ -29,3 +29,6 @@ This is implementation, not a concept drawing. Source files:
 
 ## User decision: acceptance tests LAST
 Do not schedule a separate formal test milestone after each new feature. Keep a single **final comprehensive acceptance phase** after feature implementation is complete. Lightweight compile/syntax checks remain allowed as engineering safeguards. Existing tests should not be deleted; final acceptance must include unit, integration, browser and official Meta provider tests, cross-tenant checks, backups and performance. No "done" claims without executed evidence.
+
+### Bot configuration UI (continuation)
+The Settings page now includes a functional form for company display name, welcome message and enabled categories. Save updates the tenant-scoped DRAFT. Publish creates an immutable server-side numbered revision, audited with actor ID; the local simulator uses only the last PUBLISHED config, never unapproved draft content. Public WhatsApp publishing/Meta connection is still deliberately absent. Team page reads currently assigned members and their roles for the owner/manager; invite/role-edit UI still pending.
