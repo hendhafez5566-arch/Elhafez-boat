@@ -40,3 +40,12 @@ Continue code and user-visible workflows: finish full WhatsApp program/departure
 Only AFTER feature scope is ready: one combined formal acceptance with real Postgres/RLS, HTTP/browser, Meta test number, event dedupe, concurrency, billing provider, restore/security/performance, then review PR and deploy. Never claim commercial readiness before evidence.
 
 Read `AGENTS.md`, `docs/01-MASTER-PLAN.md`, `docs/14-COMMERCIAL-RELEASE-GAPS.md`, `project-management/CURRENT-STATUS.md` and actual code; verify HEAD/PR before work. Update this file and CHANGELOG at end of each turn.
+
+
+## Continuation: customer reservation selection (2026-10-17)
+
+Added `apps/api/src/booking-choice.ts`, migration `0013_whatsapp_booking_choices.sql` and modifications to `apps/api/src/flows.ts`, `whatsapp.ts`, `services.ts`, `apps/web/public/app.js`, `index.html`. WhatsApp native interactive menus now select future, available departures and contracted hotel rooms before capturing name/party size or opening a published Meta Flow. Choice is stored in conversation state and bound to one-time Flow token; actual fare and inventory are read on booking submission, never trusted from client input. Basic published programs with no departure continue via old flow. Meta phone-number booking status lookup is tenant-scoped and only uses verified webhook sender. Human assignment lock stops agents replying to someone else's open takeover.
+
+New complete workflow details: `docs/15-WHATSAPP-BOOKING-CHOICES.md`.
+
+**Important:** migration 0013 is unexecuted. Do not assume the updated bot can start against old DB schema. Requires sequential migrations 0001..0013. Local isolated TS typecheck of newly authored booking-choice and flows source succeeded, NOT full repository / browser / real Meta or PostgreSQL acceptance. Owner wants ONE final full acceptance only after remaining feature build. No production deployment or merge. Continue using branch `feat/stage0-foundation` and draft PR #1; public repo by explicit owner decision. Never write secrets/PII.
