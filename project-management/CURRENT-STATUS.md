@@ -1,6 +1,6 @@
 # CURRENT STATUS — 2026-10-17
 
-Stage 0: IN PROGRESS. Repository PUBLIC by explicit owner choice until later. Branch: feat/stage0-foundation; PR #1 draft.
-Code on branch: workspace skeleton, TS contracts, dev-only API/web/worker placeholders, Docker Compose, Postgres migration 0001_initial.sql with tenant-scoped programs/bookings and RLS, pure workflow menu engine with company-filtered published catalog and human handoff, 11 written Node tests total, CI workflow.
-VERIFICATION: GitHub file writes confirmed; tests have NOT been run against checked-out repository and CI status is not verified. Git clone from execution container failed (DNS unavailable). Database migration NOT applied to PostgreSQL. No real login/auth, persistent API, WhatsApp connection, Flows, bookings UI, AI, or deployment. No lockfile.
-NEXT: verify npm install && npm run check in accessible environment; fix failures and commit lockfile. Run migration against PostgreSQL with non-owner role, test RLS, then build authenticated CRUD and booking transaction; do not mark Stage 0 complete prematurely.
+Stage 0 IN PROGRESS; branch feat/stage0-foundation; draft PR #1; repository PUBLIC by user choice.
+Added: TS workspace, API/web/worker placeholders, menu/program/booking contracts, SQL initial migration, pure menu workflow and pagination for more than 8 programs, 15 written tests (6 contracts + 5 workflow + 4 pagination), GitHub CI workflow. Pagination code and tests committed on branch.
+Verification: GitHub writes confirmed; tests NOT executed. Git clone from runtime failed due GitHub DNS; no CI success verified. SQL migration not applied. No auth, persistent API, production UI, WhatsApp/Flows, AI or deployment. No lockfile.
+Next: checkout in connected environment, npm install, npm run check, resolve failures, add lockfile; run migrations with non-owner DB user and tenant isolation integration tests. Implement authenticated CRUD and booking transactions next.
