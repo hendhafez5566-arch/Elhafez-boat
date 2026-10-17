@@ -1,4 +1,18 @@
-import { createServer } from "node:http";
-const port = Number(process.env.WEB_PORT || 3000);
-const page = `<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Elhafez Boat</title><style>body{font-family:system-ui,sans-serif;background:#f5f7fb;color:#13283e;margin:0}header{background:#102f4b;color:white;padding:22px 5%}main{max-width:960px;margin:50px auto;padding:20px}.card{background:white;border:1px solid #dfe6ed;border-radius:18px;padding:30px}small{color:#576778}</style><header><strong>Elhafez Boat</strong> — منصة شركات السياحة</header><main><div class="card"><h1>لوحة التحكم — قيد التطوير</h1><p>تم إنشاء الهيكل الأساسي للمشروع. إدارة البرامج والحجوزات وربط واتساب لم يتم تنفيذها بعد.</p><small>نسخة تطوير أولية، وليست منتجًا جاهزًا للاستخدام.</small></div></main></html>`;
-createServer((req,res)=>{res.writeHead(200,{"content-type":"text/html; charset=utf-8"});res.end(page)}).listen(port,()=>console.log("Development preview on "+port));
+import { createServer, request as httpRequest } from 'node:http';
+import { readFile } from 'node:fs/promises';
+const port=Number(process.env.WEB_PORT??3000);
+const api=new URL(process.env.API_INTERNAL_ORIGIN??'http://127.0.0.1:4000');
+if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an internal http URL behind trusted network boundaries');
+const assets={'/':['index.html','text/html; charset=utf-8'],'/app.js':['app.js','text/javascript; charset=utf-8'],'/style.css':['style.css','text/css; charset=utf-8']};
+const server=createServer(async(req,res)=>{
+ const path=new URL(req.url??'/',`http://localhost:${port}`).pathname;
+ if(path.startsWith('/api/')||path==='/health'){
+   // Same-origin backend gateway: forwards authenticated API requests without browser CORS exceptions.
+   const upstream=httpRequest({hostname:api.hostname,port:api.port||80,path:req.url,method:req.method,headers:{...req.headers,host:api.host}},reply=>{res.writeHead(reply.statusCode??502,{'content-type':reply.headers['content-type']??'application/json','cache-control':'no-store'});reply.pipe(res)});
+   upstream.on('error',()=>{if(!res.headersSent){res.writeHead(502,{'content-type':'application/json'});res.end(JSON.stringify({error:'API غير متاح حاليًا'}))}else res.end()});
+   req.pipe(upstream);return;
+ }
+ if(req.method!=='GET'||!(path in assets)){res.writeHead(404);res.end('Not found');return}
+ const [filename,type]=assets[path];try{const body=await readFile(new URL('public/'+filename,import.meta.url));res.writeHead(200,{'content-type':type,'x-content-type-options':'nosniff','content-security-policy':"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'cache-control':'no-store'});res.end(body)}catch{res.writeHead(500);res.end('Asset unavailable')}
+});
+server.listen(port,()=>console.log('Elhafez Boat dashboard http://127.0.0.1:'+port));
