@@ -34,6 +34,10 @@ export function initOperations({state,api,notify,execute,canEdit}) {
    }
  }
  async function inbox(){
+   // Prevent customer information from a previous login/tenant remaining on screen.
+   selected=null;$('wa-chat-tools').hidden=true;
+   $('wa-chat-title').textContent='اختار محادثة لعرض رسائلها';
+   $('wa-chat').replaceChildren();
    clear('wa-threads');
    if(state.demo){inboxCache=[];msg($('wa-threads'),'دي معاينة شكل صندوق واتساب. البيانات الحقيقية هتظهر بعد ربط Meta.');return;}
    inboxCache=await api('/whatsapp/inbox');
