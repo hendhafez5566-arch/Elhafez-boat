@@ -122,9 +122,14 @@
 
       <section id="wa-inbox" class="page" hidden>
         <div class="section-heading"><div><h2>صندوق محادثات واتساب</h2><p>الرسائل الحقيقية من رقم Meta المربوط بالشركة فقط. الردود في نافذة الخدمة المسموحة.</p></div><button class="secondary" type="button" id="wa-inbox-refresh">تحديث الرسائل</button></div>
-        <div class="ops-layout"><div class="ops-panel"><h3>المحادثات</h3><div id="wa-threads" aria-live="polite"></div></div>
+        <div class="ops-layout"><div class="ops-panel"><h3>المحادثات</h3>
+        <input id="wa-inbox-search" class="search" type="search" placeholder="ابحث باسم العميل أو رقم الهاتف" aria-label="بحث محادثات واتساب">
+        <select id="wa-inbox-filter" aria-label="تصفية محادثات واتساب"><option value="ALL">كل المحادثات</option><option value="HUMAN">مع موظف</option><option value="OPEN">البوت أو انتظار الموظف</option></select>
+        <div id="wa-threads" aria-live="polite"></div></div>
           <div class="ops-panel"><h3 id="wa-chat-title">اختار محادثة لعرض رسائلها</h3><div id="wa-chat" class="ops-chat"><p class="ops-muted">صندوق الوارد الحقيقي يبدأ في استقبال الرسائل بعد ربط WhatsApp Cloud API والتحقق من Webhook.</p></div>
             <div class="ops-actions" id="wa-chat-tools" hidden><button id="wa-handoff" type="button" class="secondary">استلام المحادثة</button>
+              <div id="wa-assign-tools" hidden><label>الموظف المسؤول<select id="wa-assignee" aria-label="الموظف المسؤول"></select></label>
+              <button id="wa-assign" type="button" class="secondary">تعيين المحادثة</button></div>
               <form id="wa-reply-form" class="ops-form" style="flex:1"><label>رسالة الموظف<textarea name="body" rows="2" maxlength="2000" required placeholder="اكتب الرد للعميل"></textarea></label><button class="primary" type="submit" id="wa-reply" disabled>إضافة لطابور الإرسال</button></form></div>
             <div class="ops-note">إرسال الرسالة لا يعني وصولها؛ التسليم يُتابَع من إشعارات Meta. بعد 24 ساعة من آخر رسالة للعميل يلزم قالب واتساب معتمد.</div>
           </div></div>
