@@ -168,7 +168,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
   }
  }
  const nav=/^page:(UMRAH|HAJJ|DOMESTIC|INTERNATIONAL):(0|[1-9][0-9]{0,3})$/.exec(action);
- if(nav&&nav[1]===row.current_menu&&cfg.enabledCategories.includes(nav[1])){
+ if(nav&&nav[1]===row.current_menu&&categoryOk(nav[1])&&cfg.enabledCategories.includes(nav[1])){
   const page=Number(nav[2]);const count=await db.query(`SELECT count(*) AS total FROM programs WHERE tenant_id=$1 AND category=$2 AND status='PUBLISHED' AND available_seats>booked_seats`,[tenantId,nav[1]]);
   if(page*8<Number(count.rows[0].total)){
    await db.query(`UPDATE whatsapp_conversation_states SET page_number=$3 WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,page]);
@@ -178,14 +178,14 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  // Safe fallback: published menu, no invented answer from AI.
  await respond(await showMenu(db,tenantId,row,'HOME',0));
 }
-export async function handleVerifiedWebhook(pool:SqlPool,payload:unknown):Promise<void>{
+export async function handleVerifiedWebhook(pool:SqlPool&SqlClient,payload:unknown):Promise<void>{
  const root=asObject(payload);if(root.object!=='whatsapp_business_account')throw new HttpFailure(400,'Unsupported webhook object');
  const entries=Array.isArray(root.entry)?root.entry:[];
  for(const entry of entries.slice(0,20)){
   for(const item of (Array.isArray(asObject(entry).changes)?asObject(entry).changes as unknown[]:[]).slice(0,20)){
    const change=asObject(item),value=asObject(change.value),meta=asObject(value.metadata),phoneNumberId=str(meta.phone_number_id);
    if(!phoneIdPattern.test(phoneNumberId))continue;
-   const route=await (pool as SqlClient).query(`SELECT tenant_id,account_id FROM whatsapp_routes WHERE phone_number_id=$1`,[phoneNumberId]);
+   const route=await pool.query(`SELECT tenant_id,account_id FROM whatsapp_routes WHERE phone_number_id=$1`,[phoneNumberId]);
    if(route.rowCount!==1)continue;
    const {tenant_id:tenantId,account_id:accountId}=route.rows[0] as {tenant_id:string;account_id:string};
    await scoped(pool,tenantId,async tx=>{
