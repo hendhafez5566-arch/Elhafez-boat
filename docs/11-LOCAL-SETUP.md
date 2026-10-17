@@ -40,3 +40,13 @@ Program create accepts optional `summary`, `hotelName`, `durationDays` and ISO86
 Browser-only design demo: press "استعراض التصميم ببيانات تجريبية" on the login screen. It is isolated in JavaScript memory, not connected to DB/API/WhatsApp, clearly marked and safe for preview. It is NOT a real data acceptance test.
 
 Formal acceptance (PostgreSQL, browser, WhatsApp sandbox) is intentionally deferred to a single final phase by user direction. Maintain routine compile/syntax safeguards and honest status until then.
+
+### Bot menu configuration (migration 0005)
+
+- `GET /api/v1/bot/config`: company display name, current editable draft, latest published version.
+- `PUT /api/v1/bot/draft`: OWNER/MANAGER, body `{displayName, welcomeText, enabledCategories}`. Enforces supported categories and unique values.
+- `POST /api/v1/bot/publish`: OWNER/MANAGER, locks draft, stores immutable published JSON revision, writes audit.
+- `GET /api/v1/bot/versions`: latest 25 published versions.
+- `GET /api/v1/team`: OWNER/MANAGER listing of members only; invitations intentionally not implemented yet.
+
+**Publishing is INTERNAL** to the platform at this stage. This is not a live WhatsApp menu deployment and will not trigger external API calls.
