@@ -1,21 +1,23 @@
 # Elhafez Boat — Tourism Sales SaaS
 
-Independent multi-company, Arabic-first tourism sales platform. Staff create and publish Umrah, Hajj and travel programs, review provisional booking requests and confirm capacity safely. Customer-facing integration will use **official WhatsApp** interactive lists/buttons and WhatsApp Flows, plus grounded AI as an opt-in fallback.
+A standalone, multi-tenant, Arabic-first tourism sales platform. Tourism companies manage programs and booking requests; the customer journey will run on the official WhatsApp Business Platform (interactive lists, buttons and Flows), backed by deterministic business rules and optional grounded AI.
 
-## Development status
-Stage 0 foundation is **IN PROGRESS**, not ready for production. There is an early authenticated API, PostgreSQL schema and Arabic dashboard, but real PostgreSQL/UI integration and official WhatsApp setup remain UNVERIFIED/NOT DONE.
+**Status:** building. This is not a live commercial WhatsApp chatbot or approved production service.
 
-Read [AGENTS.md](AGENTS.md), [Master Plan](docs/01-MASTER-PLAN.md), [Current Status](project-management/CURRENT-STATUS.md), [Handover](project-management/HANDOVER.md) and [Setup](docs/11-LOCAL-SETUP.md).
+## Show the implemented design without a database
 
-## Developer commands (after npm install)
+Start the web preview locally with Node 22+:
+
 ```sh
-npm run check
-npm run db:migrate
-npm run db:bootstrap
-npm run dev:api
-npm run dev:web
+node apps/web/server.mjs
 ```
 
-See setup guide for isolated DB, least-privileged credentials and required environment variables. Never commit secrets or traveler data. Code changes remain in draft PR #1 until verified.
+Open `http://localhost:3000` and click **استعراض التصميم ببيانات تجريبية**. This is a browser-only, clearly labeled sample workspace; programs, customers, offers, bookings and simulator actions disappear when the tab reloads. No WhatsApp/API calls occur.
 
-**Scope boundaries:** no copy of legacy accounting ERP; no unofficial WhatsApp automation; no fabricated prices or AI-confirmed bookings.
+## Working against a real company database (development only)
+
+Read [docs/11-LOCAL-SETUP.md](docs/11-LOCAL-SETUP.md), set up PostgreSQL and separate privileged migration and non-owner runtime roles, install dependencies, run migrations and bootstrap first tenant, start API then web.
+
+Project references: [AGENTS.md](AGENTS.md), [Master plan](docs/01-MASTER-PLAN.md), [UI implementation](docs/12-UI-IMPLEMENTATION.md), [Current status](project-management/CURRENT-STATUS.md), [Handover](project-management/HANDOVER.md).
+
+**User-approved process:** continue building all agreed functionality, then run one final comprehensive acceptance campaign. Lightweight syntax/type checks while developing are allowed but are not an acceptance certificate. Do not expose secrets or customer data in this public repo; do not merge drafts prematurely.
