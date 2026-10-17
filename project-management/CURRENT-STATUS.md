@@ -1,8 +1,6 @@
 # CURRENT STATUS — 2026-10-17
 
-Stage 0: IN PROGRESS, NOT VERIFIED DONE.
-Repository: hendhafez5566-arch/Elhafez-boat (PUBLIC by owner choice until later).
-Implementation branch: feat/stage0-foundation. Main contains planning documents only.
-Implemented on branch: workspace package manifest, TypeScript config, local Postgres/Redis compose, domain menu/program/booking contracts, a development-only HTTP API status endpoint, placeholder Arabic RTL web preview, worker placeholder, six contract tests and GitHub Actions verification workflow.
-Tests: WRITTEN, NOT YET EXECUTED/VERIFIED. No lockfile yet. No auth, persistent DB schema, production API, WhatsApp connection, booking UI, AI or deployment. Do not claim working SaaS.
-Next: run npm install + npm run check; fix any errors, commit lockfile, implement tenant auth and persistent database migrations, then complete Stage 0 gates.
+Stage 0: IN PROGRESS. Repository PUBLIC by explicit owner choice until later. Branch: feat/stage0-foundation; PR #1 draft.
+Code on branch: workspace skeleton, TS contracts, dev-only API/web/worker placeholders, Docker Compose, Postgres migration 0001_initial.sql with tenant-scoped programs/bookings and RLS, pure workflow menu engine with company-filtered published catalog and human handoff, 11 written Node tests total, CI workflow.
+VERIFICATION: GitHub file writes confirmed; tests have NOT been run against checked-out repository and CI status is not verified. Git clone from execution container failed (DNS unavailable). Database migration NOT applied to PostgreSQL. No real login/auth, persistent API, WhatsApp connection, Flows, bookings UI, AI, or deployment. No lockfile.
+NEXT: verify npm install && npm run check in accessible environment; fix failures and commit lockfile. Run migration against PostgreSQL with non-owner role, test RLS, then build authenticated CRUD and booking transaction; do not mark Stage 0 complete prematurely.
