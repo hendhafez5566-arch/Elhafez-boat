@@ -25,3 +25,9 @@ Official WhatsApp integration, real chat inbox, live WhatsApp Flows/booking, per
 5. Only after full build: one final comprehensive acceptance campaign with real PostgreSQL, Playwright, tenant isolation, WhatsApp sandbox, load/performance and recovery; repair all findings then release.
 
 Never claim the project is fully built or live based on mocked demo screenshots. Keep this file and HANDOVER updated each batch.
+
+## Additional latest implementation
+- Migration `0005_bot_configuration.sql`: RLS tenant bot draft and immutable published revisions.
+- `apps/api/src/bot-config.ts`: editable draft settings, validated category visibility, concurrency-safe revision publishing and audit, plus staff membership listing.
+- Dashboard Settings now supports editing/saving/publishing bot configuration; local simulator uses latest published version only. Team page displays membership list as read-only, with invitations explicitly pending.
+- Only syntax/type consistency safeguards done for this incremental work. **No final acceptance suite run.**
