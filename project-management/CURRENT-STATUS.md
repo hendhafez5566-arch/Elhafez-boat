@@ -43,3 +43,10 @@ Continue selected missing core features and harden role/capacity security; prese
 **Verification truth:** files were committed through GitHub. Local `tsc --noEmit` on the *isolated new* `booking-choice.ts` and `flows.ts` with development source types completed without errors. **This is not** a full clean checkout build, database migration run, Meta sandbox exercise, UI E2E, or final comprehensive acceptance. Full tests remain deferred by owner. No live Meta number or deployment. Latest exact commit must be checked on GitHub before continuing.
 
 **Next feature work:** traveler-level fields and policies, richer staff inbox notifications/assignment workflow, true grounded optional AI and subscription/metering. Complete provider-specific enrollment once external credentials are available. Final formal acceptance LAST.
+
+
+### Follow-on UI/customer status (2026-10-17)
+- Main WhatsApp menu now includes customer-facing "متابعة حجوزاتي": up to five tenant-scoped recent statuses for the number supplied by Meta signed webhook, rather than accepting a typed phone number.
+- Browser-only demo simulator includes a separately labeled booking-status screen.
+- Live agency inbox UI gained client-side name/phone search, HUMAN/OPEN filters, and manager/owner reassignment to a named team member. It clears previously displayed chat data when switching inbox contexts.
+- Status/assignment backend rules remain only **committed source**, not tested against a running PostgreSQL/Meta endpoint. Latest branch head should be read from GitHub.
