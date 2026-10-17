@@ -1,67 +1,27 @@
-# Elhafez Boat — Tourism Sales SaaS
+# Elhafez Boat — WhatsApp sales-assistant chatbot
 
-A standalone, multi-tenant, Arabic-first tourism sales platform. Tourism companies manage programs and booking requests; the customer journey will run on the official WhatsApp Business Platform (interactive lists, buttons and Flows), backed by deterministic business rules and optional grounded AI.
+> **Scope corrected by product owner on 2026-10-17: This is a CHATBOT, NOT a tourism management/booking system.** Read [authoritative chatbot-only scope](docs/00-SCOPE-CHATBOT-ONLY.md).
 
-**Status:** building. This is not a live commercial WhatsApp chatbot or approved production service.
+Elhafez Boat is an Arabic-first, multi-company assistant connected to an agency's official WhatsApp Business number. It handles repetitive questions about the company's own programs and services, figures out what the customer is interested in, asks brief clarifying questions, and sends a clear **qualified sales lead** to an agency employee.
 
-## Show the implemented design without a database
+**The employee** contacts the customer, books the service and manages everything afterwards with the company's existing workflow. Elhafez Boat **never reserves places, issues invoices, handles payments or stores travel documents**.
 
-Start the web preview locally with Node 22+:
+## Simple staff dashboard
+- **العملاء المهتمون**: interested, ready for agent, contacted and closed, including service, party size and timing.
+- **محادثات واتساب**: actual customer messages and handoff to named staff.
+- **معلومات البرامج والعروض**: facts that the bot can quote; not an inventory or booking engine.
+- **إعدادات البوت والأسئلة الشائعة**: approved business answers and menu versions.
+- **ربط واتساب / الموظفون**: Meta account and simple access control.
 
-```sh
-node apps/web/server.mjs
-```
+## Development mode
+- Current branch: `feat/stage0-foundation` (draft PR #1).
+- Start local HTML demo: `node apps/web/server.mjs`, then open `http://localhost:3000` and click **استعراض التصميم ببيانات تجريبية**. Sample leads are browser-only and are never sent to Meta.
+- See [setup](docs/11-LOCAL-SETUP.md) and [handover](project-management/HANDOVER.md) for backend operation and blockers.
+- App is NOT yet deployed or acceptance-tested against a real PostgreSQL database or Meta number. Scope refinement was implemented as new source and reduced navigation/API; older dormant reservation source remains pending cleanup.
+- Public GitHub repository by owner request: NEVER commit Meta access tokens, secret keys, or real customer data.
 
-Open `http://localhost:3000` and click **استعراض التصميم ببيانات تجريبية**. This is a browser-only, clearly labeled sample workspace; programs, customers, offers, bookings and simulator actions disappear when the tab reloads. No WhatsApp/API calls occur.
+## Acceptance policy
+After **feature development** is complete, run one combined end-to-end acceptance phase: real Meta webhook/menu and employee handoff, published program accuracy, lead qualification/inbox, tenant isolation, failure handling and responsive UI. Do not claim a finished live bot based solely on code commits.
 
-## Working against a real company database (development only)
-
-Read [docs/11-LOCAL-SETUP.md](docs/11-LOCAL-SETUP.md), set up PostgreSQL and separate privileged migration and non-owner runtime roles, install dependencies, run migrations and bootstrap first tenant, start API then web.
-
-Project references: [AGENTS.md](AGENTS.md), [Master plan](docs/01-MASTER-PLAN.md), [UI implementation](docs/12-UI-IMPLEMENTATION.md), [Current status](project-management/CURRENT-STATUS.md), [Handover](project-management/HANDOVER.md).
-
-**User-approved process:** continue building all agreed functionality, then run one final comprehensive acceptance campaign. Lightweight syntax/type checks while developing are allowed but are not an acceptance certificate. Do not expose secrets or customer data in this public repo; do not merge drafts prematurely.
-
-## Current feature build (draft, not accepted for production)
-
-- Arabic RTL travel agency dashboard for programs, bookings, offers, contacts, follow-ups, internal notes, published bot menus and approved FAQ.
-- Tenant-scoped WhatsApp Cloud API backend: signature-verified webhook, phone routing, encrypted access tokens, interactive catalogs, provisional booking, human takeover, sender queue and optional Meta-published booking Flow.
-- Staff invitations and role management; separate platform owner console for new tenant setup and manual subscription statuses.
-- Database migrations 0001–0010. No Meta credentials, production deployment or full PostgreSQL/provider acceptance verified.
-
-Agency UI: `/`; platform owner UI: `/platform.html` (requires independently bootstrapped owner); one-time team/owner link: `/join.html#...`.
-
-Local setup/runbook: [13 WhatsApp Operations](docs/13-WHATSAPP-OPERATIONS.md). [Commercial release gaps](docs/14-COMMERCIAL-RELEASE-GAPS.md). [Latest handover](project-management/HANDOVER.md).
-
-## Development commands
-
-```sh
-npm install
-npm run build
-npm run db:migrate
-npm run db:bootstrap
-npm run db:platform:bootstrap
-npm run dev:api
-npm run dev:worker
-npm run dev:web
-```
-
-Provide all environment variables in an untracked secret store and review `.env.example`. Separate privileged migration/platform roles from non-owner runtime roles; **never run with production credentials during local work**.
-
-**Acceptance strategy:** user requested one complete formal acceptance round after the entire feature scope is built. Existing tests remain committed but full DB/browser/Meta/provider tests have not been executed for this build. No merge or commercial deployment should happen before their proof.
-
-
-## Development branch overview — October 17, 2026 (not release-tested)
-
-Source on `feat/stage0-foundation` now includes:
-- Agency admin dashboard: tourism programs, departures, hotel/room packages, provisional/confirmed/cancelled bookings, offers, CRM and followups; Arabic RTL design and local browser-only demo.
-- Official WhatsApp Cloud API adapter and sender worker (signed webhook, encrypted connection, inbound/outbound conversation, native menus/buttons, optional published Meta Flow, staff handoff).
-- Approved knowledge/FAQ and separately consent-controlled, Meta-approved static template registration and single-recipient sending.
-- Team invitation acceptance and role administration; separate platform owner tenant console and manually managed subscription plans.
-- PostgreSQL migrations through **0012** (unapplied here), API/service implementation, reference Docker and backup ops runbook.
-
-**Not implemented/live**: real Meta number/Flow onboarding and sandbox acceptance, genuine generative AI model integration, automatic subscription billing/invoices, complete traveler/financial workflow, production deployment and monitoring; final real DB/browser/provider/security/load/restore acceptance. Refer to [current status](project-management/CURRENT-STATUS.md), [remaining](project-management/REMAINING.md), [handover](project-management/HANDOVER.md).
-
-Dev/reference operations: [deploy/README.md](deploy/README.md). WhatsApp instructions: [docs/13-WHATSAPP-OPERATIONS.md](docs/13-WHATSAPP-OPERATIONS.md).
-
-The repository remains PUBLIC by owner request; do not commit tokens, payment secrets or actual personal data.
+## Project notes
+[Current status](project-management/CURRENT-STATUS.md) | [Remaining](project-management/REMAINING.md) | [Authoritative plan](docs/01-MASTER-PLAN.md)
