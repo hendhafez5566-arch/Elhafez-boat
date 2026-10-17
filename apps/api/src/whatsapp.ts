@@ -121,7 +121,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const row=(await db.query(`SELECT * FROM whatsapp_conversation_states WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId])).rows[0];
  const respond=(payload:Record<string,unknown>)=>queue(db,tenantId,accountId,conversationId,from,payload);
  if(/^(stop|unsubscribe|إلغاء الرسائل|إيقاف الرسائل)$/i.test(body.trim())){
-   await db.query('UPDATE contacts SET do_not_contact=true WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
+   await db.query('UPDATE contacts SET do_not_contact=true,marketing_opt_in=false,marketing_opt_in_at=NULL WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
    await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',false,'Customer sent opt-out message')`,[tenantId,contactId]);
    await respond(textPayload('تم إيقاف الرسائل الآلية. تقدر تكتب START لتفعيل الردود الخدمية مرة تانية.'));
    return;
