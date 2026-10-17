@@ -32,3 +32,14 @@ Formal unit + integration + browser + Meta + security + concurrency + backup/res
 ## Exact next implementation direction (without re-asking known requirements)
 
 Continue selected missing core features and harden role/capacity security; preserve PR as draft and do not merge. Prefer next: real customer WhatsApp departure/room selection + template/Flow coherence and inbox controls; then optional AI and billing only after provider architecture/requirements established. Keep project-management/HANDOVER.md current. Formal acceptance LAST.
+
+
+## Latest continuation — 2026-10-17, customer WhatsApp departure/room choice
+
+**New source committed:** `apps/api/src/booking-choice.ts` and migration `0013_whatsapp_booking_choices.sql`. WhatsApp menu now guides customer through currently available program -> travel date -> hotel/room (paged lists) -> optional Meta Flow or name/party-size text, with one-time Flow token carrying server-validated selections. A shared booking service re-checks date, capacity, room units, room fare/currency and stores snapshot only as a **provisional** request. Employee bookings now require a configured departure/room when appropriate and list the selected itinerary.
+
+**Additional inbox improvements:** "متابعة حجوزاتي" shows only the verified WhatsApp sender's recent request statuses for this company; agent takeover uses row locking and assigned agents cannot reply to each other's conversations. Browser-only simulator offers a clearly labeled demo status view.
+
+**Verification truth:** files were committed through GitHub. Local `tsc --noEmit` on the *isolated new* `booking-choice.ts` and `flows.ts` with development source types completed without errors. **This is not** a full clean checkout build, database migration run, Meta sandbox exercise, UI E2E, or final comprehensive acceptance. Full tests remain deferred by owner. No live Meta number or deployment. Latest exact commit must be checked on GitHub before continuing.
+
+**Next feature work:** traveler-level fields and policies, richer staff inbox notifications/assignment workflow, true grounded optional AI and subscription/metering. Complete provider-specific enrollment once external credentials are available. Final formal acceptance LAST.
