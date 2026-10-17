@@ -1,5 +1,5 @@
 # Changelog
 
-2026-10-17 — Created master project plan and cross-chat handover.
-2026-10-17 — Bootstrapped TypeScript workspace, dev placeholders, menu contracts, CI and six tests on feat/stage0-foundation.
-2026-10-17 — Added PostgreSQL initial schema with tenant-scoped constraints/RLS, version-zero pure menu navigation and five more tests. Execution verification pending (container GitHub DNS unavailable).
+2026-10-17 — Master plan and handover created.
+2026-10-17 — TypeScript workspace, dev placeholders, contracts, initial SQL schema, workflow, 11 tests and CI added.
+2026-10-17 — Added bounded category pagination with previous/next actions and four tests. Tests not executed; GitHub checkout unavailable in runtime.
