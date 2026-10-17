@@ -3,19 +3,16 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --test tests/*.test.mjs",
+    "build": "tsc -p tsconfig.build.json",
+    "test": "npm run build && node --test tests/*.test.mjs",
     "check": "npm run typecheck && npm test",
     "dev:web": "npm run dev -w @elhafez/web",
-    "dev:api": "npm run dev -w @elhafez/api"
+    "dev:api": "npm run dev -w @elhafez/api",
+    "db:migrate": "node scripts/migrate.mjs",
+    "db:bootstrap": "node scripts/bootstrap-owner.mjs"
   },
-  "devDependencies": {
-    "typescript": "~5.9.3",
-    "@types/node": "^22.15.0"
-  }
+  "devDependencies": {"typescript":"~5.9.3","@types/node":"^22.15.0"}
 }
