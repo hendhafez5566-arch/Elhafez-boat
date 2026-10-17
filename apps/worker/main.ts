@@ -1,3 +1,6 @@
+import {processCampaign} from '../api/src/campaigns.js';
+import {consumeUsage} from '../api/src/usage.js';
+import {processDelay} from '../api/src/delay-scheduler.js';
 import {processIntegrationJob} from '../api/src/integrations.js';
 /** Durable WhatsApp outbox worker. Requires trusted non-owner PostgreSQL role. */
 import { createRequire } from 'node:module';
@@ -40,15 +43,19 @@ async function processTenant(tenantId:string):Promise<boolean>{
  try{
   await tx.query('BEGIN');began=true;
   await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
-  await processIntegrationJob(tx,tenantId);
+  const entitlement=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);
+  if(!entitlement.rowCount){await tx.query('COMMIT');return false}
+  await tx.query('INSERT INTO chatbot_usage(tenant_id,day) VALUES($1,CURRENT_DATE) ON CONFLICT DO NOTHING',[tenantId]);
+  await tx.query('SELECT day FROM chatbot_usage WHERE tenant_id=$1 AND day=CURRENT_DATE FOR UPDATE',[tenantId]);
+  await tx.query("UPDATE whatsapp_outbox SET status='UNCERTAIN',last_error='Worker interrupted after durable claim; reconcile before any resend' WHERE tenant_id=$1 AND status='PROCESSING' AND locked_at<now()-interval '2 minutes'",[tenantId]);
   // Row-level locking reserves one job among concurrent worker processes.
-  const pending=await tx.query(`SELECT j.*,a.phone_number_id,a.access_token_encrypted,c.last_customer_message_at,k.do_not_contact,k.marketing_opt_in
+  const pending=await tx.query(`SELECT j.*,j.usage_day=CURRENT_DATE AS usage_reserved_today,a.phone_number_id,a.access_token_encrypted,c.last_customer_message_at,k.do_not_contact,k.marketing_opt_in
    FROM whatsapp_outbox j JOIN whatsapp_accounts a ON a.tenant_id=j.tenant_id AND a.id=j.account_id
    JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id
    JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
    LEFT JOIN tenant_subscriptions sub ON sub.tenant_id=j.tenant_id
    WHERE j.tenant_id=$1 AND j.status='PENDING' AND j.next_attempt_at<=now()
-   AND a.status='CONNECTED' AND sub.status IN ('TRIAL','ACTIVE') AND sub.current_period_ends_at>now() ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j SKIP LOCKED`,[tenantId]);
+   AND a.status='CONNECTED' AND sub.status IN ('TRIAL','ACTIVE') AND sub.current_period_ends_at>now() ORDER BY j.created_at ASC LIMIT 1 FOR UPDATE OF j,k SKIP LOCKED`,[tenantId]);
   if(pending.rowCount!==1){await tx.query('COMMIT');return false;}
   const job=pending.rows[0];
   // Interactive/text messages must not be dispatched after the WhatsApp 24h service window.
@@ -71,15 +78,23 @@ async function processTenant(tenantId:string):Promise<boolean>{
      WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id]);
    await tx.query('COMMIT');return true;
   }
-  // Keep lock while outbound API completes: blocks duplicate concurrent dispatch in healthy processes.
-  // A timeout may mean provider received the request. To avoid an accidental duplicate charge/send,
-  // do NOT retry unknown network outcomes automatically (mark UNCERTAIN for manual reconciliation).
+  if(job.campaign_id){const campaign=await tx.query("SELECT status FROM chatbot_campaigns WHERE tenant_id=$1 AND id=$2",[tenantId,job.campaign_id]);if(campaign.rows[0]?.status!=='ACTIVE'){await tx.query("UPDATE whatsapp_outbox SET status='FAILED',last_error='Campaign inactive' WHERE tenant_id=$1 AND id=$2",[tenantId,job.id]);await tx.query('COMMIT');return true}}
+  if(template){
+   const recent=await tx.query(`SELECT max(coalesce(dispatched_at,locked_at,created_at)) AS last FROM whatsapp_outbox WHERE tenant_id=$1 AND recipient_phone=$2 AND status IN ('SENT','PROCESSING','UNCERTAIN') AND payload->>'type'='template' AND coalesce(dispatched_at,locked_at,created_at)>now()-interval '24 hours'`,[tenantId,job.recipient_phone]);
+   if(recent.rows[0]?.last){await tx.query(`UPDATE whatsapp_outbox SET next_attempt_at=$3::timestamptz+interval '24 hours' WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,recent.rows[0].last]);await tx.query('COMMIT');return true}
+   if(!job.usage_reserved_today){await tx.query('SAVEPOINT usage_reservation');try{await consumeUsage(tx,tenantId,'templates');await tx.query('UPDATE whatsapp_outbox SET usage_day=CURRENT_DATE WHERE tenant_id=$1 AND id=$2',[tenantId,job.id])}catch(e){await tx.query('ROLLBACK TO SAVEPOINT usage_reservation');await tx.query("UPDATE whatsapp_outbox SET next_attempt_at=now()+interval '1 hour',last_error='Daily template limit reached' WHERE tenant_id=$1 AND id=$2",[tenantId,job.id]);await tx.query('COMMIT');return true}}
+  }
+  // Commit a durable claim BEFORE the network call. A crashed worker must not resend
+  // an ambiguous request: the recovery sweep marks orphaned claims UNCERTAIN.
+  await tx.query("UPDATE whatsapp_outbox SET status='PROCESSING',locked_at=now(),attempt_count=attempt_count+1 WHERE tenant_id=$1 AND id=$2",[tenantId,job.id]);
+  await tx.query('COMMIT');began=false;
   let providerId:string|undefined,permanent=false,unknown=false,lastError='';
   try{providerId=(await dispatch(job,job)).providerId;}
   catch(error){const status=(error as {status?:number}).status;permanent=typeof status==='number'&&status>=400&&status<500&&status!==429;
     unknown=status===undefined;lastError=error instanceof Error?error.message.slice(0,180):'Meta send failed';}
+  await tx.query('BEGIN');began=true;await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
   if(providerId){
-    await tx.query(`UPDATE whatsapp_outbox SET status='SENT',provider_message_id=$3,attempt_count=attempt_count+1,locked_at=NULL
+    await tx.query(`UPDATE whatsapp_outbox SET status='SENT',dispatched_at=now(),provider_message_id=$3,locked_at=NULL
       WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,providerId]);
     const source=job.payload as {type?:string;text?:{body?:string};interactive?:{body?:{text?:string}}};
     const message=source.text?.body||source.interactive?.body?.text||(source.type==='template'?'[قالب واتساب معتمد]':'[رسالة تفاعلية]');
@@ -96,6 +111,9 @@ async function processTenant(tenantId:string):Promise<boolean>{
   await tx.query('COMMIT');return true;
  }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
 }
+async function tenantTask(tenantId:string,task:(db:import('../api/src/services.js').SqlClient,id:string)=>Promise<unknown>){
+ const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);if(active.rowCount)await task(tx,tenantId);await tx.query('COMMIT')}catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}finally{tx.release()}
+}
 async function run(){
  console.log('WhatsApp outbox worker started');
  while(running){
@@ -103,7 +121,7 @@ async function run(){
   try{
    // The tenants table has no tenant RLS; each tenant's jobs still run inside RLS-scoped transactions.
    const t=await pool.query('SELECT id FROM tenants ORDER BY id LIMIT 10000');
-   for(const row of t.rows){if(!running)break;worked=(await processTenant(String(row.id)))||worked;}
+   for(const row of t.rows){if(!running)break;const id=String(row.id);try{await tenantTask(id,processDelay);await tenantTask(id,processCampaign);await tenantTask(id,processIntegrationJob);worked=(await processTenant(id))||worked}catch(e){console.error('Tenant worker task failed:',e instanceof Error?e.message:'unknown')}}
   }catch(e){console.error('Worker poll failed:',e instanceof Error?e.message:'unknown');}
   if(!worked)await wait(2000);
  }

@@ -23,6 +23,8 @@ services:
     restart: unless-stopped
     command: ["node", ".build/apps/api/src/server.js"]
     environment:
+      MEDIA_PUBLIC_ORIGIN: ${MEDIA_PUBLIC_ORIGIN:-}
+      INTEGRATION_SECRET_ENCRYPTION_KEY: ${INTEGRATION_SECRET_ENCRYPTION_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
       AI_MODEL: ${AI_MODEL:-}
       AI_API_KEY: ${AI_API_KEY:-}
@@ -52,6 +54,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Use a non-owner RLS-enforced PostgreSQL role}
       OUTBOUND_WEBHOOK_HOSTS: ${OUTBOUND_WEBHOOK_HOSTS:-}
       OUTBOUND_WEBHOOK_SIGNING_SECRET: ${OUTBOUND_WEBHOOK_SIGNING_SECRET:-}
+      INTEGRATION_SECRET_ENCRYPTION_KEY: ${INTEGRATION_SECRET_ENCRYPTION_KEY:-}
       META_GRAPH_VERSION: ${META_GRAPH_VERSION:-v24.0}
       WHATSAPP_TOKEN_ENCRYPTION_KEY: ${WHATSAPP_TOKEN_ENCRYPTION_KEY:?32 bytes encoded in base64 required}
     depends_on:

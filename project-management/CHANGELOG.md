@@ -1,5 +1,14 @@
 # Changelog — latest first
 
+## 2026-10-18 — Core runtime and real workspace continuation from d31c20e
+- Retired booking services/contracts/UI and their obsolete tests; preserved auth/RBAC/tenant transaction tests and replaced coverage with generic chatbot cases. No CI exclusions/skip/continue-on-error added.
+- Added durable delay, paginated catalog list snapshots, configurable global triggers and Website Chat with actual inbox handoff/replies.
+- Added managed media, validated interactive template parameters and consent-filtered campaigns/sequences with worker jobs, limits and cancellation.
+- Added company usage/admin caps, live inbox/notification polling, per-message reads, editable replies, encrypted integration credentials, optimistic draft saves and durable Meta PROCESSING/UNCERTAIN recovery.
+- Rebuilt RTL app with real APIs; removed dummy tourism workspace and retired package; preserved historical SQL/data. Added migration 0022 and clean-build step.
+- Build, clean install, JS/DOM and static HTTP safeguards passed. Final acceptance remains deferred. Actual CI result must be read for the new commit.
+
+
 ## 2026-10-18 — Generic chatbot implementation batch
 - Repaired missing catalog service and 0016 migration; removed invalid legacy inventory source.
 - Added canvas editing/layout persistence, undo/redo/duplicate, validation and version rollback.

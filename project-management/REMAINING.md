@@ -1,32 +1,25 @@
-# Remaining — owner scope is NOT fully complete
+# Remaining — final acceptance is not approved
 
-Delivered source and evidence: CURRENT-STATUS.md. No commercial readiness percentage.
+## Source still unfinished / deliberately unsupported
+- Dedicated Google Sheets/CRM/ecommerce OAuth/native connectors. Current generic outbound HTTPS webhooks support encrypted Bearer/HMAC secrets, allowlists, retries and audit, but do not constitute those native integrations.
+- Advanced template carousel/authentication/named-parameter/provider-specific formats and full template bulk-sync management. Supported component forms are explicitly validated; unsupported forms are rejected.
+- Advanced canvas grouping/reusable subflows. Current drag/pan/zoom/connect/duplicate/undo/version functionality exists.
+- Additional social adapters beyond WhatsApp and Website. Messenger, Instagram and Telegram are not live integrations.
+- Operational retention/purge tooling and malware scanning for uploaded files; current bounded storage, MIME signature checks and deletion safeguards do not replace either.
+- Broader granular REST write scopes; current API keys remain catalog/lead read-only. Native browser/OS push is not implemented; inbox/notification polling is implemented.
+- Final responsive/accessibility and concurrency/abuse/performance review. Login throttling remains process-local. Actual production role grants must include new runtime tables/routes; no commercial/multi-instance hardening claim.
 
-## Unresolved CI
-
-CI run 39070131242 on e38fbdb failed: 34/38 passed; nine new regressions passed, four unchanged legacy tourism/booking tests failed. Migration/RLS steps were skipped. Resolve the legacy retirement/test-compatibility decision without disabling tests or reviving out-of-scope booking features. No green CI claim.
-
-## Independent unfinished build work
-- DELAY node and durable flow-resumption scheduler; visual grouping/reusable blocks.
-- Global event/keyword triggers and campaign/sequence builder; consent-based bulk segmentation, scheduling/cancellation/status UI and shared rate budgets. Current scheduling is individual approved static templates only.
-- Dynamic catalog interactive lists, pagination beyond ten items, native product messages and catalog edit UI. Current dynamic node sends approved text; catalog update API exists.
-- Template variables/media/carousels and provider sync pagination/revocation refresh. Current provider registration is static approved templates only.
-- Media upload/storage/lifecycle, retention and attachment preview; HTTPS media-link nodes already exist.
-- Full generic channel adapter interface, Website Chat widget and inbox, plus future Messenger/Instagram/Telegram connectors. None should be advertised as live.
-- Dedicated Google Sheets/CRM/store connectors and per-integration secret management/rotation. Current outbound webhooks have exact server allowlist and optional environment HMAC, not arbitrary HTTP credentials.
-- Expand scoped REST APIs beyond catalog/lead reads, tenant-wide usage limits/rate budgets and platform monitoring/error/retention screens. Existing owner tenant/team/subscription provisioning remains; consumption management is incomplete outside AI caps.
-- Finish removal of dormant legacy UI/modules after dependency audit; preserve historical schema/data compatibility. Active legacy routes are retired, but source cleanup is not finished.
-- Complete visual polish/mobile/a11y review, notification refresh and richer contextual lead summaries; saved-reply edit/delete UI and integration disable/job inspection UI.
-- Draft concurrency protection and further runtime rate/abuse limits need review before multi-instance deployment.
-
-## External activation dependencies
-- Actual PostgreSQL 16+ service; separate privileged migration/platform and least-privilege runtime roles/grants. Migrations 0001–0021 have not been applied locally.
-- Meta developer/business account, Phone Number ID, WABA ID, access token, app secret, webhook verification token, appropriate app permissions and approved templates; secure public HTTPS webhook and preserved encryption key. Provider permissions/approval depend on the chosen Meta setup.
-- Optional AI_BASE_URL, AI_MODEL, AI_API_KEY; provider behaviour/connection remains unverified. Without them deterministic flows, approved exact answers and safe fallback still operate.
-- OUTBOUND_WEBHOOK_HOSTS and a receiver that implements idempotency; optional HMAC secret. Empty allowlist disables outbound destinations.
-- Working Chromium installation/browser runner for real UI/mobile evidence; attempted download here failed.
+## External activation / environment
+- PostgreSQL 16+ with migration/platform roles separate from non-owner, non-superuser, non-BYPASSRLS runtime role; migrate 0001–0022. Real migration and tenant isolation are not established by TypeScript compilation.
+- Meta account, phone/WABA IDs, valid access token, app secret, verify token, actual app/account permissions, HTTPS webhook and approved templates. No live provider operation was tested in this session.
+- Optional AI credentials remain external and unverified; deterministic core/FAQ/catalog works independently.
+- Exact widget website origins and reachable HTTPS app domain. Configure MEDIA_PUBLIC_ORIGIN for external media links. Website widget/account setup must be exercised from an actual permitted origin.
+- INTEGRATION_SECRET_ENCRYPTION_KEY: independent base64 32-byte key, preserved for decryption. OUTBOUND_WEBHOOK_HOSTS allowlist and reachable idempotent receivers; optional global signing secret. No live outbound webhook was dispatched here.
+- Working browser runner for actual desktop/mobile acceptance. Prior Chromium installation/download failed; this session did not repeat it.
 
 ## ONE final comprehensive acceptance campaign
-After remaining build scope is finished, execute original and added unit tests, clean install/build, all PostgreSQL migrations and non-owner RLS/cross-tenant tests, actual authenticated browser/mobile E2E, flow publish/rollback/session pinning, live Meta sandbox/interactive/template/window/consent checks, AI grounding and quota, inbox concurrency, outbound SSRF/DNS/retry/idempotency, permission/security, performance, recovery and real backup/restore.
+After approved build scope is closed, run unit/integration, fresh PostgreSQL migration and RLS/cross-tenant checks, actual browser/mobile, delay crash/restart/session pinning, dynamic pagination, trigger/hand-off/inbox ownership, website CORS/token/dedupe/security, media ACL/quota/type/deletion, consent/campaign cancel/limits/template delivery, AI grounding/quota, outbound DNS/SSRF/secrets/idempotency, worker fault injection/reconciliation, realistic performance and real backup/restore. Fix failures from source; no test masking.
 
-Current state: partial implementation delivery, not final acceptance-ready. Do not merge or commercially deploy on this report.
+Existing CI runs automatically and is a development check, not this comprehensive acceptance campaign. Historical e38fbdb booking failures were addressed by retiring the obsolete product and replacing its coverage, not by reviving booking code or excluding current chatbot/security tests. See docs/17-LEGACY-RETIREMENT.md.
+
+No merge, commercial deploy or readiness claim is authorized by the current evidence.

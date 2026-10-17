@@ -12,3 +12,8 @@ export async function inboxNote(db:SqlClient,actor:Actor,id:string,input:unknown
  const found=await db.query('SELECT id FROM conversations WHERE tenant_id=$1 AND id=$2',[actor.tenantId,id]);if(!found.rowCount)throw new HttpFailure(404,'Conversation not found');
  return (await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,author_id,kind,body) VALUES($1,$2,$3,'INTERNAL_NOTE',$4) RETURNING id,body,kind`,[actor.tenantId,id,actor.userId,d.body.trim()])).rows[0];
 }
+
+export async function updateSavedReply(db:SqlClient,actor:Actor,id:string,input:unknown){
+ allow(actor,['OWNER','MANAGER']);const d=input as {title?:unknown;body?:unknown};if(!isUuid(id)||!d||typeof d.title!=='string'||!d.title.trim()||d.title.length>100||typeof d.body!=='string'||!d.body.trim()||d.body.length>2000)throw new HttpFailure(400,'Invalid saved reply');
+ const r=await db.query('UPDATE chatbot_saved_replies SET title=$3,body=$4 WHERE tenant_id=$1 AND id=$2 RETURNING id,title,body',[actor.tenantId,id,d.title.trim(),d.body.trim()]);if(!r.rowCount)throw new HttpFailure(404,'Saved reply not found');return r.rows[0];
+}

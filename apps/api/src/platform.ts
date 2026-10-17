@@ -32,7 +32,12 @@ export async function platformLogout(auth:unknown){if(typeof auth==='string'&&/^
 export async function platformTenants(ownerId:string){
  const r=await adminPool().query(`SELECT t.id,t.slug,t.name,t.created_at,s.plan_code,s.status AS subscription_status,s.current_period_ends_at,
  (SELECT count(*) FROM memberships m WHERE m.tenant_id=t.id)::integer AS staff_count,
- (SELECT count(*) FROM programs p WHERE p.tenant_id=t.id)::integer AS program_count
+ (SELECT daily_inbound FROM chatbot_usage_limits l WHERE l.tenant_id=t.id) AS daily_inbound_limit,
+ (SELECT daily_templates FROM chatbot_usage_limits l WHERE l.tenant_id=t.id) AS daily_template_limit,
+ (SELECT media_bytes::text FROM chatbot_usage_limits l WHERE l.tenant_id=t.id) AS media_limit,
+ (SELECT count(*) FROM chatbot_catalog_items p WHERE p.tenant_id=t.id)::integer AS catalog_count,
+ (SELECT coalesce(inbound,0) FROM chatbot_usage u WHERE u.tenant_id=t.id AND day=CURRENT_DATE) AS daily_inbound_used,
+ (SELECT coalesce(templates,0) FROM chatbot_usage u WHERE u.tenant_id=t.id AND day=CURRENT_DATE) AS daily_templates_used
  FROM tenants t LEFT JOIN tenant_subscriptions s ON s.tenant_id=t.id ORDER BY t.created_at DESC LIMIT 500`);
  return r.rows;
 }
@@ -62,6 +67,8 @@ export async function updateSubscription(ownerId:string,id:string,input:unknown)
  ON CONFLICT(tenant_id) DO UPDATE SET plan_code=EXCLUDED.plan_code,status=EXCLUDED.status,current_period_ends_at=EXCLUDED.current_period_ends_at,updated_at=now() RETURNING tenant_id,plan_code,status,current_period_ends_at`,[id,plan,status,new Date(ends).toISOString()]);
  if(!['TRIAL','ACTIVE'].includes(String(status)) || new Date(ends).getTime()<=Date.now()){
    // Paid account suspension must not silently send already queued outbound messages on later reactivation.
+   await tx.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND status='PENDING'",[id]);
+   await tx.query("UPDATE chatbot_campaigns SET status='CANCELLED' WHERE tenant_id=$1 AND status='ACTIVE'",[id]);
    await tx.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Subscription is not active'
      WHERE tenant_id=$1 AND status='PENDING'`,[id]);
  }
@@ -84,4 +91,8 @@ export async function acceptFirstOwner(input:unknown){
  await tx.query(`UPDATE tenant_owner_invites SET accepted_at=now() WHERE token_hash=$1`,[tokenDigest(token)]);
  await tx.query('COMMIT');return {accepted:true,loginRequired:true};
  }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
+}
+export async function platformUsageLimits(ownerId:string,id:string,input:unknown){
+ const d=object(input);if(!/^[0-9a-f-]{36}$/i.test(id)||!Number.isInteger(d.dailyInbound)||Number(d.dailyInbound)<1||Number(d.dailyInbound)>1000000||!Number.isInteger(d.dailyTemplates)||Number(d.dailyTemplates)<1||Number(d.dailyTemplates)>100000||!Number.isInteger(d.mediaBytes)||Number(d.mediaBytes)<1||Number(d.mediaBytes)>10737418240)throw new HttpFailure(400,'Invalid usage limits');
+ const tx=await adminPool().connect();try{await tx.query('BEGIN');await tx.query(`INSERT INTO chatbot_usage_limits(tenant_id,daily_inbound,daily_templates,media_bytes) VALUES($1,$2,$3,$4) ON CONFLICT(tenant_id) DO UPDATE SET daily_inbound=$2,daily_templates=$3,media_bytes=$4`,[id,d.dailyInbound,d.dailyTemplates,d.mediaBytes]);await tx.query(`INSERT INTO platform_audit_events(owner_id,action,tenant_id) VALUES($1,'USAGE_LIMITS_UPDATED',$2)`,[ownerId,id]);await tx.query('COMMIT');return {updated:true}}catch(e){await tx.query('ROLLBACK');throw e}finally{tx.release()}
 }

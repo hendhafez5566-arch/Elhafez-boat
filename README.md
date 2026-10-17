@@ -22,7 +22,7 @@ Full instructions: [Local setup](docs/11-LOCAL-SETUP.md). No default passwords o
 
 ## Current implementation
 
-Canvas with drag/pan/zoom, connections, undo/redo/duplicate, draft validation, publish/history/rollback; server-backed preview; deterministic messages/buttons/lists/questions/conditions/tags/media/links/handoff; dynamic approved catalog, keyword branches, optional extractive grounded AI and queued safe webhooks. Team inbox includes ownership, saved replies, notes, unread filters and close. Individual approved static templates support scheduling; REST keys support scoped catalog/lead reads.
+Canvas with drag/pan/zoom, connections, undo/redo/duplicate, draft validation, publish/history/rollback; server-backed preview; deterministic messages/buttons/lists/questions/conditions/tags/media/links/handoff; dynamic approved catalog, keyword branches, optional extractive grounded AI and queued safe webhooks. Team inbox includes ownership, saved replies, notes, unread filters and close. Delay scheduling, dynamic catalog lists, global triggers, Website Chat, managed media, supported interactive template parameters and consented campaign sequences now have source and connected UI; REST keys support scoped catalog/lead reads.
 
 Official WhatsApp Cloud API source includes signed webhooks, receipts, outbox, window/consent checks and retries. Actual provider activation requires your Meta account and credentials and is unverified. AI, external destinations and other channels are not claimed live.
 
@@ -33,4 +33,6 @@ Official WhatsApp Cloud API source includes signed webhooks, receipts, outbox, w
 - [Unfinished features and acceptance](project-management/REMAINING.md)
 - [Handover](project-management/HANDOVER.md)
 
-Confirmed locally: dependency install, TypeScript/build, JS syntax and static HTTP serving. PostgreSQL/RLS, authenticated browser/mobile, Meta, AI, performance and backup/restore acceptance were not run locally. Chromium download failed. CI on e38fbdb: 34/38 passing, four legacy service failures; migrations/RLS skipped. Full details and unfinished work are in CURRENT-STATUS.md.
+Confirmed locally: dependency install, TypeScript/build, JS syntax and static HTTP serving. PostgreSQL/RLS, authenticated browser/mobile, Meta, AI, performance and backup/restore acceptance were not run locally. Chromium download failed. CI on e38fbdb: historical result is recorded in tracking; booking modules/tests have now been retired with current chatbot/security coverage preserved. Full details and unfinished work are in CURRENT-STATUS.md.
+
+Current continuation includes migration 0022. Configure MEDIA_PUBLIC_ORIGIN, widget origins and INTEGRATION_SECRET_ENCRYPTION_KEY as applicable. Native Sheets/CRM/store connectors and advanced template formats remain unsupported; final acceptance remains deferred. See docs/17-LEGACY-RETIREMENT.md for the clean CI/test scope migration.

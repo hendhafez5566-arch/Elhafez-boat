@@ -13,6 +13,9 @@ const columns=`id,kind,title,category_label AS "categoryLabel",description,price
 export async function listCatalog(db:SqlClient,actor:Actor){allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);return (await db.query(`SELECT ${columns} FROM chatbot_catalog_items WHERE tenant_id=$1 ORDER BY updated_at DESC LIMIT 500`,[actor.tenantId])).rows}
 export async function createCatalog(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER','MANAGER']);const d=catalogInput(input);
+ await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
+ const quota=await db.query(`SELECT p.max_programs,(SELECT count(*)::int FROM chatbot_catalog_items WHERE tenant_id=$1 AND status!='ARCHIVED') AS used FROM tenant_subscriptions s JOIN subscription_plans p ON p.code=s.plan_code WHERE s.tenant_id=$1`,[actor.tenantId]);
+ if(quota.rowCount&&Number(quota.rows[0].used)>=Number(quota.rows[0].max_programs))throw new HttpFailure(409,'Catalog limit reached for company plan');
  return (await db.query(`INSERT INTO chatbot_catalog_items(tenant_id,kind,title,category_label,description,price_text,image_url,external_url,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING ${columns}`,[actor.tenantId,d.kind,d.title,d.categoryLabel,d.description,d.priceText,d.imageUrl,d.externalUrl,actor.userId])).rows[0];
 }
 export async function updateCatalog(db:SqlClient,actor:Actor,id:string,input:unknown){

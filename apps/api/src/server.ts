@@ -1,6 +1,12 @@
+import {listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
+import {notifications,runtimeJobs} from './workspace.js';
+import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages} from './website.js';
+import {listMedia,uploadMedia,deleteMedia,publicMedia} from './media.js';
+import {listTriggers,createTrigger,deleteTrigger} from './triggers.js';
+import {usageSummary} from './usage.js';
 import {authenticateAccessKey,listAccessKeys,createAccessKey,revokeAccessKey} from './access-keys.js';
-import {listIntegrations,createIntegration} from './integrations.js';
-import {savedReplies,createSavedReply,deleteSavedReply,inboxNote} from './inbox.js';
+import {listIntegrations,createIntegration,updateIntegration} from './integrations.js';
+import {savedReplies,createSavedReply,deleteSavedReply,updateSavedReply,inboxNote} from './inbox.js';
 import {aiSettings,saveAiSettings} from './ai.js';
 import {executeFlow} from './flow-service.js';
 import {validateFlow,initialFlowState} from './flow-engine.js';
@@ -11,13 +17,13 @@ import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendAp
 import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
 import { createTeamInvite, listTeamInvitations, revokeTeamInvite, updateTeamRole, acceptTeamInvite } from './team.js';
-import { platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
+import { platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, platformUsageLimits, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
-import { HttpFailure, withTenantTransaction, listPrograms, createProgram, publishProgram, type SqlPool, type SqlClient } from './services.js';
-import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, listOffers, addOffer, publishOffer, listFollowups, addFollowup, completeFollowup, listConversations, createInternalConversation, listInternalMessages, addInternalMessage, getSummary } from './sales.js';
-import { botConfig, saveBotDraft, publishBotDraft, botVersions, teamMembers } from './bot-config.js';
+import { HttpFailure, allow, withTenantTransaction, type SqlPool, type SqlClient } from './services.js';
+import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, getSummary } from './sales.js';
+import { teamMembers } from './team-directory.js';
 const require=createRequire(import.meta.url);
 // pg is a runtime dependency loaded after npm install; query access is abstracted for unit tests.
 const { Pool } = require('pg') as { Pool: new (options: { connectionString: string; max: number }) => SqlPool & SqlClient & { end(): Promise<void> } };
@@ -25,9 +31,9 @@ if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is required');
 const pool=new Pool({connectionString:process.env.DATABASE_URL,max:10});
 const port=Number(process.env.PORT??4000);
 const json=(res:ServerResponse,status:number,data:unknown)=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(data));};
-async function body(req:IncomingMessage):Promise<unknown>{
+async function body(req:IncomingMessage,maxBytes=65536):Promise<unknown>{
   if(!req.headers['content-type']?.startsWith('application/json'))throw new HttpFailure(415,'JSON required');
-  let text='';for await(const chunk of req){text+=chunk.toString();if(Buffer.byteLength(text)>65536)throw new HttpFailure(413,'Body too large');}
+  let text='';for await(const chunk of req){text+=chunk.toString();if(Buffer.byteLength(text)>maxBytes)throw new HttpFailure(413,'Body too large');}
   try{return JSON.parse(text)}catch{throw new HttpFailure(400,'Invalid JSON')}
 }
 const failedLogins=new Map<string,{count:number;until:number}>();
@@ -40,6 +46,18 @@ function throttle(req:IncomingMessage):void{
 const server=createServer(async(req,res)=>{
   try{
     const pathname=new URL(req.url??'/',`http://localhost:${port}`).pathname;
+    if(pathname.startsWith('/api/v1/widget/')&&pathname!=='/api/v1/widget/settings'){
+      const origin=typeof req.headers.origin==='string'?req.headers.origin:typeof req.headers['x-widget-origin']==='string'?req.headers['x-widget-origin']:'';
+      if(origin){res.setHeader('access-control-allow-origin',origin);res.setHeader('vary','Origin')}
+      res.setHeader('access-control-allow-methods','GET, POST, OPTIONS');res.setHeader('access-control-allow-headers','Content-Type, Authorization, X-Widget-Origin');
+      if(req.method==='OPTIONS'){res.writeHead(204);res.end();return}
+      if(req.method==='POST'&&pathname==='/api/v1/widget/start')return json(res,201,await startWebsiteSession(pool,await body(req),origin));
+      if(req.method==='POST'&&pathname==='/api/v1/widget/send')return json(res,200,await websiteSend(pool,req.headers.authorization||'',origin,await body(req)));
+      if(req.method==='GET'&&pathname==='/api/v1/widget/messages')return json(res,200,await websiteMessages(pool,req.headers.authorization||'',origin));
+      throw new HttpFailure(404,'Widget route not found');
+    }
+    const publicAsset=/^\/api\/v1\/media\/public\/([A-Za-z0-9_-]+)$/.exec(pathname);
+    if(req.method==='GET'&&publicAsset){const file=await publicMedia(pool,publicAsset[1]);res.writeHead(200,{'content-type':file.mime,'content-length':file.data.length,'x-content-type-options':'nosniff','cache-control':'no-store','content-security-policy':"default-src 'none'; sandbox",'content-disposition':file.mime==='application/pdf'?'attachment':'inline'});res.end(file.data);return}
     if(req.method==='GET'&&pathname==='/health'){
       try{await pool.query('SELECT 1');return json(res,200,{status:'ok',service:'api',database:'reachable',whatsappConnected:false});}
       catch{return json(res,503,{status:'unavailable',service:'api',database:'unreachable'});}
@@ -73,6 +91,8 @@ const server=createServer(async(req,res)=>{
       if(req.method==='GET'&&pathname==='/api/v1/platform/tenants')return json(res,200,await platformTenants(platformOwnerId));
       if(req.method==='POST'&&pathname==='/api/v1/platform/tenants')return json(res,201,await createTenant(platformOwnerId,await body(req)));
       if(req.method==='GET'&&pathname==='/api/v1/platform/plans')return json(res,200,await platformPlans(platformOwnerId));
+      const limits=/^\/api\/v1\/platform\/tenants\/([^/]+)\/usage-limits$/.exec(pathname);
+      if(req.method==='PUT'&&limits)return json(res,200,await platformUsageLimits(platformOwnerId,limits[1],await body(req)));
       const sub=/^\/api\/v1\/platform\/tenants\/([^/]+)\/subscription$/.exec(pathname);
       if(req.method==='PATCH'&&sub)return json(res,200,await updateSubscription(platformOwnerId,sub[1],await body(req)));
       return json(res,404,{error:'Not found'});
@@ -89,6 +109,7 @@ const server=createServer(async(req,res)=>{
          new Date(String(entitlement.current_period_ends_at)).getTime()<=Date.now())
         throw new HttpFailure(403,'Company subscription inactive or expired; only read-only access is available');
     }
+    if(req.method==='GET'&&pathname==='/api/v1/auth/me')return json(res,200,actor);
     if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,req.headers.authorization);return json(res,200,{ok:true});}
     if(/^\/api\/v1\/(programs|bookings|departures|offers|bot)(\/|$)/.test(pathname))return json(res,410,{error:'Legacy tourism endpoints retired. Use /catalog and /flows.'});
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
@@ -98,6 +119,23 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&waDisconnect)return json(res,200,await run(tx=>disconnectWhatsApp(tx,actor,waDisconnect[1])));
+    if(req.method==='GET'&&pathname==='/api/v1/notifications')return json(res,200,await run(tx=>notifications(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/runtime/jobs')return json(res,200,await run(tx=>runtimeJobs(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/campaigns')return json(res,200,await run(tx=>listCampaigns(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/campaigns')return json(res,201,await runBody((tx,input)=>createCampaign(tx,actor,input)));
+    const campaignAction=/^\/api\/v1\/campaigns\/([^/]+)\/(launch|cancel)$/.exec(pathname);
+    if(req.method==='POST'&&campaignAction)return json(res,200,await run<unknown>(tx=>campaignAction[2]==='launch'?launchCampaign(tx,actor,campaignAction[1]):cancelCampaign(tx,actor,campaignAction[1])));
+    if(req.method==='GET'&&pathname==='/api/v1/usage')return json(res,200,await run(tx=>usageSummary(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/widget/settings')return json(res,200,await run(tx=>widgetSettings(tx,actor)));
+    if(req.method==='PUT'&&pathname==='/api/v1/widget/settings')return json(res,200,await runBody((tx,input)=>saveWidgetSettings(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/triggers')return json(res,200,await run(tx=>listTriggers(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/triggers')return json(res,201,await runBody((tx,input)=>createTrigger(tx,actor,input)));
+    const trigger=/^\/api\/v1\/triggers\/([^/]+)$/.exec(pathname);
+    if(req.method==='DELETE'&&trigger)return json(res,200,await run(tx=>deleteTrigger(tx,actor,trigger[1])));
+    if(req.method==='GET'&&pathname==='/api/v1/media')return json(res,200,await run(tx=>listMedia(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/media'){const input=await body(req,7500000);return json(res,201,await run(tx=>uploadMedia(tx,actor,input)))}
+    const asset=/^\/api\/v1\/media\/([^/]+)$/.exec(pathname);
+    if(req.method==='DELETE'&&asset)return json(res,200,await run(tx=>deleteMedia(tx,actor,asset[1])));
     if(req.method==='GET'&&pathname==='/api/v1/catalog')return json(res,200,await run(tx=>listCatalog(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/catalog')return json(res,201,await runBody((tx,input)=>createCatalog(tx,actor,input)));
     const itemRoute=/^\/api\/v1\/catalog\/([^/]+)$/.exec(pathname);
@@ -110,19 +148,24 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/access-keys')return json(res,201,await runBody((tx,input)=>createAccessKey(tx,actor,input)));
     const accessKey=/^\/api\/v1\/access-keys\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&accessKey)return json(res,200,await run(tx=>revokeAccessKey(tx,actor,accessKey[1])));
+    const integration=/^\/api\/v1\/integrations\/([^/]+)$/.exec(pathname);
+    if(req.method==='PATCH'&&integration)return json(res,200,await runBody((tx,input)=>updateIntegration(tx,actor,integration[1],input)));
     if(req.method==='GET'&&pathname==='/api/v1/integrations')return json(res,200,await run(tx=>listIntegrations(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/integrations')return json(res,201,await runBody((tx,input)=>createIntegration(tx,actor,input)));
     if(req.method==='GET'&&pathname==='/api/v1/ai/settings')return json(res,200,await run(tx=>aiSettings(tx,actor)));
     if(req.method==='PUT'&&pathname==='/api/v1/ai/settings')return json(res,200,await runBody((tx,input)=>saveAiSettings(tx,actor,input)));
     if(req.method==='POST'&&pathname==='/api/v1/flows/preview')return json(res,200,await runBody(async(tx,input)=>{
+      allow(actor,['OWNER','MANAGER']);
       const d=input as Record<string,unknown>;let flow;try{flow=validateFlow(d.definition)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
       const state=d.state as ReturnType<typeof initialFlowState>|undefined;
-      if(state&&(!Array.isArray(state.tags)||!state.answers||typeof state.answers!=='object'||Array.isArray(state.answers)||(state.at!==null&&typeof state.at!=='string')))throw new HttpFailure(400,'Invalid preview state');
+      if(state&&(!Array.isArray(state.tags)||state.tags.length>100||state.tags.some(t=>typeof t!=='string'||t.length>40)||!state.answers||typeof state.answers!=='object'||Array.isArray(state.answers)||Object.keys(state.answers).length>200||Object.values(state.answers).some(v=>typeof v!=='string'||v.length>500)||(state.at!==null&&(typeof state.at!=='string'||state.at.length>180))))throw new HttpFailure(400,'Invalid preview state');
       const incoming=d.input as {kind:'TEXT'|'CHOICE';value:string}|undefined;
       if(incoming&&(!['TEXT','CHOICE'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
-      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished};
+      const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
+      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/validate'){
+      allow(actor,['OWNER','MANAGER']);
       const input=await body(req);try{validateFlow(input);return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
     }
     if(req.method==='GET'&&pathname==='/api/v1/flows')return json(res,200,await run(tx=>getFlowConfig(tx,actor)));
@@ -138,6 +181,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&pathname==='/api/v1/saved-replies')return json(res,200,await run(tx=>savedReplies(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/saved-replies')return json(res,201,await runBody((tx,input)=>createSavedReply(tx,actor,input)));
     const savedReply=/^\/api\/v1\/saved-replies\/([^/]+)$/.exec(pathname);
+    if(req.method==='PUT'&&savedReply)return json(res,200,await runBody((tx,input)=>updateSavedReply(tx,actor,savedReply[1],input)));
     if(req.method==='DELETE'&&savedReply)return json(res,200,await run(tx=>deleteSavedReply(tx,actor,savedReply[1])));
     const threadNote=/^\/api\/v1\/whatsapp\/inbox\/([^/]+)\/notes$/.exec(pathname);
     if(req.method==='POST'&&threadNote)return json(res,201,await runBody((tx,input)=>inboxNote(tx,actor,threadNote[1],input)));
@@ -159,7 +203,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&pathname==='/api/v1/subscription'){
       return json(res,200,await run(async tx=>{
         const r=await tx.query(`SELECT s.plan_code AS "planCode",p.title,s.status,s.current_period_ends_at AS "currentPeriodEndsAt",
-          p.max_staff AS "maxStaff",p.max_programs AS "maxPrograms" FROM tenant_subscriptions s
+          p.max_staff AS "maxStaff",p.max_programs AS "maxCatalogItems" FROM tenant_subscriptions s
           JOIN subscription_plans p ON p.code=s.plan_code WHERE s.tenant_id=$1`,[actor.tenantId]);
         return r.rows[0]??{status:'NOT_CONFIGURED',planCode:null};
       }));
@@ -181,23 +225,6 @@ const server=createServer(async(req,res)=>{
     const contactNotes=/^\/api\/v1\/contacts\/([^/]+)\/notes$/.exec(pathname);
     if(req.method==='GET'&&contactNotes)return json(res,200,await run(tx=>listContactNotes(tx,actor,contactNotes[1])));
     if(req.method==='POST'&&contactNotes)return json(res,201,await runBody((tx,input)=>addContactNote(tx,actor,contactNotes[1],input)));
-    if(req.method==='GET'&&pathname==='/api/v1/offers')return json(res,200,await run(tx=>listOffers(tx,actor)));
-    if(req.method==='POST'&&pathname==='/api/v1/offers')return json(res,201,await runBody((tx,input)=>addOffer(tx,actor,input)));
-    const offerPublish=/^\/api\/v1\/offers\/([^/]+)\/publish$/.exec(pathname);
-    if(req.method==='PATCH'&&offerPublish)return json(res,200,await run(tx=>publishOffer(tx,actor,offerPublish[1])));
-    if(req.method==='GET'&&pathname==='/api/v1/followups')return json(res,200,await run(tx=>listFollowups(tx,actor)));
-    if(req.method==='POST'&&pathname==='/api/v1/followups')return json(res,201,await runBody((tx,input)=>addFollowup(tx,actor,input)));
-    const taskDone=/^\/api\/v1\/followups\/([^/]+)\/complete$/.exec(pathname);
-    if(req.method==='PATCH'&&taskDone)return json(res,200,await run(tx=>completeFollowup(tx,actor,taskDone[1])));
-    if(req.method==='GET'&&pathname==='/api/v1/conversations')return json(res,200,await run(tx=>listConversations(tx,actor)));
-    if(req.method==='POST'&&pathname==='/api/v1/conversations')return json(res,201,await runBody((tx,input)=>createInternalConversation(tx,actor,input)));
-    const threadNotes=/^\/api\/v1\/conversations\/([^/]+)\/messages$/.exec(pathname);
-    if(req.method==='GET'&&threadNotes)return json(res,200,await run(tx=>listInternalMessages(tx,actor,threadNotes[1])));
-    if(req.method==='POST'&&threadNotes)return json(res,201,await runBody((tx,input)=>addInternalMessage(tx,actor,threadNotes[1],input)));
-    if(req.method==='GET'&&pathname==='/api/v1/bot/config')return json(res,200,await run(tx=>botConfig(tx,actor)));
-    if(req.method==='PUT'&&pathname==='/api/v1/bot/draft')return json(res,200,await runBody((tx,input)=>saveBotDraft(tx,actor,input)));
-    if(req.method==='POST'&&pathname==='/api/v1/bot/publish')return json(res,200,await run(tx=>publishBotDraft(tx,actor)));
-    if(req.method==='GET'&&pathname==='/api/v1/bot/versions')return json(res,200,await run(tx=>botVersions(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/team')return json(res,200,await run(tx=>teamMembers(tx,actor)));
     return json(res,404,{error:'Not found'});
   }catch(error){if(error instanceof HttpFailure)return json(res,error.status,{error:error.message});if((error as {code?:string}).code==='23505')return json(res,409,{error:'This record already exists'});if((error as {code?:string}).code==='23503')return json(res,404,{error:'Linked record not found'});console.error('Request failed',error instanceof Error?error.message:'unknown');return json(res,500,{error:'Internal server error'});}

@@ -1,29 +1,24 @@
-# Handover — Elhafez Boat, 2026-10-18
+# Handover — 2026-10-18 continuation
 
-## Authoritative scope
-General chatbot SaaS for ALL businesses. No internal reservations, travelers, inventory, accounting, payments or fulfilment. Stay on `feat/stage0-foundation`, PR #1; no merge/commercial deploy.
+Repo hendhafez5566-arch/Elhafez-boat; branch feat/stage0-foundation; PR #1 stays draft/unmerged. This session verified remote starting HEAD d31c20e31ce6d92cf86829d14ef65574b01d0b2c and continued its identical local tree. GitHub upload uses Git-data connector, with remote tree equality checked against local content; direct shell push has no credentials. Never force over an unexpected head.
 
-## Actual execution checkpoint
-Baseline `3f28a2df03174288947e9ed255c1eb41dde43cd5`.
-Source implementation: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/e38fbdb0f7b20769b8746a441eb839b8ca333506
-Read CURRENT-STATUS.md and REMAINING.md before continuing. This delivery is intentionally NOT marked feature complete.
+## Read first
+AGENTS.md, docs/00-SCOPE-CHATBOT-ONLY.md, CURRENT-STATUS.md, REMAINING.md and docs/17-LEGACY-RETIREMENT.md. Product is for all companies, not reservations or ERP. Final comprehensive acceptance remains one separate last stage.
 
-## Important source locations
-- `flow-engine.ts`: deterministic graph schema/validation, draft topology option, canvas layout, QUESTION/KEYWORD and pending async-node execution.
-- `flow-service.ts`: draft/publication/rollback, version-pinned sessions, dynamic catalog/AI/webhook resolution and preview dry-run flag. Never remove dry-run suppression of outbound webhook side effects.
-- `catalog.ts`, migration 0016: missing files restored; approved informational items only.
-- `ai.ts`, migration 0017: tenant AI settings, quota, approved source selection/extraction, source audit and fallback. AI provider never supplies factual business response text directly.
-- `inbox.ts`, migration 0018: saved replies and notes; whatsapp.ts adds read markers/filter fields and closure.
-- `integrations.ts`, migration 0019: exact environment host allowlist, DNS validation, pinned IPv4 HTTPS, no redirect, queue/retry/audit and optional HMAC. Idempotency header requires receiver support.
-- `templates.ts`, migration 0020: scheduled individual static templates; worker checks consent/window/subscription at dispatch. No campaigns.
-- `access-keys.ts`, migration 0021: hashed scoped read keys, routing digest table and revocation.
-- `flow-canvas.js`/`flow-builder.js`: canvas + existing properties UI; authenticated preview uses shared server interpreter. Demo is labelled, browser-only and has reduced node simulation.
-- server.ts: active old tourism route families return 410. Historical SQL migrations are untouched; dormant old modules/HTML still need cleanup.
-- tests/generic-flow.test.mjs: new regression coverage prepared. tests/db-integration.mjs now contains actual PostgreSQL RLS checks instead of an invalid reference-error sentence.
+## Current execution architecture
+- flow-engine/service: DELAY, dynamic paginated catalog snapshots, triggered entry, pinned revisions and optimistic draft save. Persist only catalog-generated runtime state: do not persist AI/webhook conversions as future answers/actions.
+- delay-scheduler: locks conversation then job/session, validates version/node, respects human ownership/opt-out/subscription/window. Delay chains upsert the same per-conversation job after completing the previous step. Worker task transactions are separate from Meta dispatch.
+- channels: neutral delivery boundary for WhatsApp outbox and durable website message payloads. Final handoff acknowledgements explicitly permit delivery after ownership changes.
+- website/public-tenant: hashed visitor sessions and opaque routing, exact origin authorization on every call, receipt dedupe, send budget/rate controls, shared bot runtime and unified staff inbox. Managed website contacts have NULL phone, never fabricated numbers.
+- media: bounded DB bytea uploads, signatures/MIME, public bearer URLs, deletion safeguard and managed-format validation. MEDIA_PUBLIC_ORIGIN must be configured for Meta to fetch them; no virus-scanning claim.
+- template-components/templates: validated supported provider components; remote approved metadata; stale refresh, variables/media/interactive replies. Unsupported carousel/auth/named forms remain rejected. Provider operation remains unverified.
+- campaigns: frozen consenting segment recipients and approved-template steps, cancellation, job state and bounded transient refresh retries. Worker checks consent/subscription/authorization and counts dispatch budget. No nonconsensual free-text campaign endpoint.
+- usage/workspace: daily limits, admin-set caps, operational jobs, notifications and per-message read marks. Outbox commits PROCESSING before outbound HTTP; abandoned claims become UNCERTAIN and must not auto-resend.
+- integrations/integration-secrets: public DNS checks plus pinned IPv4 HTTPS, exact allowlist, encrypted per-integration credentials and audited replacement/disable. Receivers must honor idempotency keys.
+- app/workspace-ui/extensions/widget: real modular RTL screens. Old fake/demo tourism workspace has been removed; flow preview is separately labelled. Forms and private data clear on logout/session changes.
+- services now contains security/transaction primitives only; team-directory replaces obsolete bot-config. Removed booking-choice/flows/contracts workspace, legacy UI and associated obsolete tests. Historical migrations/data remain intact. scripts/clean-build.mjs prevents old emitted JS shipping.
 
-## Evidence and constraints
-Local build/TypeScript, changed JS syntax, static HTTP serving and git whitespace checks passed. No local unit/DB/browser/provider/performance/restore acceptance executed. PostgreSQL/Docker and live credentials absent; Chromium download failed. Existing CI ran on e38fbdb: 34/38 passed, all nine new regressions passed; four failures in unchanged legacy services. Migration/RLS steps skipped. Run 39070131242 is FAILURE; do not report green CI.
+## Evidence and next action
+Clean npm ci (21 packages), build/TypeScript, 12 JS syntax checks, DOM reference/ID safeguards, static HTTP serving for nine assets and diff checks passed. No local comprehensive unit/DB/browser/provider/performance/restore acceptance. Inspect current GitHub CI for its exact head/result; do not reuse earlier results. Newly added tests include core regression and the PostgreSQL RLS gate now includes all new tenant runtime tables.
 
-Direct git push lacks credentials in the shell. Source was uploaded through GitHub Git-data connector, with the created remote tree SHA checked equal to the local code tree. Never force over an unexpected branch head.
-
-Startup: docs/11-LOCAL-SETUP.md. Finish remaining approved build scope, then ONE comprehensive acceptance campaign. No claims of live WhatsApp, AI, website chat or commercial readiness without evidence.
+Apply migration 0022 after previous migrations, configure grants/environment, then use docs/11-LOCAL-SETUP.md. Remaining native connectors/advanced formats/retention and final acceptance are explicitly open. No commercial readiness percentage, no merge or deployment.

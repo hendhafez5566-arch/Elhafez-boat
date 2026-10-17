@@ -3,8 +3,9 @@
  */
 export type Choice = {id:string;title:string;description?:string;next:string};
 export type FlowNode =
+ | {id:string;type:'DELAY';seconds:number;next:string}
  | {id:string;type:'START';next:string}
- | {id:string;type:'CATALOG';category?:string;next:string}
+ | {id:string;type:'CATALOG';category?:string;page?:number;next:string}
  | {id:string;type:'WEBHOOK';integrationId:string;next:string}
  | {id:string;type:'AI';field:string;next:string}
  | {id:string;type:'KEYWORD';keywords:string[];yes:string;no:string}
@@ -22,25 +23,26 @@ export type FlowNode =
 export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>};
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[]};
 export type FlowMessage={type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
-export type FlowAdvance={state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean};
+export type FlowAdvance={state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;waiting?:{seconds:number;next:string}};
 const key=/^[a-z][a-z0-9_]{0,39}$/;
 const ident=/^[a-z][a-z0-9_-]{0,31}$/;
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
 function plain(v:unknown):v is Record<string,unknown>{return typeof v==='object'&&v!==null&&!Array.isArray(v)}
 function bounded(v:unknown,max:number,min=1):v is string{return typeof v==='string'&&v.trim().length>=min&&v.length<=max}
 function requireTrue(v:unknown,message:string):asserts v{if(!v)throw new Error(message)}
-export function validateFlow(input:unknown,options:{draft?:boolean}={}):FlowDefinition{
+export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:boolean}={}):FlowDefinition{
  requireTrue(plain(input),'Flow must be an object');
  requireTrue(bounded(input.name,100,2),'Flow name must be 2–100 characters');
  requireTrue(typeof input.startId==='string'&&ident.test(input.startId),'Invalid start node ID');
- requireTrue(Array.isArray(input.nodes)&&input.nodes.length>1&&input.nodes.length<=100,'Flow requires 2–100 nodes');
+ requireTrue(Array.isArray(input.nodes)&&input.nodes.length>1&&input.nodes.length<=(options.runtime?500:100),'Flow requires 2–100 nodes');
  const seen=new Set<string>();const fields=new Set<string>();let startCount=0;
  for(const raw of input.nodes){
   requireTrue(plain(raw),'Invalid node object');
-  requireTrue(typeof raw.id==='string'&&ident.test(raw.id)&&!seen.has(raw.id),'Duplicate or invalid node ID');
+  requireTrue(typeof raw.id==='string'&&(options.runtime?/^@[a-zA-Z0-9:_-]{1,180}$/.test(raw.id)||ident.test(raw.id):ident.test(raw.id))&&!seen.has(raw.id),'Duplicate or invalid node ID');
   seen.add(raw.id);
   const type=raw.type;
-  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK'].includes(String(type)),'Unsupported node type');
+  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK','DELAY'].includes(String(type)),'Unsupported node type');
+  if(type==='DELAY')requireTrue(Number.isInteger(raw.seconds)&&Number(raw.seconds)>=1&&Number(raw.seconds)<=604800,'Delay must be 1–604800 seconds');
   if(type==='START'){startCount++;}
   if(type==='WEBHOOK')requireTrue(typeof raw.integrationId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.integrationId),'Invalid webhook integration ID');
   if(type==='CATALOG'&&raw.category!==undefined)requireTrue(bounded(raw.category,80,0),'Invalid catalog category');
@@ -73,18 +75,18 @@ export function validateFlow(input:unknown,options:{draft?:boolean}={}):FlowDefi
     const choices=new Set<string>();
     for(const choice of raw.choices){
       requireTrue(plain(choice),'Invalid choice');
-      requireTrue(typeof choice.id==='string'&&ident.test(choice.id)&&!choices.has(choice.id),'Duplicate or invalid choice ID');
+      requireTrue(typeof choice.id==='string'&&(options.runtime?/^[a-z0-9_-]{1,40}$/i.test(choice.id):ident.test(choice.id))&&!choices.has(choice.id),'Duplicate or invalid choice ID');
       choices.add(choice.id);
       requireTrue(bounded(choice.title,type==='BUTTONS'?20:24),'Choice title exceeds WhatsApp limit');
       if(choice.description!==undefined)requireTrue(bounded(choice.description,72,0),'Choice description exceeds limit');
-      requireTrue(typeof choice.next==='string'&&ident.test(choice.next),'Missing choice destination');
+      requireTrue(typeof choice.next==='string'&&(options.runtime?/^@[a-zA-Z0-9:_-]{1,180}$/.test(choice.next)||ident.test(choice.next):ident.test(choice.next)),'Missing choice destination');
     }
   }
  }
- requireTrue(startCount===1&&input.nodes.some(n=>plain(n)&&n.id===input.startId&&n.type==='START'),'Flow needs exactly one START matching startId');
+ requireTrue((options.runtime?startCount>=1:startCount===1)&&input.nodes.some(n=>plain(n)&&n.id===input.startId&&n.type==='START'),'Flow needs exactly one START matching startId');
  const nodes=input.nodes as FlowNode[];
  const edges=(node:FlowNode):string[]=>{
-  if(node.type==='START'||node.type==='TEXT'||node.type==='INPUT'||node.type==='TAG'||node.type==='MEDIA'||node.type==='LINK'||node.type==='CATALOG'||node.type==='AI'||node.type==='QUESTION'||node.type==='WEBHOOK')return [node.next];
+  if(node.type==='START'||node.type==='TEXT'||node.type==='INPUT'||node.type==='TAG'||node.type==='MEDIA'||node.type==='LINK'||node.type==='CATALOG'||node.type==='AI'||node.type==='QUESTION'||node.type==='WEBHOOK'||node.type==='DELAY')return [node.next];
   if(node.type==='CONDITION'||node.type==='KEYWORD')return [node.yes,node.no];
   if(node.type==='BUTTONS'||node.type==='LIST')return node.choices.map(c=>c.next);
   return [];
@@ -101,7 +103,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean}={}):FlowDefi
   if(visiting.has(id))throw new Error('Flow contains an automatic loop without customer input');
   visiting.add(id);
   const node=nodes.find(n=>n.id===id)!;
-  if(!['BUTTONS','LIST','INPUT','QUESTION','END','HANDOFF'].includes(node.type))for(const dest of edges(node))verifyAuto(dest);
+  if(!['BUTTONS','LIST','INPUT','QUESTION','END','HANDOFF','DELAY'].includes(node.type))for(const dest of edges(node))verifyAuto(dest);
   visiting.delete(id);done.add(id);
  };
  for(const n of nodes)verifyAuto(n.id);
@@ -137,6 +139,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TE
  }
  for(let hops=0;hops<40;hops++){
   const node=nodes.get(at);if(!node)throw new Error('Node destination unavailable');
+  if(node.type==='DELAY')return {state:{at,answers,tags},messages,handoff,finished,waiting:{seconds:node.seconds,next:node.next}};
   if(node.type==='KEYWORD'){const text=input?.kind==='TEXT'?input.value.toLowerCase():'';at=node.keywords.some(k=>text.includes(k.toLowerCase()))?node.yes:node.no;continue}
   if(node.type==='CATALOG'||node.type==='AI'||node.type==='WEBHOOK')return {state:{at,answers,tags},messages,handoff,finished,pending:true};
   if(node.type==='START'){at=node.next;continue}

@@ -1,34 +1,30 @@
-# CURRENT STATUS — Elhafez Boat
+# CURRENT STATUS — Elhafez Boat, 2026-10-18
 
-Updated 2026-10-18 (Africa/Cairo). General-purpose chatbot SaaS for all businesses. No booking, accounting or fulfilment product.
+General chatbot SaaS for all businesses. Branch `feat/stage0-foundation`, draft PR #1, unmerged and not deployed. Verified remote starting HEAD for this delivery: `d31c20e31ce6d92cf86829d14ef65574b01d0b2c`. See PR #1 for the delivered implementation commit.
 
-**Status: substantial implementation delivered; NOT feature complete, NOT acceptance approved, NOT commercially ready.**
+**Implementation advanced substantially. Final acceptance is DEFERRED, not PASS. Do not claim commercial readiness.**
 
-Branch `feat/stage0-foundation`, PR #1 remains unmerged. Verified starting GitHub HEAD: `3f28a2df03174288947e9ed255c1eb41dde43cd5`.
-Implementation: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/e38fbdb0f7b20769b8746a441eb839b8ca333506
+## Actual code delivered in this batch
+- Removed the obsolete booking/program services, WhatsApp reservation form modules, hardcoded contracts/workflows and old demo/inventory UI. Historical database migrations and data remain. Auth/RBAC/RLS primitives and security tests remain; active API families return 410 for retired operations. Retirement/coverage mapping: docs/17-LEGACY-RETIREMENT.md.
+- DELAY node (1 second–7 days), persisted due jobs and version/node checks, independent worker continuation transactions, cancellation on staff takeover/closure, opt-out and subscription/window checks. WhatsApp continuation outside the service window is blocked, not converted into unapproved outreach. Preview has an explicit simulated-delay continuation.
+- Dynamic CATALOG now renders paginated interactive lists: eight published items plus previous/next within ten rows; approved item details, interest/handoff and back/continue choices. Persisted catalog choice snapshots survive between replies. AI/webhook actions are deliberately NOT cached as catalog snapshots.
+- Global configurable KEYWORD (exact/contains normalized Arabic) and FIRST_MESSAGE triggers, priority, published target validation, management UI, delete and safe publish checks.
+- Website widget: actual cross-origin script, exact configured origins, random hashed visitor sessions, durable message dedupe/rate controls, message polling, same published engine, custom fields, lead creation and staff handoff/replies through the unified inbox. No fake WhatsApp/customer data or third-party channel activation.
+- Media library: authenticated uploads/list/delete, 5 MiB per asset, magic-byte MIME allowlist, tenant storage cap, unguessable revocable public links and optional HTTPS origin, managed media-kind checks, protection against deleting assets referenced by published versions. No malware-scanning claim.
+- Approved templates: provider component metadata; numbered body/text-header variables, image/video/PDF headers, dynamic URL and optional quick-reply payloads. Unsupported shapes fail closed. Template replies are routed from inbound `button` events. Stale approval metadata is refreshed at enqueue; Meta remains authoritative on actual send.
+- Campaign/sequence drafts, consent/tag/custom-field recipient snapshots (max 1000), max ten template steps separated by at least 24 hours, launch/cancel/status UI, per-recipient worker jobs, transient refresh retry and suppression for withdrawn consent, inactive subscription or unauthorized creator. Only approved template outreach is queued; no arbitrary free-text campaigns.
+- Daily inbound/template counters and limits, catalog plan cap and media cap; usage/jobs screens. Platform owner can adjust company limits with audit. Notifications poll every 20 seconds; selected staff inbox refreshes every five seconds. Per-message read receipts prevent concurrent uncommitted messages being falsely marked read. Saved replies now support edit/delete.
+- Outbox commits PROCESSING before Meta network calls; stale claims become UNCERTAIN for reconciliation, preventing automatic resend after an interrupted ambiguous request. Template cooldown includes in-flight/uncertain sends. This still needs fault-injection acceptance.
+- Integrations: encrypted per-integration Bearer/HMAC credentials, secret replacement, enable/disable, existing safe DNS-pinned HTTPS queue/retries/audit. Public IPv6 DNS answers are checked, with actual transport pinned to a public IPv4 endpoint. Native Sheets/CRM/store connectors are NOT implemented.
+- Rebuilt responsive RTL dashboard/workspace screens with actual APIs; removed seeded preview data from the main app. Flow simulator remains separately labelled. Added optimistic draft revisions, session-change safeguards and clearing previous-company UI data on logout.
+- New migration 0022; runtime/web worker environment wiring; clean build output removes retired compiled modules; lockfile refreshed after removing the retired contracts workspace.
 
-## Source actually added/connected
-- Restored missing `apps/api/src/catalog.ts` and migration `0016_generic_catalog.sql`; the old status reports incorrectly said these existed. Tenant catalog CRUD/status API and existing company UI now have real source behind their imports. Editing a published item returns it to DRAFT.
-- Canvas with draggable nodes, pointer/touch pan, wheel zoom, arrows, click-to-connect ports, duplicate, bounded undo/redo, saved layout and explicit validation. Editing drafts permits incomplete graph links; publish still strictly validates topology/channel limits.
-- Version history UI and rollback API: rollback creates a new immutable publication; active sessions stay pinned.
-- Added executable QUESTION, KEYWORD, CATALOG, AI and WEBHOOK nodes. Existing START/TEXT/BUTTONS/LIST/INPUT/CONDITION/TAG/MEDIA/LINK/HANDOFF/END remain. Catalog is dynamically rendered as approved text (first ten entries, no pagination). KEYWORD is a graph branch, not a global trigger system.
-- Authenticated preview calls the same server interpreter. Preview does not enqueue webhook jobs or send WhatsApp messages. Optional AI preview consumes logged AI usage. Clearly labelled offline demo stays separate.
-- Optional per-company AI settings, monthly cap, approved FAQ/catalog source selection, source-ID audit, exact-answer fallback, uncertain-answer handoff and environment-configured OpenAI-compatible provider. Provider selects a source ID; business answers are copied from approved content, not generated prices. No live provider was exercised.
-- Inbox per-user unread counts/read markers, closed/assigned/unread filters, saved replies, internal notes and close action. Existing lock-based staff takeover remains. Generic lead presentation no longer uses traveler-specific columns.
-- Outbound HTTPS integration configuration, flow job enqueue, worker delivery with five attempts, audit and idempotency header. Exact host allowlist; public IPv4 DNS validation and pinned lookup; no redirects, IP literals, URL credentials or query secrets. Optional HMAC signing secret is environment-only. Receiver must implement idempotency; retries can deliver more than once.
-- Individual approved static templates can be scheduled 1 minute–30 days ahead. Consent/subscription/window rules are rechecked by existing worker. This is not a bulk campaign or sequence builder.
-- Owner-issued hashed 90-day access keys, scoped to catalog/lead GET endpoints, revocation, audit and one-time display UI.
-- Retired active legacy `/programs`, `/bookings`, `/departures`, `/offers`, `/bot` endpoint families with HTTP 410. Dashboard no longer requests old tourism resources; generic pages are allowlisted. Historical migrations/data and some dormant legacy source/HTML are intentionally preserved.
-- Removed invalid non-code `inventory.ts`. Replaced invalid `tests/db-integration.mjs` placeholder with a real disposable PostgreSQL RLS gate. Added regression tests, dependency lockfile, test build prerequisite and reproducible Docker dependency install.
+## Evidence actually obtained
+- Clean npm ci succeeded (21 packages); clean TypeScript build succeeded.
+- Syntax safeguards passed for 12 changed JS/test entrypoints; static DOM IDs/references passed; git diff whitespace checks passed.
+- Local static HTTP smoke returned 200 for dashboard and eight current assets, including widget and workspace modules.
+- New regression cases were written for delay, catalog pagination/snapshot, forged choices, template parameter/media validation, sequences, media types, widget origins/roles, encryption and draft conflict. They were NOT run locally as a final acceptance campaign.
+- Existing GitHub CI will independently run on the uploaded commit; record its exact result below/at handover. The earlier 34/38 result on e38fbdb is historical and is not this delivery's result.
+- No local PostgreSQL service/Docker, authenticated browser/mobile, actual Meta/AI/external endpoint, performance or backup/restore acceptance. No screenshots were produced; no renewed browser installation attempt.
 
-## Verification actually performed
-- Clean `npm ci --ignore-scripts --no-audit --no-fund` succeeded (22 packages); TypeScript/build succeeded.
-- JavaScript syntax checks succeeded for changed browser modules, server and new test entrypoints.
-- Static HTTP smoke: dashboard and `/flow-canvas.js` returned 200 with expected content type in a local server process.
-- `git diff --check` passed.
-- No local unit/integration acceptance run: comprehensive acceptance remains deferred until remaining build scope is completed, per owner instruction. GitHub CI ran independently on `e38fbdb`: 38 tests, 34 passed / 4 failed. All nine new generic-flow regressions passed. Four failures target unchanged legacy program/booking services (createProgram total fixture, invalid booking phone fixtures, confirm query-count expectation); baseline was not rerun, and these are unresolved. DB migration/RLS steps were skipped after the unit failure. Evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39070131242 .
-- PostgreSQL/Docker executables and live database credentials are unavailable here. Real migration/RLS, concurrency and backup/restore were NOT run locally.
-- Playwright package exists but Chromium executable does not. Browser download returned invalid/empty ZIP data; authenticated browser/mobile acceptance and screenshots were NOT obtained.
-- No Meta account/token, provider AI key or approved outbound destination credentials were supplied. No live customer traffic or commercial deployment.
-
-See REMAINING.md for explicit unfinished scope and docs/11-LOCAL-SETUP.md for startup.
+The remaining scope and external activation prerequisites are explicit in REMAINING.md. All source implementation entries above remain subject to the one final comprehensive acceptance campaign.

@@ -1,3 +1,5 @@
+import {validateManagedMedia} from './media.js';
+import {templateComponents,type TemplateValues} from './template-components.js';
 /** Official Meta-approved template registry + explicit marketing consent; no bulk send endpoint. */
 import { createDecipheriv } from 'node:crypto';
 import { allow, HttpFailure, isUuid, type Actor, type SqlClient } from './services.js';
@@ -16,7 +18,7 @@ function token(encrypted:string):string{
 }
 export async function listTemplates(db:SqlClient,actor:Actor){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
- return (await db.query(`SELECT t.id,t.account_id AS "accountId",t.template_name AS "name",t.language_code AS "language",t.category,t.last_provider_verification AS "lastVerifiedAt"
+ return (await db.query(`SELECT t.id,t.account_id AS "accountId",t.template_name AS "name",t.language_code AS "language",t.category,t.components,t.last_provider_verification AS "lastVerifiedAt"
  FROM whatsapp_approved_templates t WHERE t.tenant_id=$1 ORDER BY t.last_provider_verification DESC LIMIT 100`,[actor.tenantId])).rows;
 }
 /** Re-verify a variable-free, provider-approved template for the authenticated tenant's Meta WABA. */
@@ -27,7 +29,7 @@ export async function registerApprovedTemplate(db:SqlClient,actor:Actor,input:un
  const account=await db.query(`SELECT waba_id,access_token_encrypted FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2 AND status='CONNECTED'`,[actor.tenantId,accountId]);
  if(account.rowCount!==1)throw new HttpFailure(404,'WhatsApp account not connected');
  const a=account.rows[0];let response:Response;
- try{response=await fetch(`https://graph.facebook.com/${graphVersion()}/${a.waba_id}/message_templates?fields=name,language,status,category,components&limit=100`,{
+ try{response=await fetch(`https://graph.facebook.com/${graphVersion()}/${a.waba_id}/message_templates?fields=name,language,status,category,components&limit=100&name=${encodeURIComponent(name)}`,{
   headers:{Authorization:'Bearer '+token(String(a.access_token_encrypted))},signal:AbortSignal.timeout(10000)
  });}catch{throw new HttpFailure(502,'Failed to contact Meta template API')}
  if(!response.ok)throw new HttpFailure(502,'Meta denied template verification');
@@ -36,12 +38,12 @@ export async function registerApprovedTemplate(db:SqlClient,actor:Actor,input:un
  if(!template)throw new HttpFailure(409,'Template is not approved by Meta in this account');
  if(!categories.includes(template.category as typeof categories[number]))throw new HttpFailure(409,'Template category not supported for outreach');
  const parts=Array.isArray(template.components)?template.components.map(record):[];
- const needsParameters=parts.some(p=>JSON.stringify(p).includes('{{'));
- if(needsParameters)throw new HttpFailure(409,'Variable templates are not supported in this first sender; use a static approved template');
- const saved=await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category)
- VALUES($1,$2,$3,$4,$5)
- ON CONFLICT(tenant_id,account_id,template_name,language_code) DO UPDATE SET category=EXCLUDED.category,last_provider_verification=now()
- RETURNING id,template_name AS name,language_code AS language,category`,[actor.tenantId,accountId,name,language,template.category]);
+ // Registration stores provider structure. Sending validates required values against it.
+ if(parts.some(p=>!['BODY','HEADER','FOOTER','BUTTONS'].includes(String(p.type))))throw new HttpFailure(409,'Template has unsupported carousel/authentication components');
+ const saved=await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components)
+ VALUES($1,$2,$3,$4,$5,$6::jsonb)
+ ON CONFLICT(tenant_id,account_id,template_name,language_code) DO UPDATE SET category=EXCLUDED.category,components=EXCLUDED.components,last_provider_verification=now()
+ RETURNING id,template_name AS name,language_code AS language,category`,[actor.tenantId,accountId,name,language,template.category,JSON.stringify(parts)]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'META_TEMPLATE_REGISTERED','template',$3)`,[actor.tenantId,actor.userId,String(saved.rows[0].id)]);
  return saved.rows[0];
 }
@@ -66,10 +68,21 @@ export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknow
  // Serialize outgoing decisions on customer row to avoid concurrent flood and opt-out races.
  const customer=await db.query(`SELECT phone,do_not_contact,marketing_opt_in FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE`,[actor.tenantId,contactId]);
  if(customer.rowCount!==1)throw new HttpFailure(404,'Customer not found');
- const t=await db.query(`SELECT t.*,a.id AS account_id FROM whatsapp_approved_templates t JOIN whatsapp_accounts a
+ const t=await db.query(`SELECT t.*,a.id AS account_id,a.waba_id,a.access_token_encrypted FROM whatsapp_approved_templates t JOIN whatsapp_accounts a
  ON a.tenant_id=t.tenant_id AND a.id=t.account_id AND a.status='CONNECTED'
  WHERE t.tenant_id=$1 AND t.id=$2`,[actor.tenantId,templateId]);
  if(t.rowCount!==1)throw new HttpFailure(404,'Approved template or connection not found');
+ if(!customer.rows[0].phone)throw new HttpFailure(400,'Contact has no WhatsApp phone');
+ if(Date.now()-new Date(String(t.rows[0].last_provider_verification)).getTime()>86400000){
+  const item=t.rows[0];const url=`https://graph.facebook.com/${graphVersion()}/${item.waba_id}/message_templates?fields=name,language,status,category,components&limit=100&name=${encodeURIComponent(String(item.template_name))}`;
+  let response:Response;try{response=await fetch(url,{headers:{Authorization:'Bearer '+token(String(item.access_token_encrypted))},signal:AbortSignal.timeout(10000),redirect:'error'})}catch{throw new HttpFailure(502,'Meta approval refresh unavailable')}
+  if(!response.ok)throw new HttpFailure(502,'Meta approval refresh denied');const result=record(await response.json());const current=(Array.isArray(result.data)?result.data:[]).map(record).find(x=>x.name===item.template_name&&x.language===item.language_code&&x.status==='APPROVED'&&categories.includes(x.category as 'UTILITY'|'MARKETING'));
+  if(!current)throw new HttpFailure(409,'Template no longer approved');item.components=current.components;
+  await db.query('UPDATE whatsapp_approved_templates SET components=$3::jsonb,last_provider_verification=now() WHERE tenant_id=$1 AND id=$2',[actor.tenantId,templateId,JSON.stringify(current.components)]);
+ }
+
+ const components=templateComponents(t.rows[0].components,d.parameters as TemplateValues|undefined);
+ if((d.parameters as TemplateValues|undefined)?.mediaUrl){const header=(t.rows[0].components as {type:string;format?:string}[]).find(p=>p.type==='HEADER');if(header?.format)await validateManagedMedia(db,actor.tenantId,String((d.parameters as TemplateValues).mediaUrl),header.format.toLowerCase())}
  if(customer.rows[0].do_not_contact)throw new HttpFailure(403,'Customer has opted out of WhatsApp messages');
  if(!customer.rows[0].marketing_opt_in)throw new HttpFailure(403,'Explicit marketing opt-in is required');
  const activity=await db.query(`SELECT count(*) AS n FROM template_message_activity WHERE tenant_id=$1 AND contact_id=$2 AND queued_at>now()-interval '24 hours'`,[actor.tenantId,contactId]);
@@ -79,12 +92,12 @@ export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknow
  VALUES($1,$2,'WHATSAPP',$3,now()) ON CONFLICT(tenant_id,contact_id,channel) WHERE channel='WHATSAPP'
  DO UPDATE SET whatsapp_account_id=$3 RETURNING id`,[actor.tenantId,contactId,accountId]);
  const conversationId=String(conversation.rows[0].id);
- const payload={messaging_product:'whatsapp',type:'template',template:{name:t.rows[0].template_name,language:{code:t.rows[0].language_code}}};
- await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload,scheduled_for,next_attempt_at)
- VALUES($1,$2,$3,$4,$5::jsonb,$6,coalesce($6,now()))`,[actor.tenantId,accountId,conversationId,phone,JSON.stringify(payload),scheduledFor?.toISOString()??null]);
+ const payload={messaging_product:'whatsapp',type:'template',template:{name:t.rows[0].template_name,language:{code:t.rows[0].language_code},...(components.length?{components}:{})}};
+ const outbox=await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload,scheduled_for,next_attempt_at)
+ VALUES($1,$2,$3,$4,$5::jsonb,$6,coalesce($6,now())) RETURNING id`,[actor.tenantId,accountId,conversationId,phone,JSON.stringify(payload),scheduledFor?.toISOString()??null]);
  await db.query(`INSERT INTO template_message_activity(tenant_id,contact_id,template_id,conversation_id,sent_by)
  VALUES($1,$2,$3,$4,$5)`,[actor.tenantId,contactId,templateId,conversationId,actor.userId]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id)
  VALUES($1,$2,'TEMPLATE_MESSAGE_QUEUED','contact',$3)`,[actor.tenantId,actor.userId,contactId]);
- return {queued:true,delivered:false,scheduledFor:scheduledFor?.toISOString()??null,recipient:contactId,template:templateId};
+ return {queued:true,outboxId:String(outbox.rows[0].id),delivered:false,scheduledFor:scheduledFor?.toISOString()??null,recipient:contactId,template:templateId};
 }

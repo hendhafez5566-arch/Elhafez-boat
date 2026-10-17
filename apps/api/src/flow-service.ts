@@ -1,3 +1,5 @@
+import {validateManagedMedia} from './media.js';
+import {matchTrigger} from './triggers.js';
 import {enqueueIntegration,webhookURL} from './integrations.js';
 import {groundedReply} from './ai.js';
 /** Tenant-scoped draft/publish operations for industry-independent chatbot flows. */
@@ -13,10 +15,14 @@ export async function getFlowConfig(db:SqlClient,actor:Actor){
  ]);
  return {draft:draft.rows[0]??{definition:exampleFlow(),draftRevision:0},published:live.rows[0]??null};
 }
-export async function saveFlowDraft(db:SqlClient,actor:Actor,input:unknown){
+export async function saveFlowDraft(db:SqlClient,actor:Actor,input:unknown,internal=false){
  allow(actor,['OWNER','MANAGER']);
  let definition:FlowDefinition;
  try{definition=validateFlow(input,{draft:true})}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
+ await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
+ const current=await db.query('SELECT draft_revision FROM chatbot_flow_drafts WHERE tenant_id=$1 FOR UPDATE',[actor.tenantId]);
+ const expected=(input as {expectedRevision?:unknown}).expectedRevision;
+ if(!internal&&(!Number.isInteger(expected)||Number(expected)!==Number(current.rows[0]?.draft_revision||0)))throw new HttpFailure(409,'Draft changed in another session; reload before saving');
  const saved=await db.query(`INSERT INTO chatbot_flow_drafts(tenant_id,definition,updated_by)
  VALUES($1,$2::jsonb,$3) ON CONFLICT(tenant_id) DO UPDATE
  SET definition=EXCLUDED.definition,draft_revision=chatbot_flow_drafts.draft_revision+1,
@@ -33,6 +39,9 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor){
  if(draft.rowCount!==1)throw new HttpFailure(409,'Save a draft before publishing');
  let definition:FlowDefinition;
  try{definition=validateFlow(draft.rows[0].definition)}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
+ const triggers=await db.query('SELECT target_node FROM chatbot_triggers WHERE tenant_id=$1 AND enabled=true',[actor.tenantId]);
+ if(triggers.rows.some(t=>!definition.nodes.some(n=>n.id===t.target_node)))throw new HttpFailure(400,'An active trigger references a removed node; update triggers before publishing');
+ for(const node of definition.nodes)if(node.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,node.url,node.mediaKind);
  for(const node of definition.nodes)if(node.type==='WEBHOOK'){
   const integration=await db.query('SELECT url FROM chatbot_integrations WHERE tenant_id=$1 AND id=$2 AND enabled=true',[actor.tenantId,node.integrationId]);
   if(!integration.rowCount)throw new HttpFailure(400,'Flow references an unavailable integration');
@@ -50,9 +59,9 @@ export async function listFlowVersions(db:SqlClient,actor:Actor){
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
-export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean}){
+export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;resume?:{version:number;nodeId:string}}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
- const session=await db.query(`SELECT version,node_id,answers,tags FROM chatbot_flow_sessions
+ const session=await db.query(`SELECT version,node_id,answers,tags,runtime_nodes FROM chatbot_flow_sessions
  WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId]);
  const previous=session.rows[0];
  // Customer can request an employee at ANY point, even mid-question.
@@ -65,33 +74,56 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
    return {payloads:[{messaging_product:'whatsapp',type:'text',text:{preview_url:false,
      body:'تم تحويل محادثتك للموظف المختص. هيكمل معاك كل التفاصيل.'}}],handedOff:true};
  }
- const restart=/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
+ const triggered=!ctx.resume&&(!previous||body)?await matchTrigger(db,tenantId,body,!previous):undefined;
+ const restart=Boolean(triggered)||/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
  let version=Number(previous?.version??0),flow:FlowDefinition;
  if(!previous||restart){
   const current=await db.query('SELECT version,definition FROM chatbot_flow_versions WHERE tenant_id=$1 ORDER BY version DESC LIMIT 1',[tenantId]);
   version=current.rowCount?Number(current.rows[0].version):0;
-  flow=current.rowCount?validateFlow(current.rows[0].definition):exampleFlow('general');
- } else if(version===0){flow=exampleFlow('general')}
+  flow=current.rowCount?validateFlow(current.rows[0].definition):unpublishedFlow();
+ } else if(version===0){flow=unpublishedFlow()}
  else{
   const pinned=await db.query('SELECT definition FROM chatbot_flow_versions WHERE tenant_id=$1 AND version=$2',[tenantId,version]);
   if(pinned.rowCount!==1)throw new HttpFailure(409,'Published flow version unavailable');
   flow=validateFlow(pinned.rows[0].definition);
+ }
+ if(previous?.runtime_nodes&&!restart&&Array.isArray(previous.runtime_nodes)){
+  const runtime=previous.runtime_nodes as FlowDefinition['nodes'];
+  // Only catalog choices need stable persisted snapshots. AI/webhook nodes must run anew.
+  flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(runtime.find(x=>x.id===n.id)||n):n),...runtime.filter(n=>n.id.startsWith('@catalog:'))]};
  }
  const state=(!previous||restart)?initialFlowState():{
   at:typeof previous.node_id==='string'?previous.node_id:null,
   answers:previous.answers&&typeof previous.answers==='object'&&!Array.isArray(previous.answers)?previous.answers as Record<string,string>:{},
   tags:Array.isArray(previous.tags)?previous.tags as string[]:[]
  };
+ if(triggered){
+  if(!flow.nodes.some(n=>n.id===triggered))throw new HttpFailure(409,'Trigger target is not in the current published flow');
+  state.at=triggered;
+ }
+ const waitingNode=flow.nodes.find(n=>n.id===state.at);
+ if(ctx.resume){
+  if(!previous||Number(previous.version)!==ctx.resume.version||previous.node_id!==ctx.resume.nodeId||waitingNode?.type!=='DELAY')return {payloads:[],handedOff:false};
+  state.at=waitingNode.next;
+ }else if(waitingNode?.type==='DELAY'&&!restart)return {payloads:[],handedOff:false};
+ await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,conversationId]);
  // Flow replies are untrusted until matching the current node & option ID.
  const inbound=actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body};
- const result=await executeFlow(db,tenantId,flow,state,inbound);
+ const result=await executeFlow(db,tenantId,flow,state,ctx.resume||triggered?undefined:inbound);
  flow=result.flow;
- await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,updated_at)
- VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,now())
+ await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,runtime_nodes,updated_at)
+ VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,now())
  ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=EXCLUDED.version,node_id=EXCLUDED.node_id,
- answers=EXCLUDED.answers,tags=EXCLUDED.tags,updated_at=now()`,[
-   tenantId,conversationId,version,result.state.at,JSON.stringify(result.state.answers),JSON.stringify(result.state.tags)
+ answers=EXCLUDED.answers,tags=EXCLUDED.tags,runtime_nodes=EXCLUDED.runtime_nodes,updated_at=now()`,[
+   tenantId,conversationId,version,result.state.at,JSON.stringify(result.state.answers),JSON.stringify(result.state.tags),JSON.stringify(flow.nodes.filter(n=>n.id.startsWith('@catalog:')||result.flow.nodes.find(x=>x.id===n.id)?.type==='LIST'))
  ]);
+ if(result.waiting){
+  await db.query(`INSERT INTO chatbot_delay_jobs(tenant_id,conversation_id,version,node_id,due_at) VALUES($1,$2,$3,$4,now()+($5::int*interval '1 second')) ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=$3,node_id=$4,due_at=EXCLUDED.due_at,status='PENDING',error=NULL`,[tenantId,conversationId,version,result.state.at,result.waiting.seconds]);
+ }
+ if(!result.handoff&&(Object.keys(result.state.answers).length||result.state.tags.length)){
+  const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
+  await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb,updated_at=now() WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify({...result.state.answers,lead_tags:result.state.tags.join(', ')})]);
+ }
  if(result.handoff){
   const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
   await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify({...result.state.answers,lead_tags:result.state.tags.join(', ')})]);
@@ -122,20 +154,40 @@ export async function rollbackFlow(db:SqlClient,actor:Actor,version:string){
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
  const r=await db.query('SELECT definition FROM chatbot_flow_versions WHERE tenant_id=$1 AND version=$2',[actor.tenantId,Number(version)]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Version not found');
- await saveFlowDraft(db,actor,r.rows[0].definition);
+ await saveFlowDraft(db,actor,r.rows[0].definition,true);
  return publishFlowDraft(db,actor);
 }
 
 /** Resolve approved dynamic content without changing immutable flow definitions. */
 export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefinition,answers:Record<string,string>,incoming:string,onlyId?:string,dryRun=false){
  const nodes=[];
+ const target=flow.nodes.find(n=>n.id===onlyId);
+ const activeRoot=target?.type==='CATALOG'?(target.id.startsWith('@catalog:')?target.id.split(':')[1]:target.id):null;
  for(const node of flow.nodes){
+  if(activeRoot&&target?.type==='CATALOG'){
+   if(node.id.startsWith('@catalog:'+activeRoot+':')&&node.id!==target.id)continue;
+   if(node.id===activeRoot&&node.id!==target.id){nodes.push({id:activeRoot,type:'CATALOG' as const,category:target.category,next:target.next});continue}
+  }
+
   if(node.type==='CATALOG'&&(!onlyId||node.id===onlyId)){
-   const r=await db.query(`SELECT title,description,price_text,external_url FROM chatbot_catalog_items WHERE tenant_id=$1 AND status='PUBLISHED' AND ($2='' OR category_label=$2) ORDER BY updated_at DESC LIMIT 10`,[tenantId,node.category||'']);
-   const text=r.rows.length?r.rows.map(x=>[x.title,x.description,x.price_text,x.external_url].filter(Boolean).join('\n')).join('\n\n'):'لا توجد معلومات منشورة في هذا التصنيف حاليًا. اطلب موظف للاستفسار.';
-   // Text chunks always respect WhatsApp's 4096-character limit.
-   const chunks=text.match(/[\s\S]{1,4000}/g)||[''];
-   for(let i=0;i<chunks.length;i++)nodes.push({id:i?'@catalog:'+node.id+':'+i:node.id,type:'TEXT' as const,text:chunks[i],next:i===chunks.length-1?node.next:'@catalog:'+node.id+':'+(i+1)});
+   const page=Math.max(0,Math.min(10000,node.page||0));
+   const r=await db.query(`SELECT id,title,description,price_text,external_url,image_url FROM chatbot_catalog_items WHERE tenant_id=$1 AND status='PUBLISHED' AND ($2='' OR category_label=$2) ORDER BY id LIMIT 9 OFFSET $3`,[tenantId,node.category||'',page*8]);
+   if(!r.rows.length){nodes.push({id:node.id,type:'TEXT' as const,text:'لا توجد عناصر منشورة حاليًا في التصنيف.',next:node.next});continue}
+   const choices=[];const root=node.id.startsWith('@catalog:')?node.id.split(':')[1]:node.id;
+   for(const [i,item] of r.rows.slice(0,8).entries()){
+    const detail='@catalog:'+root+':item:'+String(item.id).replace(/-/g,'');
+    choices.push({id:'item'+i,title:String(item.title).slice(0,24),description:String(item.price_text||item.description).slice(0,72),next:detail});
+    const text=[item.title,item.description,item.price_text,item.external_url].filter(Boolean).join('\n');
+    nodes.push({id:detail,type:'TEXT' as const,text:text.slice(0,4096),next:detail+':actions'},
+     {id:detail+':actions',type:'BUTTONS' as const,text:'هل تحب تتواصل مع موظف بخصوص '+String(item.title).slice(0,160)+'؟',choices:[{id:'interest',title:'مهتم — كلم موظف',next:detail+':handoff'},{id:'back',title:'رجوع للكتالوج',next:node.id},{id:'continue',title:'متابعة',next:node.next}]},
+     {id:detail+':handoff',type:'HANDOFF' as const,text:'تم تسجيل اهتمامك بـ '+String(item.title).slice(0,160)+' وتحويله للفريق.'});
+   }
+   for(const [label,p] of [['السابق',page-1],['التالي',page+1]] as const){
+    if(p<0||(label==='التالي'&&r.rows.length<9))continue;
+    const id='@catalog:'+root+':page:'+p;choices.push({id:label==='التالي'?'nextpage':'prevpage',title:label,description:'',next:id});
+    if(!nodes.some(n=>n.id===id))nodes.push({id,type:'CATALOG' as const,category:node.category,page:p,next:node.next});
+   }
+   nodes.push({id:node.id,type:'LIST' as const,text:'اختر منتجًا أو خدمة من الكتالوج المعتمد',buttonText:'عرض الكتالوج',choices});
   }else if(node.type==='WEBHOOK'&&(!onlyId||node.id===onlyId)){
    if(!dryRun)await enqueueIntegration(db,tenantId,node.integrationId,{event:'FLOW_WEBHOOK',fields:answers});
    nodes.push({id:node.id,type:'START' as const,next:node.next});
@@ -144,7 +196,7 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
    nodes.push(result.handoff?{id:node.id,type:'HANDOFF' as const,text:result.text}:{id:node.id,type:'TEXT' as const,text:result.text,next:node.next});
   }else nodes.push(node);
  }
- return {...flow,nodes};
+ return {...flow,nodes:[...new Map(nodes.map(n=>[n.id,n])).values()]};
 }
 
 export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:{kind:'TEXT'|'CHOICE';value:string},dryRun=false){
@@ -156,3 +208,5 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
  if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
  return {...result,messages,flow};
 }
+
+function unpublishedFlow():FlowDefinition{return {name:'مساعد الشركة',startId:'start',nodes:[{id:'start',type:'START',next:'handoff'},{id:'handoff',type:'HANDOFF',text:'معلومات الشركة لم تُنشر بعد. وصل استفسارك للفريق للرد عليك.'}]}}

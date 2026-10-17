@@ -5,7 +5,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
  const idPattern=/^[a-z][a-z0-9_-]{0,31}$/;
- const types={START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
+ const types={DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
  const deep=v=>JSON.parse(JSON.stringify(v));
  const preset=(industry='general')=>{
    const cards={general:['الخدمات','العروض'],shop:['المنتجات','الأسعار والمقاسات'],tourism:['البرامج','الأسعار والمواعيد'],clinic:['خدمات العيادة','ساعات العمل'],restaurant:['المنيو','فروع المطعم'],realestate:['العقارات','استفسار عن زيارة'],education:['الكورسات','مواعيد التسجيل']};
@@ -19,7 +19,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      {id:'handoff',type:'HANDOFF',text:'وصل طلبك للموظف المختص. هيكمل معاك.'}
    ]};
  };
- let flow=preset(),selected='menu',published=null,dirty=false;
+ let flow=preset(),selected='menu',published=null,dirty=false,draftRevision=0,previewRuntimeNodes=null;
  let preview={at:null,answers:{},tags:[]};
  let history=[deep(flow)],cursor=0;
  function checkpoint(){const current=JSON.stringify(flow);if(JSON.stringify(history[cursor])===current)return;history=history.slice(0,cursor+1);history.push(deep(flow));if(history.length>80)history.shift();cursor=history.length-1}
@@ -82,6 +82,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      flow.nodes[pos]=kind==='START'?{id:node.id,type:'START',next}
        :kind==='CONDITION'?{id:node.id,type:'CONDITION',field:'interest',operator:'equals',value:'yes',yes:next,no:next}
        :kind==='BUTTONS'||kind==='LIST'?{id:node.id,type:kind,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]}
+       :kind==='DELAY'?{id:node.id,type:kind,seconds:60,next}
        :kind==='WEBHOOK'?{id:node.id,type:kind,integrationId:'',next}
        :kind==='CATALOG'?{id:node.id,type:kind,category:'',next}
        :kind==='AI'?{id:node.id,type:kind,field:'customer_need',next}
@@ -109,6 +110,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      host.append(label('لو الشرط صحيح',target(node.yes,value=>{node.yes=value})));
      host.append(label('لو الشرط غلط',target(node.no,value=>{node.no=value})));
    }
+   if(node.type==='DELAY')host.append(label('مدة الانتظار بالثواني (1 إلى 604800)',control(node.seconds,v=>{node.seconds=Number(v)})));
    if(node.type==='WEBHOOK')host.append(label('معرف التكامل من الإعدادات',control(node.integrationId,v=>{node.integrationId=v})));
    if(node.type==='CATALOG')host.append(label('تصنيف الكتالوج (فارغ = الكل)',control(node.category||'',v=>{node.category=v})));
    if(node.type==='KEYWORD'){
@@ -149,6 +151,7 @@ export function initFlowBuilder({state,api,notify,execute}){
    let n=flow.nodes.length+1,id='step'+n;while(nodeById(id))id='step'+(++n);
    let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id||flow.startId;
    if(type==='BUTTONS'||type==='LIST')flow.nodes.push({id,type,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]});
+   else if(type==='DELAY')flow.nodes.push({id,type,seconds:60,next});
    else if(type==='WEBHOOK')flow.nodes.push({id,type,integrationId:'',next});
    else if(type==='CATALOG')flow.nodes.push({id,type,category:'',next});
    else if(type==='AI')flow.nodes.push({id,type,field:'customer_need',next});
@@ -169,16 +172,17 @@ export function initFlowBuilder({state,api,notify,execute}){
  async function serverPreview(input){
   if(previewBusy)return;previewBusy=true;
   try{
-   const current=nodeById(preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST';
+   const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST';
    const inbound=input?{kind:choice?'CHOICE':'TEXT',value:choice?'flow:'+current.id+':'+input:input}:undefined;
-   const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound}});
+   const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
    if(input)bubble(choice?current.choices.find(c=>c.id===input)?.title||input:input,'customer');
-   preview=r.state;$('builder-preview-options').replaceChildren();
+   preview=r.state;previewRuntimeNodes=r.runtimeNodes;$('builder-preview-options').replaceChildren();
    for(const message of r.messages){
     bubble(message.text||('['+message.mediaKind+'] '+message.url));
     if(message.choices)for(const c of message.choices)$('builder-preview-options').append(button(c.title,()=>execute(()=>serverPreview(c.id)),'builder-option'));
    }
-   const at=nodeById(preview.at);
+   if(r.waiting){bubble('انتظار '+r.waiting.seconds+' ثانية — معاينة فقط');$('builder-preview-options').append(button('استكمال التأخير في المعاينة',()=>{preview.at=r.waiting.next;execute(()=>serverPreview())},'secondary'))}
+   const at=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);
    if(at?.type==='INPUT'||at?.type==='QUESTION'){
     const form=el('form',undefined,'builder-preview-input'),inp=el('input'),send=el('button','إرسال','primary');inp.required=true;send.type='submit';form.append(inp,send);form.onsubmit=e=>{e.preventDefault();execute(()=>serverPreview(inp.value.trim()))};$('builder-preview-options').append(form);
    }
@@ -222,10 +226,10 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    bubble('اتصال دائري في خطوات تلقائية — راجع تصميم المسار');
  }
- function resetPreview(){preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
+ function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
  async function load(){
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';renderAll();resetPreview();return}
-   const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;dirty=false;selected=flow.startId;
+   const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    history=[deep(flow)];cursor=0;renderAll();resetPreview();
  }
  $('builder-load-preset').onclick=()=>{
@@ -237,7 +241,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  $('builder-name').addEventListener('input',()=>{flow.name=$('builder-name').value;markDirty()});
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
-   const r=await api('/flows/draft',{method:'PUT',body:flow});flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
+   const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});draftRevision=r.draftRevision;flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
  });
  $('builder-publish').onclick=()=>execute(async()=>{
    if(state.demo){notify('المعاينة لا تنشر على واتساب','error');return}
@@ -249,5 +253,5 @@ export function initFlowBuilder({state,api,notify,execute}){
  $('builder-export').onclick=()=>{
    const data=JSON.stringify(flow,null,2);navigator.clipboard?.writeText(data).then(()=>notify('تم نسخ المسار JSON')).catch(()=>notify('انسخ المسار من شاشة التحرير','error'));
  };
- return {load};
+ return {load,reset(){flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

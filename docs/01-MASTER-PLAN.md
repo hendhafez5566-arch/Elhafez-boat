@@ -24,9 +24,12 @@ Authoritative scope: [universal chatbot SaaS](00-SCOPE-CHATBOT-ONLY.md). **All p
 - Add channels later through adapters (website, Facebook, Instagram, Telegram) without coupling generic engine to any industry.
 
 ## 5. Final acceptance as ONE stage (owner instruction)
-- Fresh code checkout, clean npm install/lockfile, migrations 0001–0021 and real PostgreSQL/RLS tests.
+- Fresh code checkout, clean npm install/lockfile, migrations 0001–0022 and real PostgreSQL/RLS tests.
 - Visual/mobile flow builder, actual published WhatsApp lists/buttons/media, lead capture/handoff, consent/security, concurrency and message retries.
 - Meta test number and supported channel restrictions, privacy, performance, monitoring and backup/restore.
 - Only then merge draft PR, deploy pilot and assess commercial readiness.
 
 **DO NOT BUILD** an internal reservation, inventory, payment, invoicing, supplier, accounting or traveler-document system.
+
+## 2026-10-18 implementation checkpoint
+Core delay/catalog pagination/triggers/website chat/media/template components/campaign sequences and usage controls now have source and connected UI. This document is not an acceptance certificate. CURRENT-STATUS.md and REMAINING.md distinguish implemented code, unsupported advanced features and the final acceptance gate.

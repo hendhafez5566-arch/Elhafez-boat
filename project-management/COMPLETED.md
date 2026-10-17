@@ -1,18 +1,15 @@
-# Implemented source — verification is separate
+# Implemented source; final verification remains separate
 
-Implementation commit: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/e38fbdb0f7b20769b8746a441eb839b8ca333506
+Current batch continues d31c20e on the same branch/PR.
 
-- Missing generic catalog service/schema repaired and imports build.
-- Canvas drag, pan, zoom, connectors, duplicate, undo/redo and persisted positions.
-- Strict publish validation, incomplete draft links, immutable version history/rollback.
-- QUESTION/KEYWORD/CATALOG/AI/WEBHOOK interpreter extensions and server preview.
-- Configurable extractive grounded assistant, source audit and monthly usage cap.
-- Saved replies, internal notes, unread/read tracking, filters and conversation closure.
-- Safe outbound webhook queue/worker with DNS pinning, allowlist, retries and audit.
-- Scheduled individual approved templates; hashed scoped read API keys and revocation.
-- Active tourism endpoint retirement and generic dashboard routing.
-- Lockfile, build prerequisites and replacement of corrupted DB test entrypoint.
+- Booking source/contracts/UI retired with documented test migration; security primitives/tests retained.
+- Durable DELAY continuation, dynamic catalog list pagination and stable selections, global keyword/first-message triggers.
+- Live website-chat source using the same bot engine, visitor sessions/dedupe/origin checks and real employee takeover/replies.
+- Media upload/library/storage limits/public links/deletion protection.
+- Supported approved template variables/media/interactive button parameters and callbacks.
+- Consent-filtered campaign/sequence drafts, recipient jobs, launch/cancel, worker limits and retries.
+- Unified inbox polling/notifications, explicit read receipts, editable saved replies, generic lead capture, company consumption/admin caps.
+- Encrypted per-integration credentials and configuration, durable Meta dispatch claims and UNCERTAIN recovery.
+- Rebuilt actual-data RTL workspace; removed seeded tourism UI and stale compiled-code risk; optimistic flow draft revisions.
 
-Confirmed locally: dependency installation, TypeScript/build, changed JS syntax, static HTTP asset serving and diff whitespace checks. These entries mean implementation exists, not that PostgreSQL, browser, Meta, AI or commercial acceptance passed. Older claims of 29 passing tests are historical and were not re-established in this session.
-
-GitHub CI evidence on e38fbdb (run 39070131242): 34/38 passing; all nine new generic regressions passed; four unchanged legacy service tests failed. Database steps skipped. This is not a passing release gate.
+Locally confirmed: clean dependency install, TypeScript/build, JS syntax, static DOM checks and HTTP asset serving. This list means source is implemented, not database/browser/live-provider/commercial acceptance passed. See CURRENT-STATUS.md and REMAINING.md for exact evidence and limitations.
