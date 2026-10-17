@@ -1,24 +1,30 @@
-# Mandatory instructions for any new AI coding session
+# Mandatory AI/developer instructions — chatbot-only scope
 
-Read README.md, docs/13-WHATSAPP-OPERATIONS.md, docs/14-COMMERCIAL-RELEASE-GAPS.md, deploy/README.md, docs/01-MASTER-PLAN.md, docs/02-ARCHITECTURE.md, docs/04-WHATSAPP-BOT.md, docs/05-MENUS-AND-FLOWS.md, docs/06-DASHBOARD.md, docs/07-BUSINESS-RULES.md, docs/08-SECURITY.md, docs/09-TEST-STRATEGY.md, docs/10-DECISIONS.md, project-management/CURRENT-STATUS.md and project-management/HANDOVER.md.
+**READ FIRST**: [docs/00-SCOPE-CHATBOT-ONLY.md](docs/00-SCOPE-CHATBOT-ONLY.md). This document is the owner's latest explicit decision and **OVERRIDES every earlier tourism ERP, booking, finance, billing or extensive CRM plan**.
 
-Then verify the actual repository tree, branch, latest commit, tests, open PRs/issues and deployment state. Documentation is not proof of implementation. Never invent passing tests, screenshots, live integrations or progress.
+## Product
+Elhafez Boat is an Arabic RTL, multi-agency **WhatsApp sales-assistant chatbot**. Its role is answering repetitive questions based on company-approved services, understanding customer interest, asking a few useful clarifying questions, and surfacing **qualified leads for a human employee**. The employee executes all reservations, payments, documents and customer followup outside this chatbot. The chatbot never makes or confirms bookings.
 
-## Work rules
-- Build maintainable, Arabic-first RTL, accessible, mobile-friendly SaaS; prefer simplicity and modularity over patches.
-- Company/tenant isolation on every data query and authorization boundary.
-- Official WhatsApp Business Platform only; lists/buttons/Flows are provider-controlled UI. Check current Meta constraints before implementing.
-- Menus and conversation workflows are data-driven, versioned, validated and published atomically; immutable stable action IDs, never route by visible Arabic labels.
-- AI cannot fabricate price, inventory, travel dates, policies, confirmations or payment outcomes. All business actions validated by deterministic services.
-- Human handoff must prevent simultaneous bot responses.
-- Booking request != confirmed booking. Preserve price/terms snapshots and audit changes.
-- Never commit credentials, access tokens, PII, customer chat transcripts or production exports.
-- Preserve and write regression tests, but respect the owner's explicit decision: one formal comprehensive acceptance stage only AFTER functional feature development is complete. Routine compilation and syntax checks while building are allowed. Never claim final acceptance from them. Do not weaken tests to make builds pass.
-- Before ending ANY coding session, update CURRENT-STATUS.md and HANDOVER.md with verified branch/SHA, changed files, executed commands/results, blockers and exact next action. Update COMPLETED/REMAINING/CHANGELOG as needed.
-- Use feature branches and reviewed PRs for implementation; avoid direct risky production deployments.
-- If access/credentials missing, finish safe offline work and document blocker precisely rather than pretending completion.
+## In scope
+- Official WhatsApp Cloud API webhook, interactive menus/buttons, approved FAQ and program/service facts; optional safe grounded AI.
+- Minimal service/offer catalog authored by agency, welcome/menu settings, preview.
+- Short qualification: interested service, approximate travelers, preferred timing, request staff; all optional except explicit request to be contacted.
+- Qualified leads and WhatsApp inbox with visible context and handoff, simple agency staff roles, bot stops once staff takes over.
+- Minimal tenant/company and subscription activation administration if needed to sell separate chatbot accounts.
+- Clean, simple, accessible Arabic RTL UI, privacy/consent and safe data handling.
 
-## Latest implementation scope (not fully verified)
-- Branch `feat/stage0-foundation` includes migrations 0001–0012, WhatsApp Cloud API adapter/worker, optional Meta booking Flows, manual staff invites, platform owner admin, manual subscriptions, approved FAQ, program departures/hotel rooms, optional booking inventory allocation/cancellation, Meta-approved template single-recipient sending with explicit opt-in, Arabic RTL dashboard and reference Docker/backup files.
-- No real provider number, production PostgreSQL, clean CI install, billing-provider credentials or comprehensive acceptance have been verified. DO NOT merge draft PR #1 or call ready for commercial sale yet.
-- After any modification update HANDOVER/CURRENT-STATUS/REMAINING/CHANGELOG truthfully, including the actual latest commit.
+## Strictly OUT of scope (do not rebuild)
+- Booking engine or reservation confirmation, travel supplier allotments, confirmed seat allocation, passports/traveler records, payment/accounting, invoices, refunds, contracts, sophisticated ERP/CRM workflow, campaign automation, or automatic billing.
+- Existing older booking/room/Flow code and database migrations are **legacy overbuild**, not product approval. Active booking API routes have been disabled. Preserve Git history; reduce dormant code safely without breaking startup.
+
+## Operational rules
+- Official Meta platform only; NEVER automate personal WhatsApp or bypass provider policies.
+- Cross-company isolation and least privilege in every read/write; do not commit secrets or real personal data to PUBLIC repo.
+- Approved content only: never invent prices, availability, cancellation/visa rules, payment status or booking confirmations.
+- No marketing template to a customer without documented consent; no automatic campaigns by default.
+- Staff has full control: human takeover silences bot, lead stage editable by staff.
+- Read real source and verify branch/commit; do not claim runnable or approved without proof.
+- User prefers **one final comprehensive acceptance phase after feature construction**. Routine compilation/syntax checks during code development are okay, not a substitute for acceptance.
+- Before ending any session update project-management/CURRENT-STATUS.md, HANDOVER.md and REMAINING.md accurately. Do not re-ask settled scope.
+
+Repository `hendhafez5566-arch/Elhafez-boat`, working branch `feat/stage0-foundation`, draft PR #1. No merge/deploy without final evidence.
