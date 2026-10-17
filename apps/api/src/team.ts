@@ -9,6 +9,8 @@ export async function createTeamInvite(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER','MANAGER']);const d=obj(input),email=typeof d.email==='string'?d.email.trim().toLowerCase():'',role=d.role;
  if(email.length>254||!mailPattern.test(email)||!roles.includes(role as string))throw new HttpFailure(400,'Invalid invitation');
  if(actor.role==='MANAGER'&&role==='MANAGER')throw new HttpFailure(403,'Only owner invites managers');
+ // Serialize invite creation for a tenant, to enforce seat limits under concurrency.
+ await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
  const seats=await db.query(`SELECT coalesce(p.max_staff,3) AS max_staff FROM tenants t
  LEFT JOIN tenant_subscriptions s ON s.tenant_id=t.id
  LEFT JOIN subscription_plans p ON p.code=s.plan_code WHERE t.id=$1`,[actor.tenantId]);
