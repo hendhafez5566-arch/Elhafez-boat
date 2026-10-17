@@ -18,8 +18,69 @@ export function initWorkspace(ctx){
  async function team(){const host=$('team-list'),invites=$('team-invites');host.replaceChildren();invites.replaceChildren();const [users,invitations]=await Promise.all([api('/team'),api('/team/invitations')]);members=users;state.team=users;for(const m of users){const c=card(m.email,m.role);if(state.role==='OWNER'&&m.role!=='OWNER'){const select=el('select');options(select,[{id:'MANAGER'},{id:'AGENT'},{id:'VIEWER'}],x=>x.id);select.value=m.role;c.append(select,button('حفظ الدور',async()=>{await api('/team/members/'+m.id+'/role',{method:'PATCH',body:{role:select.value}});await team()}))}host.append(c)}for(const inv of invitations){const c=card(inv.email,inv.role+' • '+inv.status);if(inv.status==='PENDING')c.append(button('إلغاء الدعوة',async()=>{await api('/team/invitations/'+inv.id+'/revoke',{method:'POST'});await team()},'danger'));invites.append(c)}}
  bind('invite-form',async(d,f)=>{const r=await api('/team/invitations',{method:'POST',body:d});$('invite-result').textContent=location.origin+'/join.html#team.'+r.inviteToken;f.elements.email.value='';await team();notify('رابط الدعوة يظهر مرة واحدة. شاركه بأمان مع الموظف.')});
  function placeholders(text=''){return [...new Set([...text.matchAll(/{{(\d+)}}/g)].map(m=>Number(m[1])))].sort((a,b)=>a-b)}
- function parameterEditor(){const host=$('template-parameters');host.replaceChildren();const t=templates.find(t=>t.id===$('send-template').value);if(!t)return;for(const p of t.components||[]){if(p.type==='BODY'||p.type==='HEADER'&&p.format==='TEXT')for(const i of placeholders(p.text)){const label=el('label',(p.type==='BODY'?'قيمة الرسالة ':'قيمة الرأس ')+i),input=el('input');input.name=p.type.toLowerCase()+'_'+(i-1);input.required=true;input.maxLength=1000;label.append(input);host.append(label)}else if(p.type==='HEADER'&&['IMAGE','VIDEO','DOCUMENT'].includes(p.format)){const label=el('label','رابط الوسائط HTTPS'),input=el('input');input.type='url';input.name='mediaUrl';input.required=true;label.append(input);host.append(label)}else if(p.type==='BUTTONS')for(const [i,b] of p.buttons.entries()){if(b.type==='URL'&&b.url?.includes('{{')||b.type==='QUICK_REPLY'){const label=el('label',b.type==='URL'?'قيمة رابط '+b.text:'إجراء زر '+b.text+' (اختياري، مثال handoff)'),input=el('input');input.name='button_'+i;input.required=b.type==='URL';input.maxLength=b.type==='URL'?200:128;label.append(input);host.append(label)}}}}
- function values(d){const out={body:[],header:[],buttons:{}};for(const [k,v] of Object.entries(d)){if(k.startsWith('body_'))out.body[Number(k.slice(5))]=v;else if(k.startsWith('header_'))out.header[Number(k.slice(7))]=v;else if(k.startsWith('button_')&&v)out.buttons[k.slice(7)]=v;else if(k==='mediaUrl'&&v)out.mediaUrl=v}return out}
+ function parameterEditor(){
+  const host=$('template-parameters');host.replaceChildren();
+  const t=templates.find(x=>x.id===$('send-template').value);
+  if(!t)return;
+  const field=(container,title,name,required=false,maxLength=1000,type='text')=>{
+    const label=el('label',title),input=el('input');input.name=name;input.required=required;input.maxLength=maxLength;input.type=type;
+    if(type==='url')input.placeholder='https://example.com/media.jpg';
+    label.append(input);container.append(label);
+  };
+  for(const p of t.components||[]){
+    if(p.type==='BODY'||p.type==='HEADER'&&p.format==='TEXT'){
+      for(const i of placeholders(p.text))field(host,(p.type==='BODY'?'قيمة الرسالة ':'قيمة الرأس ')+i,p.type.toLowerCase()+'_'+(i-1),true);
+    }else if(p.type==='HEADER'&&['IMAGE','VIDEO','DOCUMENT'].includes(p.format)){
+      field(host,'رابط الوسائط HTTPS','mediaUrl',true,2048,'url');
+    }else if(p.type==='BUTTONS'){
+      for(const [i,b] of (p.buttons||[]).entries()){
+        if(b.type==='URL'&&b.url?.includes('{{')||b.type==='QUICK_REPLY')
+          field(host,b.type==='URL'?'قيمة رابط '+b.text:'إجراء زر '+b.text+' (اختياري)',
+            'button_'+i,b.type==='URL',b.type==='URL'?200:128);
+      }
+    }else if(p.type==='CAROUSEL'){
+      for(const [i,card] of (p.cards||[]).entries()){
+        const pane=el('fieldset',undefined,'template-carousel-card');
+        pane.append(el('legend','بطاقة '+(i+1)+' — حسب قالب Meta المعتمد'));
+        for(const component of card.components||[]){
+          if(component.type==='HEADER'&&['IMAGE','VIDEO'].includes(component.format)){
+            field(pane,'رابط صورة/فيديو البطاقة HTTPS','card_'+i+'_mediaUrl',true,2048,'url');
+          }else if(component.type==='BODY'){
+            for(const n of placeholders(component.text))
+              field(pane,'متغير نص البطاقة '+n,'card_'+i+'_body_'+(n-1),true);
+          }else if(component.type==='BUTTONS'){
+            for(const [j,b] of (component.buttons||[]).entries()){
+              if(b.type==='URL'&&b.url?.includes('{{')||b.type==='QUICK_REPLY')
+                field(pane,b.type==='URL'?'متغير رابط الزر '+(j+1):'الرد السريع للزر '+(j+1)+' (اختياري)',
+                  'card_'+i+'_button_'+j,b.type==='URL',b.type==='URL'?200:128);
+            }
+          }
+        }
+        host.append(pane);
+      }
+    }
+  }
+}
+function values(d){
+ const out={body:[],header:[],buttons:{}},cards=[];
+ for(const [k,v] of Object.entries(d)){
+  if(k.startsWith('body_'))out.body[Number(k.slice(5))]=v;
+  else if(k.startsWith('header_'))out.header[Number(k.slice(7))]=v;
+  else if(k.startsWith('button_')&&v)out.buttons[k.slice(7)]=v;
+  else if(k==='mediaUrl'&&v)out.mediaUrl=v;
+  else{
+    const card=/^card_(\d+)_(mediaUrl|body_\d+|button_\d+)$/.exec(k);
+    if(!card)continue;
+    const i=Number(card[1]),field=card[2];
+    if(!cards[i])cards[i]={mediaUrl:'',body:[],buttons:{}};
+    if(field==='mediaUrl')cards[i].mediaUrl=v;
+    else if(field.startsWith('body_'))cards[i].body[Number(field.slice(5))]=v;
+    else if(field.startsWith('button_')&&v)cards[i].buttons[field.slice(7)]=v;
+  }
+ }
+ if(cards.length)out.cards=cards;
+ return out;
+}
  async function templatePage(){const host=$('template-list');host.replaceChildren();const [accounts,t,contacts]=await Promise.all([api('/whatsapp/connection'),api('/whatsapp/templates'),api('/contacts')]);templates=t;state.contacts=contacts;options($('template-account'),accounts.filter(a=>a.status==='CONNECTED').map(a=>({...a,id:a.id})),a=>a.displayPhone||a.phoneNumberId);options($('consent-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-template'),t,t=>t.name+' • '+t.language);if(!t.length)host.append(el('p','لا توجد قوالب معتمدة محفوظة.'));for(const r of t)host.append(card(r.name,r.language+' • '+r.category+' • آخر تحقق '+new Date(r.lastVerifiedAt).toLocaleString('ar-EG')));parameterEditor()}
  $('send-template').onchange=parameterEditor;
  bind('template-register',async(d,f)=>{await api('/whatsapp/templates',{method:'POST',body:d});f.elements.name.value='';await templatePage()});bind('consent-form',async d=>{await api('/contacts/'+d.contactId+'/marketing-consent',{method:'PATCH',body:{optIn:d.optIn==='true',evidence:d.evidence}});notify('تم تسجيل الموافقة ودليلها')});bind('template-send',async d=>{if(!confirm('إرسال القالب لهذا العميل وفق موافقته المسجلة؟'))return;await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId,parameters:values(d),scheduleAt:d.scheduleAt?new Date(d.scheduleAt).toISOString():undefined}});notify('تمت إضافة الرسالة للطابور؛ ليست تأكيد تسليم')});
