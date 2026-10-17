@@ -1,3 +1,4 @@
+import { makeBookingFlow, finishBookingFlow } from './flows.js';
 /** Official Meta Cloud API; no unofficial WhatsApp libraries or browser automation. */
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { allow, HttpFailure, isUuid, type Actor, type SqlClient, type SqlPool } from './services.js';
@@ -132,6 +133,16 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  }
  if(contact.rows[0].do_not_contact)return;
  const cfg=await publishedConfig(db,tenantId);
+ if(interactive.type==='nfm_reply'){
+   try{
+     const bookingId=await finishBookingFlow(db,tenantId,accountId,conversationId,asObject(interactive.nfm_reply).response_json,from);
+     await respond(textPayload('تم تسجيل طلب حجز مبدئي رقم '+bookingId+'. ستراجع الشركة التوافر وتتواصل معاك. الطلب غير مؤكد.'));
+   }catch(error){
+     if(error instanceof HttpFailure)await respond(textPayload('تعذر تسجيل النموذج: '+error.message+'. اكتب القائمة للمحاولة مرة ثانية.'));
+     else throw error;
+   }
+   return;
+ }
  if(action==='handoff'||/^(موظف|خدمة العملاء)$/i.test(body)){
   await db.query(`UPDATE conversations SET status='HUMAN' WHERE tenant_id=$1 AND id=$2`,[tenantId,conversationId]);
   await respond(textPayload('تم تحويل طلبك لفريق المبيعات. هيرد عليك موظف قريبًا.'));return;
@@ -162,6 +173,11 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  if(action.startsWith('book:')&&isUuid(action.slice(5))){
   const p=await db.query(`SELECT id FROM programs WHERE tenant_id=$1 AND id=$2 AND status='PUBLISHED' AND available_seats>booked_seats`,[tenantId,action.slice(5)]);
   if(p.rowCount!==1)return respond(textPayload('البرنامج مش متاح دلوقتي. اكتب "القائمة" لإظهار المتاح.'));
+  const flow=await db.query(`SELECT flow_id,screen_id FROM whatsapp_flow_settings WHERE tenant_id=$1 AND account_id=$2 AND enabled=true`,[tenantId,accountId]);
+  if(flow.rowCount===1){
+    await respond(await makeBookingFlow(db,tenantId,accountId,conversationId,action.slice(5),String(flow.rows[0].flow_id),String(flow.rows[0].screen_id)));
+    return;
+  }
   await db.query(`UPDATE whatsapp_conversation_states SET awaiting='BOOKING_NAME',booking_program_id=$3,booking_name=NULL WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId,action.slice(5)]);
   await respond(textPayload('حاضر، اكتب الاسم الكامل لصاحب طلب الحجز.'));return;
  }
@@ -262,5 +278,32 @@ export async function optOutWhatsApp(db:SqlClient,actor:Actor,contactId:string,i
  const r=await db.query(`UPDATE contacts SET do_not_contact=$3 WHERE tenant_id=$1 AND id=$2 RETURNING id,do_not_contact`,[actor.tenantId,contactId,blocked]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Customer not found');
  await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',$3,'Staff recorded opt status')`,[actor.tenantId,contactId,!blocked]);
+ return r.rows[0];
+}
+export async function getFlowSettings(db:SqlClient,actor:Actor){
+ allow(actor,['OWNER','MANAGER']);
+ return (await db.query(`SELECT f.account_id AS "accountId",a.display_phone AS "displayPhone",f.flow_id AS "flowId",f.screen_id AS "screenId",f.enabled
+ FROM whatsapp_flow_settings f JOIN whatsapp_accounts a ON a.tenant_id=f.tenant_id AND a.id=f.account_id WHERE f.tenant_id=$1`,[actor.tenantId])).rows;
+}
+export async function saveFlowSettings(db:SqlClient,actor:Actor,input:unknown){
+ allow(actor,['OWNER']);const d=asObject(input),accountId=d.accountId,flowId=str(d.flowId).trim(),screenId=str(d.screenId||'BOOKING').trim(),enabled=d.enabled;
+ if(!isUuid(accountId)||!phoneIdPattern.test(flowId)||!(/^[A-Z][A-Z0-9_]{1,40}$/.test(screenId))||typeof enabled!=='boolean')
+  throw new HttpFailure(400,'Invalid Flow configuration');
+ const a=await db.query(`SELECT waba_id,access_token_encrypted,status FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2`,[actor.tenantId,accountId]);
+ if(a.rowCount!==1||a.rows[0].status!=='CONNECTED')throw new HttpFailure(404,'Connected WhatsApp account required');
+ if(enabled){
+   let response:Response;
+   try{response=await fetch(`https://graph.facebook.com/${graphVersion()}/${flowId}?fields=id,status`,{
+     headers:{Authorization:'Bearer '+decryptAccessToken(String(a.rows[0].access_token_encrypted))},signal:AbortSignal.timeout(8000)
+   });}catch{throw new HttpFailure(502,'Could not verify published Meta Flow')}
+   if(!response.ok)throw new HttpFailure(400,'Meta rejected the Flow identifier');
+   const verified=asObject(await response.json());
+   if(verified.id!==flowId||verified.status!=='PUBLISHED')throw new HttpFailure(409,'Only a published Meta Flow can be enabled');
+ }
+ const r=await db.query(`INSERT INTO whatsapp_flow_settings(tenant_id,account_id,flow_id,screen_id,enabled)
+ VALUES($1,$2,$3,$4,$5) ON CONFLICT(tenant_id,account_id) DO UPDATE SET flow_id=excluded.flow_id,
+ screen_id=excluded.screen_id,enabled=excluded.enabled,updated_at=now()
+ RETURNING account_id AS "accountId",flow_id AS "flowId",screen_id AS "screenId",enabled`,[actor.tenantId,accountId,flowId,screenId,enabled]);
+ await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_FLOW_CONFIGURED','flow',$3)`,[actor.tenantId,actor.userId,flowId]);
  return r.rows[0];
 }
