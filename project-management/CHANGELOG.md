@@ -1,12 +1,11 @@
-# Changelog — most recent first
+# Changelog — latest first
 
-## 2026-10-17 — Product-owner chatbot-only correction (overrides previous scope)
-- Owner explicitly rejected broad tourism management/booking, finance, payment/refunds, passports/docs and complex ERP. Product is **WhatsApp sales assistant to answer questions, understand intent and deliver qualified lead to a staff member**.
-- Created immutable decision file `docs/00-SCOPE-CHATBOT-ONLY.md`; replaced AGENTS, README, master plan and handover to stop future scope creep.
-- Added migration 0014 tenant-isolated `chatbot_leads`, new lead service/API stages and staff lead dashboard/inbox context.
-- Refactored WhatsApp bot from customer booking/Flow/room selection to **interest → two optional qualification questions → human employee takeover**. Legacy `book:` button IDs safely become interest only.
-- Retired booking/room allocation API routes, removed flow setup and excessive dashboard navigation, repurposed browser-only demo from mock bookings to mock qualified leads.
-- Existing legacy business modules in Git history remain technical-debt cleanup, NOT remaining product features.
-- No live provider/DB acceptance or commercial deployment yet.
+## 2026-10-17 — Owner pivot: ALL-BUSINESS chatbot builder platform
+- Latest decision supersedes tourism-only chatbot scope. Product is a generic multi-tenant chatbot SaaS inspired by BotSailor's configurable tools; never a booking/accounting ERP.
+- Added generic flow engine with TEXT / BUTTONS / LIST / INPUT / CONDITION / TAG / MEDIA / LINK / HANDOFF / END nodes, validation, customer state, versioned draft/publish and human lead handoff.
+- Added SQL migration 0015 for tenant-specific workflow drafts, versions, sessions, custom lead fields. WhatsApp signed webhook adapter now uses published generic flow before old travel-specific logic (legacy code to retire).
+- Built reusable Arabic visual block editor and browser-only preview plus starting templates for general, shops, clinics, restaurants, real estate, education and tourism.
+- Added migration 0016 and generic product/service/offer catalog API and UI, company-configurable categories and optional approved info. Staff inbox can inspect custom data collected by chatbot flows.
+- Updated AGENTS, README, master plan and project management handover/remaining. Source written/pushed on draft PR; real PostgreSQL/Meta/browser acceptance NOT executed.
 
-See actual Git commit history for previous extensive implementation. Previous changelog references to booking functionality are historical and were superseded by the owner's scope correction.
+Earlier extensive tourism booking and ERP changes in git history are obsolete, not future requirements.
