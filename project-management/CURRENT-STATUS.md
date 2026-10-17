@@ -1,14 +1,8 @@
 # CURRENT STATUS — 2026-10-17
 
-Phase: documentation bootstrap.
-Code implemented: NONE.
-Tests run: NONE.
-Meta API connected: NO.
-Dashboard deployed: NO.
-Live bot: NO.
-Repository: hendhafez5566-arch/Elhafez-boat
-Visibility observed: PUBLIC (recommend changing to PRIVATE).
-Branch: main (default reported; verify on each session).
-Documentation created in bootstrap; confirm latest commit SHA from GitHub.
-
-Next: confirm repository privacy, inspect files, implement Stage 0 scaffold on a feature branch and execute real tests. Do not claim any application functionality exists yet.
+Stage 0: IN PROGRESS, NOT VERIFIED DONE.
+Repository: hendhafez5566-arch/Elhafez-boat (PUBLIC by owner choice until later).
+Implementation branch: feat/stage0-foundation. Main contains planning documents only.
+Implemented on branch: workspace package manifest, TypeScript config, local Postgres/Redis compose, domain menu/program/booking contracts, a development-only HTTP API status endpoint, placeholder Arabic RTL web preview, worker placeholder, six contract tests and GitHub Actions verification workflow.
+Tests: WRITTEN, NOT YET EXECUTED/VERIFIED. No lockfile yet. No auth, persistent DB schema, production API, WhatsApp connection, booking UI, AI or deployment. Do not claim working SaaS.
+Next: run npm install + npm run check; fix any errors, commit lockfile, implement tenant auth and persistent database migrations, then complete Stage 0 gates.
