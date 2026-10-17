@@ -1,3 +1,4 @@
+import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
 import {listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
 import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages} from './website.js';
@@ -168,6 +169,13 @@ const server=createServer(async(req,res)=>{
       allow(actor,['OWNER','MANAGER']);
       const input=await body(req);try{validateFlow(input);return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
     }
+    if(req.method==='GET'&&pathname==='/api/v1/flows/snippets')
+      return json(res,200,await run(tx=>listFlowSnippets(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/flows/snippets')
+      return json(res,201,await runBody((tx,input)=>createFlowSnippet(tx,actor,input)));
+    const snippet=/^\/api\/v1\/flows\/snippets\/([^/]+)$/.exec(pathname);
+    if(req.method==='DELETE'&&snippet)
+      return json(res,200,await run(tx=>deleteFlowSnippet(tx,actor,snippet[1])));
     if(req.method==='GET'&&pathname==='/api/v1/flows')return json(res,200,await run(tx=>getFlowConfig(tx,actor)));
     if(req.method==='PUT'&&pathname==='/api/v1/flows/draft')return json(res,200,await runBody((tx,input)=>saveFlowDraft(tx,actor,input)));
     if(req.method==='POST'&&pathname==='/api/v1/flows/publish')return json(res,200,await run(tx=>publishFlowDraft(tx,actor)));
