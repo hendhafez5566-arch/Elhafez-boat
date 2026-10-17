@@ -60,14 +60,90 @@ export function initOperations({state,api,notify,execute,canEdit}) {
     target.append(item);
   }
  }
+
+ const tripLabels={SINGLE:'فردي',DOUBLE:'ثنائي',TRIPLE:'ثلاثي',QUAD:'رباعي',FAMILY:'عائلي'};
+ const tripDate=value=>new Date(value).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'});
+ function selectOptions(select,items,label,emptyLabel){
+   const saved=select.value;select.replaceChildren();
+   if(emptyLabel!==undefined){const o=node('option',emptyLabel);o.value='';select.append(o);}
+   items.forEach(item=>{const o=node('option',label(item));o.value=item.id;select.append(o)});
+   if([...select.options].some(option=>option.value===saved))select.value=saved;
+ }
+ async function roomsForDeparture(departureId){
+   const target=$('inventory-rooms');target.replaceChildren();
+   if(!departureId){msg(target,'اختار موعد سفر علشان تظهر الغرف والأسعار.');return;}
+   if(state.demo){msg(target,'معاينة فقط: مفيش غرف محفوظة. بعد تسجيل الدخول الحقيقي تقدر تضيف فندقًا وغرفًا لكل موعد.');return;}
+   const rooms=await api('/departures/'+departureId+'/rooms');
+   if(!rooms.length)msg(target,'مفيش غرف متعاقد عليها للموعد ده لسه.');
+   for(const r of rooms){const card=node('div',undefined,'ops-card');card.append(node('strong',r.hotel_name+' — '+(tripLabels[r.room_type]||r.room_type)),node('p',r.occupancy+' فرد/غرفة • '+r.nights+' ليالي • '+(Number(r.price_minor)/100).toLocaleString('ar-EG')+' '+r.currency),node('small','المتاح: '+(Number(r.units_total)-Number(r.units_booked||0))+' من '+r.units_total+' غرفة'));target.append(card);}
+ }
+ async function inventory(){
+   const programSelect=$('inventory-program');
+   selectOptions(programSelect,state.programs,p=>p.title,'اختر البرنامج');
+   const programId=programSelect.value;
+   const target=$('inventory-departures');target.replaceChildren();
+   if(!programId){selectOptions($('inventory-room-departure'),[],()=>'', 'لا توجد مواعيد');msg(target,'أضف برنامجًا سياحيًا أولًا.');await roomsForDeparture('');return;}
+   if(state.demo){
+      selectOptions($('inventory-room-departure'),[],()=>'', 'لا يوجد موعد في المعاينة');
+      msg(target,'البيانات التجريبية للعرض فقط. المواعيد الحقيقية تحفظ بعد تسجيل الدخول إلى شركة.');
+      await roomsForDeparture('');return;
+   }
+   const departures=await api('/programs/'+programId+'/departures');
+   selectOptions($('inventory-room-departure'),departures,d=>tripDate(d.depart_at)+' — '+d.seats_total+' مقعد','اختر موعد السفر');
+   if(!departures.length)msg(target,'مافيش مواعيد سفر للبرنامج. أضف الموعد الأول من النموذج.');
+   for(const dep of departures){
+     const card=node('div',undefined,'ops-card');
+     card.append(node('strong',tripDate(dep.depart_at)+' — '+tripDate(dep.return_at)),node('p','سعة الموعد: '+dep.seats_total+' • المحجوز: '+dep.seats_booked),node('small','الحالة: '+dep.status));
+     target.append(card);
+   }
+   await roomsForDeparture($('inventory-room-departure').value);
+ }
+ async function bookingDepartures(){
+   const dep=$('booking-departure'),room=$('booking-room');
+   selectOptions(dep,[],()=>'', 'بدون موعد محدد');
+   selectOptions(room,[],()=>'', 'بدون اختيار غرفة');
+   if(state.demo)return;
+   const id=$('booking-programs').value;if(!id)return;
+   const departures=await api('/programs/'+id+'/departures');
+   selectOptions(dep,departures,d=>tripDate(d.depart_at)+' • '+(Number(d.seats_total)-Number(d.seats_booked||0))+' مقعد','بدون موعد محدد');
+   await bookingRooms();
+ }
+ async function bookingRooms(){
+   const room=$('booking-room');selectOptions(room,[],()=>'', 'بدون اختيار غرفة');
+   const dep=$('booking-departure').value;
+   if(state.demo||!dep)return;
+   const rooms=await api('/departures/'+dep+'/rooms');
+   selectOptions(room,rooms,r=>r.hotel_name+' — '+(tripLabels[r.room_type]||r.room_type)+' — '+(Number(r.price_minor)/100).toLocaleString('ar-EG')+' '+r.currency,'بدون اختيار غرفة');
+ }
  async function onPage(page){
-  if(!['wa-inbox','wa-connect','team','subscription','settings'].includes(page))return;
-  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();if(page==='settings')await knowledge();}
+  if(!['wa-inbox','wa-connect','team','subscription','settings','inventory','bookings'].includes(page))return;
+  try{if(page==='wa-inbox')await inbox();if(page==='wa-connect')await connection();if(page==='team')await staff();if(page==='subscription')await subscription();if(page==='settings')await knowledge();if(page==='inventory')await inventory();if(page==='bookings')await bookingDepartures();}
   catch(e){notify(e.message||'تعذر تحميل الصفحة','error');}
  }
  $('wa-connect-form')?.addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();const form=e.currentTarget;execute(async()=>{const d=getForm(form);await api('/whatsapp/connection',{method:'POST',body:d});form.reset();await connection();notify('تم التحقق من رقم Meta وحفظه مشفرًا')})});
  $('faq-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const form=e.currentTarget;await api('/knowledge',{method:'POST',body:getForm(form)});form.reset();await knowledge();notify('تم حفظ السؤال والإجابة كمسودة')})});
  $('wa-flow-form').addEventListener('submit',e=>{e.preventDefault();if(state.demo)return noLive();execute(async()=>{const d=getForm(e.currentTarget);await api('/whatsapp/flows',{method:'PUT',body:{accountId:d.accountId,flowId:d.flowId,screenId:d.screenId,enabled:d.enabled==='on'}});await connection();notify('تم حفظ إعداد Flow. النسخة المفعلة تُستخدم بعد تحقق Meta من النشر.')})});
+ $('inventory-program').addEventListener('change',()=>execute(inventory));
+ $('inventory-room-departure').addEventListener('change',()=>execute(()=>roomsForDeparture($('inventory-room-departure').value)));
+ $('inventory-departure-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
+   const data=getForm(event.currentTarget);
+   if(!data.departAt||!data.returnAt)return;
+   await api('/programs/'+$('inventory-program').value+'/departures',{method:'POST',body:{
+      departAt:new Date(data.departAt).toISOString(),returnAt:new Date(data.returnAt).toISOString(),seatsTotal:Number(data.seatsTotal)
+   }});
+   event.currentTarget.reset();await inventory();notify('تم حفظ موعد السفر');
+ })});
+ $('inventory-room-form').addEventListener('submit',event=>{event.preventDefault();if(state.demo)return noLive();execute(async()=>{
+   const data=getForm(event.currentTarget);
+   await api('/departures/'+data.departureId+'/rooms',{method:'POST',body:{
+     hotelName:data.hotelName,roomType:data.roomType,occupancy:Number(data.occupancy),
+     nights:Number(data.nights),unitsTotal:Number(data.unitsTotal),
+     priceMinor:Math.round(Number(data.price)*100),currency:data.currency
+   }});
+   await roomsForDeparture(data.departureId);notify('تم حفظ نوع الغرفة وسعره');
+ })});
+ $('booking-programs').addEventListener('change',()=>execute(bookingDepartures));
+ $('booking-departure').addEventListener('change',()=>execute(bookingRooms));
  $('wa-inbox-refresh').onclick=()=>execute(inbox);
  $('wa-handoff').onclick=()=>execute(async()=>{if(!selected)return; if(state.demo)return noLive();const status=selected.status==='HUMAN'?'OPEN':'HUMAN';await api('/whatsapp/inbox/'+selected.id+'/handoff',{method:'PATCH',body:{status}});selected.status=status;await selectThread(selected);await inbox();notify(status==='HUMAN'?'الموظف استلم المحادثة':'تم تسليم المحادثة للبوت')});
  $('wa-reply-form').addEventListener('submit',e=>{e.preventDefault();const form=e.currentTarget;if(!selected)return;if(state.demo)return noLive();execute(async()=>{const value=form.elements.body.value.trim();if(!value)return;await api('/whatsapp/inbox/'+selected.id+'/reply',{method:'POST',body:{body:value}});form.reset();notify('تم وضع الرسالة في طابور الإرسال — مش تأكيد تسليم');await selectThread(selected)})});
