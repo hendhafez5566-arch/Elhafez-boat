@@ -22,3 +22,6 @@ Branch: `feat/stage0-foundation`, draft PR #1. **Never merge without verificatio
 Add real travel-program departure/hotel/room pricing and per-departure capacity, WhatsApp provider-neutral interaction engine + webhook safety + outgoing queue, menu configuration and versioning, booking lifecycle and internal assignment, tenant staff features, owner superadmin and subscriptions. Keep no-secret-on-public-Git policy. Update CURRENT-STATUS/HANDOVER/REMAINING/CHANGELOG each batch.
 
 After the entire feature scope exists, execute one final integrated acceptance covering actual DB, HTTP E2E, browser UI, provider sandbox, tenant security, scalability, backup/restore. Do not deploy as commercial until passing.
+
+### Increment after initial visual/sales batch
+Added migration `0005_bot_configuration.sql`, `apps/api/src/bot-config.ts` and `/api/v1/bot/*` endpoints; visual Settings panel edits a draft and publishes immutable version; simulator reads published version. `GET /api/v1/team` lists existing members; no invites. Treat this as INTERNAL menu publish, not live Meta publishing. The last code modifications have been checked for basic TypeScript/JS syntax only; final formal testing still deferred by user's order.
