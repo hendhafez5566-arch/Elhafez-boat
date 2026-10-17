@@ -114,7 +114,7 @@ export async function publishProgram(db: SqlClient, actor: Actor, programId: str
 export async function listBookings(db: SqlClient, actor: Actor): Promise<Record<string, unknown>[]> {
   allow(actor,roles);
   const result=await db.query(`SELECT id,program_id,customer_name,customer_phone,party_size,price_minor_snapshot::text AS "priceMinorSnapshot",
-    currency_snapshot,status,created_at FROM booking_requests WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200`,[actor.tenantId]);
+    currency_snapshot,status,departure_id,room_package_id,room_units,created_at FROM booking_requests WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 200`,[actor.tenantId]);
   return result.rows;
 }
 export async function createBooking(db: SqlClient, actor: Actor, data: unknown): Promise<Record<string, unknown>> {
