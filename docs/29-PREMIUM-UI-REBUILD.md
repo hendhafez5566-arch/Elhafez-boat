@@ -1,3 +1,12 @@
+## Verified premium UI browser acceptance — 2026-10-18
+
+Executable UI SHA: `f86e3e86ad19038aca380419d496d05738209878`.
+CI run `39135107231` (and duplicate `39135109840`) concluded SUCCESS for both jobs: `checks` and `Disposable PostgreSQL and headless browser acceptance`. GitHub Actions browser screenshots artifact `12139014668` contains **90 real PNGs** (93 files including JSON evidence). No screenshot was AI generated. The earlier CI `39126328249` artifact `12136321724` supplies **82 earlier PNGs**; visual comparisons are genuine but fixture records may differ. Source-code commits after the verified SHA, if any, require a new corresponding CI check.
+
+Verified logs include: Chrome contextual (+) insertion, live inspector text edit, zoom, fullscreen toggle, popup simulator desktop/mobile, palette drag/drop, draft retention across navigation, flow save/publish in isolated test, catalog CRUD, keyboard Tab, 63 page/viewport navigation captures, platform owner login/company creation, role/tenant controls; all prior container, worker, API and PostgreSQL test steps passed. This **does not** mean every nested form, screenreader/mobile device or advanced feature is independently UX-certified. Some flow-test screenshots contain deliberately generated, unreachable draft steps and warning banners; they are test evidence, not a polished recommended production journey. The focus screenshot was captured while scrolled away from canvas, so don't use it as proof of layout quality.
+
+No new libraries, paid provider, WhatsApp account, Railway resource, merge, deployment, or billing commitment. External live Meta activation remains blocked and not tested.
+
 # Premium UI/UX implementation — 2026-10-18
 
 Branch: `feat/stage0-foundation` · existing draft PR #1 · executable UI source baseline `09f6f125898e877be3bca8babdddbf601805cfee`. Work was committed directly to the existing repository; no merge or deployment.
