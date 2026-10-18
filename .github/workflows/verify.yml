@@ -72,6 +72,24 @@ jobs:
           command -v google-chrome || command -v chromium || command -v chromium-browser
           CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
           echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+      - name: Real ClamAV daemon with isolated acceptance signatures
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clamav-daemon
+          mkdir -p /tmp/boat-clam-db
+          python3 - <<'PY_CLAM'
+          from pathlib import Path
+          import os
+          eicar=b'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+          Path('/tmp/boat-clam-db/acceptance.ndb').write_text('EicarAcceptance:0:*:'+eicar.hex()+'\n')
+          Path('/tmp/boat-clamd.conf').write_text('Foreground yes\nLocalSocket /tmp/boat-clamd.sock\nLocalSocketMode 666\nDatabaseDirectory /tmp/boat-clam-db\nPidFile /tmp/boat-clamd.pid\nLogFile /tmp/boat-clamd.log\nStreamMaxLength 8M\n')
+          PY_CLAM
+          clamd --config-file=/tmp/boat-clamd.conf >/tmp/boat-clam-start.log 2>&1 &
+          for i in {1..40}; do test -S /tmp/boat-clamd.sock && break; sleep 1; done
+          test -S /tmp/boat-clamd.sock || { cat /tmp/boat-clam-start.log; exit 1; }
+          echo 'CLAMAV_SOCKET=/tmp/boat-clamd.sock' >> "$GITHUB_ENV"
+          echo 'CI_LOCAL_CLOSURE=1' >> "$GITHUB_ENV"
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data
@@ -140,5 +158,6 @@ jobs:
             acceptance-evidence/*.png
             acceptance-evidence/http-load.json
             acceptance-evidence/browser-pages.json
+            acceptance-evidence/local-closure.json
           if-no-files-found: ignore
           retention-days: 7
