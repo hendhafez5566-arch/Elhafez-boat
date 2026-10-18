@@ -5,7 +5,7 @@
  * Does NOT initialize a database, connect a provider or execute a paid AI agent.
  * This process is NOT a production HA/supervisor architecture.
  */
-import {spawn} from 'node:child_process';
+import {spawn,spawnSync} from 'node:child_process';
 
 const required=['DATABASE_URL','WHATSAPP_TOKEN_ENCRYPTION_KEY','RATE_LIMIT_SECRET'];
 for(const key of required){
@@ -24,8 +24,12 @@ const webPort=Number(process.env.PORT||3000);
 if(!Number.isInteger(apiPort)||!Number.isInteger(webPort)||apiPort<1024||webPort<1024||apiPort===webPort){
  throw new Error('BOAT_API_PORT / PORT must be distinct unprivileged port numbers');
 }
+if(process.env.BOAT_PILOT_INIT_CONFIRM==='boat_pilot'){
+ const setup=spawnSync(process.execPath,['scripts/railway-pilot-setup.mjs'],{env:process.env,stdio:'inherit',timeout:240000});
+ if(setup.error||setup.status!==0)throw new Error('Isolated pilot database initialization failed; app processes were not launched');
+}
 const common={...process.env,AI_API_KEY:'',AI_BASE_URL:'',AI_MODEL:''};
-for(const name of ['MIGRATION_DATABASE_URL','BOOTSTRAP_PASSWORD','BOOTSTRAP_EMAIL','BOOTSTRAP_TENANT_SLUG','BOOTSTRAP_TENANT_NAME','POSTGRES_PASSWORD','TEST_RUNTIME_PASSWORD'])delete common[name];
+for(const name of ['MIGRATION_DATABASE_URL','BOAT_PILOT_INIT_CONFIRM','BOOTSTRAP_PASSWORD','BOOTSTRAP_EMAIL','BOOTSTRAP_TENANT_SLUG','BOOTSTRAP_TENANT_NAME','POSTGRES_PASSWORD','TEST_RUNTIME_PASSWORD'])delete common[name];
 const processes=[
  {name:'api',entry:'.build/apps/api/src/server.js',env:{...common,PORT:String(apiPort)}},
  {name:'worker',entry:'.build/apps/worker/main.js',env:{...common}},
