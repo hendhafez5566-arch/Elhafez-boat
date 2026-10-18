@@ -73,6 +73,8 @@ jobs:
           echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
+      - name: Backup and restore disposable PostgreSQL data
+        run: bash scripts/ci-backup-restore.sh
       - name: Upload non-sensitive browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
