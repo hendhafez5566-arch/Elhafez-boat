@@ -322,7 +322,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      }
      sample.append(screen);
    };
-   paint();host.addEventListener('input',paint);host.append(sample);
+   paint();host.oninput=paint;host.append(sample);
 
    if(node.type!=='START')host.append(button('حذف الخطوة',()=>{
      if(!confirm('هتتحذف الخطوة، ولازم تصلح أي روابط كانت رايحة لها قبل النشر.'))return;
