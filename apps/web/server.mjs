@@ -6,6 +6,7 @@ if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an intern
 const assets={
  '/':['index.html','text/html; charset=utf-8'],
  '/widget.js':['widget.js','text/javascript; charset=utf-8'],
+ '/advanced-ui.js':['advanced-ui.js','text/javascript; charset=utf-8'],
  '/extensions.js':['extensions.js','text/javascript; charset=utf-8'],
  '/app.js':['app.js','text/javascript; charset=utf-8'],
  '/style.css':['style.css','text/css; charset=utf-8'],
@@ -23,7 +24,7 @@ const server=createServer(async(req,res)=>{
  const path=new URL(req.url??'/',`http://localhost:${port}`).pathname;
  if(path.startsWith('/api/')||path==='/health'){
    // Same-origin backend gateway: forwards authenticated API requests without browser CORS exceptions.
-   const upstream=httpRequest({hostname:api.hostname,port:api.port||80,path:req.url,method:req.method,headers:{...req.headers,host:api.host}},reply=>{res.writeHead(reply.statusCode??502,{'content-type':reply.headers['content-type']??'application/json','cache-control':'no-store',...(path.startsWith('/api/v1/widget/')?Object.fromEntries(Object.entries(reply.headers).filter(([k])=>k.startsWith('access-control-')||k==='vary')):{}),...(path.startsWith('/api/v1/media/public/')?{'x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; sandbox",'content-disposition':reply.headers['content-disposition']||'attachment'}:{})});reply.pipe(res)});
+   const upstream=httpRequest({hostname:api.hostname,port:api.port||80,path:req.url,method:req.method,headers:{...req.headers,host:api.host,'x-forwarded-for':req.socket.remoteAddress||''}},reply=>{res.writeHead(reply.statusCode??502,{'content-type':reply.headers['content-type']??'application/json','cache-control':'no-store',...(reply.headers['set-cookie']?{'set-cookie':reply.headers['set-cookie']}:{}),...(reply.headers['referrer-policy']?{'referrer-policy':reply.headers['referrer-policy']}:{}),...(path.startsWith('/api/v1/widget/')?Object.fromEntries(Object.entries(reply.headers).filter(([k])=>k.startsWith('access-control-')||k==='vary')):{}),...(path.startsWith('/api/v1/media/public/')?{'x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; sandbox",'content-disposition':reply.headers['content-disposition']||'attachment'}:{})});reply.pipe(res)});
    upstream.on('error',()=>{if(!res.headersSent){res.writeHead(502,{'content-type':'application/json'});res.end(JSON.stringify({error:'API غير متاح حاليًا'}))}else res.end()});
    req.pipe(upstream);return;
  }

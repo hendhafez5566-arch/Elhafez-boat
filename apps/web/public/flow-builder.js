@@ -5,7 +5,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
  const idPattern=/^[a-z][a-z0-9_-]{0,31}$/;
- const types={DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
+ const types={SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
  const deep=v=>JSON.parse(JSON.stringify(v));
  const preset=(industry='general')=>{
    const cards={general:['الخدمات','العروض'],shop:['المنتجات','الأسعار والمقاسات'],tourism:['البرامج','الأسعار والمواعيد'],clinic:['خدمات العيادة','ساعات العمل'],restaurant:['المنيو','فروع المطعم'],realestate:['العقارات','استفسار عن زيارة'],education:['الكورسات','مواعيد التسجيل']};
@@ -20,6 +20,7 @@ export function initFlowBuilder({state,api,notify,execute}){
    ]};
  };
  let flow=preset(),selected='menu',published=null,dirty=false,draftRevision=0,previewRuntimeNodes=null;
+ let subflows=[],editingSubflowId=null,mainSnapshot=null;
  let selectedNodes=new Set([selected]),snippets=[];
  let preview={at:null,answers:{},tags:[]};
  let history=[deep(flow)],cursor=0;
@@ -65,6 +66,12 @@ export function initFlowBuilder({state,api,notify,execute}){
   })));tools.after(panel);
  })));
 
+ const linked=el('section',undefined,'builder-reuse'),library=el('select'),mode=el('p','تحرير المسار الرئيسي');
+ linked.append(el('h4','مسارات فرعية مرتبطة بإصدارات مثبتة'),mode,library);
+ async function refreshSubflows(){subflows=state.demo?[]:await api('/flows/subflows');library.replaceChildren();for(const f of subflows){const o=el('option',f.name+' — v'+f.version);o.value=f.id+':'+f.version;library.append(o)}}
+ function enterSubflow(def,id=null){if(!mainSnapshot)mainSnapshot={flow:deep(flow),dirty,selected};flow=deep(def);editingSubflowId=id;selected=flow.startId;selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;dirty=true;mode.textContent='تحرير مسار فرعي — زر حفظ ينشئ إصدارًا مستقلًا؛ END يعود للمستدعي';renderAll();resetPreview()}
+ linked.append(button('إنشاء مسار فرعي',()=>enterSubflow({name:'مسار فرعي جديد',startId:'start',nodes:[{id:'start',type:'START',next:'end'},{id:'end',type:'END',text:'تم استكمال الخطوات.'}]})),button('تحرير الإصدار المحدد',()=>{const f=subflows.find(x=>x.id+':'+x.version===library.value);if(f)enterSubflow(f.definition,f.id)}),button('إضافة استدعاء مرتبط',()=>{const f=subflows.find(x=>x.id+':'+x.version===library.value);if(!f)return;addNode('SUBFLOW');const n=nodeById(selected);n.subflowId=f.id;n.version=f.version;markDirty();renderAll()}),button('العودة للمسار الرئيسي',()=>{if(!mainSnapshot)return;if(dirty&&!confirm('ترك تعديلات المسار الفرعي غير المحفوظة؟'))return;flow=mainSnapshot.flow;dirty=mainSnapshot.dirty;selected=mainSnapshot.selected;editingSubflowId=null;mainSnapshot=null;selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;mode.textContent='تحرير المسار الرئيسي';renderAll();resetPreview()}));
+ tools.after(linked);
  const reuseKinds=new Set(['TEXT','QUESTION','INPUT','TAG','MEDIA','LINK','DELAY','AI','WEBHOOK','CATALOG']);
  const reuseHost=el('section',undefined,'builder-reuse');
  reuseHost.append(el('h4','مكتبة خطوات قابلة لإعادة الاستخدام'),
@@ -196,6 +203,8 @@ export function initFlowBuilder({state,api,notify,execute}){
        :kind==='CONDITION'?{id:node.id,type:'CONDITION',field:'interest',operator:'equals',value:'yes',yes:next,no:next}
        :kind==='BUTTONS'||kind==='LIST'?{id:node.id,type:kind,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]}
        :kind==='DELAY'?{id:node.id,type:kind,seconds:60,next}
+       :kind==='SUBFLOW'?{id:node.id,type:kind,subflowId:'',version:1,bindings:{},next}
+       :kind==='CONNECTOR'?{id:node.id,type:kind,connectorId:'',next}
        :kind==='WEBHOOK'?{id:node.id,type:kind,integrationId:'',next}
        :kind==='CATALOG'?{id:node.id,type:kind,category:'',next}
        :kind==='AI'?{id:node.id,type:kind,field:'customer_need',next}
@@ -224,6 +233,8 @@ export function initFlowBuilder({state,api,notify,execute}){
      host.append(label('لو الشرط غلط',target(node.no,value=>{node.no=value})));
    }
    if(node.type==='DELAY')host.append(label('مدة الانتظار بالثواني (1 إلى 604800)',control(node.seconds,v=>{node.seconds=Number(v)})));
+   if(node.type==='SUBFLOW'){host.append(label('معرف المسار الفرعي',control(node.subflowId,v=>{node.subflowId=v})),label('الإصدار المثبت',control(node.version,v=>{node.version=Number(v)})),label('ربط حقول الفرعي بحقول المستدعي — JSON',control(JSON.stringify(node.bindings||{}),v=>{try{node.bindings=JSON.parse(v)}catch{notify('ربط الحقول يجب أن يكون JSON صالحًا','error')}},true)));}
+   if(node.type==='CONNECTOR')host.append(label('معرف الموصل من صفحة الموصلات الأصلية',control(node.connectorId,v=>{node.connectorId=v})));
    if(node.type==='WEBHOOK')host.append(label('معرف التكامل من الإعدادات',control(node.integrationId,v=>{node.integrationId=v})));
    if(node.type==='CATALOG')host.append(label('تصنيف الكتالوج (فارغ = الكل)',control(node.category||'',v=>{node.category=v})));
    if(node.type==='KEYWORD'){
@@ -268,6 +279,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id||flow.startId;
    if(type==='BUTTONS'||type==='LIST')flow.nodes.push({id,type,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]});
    else if(type==='DELAY')flow.nodes.push({id,type,seconds:60,next});
+   else if(type==='SUBFLOW')flow.nodes.push({id,type,subflowId:'',version:1,bindings:{},next});
+   else if(type==='CONNECTOR')flow.nodes.push({id,type,connectorId:'',next});
    else if(type==='WEBHOOK')flow.nodes.push({id,type,integrationId:'',next});
    else if(type==='CATALOG')flow.nodes.push({id,type,category:'',next});
    else if(type==='AI')flow.nodes.push({id,type,field:'customer_need',next});
@@ -344,6 +357,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  }
  function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
  async function load(){
+   editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
    const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();resetPreview();
@@ -357,10 +371,12 @@ export function initFlowBuilder({state,api,notify,execute}){
  $('builder-name').addEventListener('input',()=>{flow.name=$('builder-name').value;markDirty()});
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
+   if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
    const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});draftRevision=r.draftRevision;flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
  });
  $('builder-publish').onclick=()=>execute(async()=>{
    if(state.demo){notify('المعاينة لا تنشر على واتساب','error');return}
+   if(mainSnapshot){notify('ارجع للمسار الرئيسي لنشره؛ المسارات الفرعية تُحفظ بإصدارات مستقلة','error');return;}
    if(dirty){notify('احفظ المسودة الأول قبل النشر','error');return}
    if(!confirm('نشر الإصدار الحالي لعملاء الشركة على واتساب؟'))return;
    published=await api('/flows/publish',{method:'POST'});renderStatus();notify('تم نشر إصدار المحادثة. واتساب الحقيقي يحتاج رقم Meta متصل.');
@@ -369,5 +385,5 @@ export function initFlowBuilder({state,api,notify,execute}){
  $('builder-export').onclick=()=>{
    const data=JSON.stringify(flow,null,2);navigator.clipboard?.writeText(data).then(()=>notify('تم نسخ المسار JSON')).catch(()=>notify('انسخ المسار من شاشة التحرير','error'));
  };
- return {load,reset(){flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,reset(){subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

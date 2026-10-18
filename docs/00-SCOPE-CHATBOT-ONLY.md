@@ -20,7 +20,7 @@ Inspired by the broad **configurability** of platforms such as BotSailor, not a 
 - Optional future richer nodes: advanced CTA, product catalog dynamic blocks, WhatsApp Flows, schedules, keyword triggers, outbound webhooks with safe allowlists, integrations, approved templates and consent-based campaigns, grounded AI.
 
 ## Platforms and channels
-Official **Meta WhatsApp Business Cloud API** and **Website Chat** have source adapters sharing the channel-neutral engine. Actual provider/browser acceptance remains separate. Messenger/Instagram and Telegram remain future adapters; do not claim activation without implementation and evidence.
+Official **Meta WhatsApp Business Cloud API** and **Website Chat** have source adapters sharing the channel-neutral engine. Actual provider/browser acceptance remains separate. Messenger/Instagram/Telegram now have source adapters and settings; actual provider activation remains unverified and requires account permissions/credentials.
 
 ## Data/architecture
 Multi-tenant SaaS, company-specific workflows and catalog, row level security, permissions, secrets stored securely, Meta webhook signatures, queue/idempotency, staff handoff. Platform owner can provision companies; a separate billing provider can be plugged in later if desired. **Do not build accounting, reservations, passports, supplier contracts, refunds, inventory, or an ERP.**

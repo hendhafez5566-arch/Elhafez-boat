@@ -1,31 +1,23 @@
-# Remaining — final acceptance is not approved
+# Remaining — advanced continuation 2026-10-18
 
-## Source still unfinished / deliberately unsupported
-- Dedicated Google Sheets/CRM/ecommerce OAuth/native connectors. Current generic outbound HTTPS webhooks support encrypted Bearer/HMAC secrets, allowlists, retries and audit, but do not constitute those native integrations.
-- Advanced template carousel/authentication/named-parameter/provider-specific formats and full template bulk-sync management. Supported component forms are explicitly validated; unsupported forms are rejected.
-- Advanced canvas grouping/reusable subflows. Current drag/pan/zoom/connect/duplicate/undo/version functionality exists.
-- Additional social adapters beyond WhatsApp and Website. Messenger, Instagram and Telegram are not live integrations.
-- Operational retention/purge tooling and malware scanning for uploaded files; current bounded storage, MIME signature checks and deletion safeguards do not replace either.
-- Broader granular REST write scopes; current API keys remain catalog/lead read-only. Native browser/OS push is not implemented; inbox/notification polling is implemented.
-- Final responsive/accessibility and concurrency/abuse/performance review. Login throttling remains process-local. Actual production role grants must include new runtime tables/routes; no commercial/multi-instance hardening claim.
+Latest source continuation starts at actual remote HEAD `da1c6a3`. See docs/19-ADVANCED-RUNTIME.md and CURRENT-STATUS.md for implemented behavior; earlier reports of missing native connectors, linked subflows and social adapter source are superseded.
 
-## External activation / environment
-- PostgreSQL 16+ with migration/platform roles separate from non-owner, non-superuser, non-BYPASSRLS runtime role; migrate 0001–0022. Real migration and tenant isolation are not established by TypeScript compilation.
-- Meta account, phone/WABA IDs, valid access token, app secret, verify token, actual app/account permissions, HTTPS webhook and approved templates. No live provider operation was tested in this session.
-- Optional AI credentials remain external and unverified; deterministic core/FAQ/catalog works independently.
-- Exact widget website origins and reachable HTTPS app domain. Configure MEDIA_PUBLIC_ORIGIN for external media links. Website widget/account setup must be exercised from an actual permitted origin.
-- INTEGRATION_SECRET_ENCRYPTION_KEY: independent base64 32-byte key, preserved for decryption. OUTBOUND_WEBHOOK_HOSTS allowlist and reachable idempotent receivers; optional global signing secret. No live outbound webhook was dispatched here.
-- Working browser runner for actual desktop/mobile acceptance. Prior Chromium installation/download failed; this session did not repeat it.
+## Source scope still open
 
-## ONE final comprehensive acceptance campaign
-After approved build scope is closed, run unit/integration, fresh PostgreSQL migration and RLS/cross-tenant checks, actual browser/mobile, delay crash/restart/session pinning, dynamic pagination, trigger/hand-off/inbox ownership, website CORS/token/dedupe/security, media ACL/quota/type/deletion, consent/campaign cancel/limits/template delivery, AI grounding/quota, outbound DNS/SSRF/secrets/idempotency, worker fault injection/reconciliation, realistic performance and real backup/restore. Fix failures from source; no test masking.
+- Meta Commerce product-card carousel and SPM/MPM/catalog-template variants are not implemented; fail closed. Existing approved IMAGE/VIDEO marketing carousel, buttons and variables remain, with generic-catalog image selection. Do not call this a Commerce catalog integration.
+- Controlled erasure of historical booking/accounting data and old generic webhook payloads without contact attribution is outside current chatbot erasure automation. Backups and remote systems need their own documented deletion process. No unsafe bulk deletion was introduced.
+- Browser/OS push remains absent; durable inbox and notifications use practical 5/20-second polling. Production queue/error monitoring now includes worker health and bounded visible jobs; full telemetry/alerts, load scaling and operational reconciliation must be validated before production.
 
-CI run 39072771700 on 7fc3626 passed 28/28 tests, all migrations and the PostgreSQL catalog-isolation/RLS gate. This is a development check, not this comprehensive acceptance campaign. Historical e38fbdb booking failures were addressed by retiring the obsolete product and replacing its coverage, not by reviving booking code or excluding current chatbot/security tests. See docs/17-LEGACY-RETIREMENT.md.
+## External activation and configuration (not live-verified)
 
-No merge, commercial deploy or readiness claim is authorized by the current evidence.
+- PostgreSQL 16+ migrations **0001–0024**, migration role separate from non-owner/non-BYPASSRLS runtime role; grant new tables/routes. Shared RATE_LIMIT_SECRET, exact trusted gateway addresses and HTTPS APP_PUBLIC_ORIGIN.
+- Google Sheets + Drive APIs/OAuth consent/verification, HubSpot OAuth app or scoped private token, WooCommerce REST credentials + approved store hosts, Shopify app/customer scopes/protected-data approval + pinned API version. Refresh/rotation and queued source integration exist; no provider success is claimed.
+- Meta WhatsApp credentials and approved templates as before; Messenger Page permissions/subscriptions and Instagram Login professional-account permissions/app review; META_SOCIAL_APP_SECRET and verify token. Telegram BotFather token and reachable webhook domain. No actual provider conversation/delivery was exercised.
+- Running maintained ClamAV daemon/signatures/socket permission. All active media (including old uploads) is PENDING until rescanned; no scan success/malware-detection claim. Public clean media URLs remain revocable bearer capabilities for provider fetch, not private authenticated downloads.
+- Optional AI credentials; encryption master keys and backups preserved securely; approved outbound webhook hostnames. No real credentials in source.
 
+## One final comprehensive acceptance campaign — NOT RUN
 
-## 2026-10-18 scope update
-**Now implemented, pending final acceptance:** linear reusable section library with tenant RLS, API and flow-builder UI; Shift+multi-select **visual grouping** (no nested execution); limited **Meta-approved image/video MARKETING carousel templates**, with per-card values, validation and editor UI. Development CI 43/43 and migration 0023/RLS gate passed on `13a3da3`.
+Once remaining source scope is agreed/closed, execute unit/integration, fresh PostgreSQL/RLS and real runtime grants, desktop/mobile browser, subflow pinning/bindings/delay restart/rollback, Sheets append/update/crash/manual-edit races and CRM permissions, signed channel webhooks/dedupe/opt-out/handoff/window restrictions, media scanning/quarantine/revocation, privacy/export/concurrency, AI grounding, API scopes/distributed throttling, queue fault injection/uncertain-send reconciliation, performance, backup/restore, real provider/account activation.
 
-**Still intentionally open:** true linked/nested subflows (current reuse is copied, not linked); provider-specific carousel variants such as catalog/OTP/authentication; dedicated Google Sheets/CRM/ecommerce OAuth connectors; additional social adapters; privacy-retention/media malware scanning; production-grade multi-instance throttling, browser/provider/load/backup acceptance. Do not label any of those finished. Refer to `docs/18-FLOW-REUSE-AND-CAROUSEL.md`.
+Local development safeguards: clean TypeScript build, changed JS syntax, static dashboard/assets HTTP smoke and whitespace checks passed. CI proof for the new source must be recorded after upload; earlier 43/43 on `13a3da3` does not validate this implementation. No merge, production deployment or commercial-readiness claim.

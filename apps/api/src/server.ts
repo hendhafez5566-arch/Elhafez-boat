@@ -1,3 +1,10 @@
+import {isIP} from 'node:net';
+import {compileSubflows} from './subflows.js';
+import {distributedLimit} from './rate-limit.js';
+import {listSubflows,saveSubflow} from './subflows.js';
+import {privacySettings,savePrivacySettings,privacyCandidates,exportContact,anonymizeContact} from './privacy.js';
+import {listConnectors,saveConnector,beginConnectorOAuth,finishConnectorOAuth,connectorResources,syncContact,connectorJobs} from './connectors.js';
+import {listSocialAccounts,connectSocial,disableSocial,receiveTelegram,receiveMetaSocial} from './social.js';
 import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
 import {listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
@@ -37,16 +44,21 @@ async function body(req:IncomingMessage,maxBytes=65536):Promise<unknown>{
   let text='';for await(const chunk of req){text+=chunk.toString();if(Buffer.byteLength(text)>maxBytes)throw new HttpFailure(413,'Body too large');}
   try{return JSON.parse(text)}catch{throw new HttpFailure(400,'Invalid JSON')}
 }
-const failedLogins=new Map<string,{count:number;until:number}>();
-function throttle(req:IncomingMessage):void{
-  const key=req.socket.remoteAddress??'unknown';const now=Date.now();let item=failedLogins.get(key);
-  if(!item||now>item.until){item={count:0,until:now+600000};failedLogins.set(key,item)}
-  if(item.count>=10)throw new HttpFailure(429,'Too many login attempts');
-  item.count++;
-}
+function clientAddress(req:IncomingMessage){const remote=req.socket.remoteAddress||'unknown',forwarded=req.headers['x-forwarded-for'];return (process.env.TRUSTED_PROXY_IPS||'').split(',').includes(remote)&&typeof forwarded==='string'&&isIP(forwarded)?forwarded:remote;}
+async function throttle(req:IncomingMessage){await distributedLimit(pool,'login:'+clientAddress(req),10,600)}
 const server=createServer(async(req,res)=>{
   try{
     const pathname=new URL(req.url??'/',`http://localhost:${port}`).pathname;
+    if(pathname==='/api/v1/connectors/oauth/callback'&&req.method==='GET'){
+      const params=new URL(req.url||'/', 'http://local').searchParams,cookie=/(?:^|; )eb_oauth=([A-Za-z0-9_-]{43})(?:;|$)/.exec(req.headers.cookie||'')?.[1]||'';
+      const result=await finishConnectorOAuth(pool,params,cookie);res.setHeader('set-cookie','eb_oauth=; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/connectors/oauth; Max-Age=0');res.setHeader('referrer-policy','no-referrer');return json(res,200,result);
+    }
+    const telegram=/^\/api\/v1\/channels\/telegram\/(\d{5,20})$/.exec(pathname);
+    if(telegram&&req.method==='POST')return json(res,200,await receiveTelegram(pool,telegram[1],String(req.headers['x-telegram-bot-api-secret-token']||''),await body(req,1048576)));
+    if(pathname==='/api/v1/channels/meta/webhook'){
+      if(req.method==='GET'){const q=new URL(req.url||'/','http://local').searchParams;if(q.get('hub.mode')!=='subscribe'||!process.env.META_SOCIAL_VERIFY_TOKEN||q.get('hub.verify_token')!==process.env.META_SOCIAL_VERIFY_TOKEN)throw new HttpFailure(403,'Verification rejected');res.writeHead(200,{'content-type':'text/plain'});res.end(q.get('hub.challenge')||'');return;}
+      if(req.method==='POST'){const chunks:Buffer[]=[];let size=0;for await(const c of req){const b=Buffer.from(c);size+=b.length;if(size>1048576)throw new HttpFailure(413,'Webhook too large');chunks.push(b)}const raw=Buffer.concat(chunks);if(!verifyWebhookSignature(raw,req.headers['x-hub-signature-256'],process.env.META_SOCIAL_APP_SECRET||''))throw new HttpFailure(401,'Invalid social signature');let payload;try{payload=JSON.parse(raw.toString())}catch{throw new HttpFailure(400,'Invalid webhook JSON')}return json(res,200,await receiveMetaSocial(pool,payload));}
+    }
     if(pathname.startsWith('/api/v1/widget/')&&pathname!=='/api/v1/widget/settings'){
       const origin=typeof req.headers.origin==='string'?req.headers.origin:typeof req.headers['x-widget-origin']==='string'?req.headers['x-widget-origin']:'';
       if(origin){res.setHeader('access-control-allow-origin',origin);res.setHeader('vary','Origin')}
@@ -64,7 +76,7 @@ const server=createServer(async(req,res)=>{
       catch{return json(res,503,{status:'unavailable',service:'api',database:'unreachable'});}
     }
     if(req.method==='POST'&&pathname==='/api/v1/auth/login'){
-      throttle(req);
+      await throttle(req);
       return json(res,200,await login(pool,await body(req)));
     }
     // Public Meta webhook: signature validation precedes JSON parsing or database writes.
@@ -81,10 +93,10 @@ const server=createServer(async(req,res)=>{
       let payload:unknown;try{payload=JSON.parse(raw.toString('utf8'));}catch{throw new HttpFailure(400,'Malformed webhook JSON');}
       await handleVerifiedWebhook(pool,payload);return json(res,200,{received:true});
     }
-    if(req.method==='POST'&&pathname==='/api/v1/team/accept'){throttle(req);return json(res,200,await acceptTeamInvite(pool,await body(req)));}
-    if(req.method==='POST'&&pathname==='/api/v1/platform/owner/accept'){throttle(req);return json(res,200,await acceptFirstOwner(await body(req)));}
+    if(req.method==='POST'&&pathname==='/api/v1/team/accept'){await throttle(req);return json(res,200,await acceptTeamInvite(pool,await body(req)));}
+    if(req.method==='POST'&&pathname==='/api/v1/platform/owner/accept'){await throttle(req);return json(res,200,await acceptFirstOwner(await body(req)));}
     if(req.method==='POST'&&pathname==='/api/v1/platform/auth/login'){
-      throttle(req);return json(res,200,await platformLogin(await body(req)));
+      await throttle(req);return json(res,200,await platformLogin(await body(req)));
     }
     if(pathname.startsWith('/api/v1/platform/')){
       const platformOwnerId=await platformAuth(req.headers.authorization);
@@ -99,9 +111,10 @@ const server=createServer(async(req,res)=>{
       return json(res,404,{error:'Not found'});
     }
     const actor=req.headers.authorization?.startsWith('Bearer ebk_')?await authenticateAccessKey(pool,req.headers.authorization,pathname,req.method||'GET'):await authenticate(pool,req.headers.authorization);
+    await distributedLimit(pool,'api:'+actor.tenantId+':'+actor.userId+':'+(req.headers.authorization?.startsWith('Bearer ebk_')?'key':'session'),600,60);
     // Block mutating requests for expired or suspended subscriptions (reads remain available for export/support).
     // This is a business entitlement check, separate from tenant RLS and staff-role authorization.
-    if(req.method&& !['GET','HEAD','OPTIONS'].includes(req.method) && pathname!=='/api/v1/auth/logout'){
+    if(req.method&& !['GET','HEAD','OPTIONS'].includes(req.method) && pathname!=='/api/v1/auth/logout'&&!/^\/api\/v1\/privacy\//.test(pathname)){
       const entitlement=await withTenantTransaction(pool,actor,async tx=>{
         const r=await tx.query(`SELECT status,current_period_ends_at FROM tenant_subscriptions WHERE tenant_id=$1`,[actor.tenantId]);
         return r.rows[0]??null;
@@ -116,6 +129,25 @@ const server=createServer(async(req,res)=>{
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
     const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    if(req.method==='GET'&&pathname==='/api/v1/flows/subflows')return json(res,200,await run(tx=>listSubflows(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/flows/subflows')return json(res,201,await runBody((tx,input)=>saveSubflow(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/privacy/settings')return json(res,200,await run(tx=>privacySettings(tx,actor)));
+    if(req.method==='PUT'&&pathname==='/api/v1/privacy/settings')return json(res,200,await runBody((tx,input)=>savePrivacySettings(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/privacy/candidates')return json(res,200,await run(tx=>privacyCandidates(tx,actor)));
+    const privacy=/^\/api\/v1\/privacy\/contacts\/([^/]+)\/(export|anonymize)$/.exec(pathname);
+    if(privacy&&privacy[2]==='export'&&req.method==='GET')return json(res,200,await run(tx=>exportContact(tx,actor,privacy[1])));
+    if(privacy&&privacy[2]==='anonymize'&&req.method==='POST')return json(res,200,await runBody((tx,input)=>anonymizeContact(tx,actor,privacy[1],input)));
+    if(req.method==='GET'&&pathname==='/api/v1/connectors')return json(res,200,await run(tx=>listConnectors(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/connectors')return json(res,201,await runBody((tx,input)=>saveConnector(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/connectors/jobs')return json(res,200,await run(tx=>connectorJobs(tx,actor)));
+    const connector=/^\/api\/v1\/connectors\/([^/]+)\/(oauth|resources|sync)$/.exec(pathname);
+    if(connector&&connector[2]==='oauth'&&req.method==='POST'){const result=await run(tx=>beginConnectorOAuth(tx,actor,connector[1]));res.setHeader('set-cookie','eb_oauth='+result.cookie+'; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/connectors/oauth; Max-Age=600');return json(res,200,{url:result.url});}
+    if(connector&&connector[2]==='resources'&&req.method==='GET')return json(res,200,await run(tx=>connectorResources(tx,actor,connector[1],new URL(req.url||'/','http://local').searchParams.get('spreadsheetId')||undefined)));
+    if(connector&&connector[2]==='sync'&&req.method==='POST')return json(res,202,await runBody((tx,input)=>syncContact(tx,actor,connector[1],input)));
+    if(req.method==='GET'&&pathname==='/api/v1/channels/accounts')return json(res,200,await run(tx=>listSocialAccounts(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/channels/accounts')return json(res,201,await runBody((tx,input)=>connectSocial(tx,actor,input)));
+    const social=/^\/api\/v1\/channels\/accounts\/([^/]+)$/.exec(pathname);
+    if(social&&req.method==='DELETE')return json(res,200,await run(tx=>disableSocial(tx,actor,social[1])));
     if(req.method==='GET'&&pathname==='/api/v1/whatsapp/connection')return json(res,200,await run(tx=>whatsappConnection(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);
@@ -162,12 +194,13 @@ const server=createServer(async(req,res)=>{
       if(state&&(!Array.isArray(state.tags)||state.tags.length>100||state.tags.some(t=>typeof t!=='string'||t.length>40)||!state.answers||typeof state.answers!=='object'||Array.isArray(state.answers)||Object.keys(state.answers).length>200||Object.values(state.answers).some(v=>typeof v!=='string'||v.length>500)||(state.at!==null&&(typeof state.at!=='string'||state.at.length>180))))throw new HttpFailure(400,'Invalid preview state');
       const incoming=d.input as {kind:'TEXT'|'CHOICE';value:string}|undefined;
       if(incoming&&(!['TEXT','CHOICE'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
+      flow=await compileSubflows(tx,actor.tenantId,flow);
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
       const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/validate'){
       allow(actor,['OWNER','MANAGER']);
-      const input=await body(req);try{validateFlow(input);return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
+      const input=await body(req);try{await run(tx=>compileSubflows(tx,actor.tenantId,validateFlow(input)));return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
     }
     if(req.method==='GET'&&pathname==='/api/v1/flows/snippets')
       return json(res,200,await run(tx=>listFlowSnippets(tx,actor)));
@@ -235,7 +268,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&contactNotes)return json(res,201,await runBody((tx,input)=>addContactNote(tx,actor,contactNotes[1],input)));
     if(req.method==='GET'&&pathname==='/api/v1/team')return json(res,200,await run(tx=>teamMembers(tx,actor)));
     return json(res,404,{error:'Not found'});
-  }catch(error){if(error instanceof HttpFailure)return json(res,error.status,{error:error.message});if((error as {code?:string}).code==='23505')return json(res,409,{error:'This record already exists'});if((error as {code?:string}).code==='23503')return json(res,404,{error:'Linked record not found'});console.error('Request failed',error instanceof Error?error.message:'unknown');return json(res,500,{error:'Internal server error'});}
+  }catch(error){if(error instanceof HttpFailure)return json(res,error.status,{error:error.message});if((error as {code?:string}).code==='23505')return json(res,409,{error:'This record already exists'});if((error as {code?:string}).code==='23503')return json(res,404,{error:'Linked record not found'});console.error('Request failed',{code:(error as {code?:string}).code||'INTERNAL'});return json(res,500,{error:'Internal server error'});}
 });
 server.requestTimeout=15000;
 server.listen(port,()=>console.log(`Elhafez Boat API listening on ${port}`));

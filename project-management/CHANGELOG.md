@@ -40,3 +40,11 @@ Earlier extensive tourism booking and ERP changes in git history are obsolete, n
 - Added official approved CAROUSEL component compiler for marketing image/video card templates and card-by-card UI values; unsupported templates remain blocked.
 - Added 15 tests and cross-tenant PostgreSQL RLS coverage. CI SUCCESS on 13a3da3: 43 tests pass, migration 0023 and RLS gate pass. No live Meta/browser/commercial acceptance.
 - Detailed limitations and operation: docs/18-FLOW-REUSE-AND-CAROUSEL.md.
+
+
+## 2026-10-18 — advanced runtime continuation from da1c6a3
+Implemented source: native Sheets/HubSpot/WooCommerce/Shopify connectors and owner UI, OAuth/refresh/encryption, contact-sync queues and CONNECTOR node; immutable pinned linked SUBFLOW compilation/field bindings/return and Canvas library editing; Messenger/Instagram/Telegram receive/send adapters with unified inbox, signed/secret webhooks, dedupe and uncertain-send quarantine; owner privacy/retention/export/anonymization; fail-closed ClamAV upload gating; PostgreSQL distributed limits, granular API-key routes, worker health/queue UI. Migration **0024** is required.
+
+Build/TypeScript, changed JS syntax and static HTTP dashboard/assets passed locally. No live provider/scanner, browser/mobile, load/fault/restore or formal final acceptance was run. Development CI result must be attached after push.
+
+**Not all seven areas are closed:** Meta Commerce product-card/catalog-template variants remain unsupported. Existing approved image/video carousel was preserved and gains a published generic-catalog image picker. External accounts, OAuth apps/permissions, Meta review, HTTPS and ClamAV still require configuration and activation evidence. Legacy un-attributed webhook payloads, historical data and backups need a separate erasure process. Read `docs/19-ADVANCED-RUNTIME.md` for exact behavior and constraints; no commercial readiness claim.

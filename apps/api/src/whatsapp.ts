@@ -208,13 +208,13 @@ export async function whatsappInbox(db:SqlClient,actor:Actor){
   JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
   LEFT JOIN chatbot_leads l ON l.tenant_id=c.tenant_id AND l.conversation_id=c.id
   LEFT JOIN chatbot_catalog_items p ON p.tenant_id=c.tenant_id AND p.id=l.catalog_item_id
-  WHERE c.tenant_id=$1 AND c.channel IN ('WHATSAPP','WEBSITE')
+  WHERE c.tenant_id=$1 AND c.channel IN ('WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM')
   ORDER BY CASE WHEN l.stage='READY_FOR_AGENT' THEN 0 ELSE 1 END,
    c.last_message_at DESC NULLS LAST LIMIT 150`,[actor.tenantId,actor.userId])).rows;
 }
 export async function whatsappThread(db:SqlClient,actor:Actor,conversationId:string){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);if(!isUuid(conversationId))throw new HttpFailure(400,'Invalid conversation ID');
- const found=await db.query(`SELECT id FROM conversations WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE')`,[actor.tenantId,conversationId]);if(found.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
+ const found=await db.query(`SELECT id FROM conversations WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM')`,[actor.tenantId,conversationId]);if(found.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
  await db.query(`INSERT INTO chatbot_inbox_reads(tenant_id,conversation_id,user_id) VALUES($1,$2,$3) ON CONFLICT(tenant_id,conversation_id,user_id) DO UPDATE SET read_at=now()`,[actor.tenantId,conversationId,actor.userId]);
  const messages=(await db.query(`SELECT id,kind,body,delivery_status,created_at FROM conversation_messages
  WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC,id DESC LIMIT 150`,[actor.tenantId,conversationId])).rows.reverse();
@@ -228,7 +228,7 @@ export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,inpu
  if(d.status!=='HUMAN'&&d.status!=='OPEN'&&d.status!=='CLOSED')throw new HttpFailure(400,'Invalid handoff status');
  // The conversation lock prevents two agents from simultaneously taking ownership.
  const previous=await db.query(`SELECT status,assigned_user_id FROM conversations
-   WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE') FOR UPDATE`,[actor.tenantId,id]);
+   WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM') FOR UPDATE`,[actor.tenantId,id]);
  if(previous.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
  const current=previous.rows[0],myAssignment=String(current.assigned_user_id||'')===actor.userId;
  if(actor.role==='AGENT'&&current.status==='HUMAN'&&current.assigned_user_id&&!myAssignment)
@@ -244,7 +244,7 @@ export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,inpu
  if(d.status!=='OPEN')await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[actor.tenantId,id]);
  else await db.query('UPDATE chatbot_flow_sessions SET node_id=NULL,runtime_nodes=NULL WHERE tenant_id=$1 AND conversation_id=$2',[actor.tenantId,id]);
  const r=await db.query(`UPDATE conversations SET status=$3,assigned_user_id=$4
-   WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE')
+   WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM')
    RETURNING id,status,assigned_user_id`,[actor.tenantId,id,d.status,assigned]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id)
@@ -254,12 +254,12 @@ export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,inpu
 export async function replyWhatsApp(db:SqlClient,actor:Actor,id:string,input:unknown){
  allow(actor,['OWNER','MANAGER','AGENT']);if(!isUuid(id))throw new HttpFailure(400,'Invalid conversation');
  const body=limited(asObject(input).body,2000);if(!body)throw new HttpFailure(400,'Empty reply');
- const web=await db.query(`SELECT status,assigned_user_id FROM conversations WHERE tenant_id=$1 AND id=$2 AND channel='WEBSITE' FOR UPDATE`,[actor.tenantId,id]);
+ const web=await db.query(`SELECT status,assigned_user_id FROM conversations WHERE tenant_id=$1 AND id=$2 AND channel IN ('WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM') FOR UPDATE`,[actor.tenantId,id]);
  if(web.rowCount){const c=web.rows[0];if(c.status!=='HUMAN'||actor.role==='AGENT'&&c.assigned_user_id!==actor.userId)throw new HttpFailure(403,'Only the assigned staff member can reply');await deliverConversation(db,actor.tenantId,id,[textPayload(body)],{staff:true});return {queued:false,available:true}}
  const c=await db.query(`SELECT c.id,c.status,c.assigned_user_id,c.last_customer_message_at,k.phone,k.do_not_contact,a.id AS account_id
   FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id
   JOIN whatsapp_accounts a ON a.tenant_id=c.tenant_id AND a.id=c.whatsapp_account_id AND a.status='CONNECTED'
-  WHERE c.tenant_id=$1 AND c.id=$2 AND c.channel IN ('WHATSAPP','WEBSITE') ORDER BY a.created_at DESC LIMIT 1 FOR UPDATE OF c`,[actor.tenantId,id]);
+  WHERE c.tenant_id=$1 AND c.id=$2 AND c.channel IN ('WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM') ORDER BY a.created_at DESC LIMIT 1 FOR UPDATE OF c`,[actor.tenantId,id]);
  if(c.rowCount!==1)throw new HttpFailure(404,'Connected WhatsApp conversation not found');const row=c.rows[0];
  if(row.do_not_contact)throw new HttpFailure(409,'Contact opted out');
  if(row.status!=='HUMAN')throw new HttpFailure(409,'Take over conversation before replying');

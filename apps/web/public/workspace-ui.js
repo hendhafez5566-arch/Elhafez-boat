@@ -42,6 +42,10 @@ export function initWorkspace(ctx){
       for(const [i,card] of (p.cards||[]).entries()){
         const pane=el('fieldset',undefined,'template-carousel-card');
         pane.append(el('legend','بطاقة '+(i+1)+' — حسب قالب Meta المعتمد'));
+        const catalogSelect=el('select');const empty=el('option','ملء الصورة من الكتالوج المعتمد — اختياري');empty.value='';catalogSelect.append(empty);
+        for(const item of state.templateCatalog||[]){const option=el('option',item.title);option.value=item.id;catalogSelect.append(option)}
+        catalogSelect.onchange=()=>{const item=(state.templateCatalog||[]).find(x=>x.id===catalogSelect.value);if(!item)return;const media=pane.querySelector('[name="card_'+i+'_mediaUrl"]');if(media&&item.imageUrl)media.value=item.imageUrl;notify('تم اختيار صورة من الكتالوج؛ أدخل متغيرات القالب المعتمد وراجع النص قبل الإرسال')};pane.append(catalogSelect);
+
         for(const component of card.components||[]){
           if(component.type==='HEADER'&&['IMAGE','VIDEO'].includes(component.format)){
             field(pane,'رابط صورة/فيديو البطاقة HTTPS','card_'+i+'_mediaUrl',true,2048,'url');
@@ -81,7 +85,7 @@ function values(d){
  if(cards.length)out.cards=cards;
  return out;
 }
- async function templatePage(){const host=$('template-list');host.replaceChildren();const [accounts,t,contacts]=await Promise.all([api('/whatsapp/connection'),api('/whatsapp/templates'),api('/contacts')]);templates=t;state.contacts=contacts;options($('template-account'),accounts.filter(a=>a.status==='CONNECTED').map(a=>({...a,id:a.id})),a=>a.displayPhone||a.phoneNumberId);options($('consent-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-template'),t,t=>t.name+' • '+t.language);if(!t.length)host.append(el('p','لا توجد قوالب معتمدة محفوظة.'));for(const r of t)host.append(card(r.name,r.language+' • '+r.category+' • آخر تحقق '+new Date(r.lastVerifiedAt).toLocaleString('ar-EG')));parameterEditor()}
+ async function templatePage(){const host=$('template-list');host.replaceChildren();const [accounts,t,contacts]=await Promise.all([api('/whatsapp/connection'),api('/whatsapp/templates'),api('/contacts')]);templates=t;state.contacts=contacts;state.templateCatalog=(await api('/catalog')).filter(x=>x.status==='PUBLISHED');options($('template-account'),accounts.filter(a=>a.status==='CONNECTED').map(a=>({...a,id:a.id})),a=>a.displayPhone||a.phoneNumberId);options($('consent-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-template'),t,t=>t.name+' • '+t.language);if(!t.length)host.append(el('p','لا توجد قوالب معتمدة محفوظة.'));for(const r of t)host.append(card(r.name,r.language+' • '+r.category+' • آخر تحقق '+new Date(r.lastVerifiedAt).toLocaleString('ar-EG')));parameterEditor()}
  $('send-template').onchange=parameterEditor;
  bind('template-register',async(d,f)=>{await api('/whatsapp/templates',{method:'POST',body:d});f.elements.name.value='';await templatePage()});bind('consent-form',async d=>{await api('/contacts/'+d.contactId+'/marketing-consent',{method:'PATCH',body:{optIn:d.optIn==='true',evidence:d.evidence}});notify('تم تسجيل الموافقة ودليلها')});bind('template-send',async d=>{if(!confirm('إرسال القالب لهذا العميل وفق موافقته المسجلة؟'))return;await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId,parameters:values(d),scheduleAt:d.scheduleAt?new Date(d.scheduleAt).toISOString():undefined}});notify('تمت إضافة الرسالة للطابور؛ ليست تأكيد تسليم')});
  let polling=false;

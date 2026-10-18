@@ -26,7 +26,7 @@ export async function createIntegration(db:SqlClient,actor:Actor,input:unknown){
 }
 export async function enqueueIntegration(db:SqlClient,tenantId:string,id:string,payload:unknown){
  if(!isUuid(id))throw new HttpFailure(400,'Invalid integration');await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[tenantId]);const backlog=await db.query("SELECT count(*)::int AS n FROM chatbot_integration_jobs WHERE tenant_id=$1 AND status='PENDING'",[tenantId]);if(Number(backlog.rows[0]?.n)>=1000)throw new HttpFailure(429,'Integration queue limit reached');const integration=await db.query('SELECT url FROM chatbot_integrations WHERE tenant_id=$1 AND id=$2 AND enabled=true',[tenantId,id]);if(!integration.rowCount)throw new HttpFailure(409,'Integration not enabled');webhookURL(String(integration.rows[0].url));
- await db.query('INSERT INTO chatbot_integration_jobs(tenant_id,integration_id,payload) VALUES($1,$2,$3::jsonb)',[tenantId,id,JSON.stringify(payload)]);
+ await db.query('INSERT INTO chatbot_integration_jobs(tenant_id,integration_id,payload,contact_id) VALUES($1,$2,$3::jsonb,$4)',[tenantId,id,JSON.stringify(payload),isUuid((payload as {contactId?:unknown})?.contactId)?(payload as {contactId:string}).contactId:null]);
 }
 export async function sendWebhook(raw:string,payload:unknown,id:string,auth?:{mode:string;encrypted:string|null}){
  const url=webhookURL(raw),addresses=await lookup(url.hostname,{all:true});

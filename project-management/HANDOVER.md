@@ -38,3 +38,11 @@ See VERIFICATION-2026-10-18.md for exact limits of those checks.
 - Development CI run [39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) SUCCESS: **43/43**, migration **0023** applied, RLS/FORCE snippet and catalog isolation. Latest documentation commit unverified separately; check HEAD and CI before next action.
 - Read `docs/18-FLOW-REUSE-AND-CAROUSEL.md` for exact limitations, especially **copies rather than linked subflows** and **NO real Meta carousel delivery proof**.
 - Next source opportunities: true linked subflows, dedicated connector adapters for Sheets/CRM/ecommerce (OAuth/credentials required), other Meta template shapes if explicitly supported, retention/security controls. Keep owner request: one formal comprehensive final acceptance after feature build, no ERP/reservation expansion.
+
+
+## 2026-10-18 — advanced runtime continuation from da1c6a3
+Implemented source: native Sheets/HubSpot/WooCommerce/Shopify connectors and owner UI, OAuth/refresh/encryption, contact-sync queues and CONNECTOR node; immutable pinned linked SUBFLOW compilation/field bindings/return and Canvas library editing; Messenger/Instagram/Telegram receive/send adapters with unified inbox, signed/secret webhooks, dedupe and uncertain-send quarantine; owner privacy/retention/export/anonymization; fail-closed ClamAV upload gating; PostgreSQL distributed limits, granular API-key routes, worker health/queue UI. Migration **0024** is required.
+
+Build/TypeScript, changed JS syntax and static HTTP dashboard/assets passed locally. No live provider/scanner, browser/mobile, load/fault/restore or formal final acceptance was run. Development CI result must be attached after push.
+
+**Not all seven areas are closed:** Meta Commerce product-card/catalog-template variants remain unsupported. Existing approved image/video carousel was preserved and gains a published generic-catalog image picker. External accounts, OAuth apps/permissions, Meta review, HTTPS and ClamAV still require configuration and activation evidence. Legacy un-attributed webhook payloads, historical data and backups need a separate erasure process. Read `docs/19-ADVANCED-RUNTIME.md` for exact behavior and constraints; no commercial readiness claim.

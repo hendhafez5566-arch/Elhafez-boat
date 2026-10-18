@@ -41,3 +41,5 @@ Current continuation includes migration 0022. Configure MEDIA_PUBLIC_ORIGIN, wid
 ## Advanced builder additions — 2026-10-18
 Company-specific reusable **linear sections** can be saved/imported from the Flow Builder; **Shift+click** canvas nodes to visually group them. Editing imported copies does not change published versions. Approved **Meta MARKETING image/video carousel templates** (2–10 provider-defined cards) can be filled card by card in the template editor. Both features are source-implemented; real Meta carousel delivery has not been verified.
 Read [implementation and limitations](docs/18-FLOW-REUSE-AND-CAROUSEL.md). Development CI [run 39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) passed 43/43 tests, migration 0023 and tenant RLS; **final acceptance is still outstanding**.
+
+Advanced runtime source delivery, setup and explicit limits: [docs/19-ADVANCED-RUNTIME.md](docs/19-ADVANCED-RUNTIME.md). Includes migration 0024. Meta Commerce product-card templates and live provider/scanner acceptance remain open.

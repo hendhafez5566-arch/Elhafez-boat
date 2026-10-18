@@ -1,0 +1,41 @@
+import {allow,HttpFailure,isUuid,type Actor,type SqlClient} from './services.js';
+export async function privacySettings(db:SqlClient,a:Actor){allow(a,['OWNER']);const r=await db.query('SELECT retention_days,cleanup_enabled,updated_at FROM chatbot_privacy_settings WHERE tenant_id=$1',[a.tenantId]);return r.rows[0]||{retention_days:365,cleanup_enabled:false};}
+export async function savePrivacySettings(db:SqlClient,a:Actor,input:unknown){allow(a,['OWNER']);const d=input as {retentionDays:number;cleanupEnabled:boolean};if(!d||!Number.isInteger(d.retentionDays)||d.retentionDays<30||d.retentionDays>3650||typeof d.cleanupEnabled!=='boolean')throw new HttpFailure(400,'Retention requires 30–3650 days and explicit cleanup choice');await db.query('INSERT INTO chatbot_privacy_settings(tenant_id,retention_days,cleanup_enabled) VALUES($1,$2,$3) ON CONFLICT(tenant_id) DO UPDATE SET retention_days=$2,cleanup_enabled=$3,updated_at=now()',[a.tenantId,d.retentionDays,d.cleanupEnabled]);await audit(db,a.tenantId,a.userId,'PRIVACY_POLICY_CHANGED','policy');return privacySettings(db,a)}
+async function audit(db:SqlClient,t:string,u:string|null,action:string,id:string){await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,$3,'privacy',$4)",[t,u,action,id])}
+export async function exportContact(db:SqlClient,a:Actor,id:string){allow(a,['OWNER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid contact');const c=await db.query('SELECT id,full_name,phone,email,status,created_at,marketing_opt_in,do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[a.tenantId,id]);if(!c.rowCount)throw new HttpFailure(404,'Contact not found');const leads=await db.query('SELECT id,stage,custom_fields,created_at FROM chatbot_leads WHERE tenant_id=$1 AND contact_id=$2',[a.tenantId,id]);const messages=await db.query(`SELECT m.id,m.kind,m.body,m.created_at FROM conversation_messages m JOIN conversations c ON c.tenant_id=m.tenant_id AND c.id=m.conversation_id WHERE c.tenant_id=$1 AND c.contact_id=$2 ORDER BY m.created_at LIMIT 10001`,[a.tenantId,id]);if(messages.rows.length>10000)throw new HttpFailure(409,'Export exceeds interactive limit; arrange a controlled database export');await audit(db,a.tenantId,a.userId,'CONTACT_EXPORTED',id);return {exportedAt:new Date().toISOString(),contact:c.rows[0],leads:leads.rows,messages:messages.rows};}
+export async function anonymizeContact(db:SqlClient,a:Actor,id:string,input:unknown){allow(a,['OWNER']);if(!isUuid(id)||(input as {confirm?:unknown})?.confirm!==id)throw new HttpFailure(400,'Confirm the exact contact ID');return scrubContact(db,a.tenantId,id,a.userId,false)}
+async function scrubContact(db:SqlClient,t:string,id:string,user:string|null,retention:boolean){
+ // Lock tenant then contact/conversations, the same order used by inbound runtime.
+ await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[t]);const c=await db.query('SELECT id FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[t,id]);if(!c.rowCount)throw new HttpFailure(404,'Contact not found');
+ const conversations=await db.query('SELECT id,status FROM conversations WHERE tenant_id=$1 AND contact_id=$2 FOR UPDATE',[t,id]);if(retention&&conversations.rows.some(x=>x.status!=='CLOSED'))return {anonymized:false};
+ // Ambiguous/in-flight messages require reconciliation, never erase evidence mid-dispatch.
+ const inFlight=await db.query(`SELECT 1 FROM whatsapp_outbox WHERE tenant_id=$1 AND conversation_id IN (SELECT id FROM conversations WHERE tenant_id=$1 AND contact_id=$2) AND status IN ('PROCESSING','UNCERTAIN') UNION ALL SELECT 1 FROM chatbot_social_outbox WHERE tenant_id=$1 AND conversation_id IN (SELECT id FROM conversations WHERE tenant_id=$1 AND contact_id=$2) AND status IN ('PROCESSING','UNCERTAIN') LIMIT 1`,[t,id]);if(inFlight.rowCount){if(retention)return {anonymized:false};throw new HttpFailure(409,'Reconcile in-flight/uncertain delivery before erasure')}
+ await db.query("UPDATE contacts SET full_name='عميل محذوف',phone=NULL,email=NULL,status='ARCHIVED',do_not_contact=true,marketing_opt_in=false,updated_at=now() WHERE tenant_id=$1 AND id=$2",[t,id]);
+ await db.query('DELETE FROM contact_notes WHERE tenant_id=$1 AND contact_id=$2',[t,id]);
+ await db.query("UPDATE contact_consent_events SET evidence='[redacted]' WHERE tenant_id=$1 AND contact_id=$2",[t,id]);
+ await db.query("UPDATE chatbot_leads SET party_size=NULL,travel_preference=NULL,custom_fields='{}'::jsonb,stage='CLOSED',updated_at=now() WHERE tenant_id=$1 AND contact_id=$2",[t,id]);
+ await db.query('DELETE FROM chatbot_connector_links WHERE tenant_id=$1 AND contact_id=$2',[t,id]);
+ await db.query("UPDATE chatbot_connector_jobs SET fields='{}'::jsonb,status='CANCELLED',last_error=NULL WHERE tenant_id=$1 AND contact_id=$2",[t,id]);
+ for(const conversation of conversations.rows){const cid=conversation.id;
+ await db.query("UPDATE conversations SET status='CLOSED',assigned_user_id=NULL,external_sender_id=NULL WHERE tenant_id=$1 AND id=$2",[t,cid]);
+ await db.query("UPDATE conversation_messages SET body='[تم حذف بيانات العميل]',payload=NULL,whatsapp_message_id=NULL WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
+ await db.query('DELETE FROM whatsapp_conversation_states WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);
+ await db.query('DELETE FROM chatbot_social_actions WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);
+ await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);
+ await db.query('DELETE FROM chatbot_web_sessions WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);
+ await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED',error=NULL WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
+ await db.query("UPDATE whatsapp_outbox SET payload='{}'::jsonb,recipient_phone='00000000',provider_message_id=NULL,status=CASE WHEN status='PENDING' THEN 'FAILED' ELSE status END,last_error=NULL WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
+ await db.query("UPDATE chatbot_social_outbox SET payload='{}'::jsonb,status='CANCELLED',last_error=NULL WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
+ }
+ await db.query("UPDATE chatbot_integration_jobs SET payload='{}'::jsonb,status=CASE WHEN status='PENDING' THEN 'FAILED' ELSE status END,last_error=NULL WHERE tenant_id=$1 AND contact_id=$2",[t,id]);
+ await db.query("UPDATE chatbot_campaign_jobs SET status='SKIPPED',error='Privacy erasure' WHERE tenant_id=$1 AND contact_id=$2 AND status='PENDING'",[t,id]);
+ await audit(db,t,user,retention?'CONTACT_RETENTION_ANONYMIZED':'CONTACT_ANONYMIZED',id);return {anonymized:true};
+}
+export async function privacyCandidates(db:SqlClient,a:Actor){allow(a,['OWNER']);return candidates(db,a.tenantId)}
+async function candidates(db:SqlClient,t:string){return (await db.query(`SELECT k.id FROM contacts k JOIN chatbot_privacy_settings p ON p.tenant_id=k.tenant_id WHERE k.tenant_id=$1 AND k.status!='ARCHIVED' AND k.updated_at<now()-(p.retention_days*interval '1 day') AND NOT EXISTS(SELECT 1 FROM conversations c WHERE c.tenant_id=k.tenant_id AND c.contact_id=k.id AND (c.status!='CLOSED' OR coalesce(c.last_message_at,c.created_at)>=now()-(p.retention_days*interval '1 day'))) ORDER BY k.updated_at LIMIT 20`,[t])).rows}
+export async function processRetention(db:SqlClient,t:string){const settings=await db.query("UPDATE chatbot_privacy_settings SET last_cleanup_at=now() WHERE tenant_id=$1 AND cleanup_enabled=true AND (last_cleanup_at IS NULL OR last_cleanup_at<now()-interval '1 hour') RETURNING tenant_id",[t]);if(!settings.rowCount)return;for(const c of await candidates(db,t))await scrubContact(db,t,String(c.id),null,true);
+ // Only assets explicitly DELETED by an authorized user are physically purged.
+ await db.query("DELETE FROM chatbot_media WHERE tenant_id=$1 AND status='DELETED' AND created_at<now()-interval '30 days'",[t]);
+ await db.query("DELETE FROM chatbot_social_actions WHERE tenant_id=$1 AND created_at<now()-interval '8 days'",[t]);
+ await db.query('DELETE FROM chatbot_social_receipts WHERE tenant_id=$1 AND created_at<now()-interval \'30 days\'',[t]);
+}

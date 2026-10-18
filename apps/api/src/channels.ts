@@ -1,3 +1,4 @@
+import {enqueueSocial} from './social.js';
 /** Channel adapter boundary. Payloads are generated internally, never accepted from visitors. */
 import {HttpFailure,type SqlClient} from './services.js';
 export function websitePayload(payload:Record<string,unknown>){
@@ -9,7 +10,7 @@ export function websitePayload(payload:Record<string,unknown>){
  throw new HttpFailure(400,'Unsupported website payload');
 }
 export async function deliverConversation(db:SqlClient,tenantId:string,conversationId:string,payloads:Record<string,unknown>[],options:{staff?:boolean}={}){
- const r=await db.query(`SELECT c.channel,c.status,c.whatsapp_account_id,c.last_customer_message_at,k.phone,k.do_not_contact FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF c`,[tenantId,conversationId]);
+ const r=await db.query(`SELECT c.channel,c.status,c.social_account_id,c.external_sender_id,c.whatsapp_account_id,c.last_customer_message_at,k.phone,k.do_not_contact FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF c`,[tenantId,conversationId]);
  if(!r.rowCount)throw new HttpFailure(404,'Conversation not found');const c=r.rows[0];
  if(c.do_not_contact)throw new HttpFailure(409,'Contact opted out');
  if(!options.staff&&c.status!=='OPEN')throw new HttpFailure(409,'Conversation is not owned by the bot');
@@ -19,5 +20,8 @@ export async function deliverConversation(db:SqlClient,tenantId:string,conversat
   for(const p of payloads)await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload) VALUES($1,$2,$3,$4,$5::jsonb)`,[tenantId,c.whatsapp_account_id,conversationId,String(c.phone).replace('+',''),JSON.stringify(p)]);
  }else if(c.channel==='WEBSITE'){
   for(const p of payloads){const message=websitePayload(p);await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,payload,delivery_status) VALUES($1,$2,'OUTBOUND',$3,$4::jsonb,'available')`,[tenantId,conversationId,String('text'in message?message.text:'caption'in message?message.caption||'[وسائط]':'[رسالة]').slice(0,4000)||'[رسالة]',JSON.stringify(message)])}
+ }else if(['MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(c.channel))){
+ if(c.channel!=='TELEGRAM'&&(!c.last_customer_message_at||Date.now()-new Date(String(c.last_customer_message_at)).getTime()>86400000))throw new HttpFailure(409,'Channel service window expired');
+ await enqueueSocial(db,tenantId,conversationId,String(c.social_account_id),String(c.channel),String(c.external_sender_id),payloads);
  }else throw new HttpFailure(400,'Channel adapter unavailable');
 }

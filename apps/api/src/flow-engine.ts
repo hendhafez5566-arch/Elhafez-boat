@@ -3,6 +3,8 @@
  */
 export type Choice = {id:string;title:string;description?:string;next:string};
 export type FlowNode =
+ | {id:string;type:'SUBFLOW';subflowId:string;version:number;bindings?:Record<string,string>;next:string}
+ | {id:string;type:'CONNECTOR';connectorId:string;next:string}
  | {id:string;type:'DELAY';seconds:number;next:string}
  | {id:string;type:'START';next:string}
  | {id:string;type:'CATALOG';category?:string;page?:number;next:string}
@@ -42,7 +44,9 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   requireTrue(typeof raw.id==='string'&&(options.runtime?/^@[a-zA-Z0-9:_-]{1,180}$/.test(raw.id)||ident.test(raw.id):ident.test(raw.id))&&!seen.has(raw.id),'Duplicate or invalid node ID');
   seen.add(raw.id);
   const type=raw.type;
-  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK','DELAY'].includes(String(type)),'Unsupported node type');
+  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK','DELAY','SUBFLOW','CONNECTOR'].includes(String(type)),'Unsupported node type');
+  if(type==='SUBFLOW'){requireTrue(typeof raw.subflowId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.subflowId)&&Number.isInteger(raw.version)&&Number(raw.version)>0,'Invalid pinned subflow');if(raw.bindings!==undefined)requireTrue(plain(raw.bindings)&&Object.keys(raw.bindings).length<=30&&Object.entries(raw.bindings).every(([k,v])=>key.test(k)&&typeof v==='string'&&key.test(v)),'Invalid field bindings');}
+  if(type==='CONNECTOR')requireTrue(typeof raw.connectorId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.connectorId),'Invalid connector');
   if(type==='DELAY')requireTrue(Number.isInteger(raw.seconds)&&Number(raw.seconds)>=1&&Number(raw.seconds)<=604800,'Delay must be 1–604800 seconds');
   if(type==='START'){startCount++;}
   if(type==='WEBHOOK')requireTrue(typeof raw.integrationId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.integrationId),'Invalid webhook integration ID');
@@ -87,7 +91,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  requireTrue((options.runtime?startCount>=1:startCount===1)&&input.nodes.some(n=>plain(n)&&n.id===input.startId&&n.type==='START'),'Flow needs exactly one START matching startId');
  const nodes=input.nodes as FlowNode[];
  const edges=(node:FlowNode):string[]=>{
-  if(node.type==='START'||node.type==='TEXT'||node.type==='INPUT'||node.type==='TAG'||node.type==='MEDIA'||node.type==='LINK'||node.type==='CATALOG'||node.type==='AI'||node.type==='QUESTION'||node.type==='WEBHOOK'||node.type==='DELAY')return [node.next];
+  if(node.type==='START'||node.type==='TEXT'||node.type==='INPUT'||node.type==='TAG'||node.type==='MEDIA'||node.type==='LINK'||node.type==='CATALOG'||node.type==='AI'||node.type==='QUESTION'||node.type==='WEBHOOK'||node.type==='DELAY'||node.type==='SUBFLOW'||node.type==='CONNECTOR')return [node.next];
   if(node.type==='CONDITION'||node.type==='KEYWORD')return [node.yes,node.no];
   if(node.type==='BUTTONS'||node.type==='LIST')return node.choices.map(c=>c.next);
   return [];
@@ -159,7 +163,8 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TE
   const node=nodes.get(at);if(!node)throw new Error('Node destination unavailable');
   if(node.type==='DELAY')return {state:{at,answers,tags},messages,handoff,finished,waiting:{seconds:node.seconds,next:node.next}};
   if(node.type==='KEYWORD'){const text=input?.kind==='TEXT'?input.value.toLowerCase():'';at=node.keywords.some(k=>text.includes(k.toLowerCase()))?node.yes:node.no;continue}
-  if(node.type==='CATALOG'||node.type==='AI'||node.type==='WEBHOOK')return {state:{at,answers,tags},messages,handoff,finished,pending:true};
+  if(node.type==='SUBFLOW')throw new Error('Subflow must be compiled before execution');
+  if(node.type==='CATALOG'||node.type==='AI'||node.type==='WEBHOOK'||node.type==='CONNECTOR')return {state:{at,answers,tags},messages,handoff,finished,pending:true};
   if(node.type==='START'){at=node.next;continue}
   if(node.type==='TEXT'){messages.push({type:'TEXT',text:node.text});at=node.next;continue}
   if(node.type==='LINK'){messages.push({type:'TEXT',text:node.text+'\n'+node.url});at=node.next;continue}
