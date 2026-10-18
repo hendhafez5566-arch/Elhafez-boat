@@ -66,3 +66,21 @@
 .insight-rail{height:14px;background:#e6eef3;border:1px solid #d0dce4;border-radius:8px;overflow:hidden}
 .insight-fill{height:100%;background:#087d69;border-radius:8px;min-width:0}
 #bot-insights>.grid{margin:16px 0}
+
+
+/* Starter workspace: the common journey stays visible; advanced tooling stays discoverable. */
+.sidebar .nav-advanced{border-top:1px solid #ffffff24;padding-top:10px;color:#edf4ff}
+.sidebar .nav-advanced summary{padding:10px 12px;border-radius:9px;cursor:pointer;font-size:14px;font-weight:700}
+.sidebar .nav-advanced summary:hover,.sidebar .nav-advanced[open] summary{background:#ffffff15}
+.sidebar .nav-advanced-buttons{display:grid;gap:4px;margin-top:8px}
+.sidebar .nav-advanced .nav{width:100%}
+.getting-started-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.getting-started-card{background:#f8fbfc;border:1px solid #c8dbe1;border-radius:12px;padding:16px;display:grid;gap:12px}
+.getting-started-card strong{color:#17364a}
+.getting-started-card button{justify-self:start}
+.campaign-quick-start{background:#f4faf7;padding:14px;margin-bottom:15px;border:1px solid #a8cfc1;border-radius:12px}
+.campaign-quick-start button{margin:6px 6px 0 0}
+.boat-guide-quick{background:#f1f7fa;border:1px solid #bed5df;border-radius:12px;padding:14px;margin-bottom:16px;display:grid;gap:10px}
+.boat-guide-quick strong{display:block}
+.boat-guide-quick textarea{max-width:780px}
+@media(max-width:880px){.getting-started-grid{grid-template-columns:1fr}.getting-started-card button{width:100%}}
