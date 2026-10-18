@@ -170,3 +170,11 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .boat-guide-quick strong{display:block}
 .boat-guide-quick textarea{max-width:780px}
 @media(max-width:880px){.getting-started-grid{grid-template-columns:1fr}.getting-started-card button{width:100%}}
+
+/* Platform-owner workspace shares the same typography, spacing and semantic colors. */
+.platform-topbar{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:22px clamp(20px,4vw,55px);background:#142b46;color:#fff;box-shadow:0 6px 22px #152b4616}
+.platform-topbar strong{font-size:19px;letter-spacing:-.02em}.platform-topbar a{color:#e3f4ef}
+.platform-main{max-width:1330px;margin:auto;padding:36px clamp(18px,4vw,56px)}
+.platform-login-panel{max-width:480px;margin:24px auto 0}
+.premium-platform .ops-card{background:white}.premium-platform .ops-row{align-items:end}
+.premium-platform .ops-row>h3{flex:1}
