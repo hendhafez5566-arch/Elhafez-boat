@@ -47,3 +47,14 @@
  .boat-guide-progress li{padding:8px}
  .boat-guide-actions button{flex:1}
 }
+
+
+/* Staff-first CRM followups: no outbound messaging without explicit approval. */
+.crm-lead-score{background:#eaf6f1;color:#075744;border-inline-start:4px solid #087d69;padding:8px 12px;border-radius:7px;font-weight:700;margin:12px 0;font-size:13px}
+.crm-tasks-panel:not([hidden]){margin-top:14px;padding:14px;background:#f6fafc;border:1px solid #b6cad7;border-radius:12px}
+.crm-task{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px;border-bottom:1px solid #d6e1e9;flex-wrap:wrap}
+.crm-task small{font-size:12px;color:#31546a}
+.crm-followup-form{margin-top:14px;display:grid;grid-template-columns:1fr minmax(170px,230px) auto;gap:10px;align-items:end}
+.crm-followup-form label{margin:0}
+.crm-followup-form button{margin:0;white-space:nowrap}
+@media(max-width:850px){.crm-followup-form{grid-template-columns:1fr}.crm-followup-form button{width:100%}}
