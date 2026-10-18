@@ -12,7 +12,7 @@ import {passwordHash,tokenDigest} from '../.build/apps/api/src/auth.js';
 import {sealIntegrationSecret,openIntegrationSecret} from '../.build/apps/api/src/integration-secrets.js';
 import {saveConnector,beginConnectorOAuth,finishConnectorOAuth,syncContact,processConnector,connectorResources} from '../.build/apps/api/src/connectors.js';
 import {connectSocial,processSocial} from '../.build/apps/api/src/social.js';
-import {connectWhatsApp,reconcileWhatsAppReceipt} from '../.build/apps/api/src/whatsapp.js';
+import {connectWhatsApp,disconnectWhatsApp,diagnoseWhatsApp,reconcileWhatsAppReceipt} from '../.build/apps/api/src/whatsapp.js';
 import {registerApprovedTemplate} from '../.build/apps/api/src/templates.js';
 import {createCampaign,cancelCampaign,launchCampaign} from '../.build/apps/api/src/campaigns.js';
 import {uploadMedia,deleteMedia,publicMedia,validateManagedMedia} from '../.build/apps/api/src/media.js';
@@ -144,6 +144,13 @@ export async function localClosure({db,env,sim,launch,request,expectCode,apiProc
  check('production Messenger/Instagram/Telegram account validation and competing dispatch');
  // Seed real encrypted WA/account/template and reproduce in-flight accepted-before-response crash.
  const wa=await tx(a.tenant,c=>connectWhatsApp(c,a.actor,{phoneNumberId:'123456789',wabaId:'987654321',accessToken:'fixture-whatsapp-token-123456789'}));
+ await tx(a.tenant,c=>disconnectWhatsApp(c,a.actor,wa.id));
+ const reconnected=await tx(a.tenant,c=>connectWhatsApp(c,a.actor,{phoneNumberId:'123456789',wabaId:'987654321',accessToken:'fixture-whatsapp-token-rotated-123456789'}));
+ assert.equal(reconnected.id,wa.id,'Reconnect preserves account and conversation identity');
+ const diagnosis=await tx(a.tenant,c=>diagnoseWhatsApp(c,a.actor,wa.id));
+ assert.equal(diagnosis.verified,true);assert.equal(diagnosis.liveAcceptance,false);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_routes WHERE tenant_id=$1 AND account_id=$2',[a.tenant,wa.id])).rows[0].n,1);
+ check('WhatsApp disconnect/reconnect preserves identity and routing; provider diagnostic explicitly excludes live acceptance');
  const template=await tx(a.tenant,c=>registerApprovedTemplate(c,a.actor,{accountId:wa.id,name:'fixture_notice',language:'en'}));
  const templateId=(await db.query('SELECT id FROM whatsapp_approved_templates WHERE tenant_id=$1',[a.tenant])).rows[0].id;
  const campaign=await tx(a.tenant,c=>createCampaign(c,a.actor,{name:'Fixture campaign',startAt:new Date(Date.now()+10000).toISOString(),steps:[{templateId,offsetMinutes:0}]}));await db.query('UPDATE contacts SET marketing_opt_in=true,marketing_opt_in_at=now() WHERE tenant_id=$1 AND id=$2',[a.tenant,contact]);await tx(a.tenant,c=>launchCampaign(c,a.actor,campaign.id));await tx(a.tenant,c=>cancelCampaign(c,a.actor,campaign.id));

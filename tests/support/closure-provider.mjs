@@ -23,6 +23,8 @@ export async function closureProvider(){
   else if(host==='fixture.myshopify.com')result={data:{customerSet:{customer:{id:'gid://shopify/Customer/123'},userErrors:[]}}};
   else if(host==='woo.fixture.test')result=req.method==='GET'?[]:{id:123};
   else if(host==='ai.fixture.test')result={choices:[{message:{content:JSON.stringify({sourceId:null})}}]};
+  else if(url.pathname.endsWith('/phone_numbers'))result={data:[{id:'123456789'}]};
+  else if(url.pathname.endsWith('/subscribed_apps'))result={data:[]};
   else if(url.pathname.includes('product_catalogs'))result={data:[{id:'777777'}]};
   else if(url.pathname.includes('whatsapp_commerce_settings'))result={data:[{is_catalog_visible:true}]};
   else result={id:url.pathname.split('/').at(-1),display_phone_number:'+10000000000'};

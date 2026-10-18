@@ -26,7 +26,7 @@ import {analyticsOverview} from './analytics.js';
 import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
-import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
+import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, diagnoseWhatsApp, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
 import { createTeamInvite, listTeamInvitations, revokeTeamInvite, updateTeamRole, acceptTeamInvite } from './team.js';
 import { platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, platformUsageLimits, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
@@ -162,6 +162,8 @@ const server=createServer(async(req,res)=>{
     const commerceLink=/^\/api\/v1\/commerce\/links\/([^/]+)\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&commerceLink)return json(res,200,await run(tx=>disableCommerceLink(tx,actor,commerceLink[1],commerceLink[2])));
     if(req.method==='GET'&&pathname==='/api/v1/commerce/resources'){const q=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>commerceResources(tx,actor,{accountId:q.get('accountId')||'',catalogId:q.get('catalogId')||undefined,after:q.get('after')||undefined})));}
+    const waDiagnosis=pathname.match(/^\/api\/v1\/whatsapp\/connection\/([0-9a-f-]+)\/diagnose$/);
+    if(req.method==='POST'&&waDiagnosis)return json(res,200,await run(tx=>diagnoseWhatsApp(tx,actor,waDiagnosis[1])));
     if(req.method==='GET'&&pathname==='/api/v1/whatsapp/connection')return json(res,200,await run(tx=>whatsappConnection(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);

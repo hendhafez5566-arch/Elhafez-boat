@@ -1,3 +1,14 @@
+# Pilot readiness continuation — 2026-10-18
+
+Authoritative report: `PILOT-ACCEPTANCE-REPORT.md` at repository root; owner steps: `docs/24-WHATSAPP-PILOT.md`.
+Starting HEAD verified as a6d904d0170e76bae40231d425b89ddf638b4bdb. Existing CI 39120667468 both jobs SUCCESS (job steps/logs inspected); it is baseline evidence, not proof of these changes.
+
+Implemented: WABA-to-phone ownership verification with bounded paginated provider reads, no redirects and sanitized errors; same-tenant reconnect/token rotation preserving account/conversation identity; route ownership guard; owner-only on-demand phone/subscription diagnosis with no live-delivery claim; Arabic setup and explicit local disconnect explanation; browser refresh/close and logout unsaved-draft guards; staging HTTPS ingress overlay and missing runtime environment wiring.
+
+Local npm run check: 96/96 PASS. Full latest-source CI runtime/browser/restore evidence pending at source submission; consult report for subsequent evidence. No Staging host, external account, real number, live message or production deployment created. No merge; same branch/draft PR #1. Host creation requires owner's explicit approval under this task, followed separately by safe Meta login/number consent. Full per-button UI and live Meta acceptance are still open, not solved by local unit tests.
+
+---
+
 # Feature expansion — 2026-10-18 (source delivered; CI acceptance pending)
 
 Branch `feat/stage0-foundation` / draft PR #1. Source changes: [reports 3cea98b](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/3cea98b7fdfa1f400f77cb35af0bcc2d25520da9), [AI 5ee7fad](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/5ee7fadbc154f0d24e25c4c1978d8da29964b13d), [CRM 03d1829](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/03d18292d3f5c4853b5d07097c242b91ad118300), [Meta comment automation eaeaff9](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/eaeaff90c49769a48bddf5cde65f71e673287d34).

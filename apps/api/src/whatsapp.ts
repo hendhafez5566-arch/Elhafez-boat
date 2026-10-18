@@ -42,21 +42,67 @@ export function verifyChallenge(params:URLSearchParams):string|null {
  const challenge=params.get('hub.challenge');return challenge&&/^\d{1,64}$/.test(challenge)?challenge:null;
 }
 const graphVersion=()=>{const v=process.env.META_GRAPH_VERSION??'';if(!/^v\d{1,2}\.\d{1,2}$/.test(v))throw new HttpFailure(503,'Meta Graph version not configured');return v;};
+/** Read-only provider verification. It never registers numbers or changes subscriptions. */
+async function readWhatsAppGraph(path:string,token:string){
+  try{
+   const response=await fetch(`https://graph.facebook.com/${graphVersion()}/${path}`,{headers:{Authorization:`Bearer ${token}`},redirect:'error',signal:AbortSignal.timeout(8000)});
+   if(!response.ok)throw new Error('rejected');
+   // Bound provider JSON; never include its body or credentials in an error.
+   const reader=response.body?.getReader();if(!reader)throw new Error('empty');
+   let size=0;const chunks:Uint8Array[]=[];
+   try{for(;;){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>262144)throw new Error('large');chunks.push(value)}}finally{await reader.cancel().catch(()=>{})}
+   return asObject(JSON.parse(Buffer.concat(chunks).toString()));
+  }catch{throw new HttpFailure(502,'تعذر التحقق من Meta؛ راجع صلاحية الرمز وصلاحيات الحساب وأعد المحاولة');}
+
+}
+export async function verifyWhatsAppAccount(phoneNumberId:string,wabaId:string,token:string){
+ const get=(path:string)=>readWhatsAppGraph(path,token);
+ const phone=await get(`${phoneNumberId}?fields=id,display_phone_number`);
+ if(phone.id!==phoneNumberId)throw new HttpFailure(400,'معرف رقم واتساب غير مطابق');
+ // Follow only server-built cursors, never provider-supplied next URLs.
+ let after='';let found=false;
+ for(let page=0;page<20;page++){
+  const result=await get(`${wabaId}/phone_numbers?fields=id&limit=100${after?'&after='+encodeURIComponent(after):''}`);
+  if(!Array.isArray(result.data))throw new HttpFailure(502,'تعذر قراءة أرقام حساب واتساب');
+  if(result.data.some((v:unknown)=>asObject(v).id===phoneNumberId)){found=true;break}
+  const paging=asObject(result.paging);after=str(asObject(paging.cursors).after);if(!paging.next||!after)break;
+ }
+ if(!found)throw new HttpFailure(400,'الرقم لا يتبع حساب WABA المحدد أو تعذر تأكيد التبعية');
+ return phone;
+}
+export async function diagnoseWhatsApp(db:SqlClient,actor:Actor,accountId:string){
+ allow(actor,['OWNER']);if(!isUuid(accountId))throw new HttpFailure(400,'Invalid WhatsApp account ID');
+ const row=(await db.query(`SELECT phone_number_id,waba_id,access_token_encrypted,status FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2`,[actor.tenantId,accountId])).rows[0];
+ if(!row)throw new HttpFailure(404,'Account not found');
+ if(row.status!=='CONNECTED')return {verified:false,reason:'DISABLED'};
+ await verifyWhatsAppAccount(str(row.phone_number_id),str(row.waba_id),decryptAccessToken(str(row.access_token_encrypted)));
+ const appId=process.env.META_APP_ID||'';let subscribed=false;
+ if(/^\d{5,30}$/.test(appId)){
+  try{
+   const data=await readWhatsAppGraph(`${row.waba_id}/subscribed_apps?limit=100`,decryptAccessToken(str(row.access_token_encrypted)));
+   subscribed=Array.isArray(data.data)&&data.data.some((v:unknown)=>asObject(asObject(v).whatsapp_business_api_data).id===appId);
+  }catch{/* A failed check is never a connected badge. */}
+ }
+ return {verified:true,subscribed,appConfigured:/^\d{5,30}$/.test(appId),checkedAt:new Date().toISOString(),liveAcceptance:false};
+}
 export async function connectWhatsApp(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER']);const d=asObject(input),phoneNumberId=str(d.phoneNumberId).trim(),wabaId=str(d.wabaId).trim(),token=str(d.accessToken).trim();
  if(!phoneIdPattern.test(phoneNumberId)||!phoneIdPattern.test(wabaId)||token.length<20||token.length>2048)throw new HttpFailure(400,'Invalid Meta account configuration');
- // Verify the supplied token can read THIS phone number before we store it.
- let response:Response;
- try{response=await fetch(`https://graph.facebook.com/${graphVersion()}/${phoneNumberId}?fields=id,display_phone_number`,{headers:{Authorization:`Bearer ${token}`},signal:AbortSignal.timeout(8000)});}catch{throw new HttpFailure(502,'Could not verify Meta phone account');}
- if(!response.ok)throw new HttpFailure(400,'Meta rejected the phone number credentials');
- const verified=asObject(await response.json());if(verified.id!==phoneNumberId)throw new HttpFailure(400,'Meta phone ID does not match');
+ const verified=await verifyWhatsAppAccount(phoneNumberId,wabaId,token);
  const encrypted=encryptAccessToken(token);
  const r=await db.query(`INSERT INTO whatsapp_accounts(tenant_id,phone_number_id,waba_id,access_token_encrypted,display_phone,connected_by)
   VALUES($1,$2,$3,$4,$5,$6)
-  ON CONFLICT(phone_number_id) DO NOTHING RETURNING id,phone_number_id,waba_id,display_phone,status`,
+  ON CONFLICT(phone_number_id) DO UPDATE SET waba_id=EXCLUDED.waba_id,
+  access_token_encrypted=EXCLUDED.access_token_encrypted,display_phone=EXCLUDED.display_phone,
+  connected_by=EXCLUDED.connected_by,status='CONNECTED'
+  WHERE whatsapp_accounts.tenant_id=EXCLUDED.tenant_id
+  RETURNING id,phone_number_id,waba_id,display_phone,status`,
   [actor.tenantId,phoneNumberId,wabaId,encrypted,limited(verified.display_phone_number,32)||null,actor.userId]);
  if(r.rowCount!==1)throw new HttpFailure(409,'Phone number is already connected');
- await db.query(`INSERT INTO whatsapp_routes(phone_number_id,tenant_id,account_id) VALUES($1,$2,$3)`,[phoneNumberId,actor.tenantId,r.rows[0].id]);
+ const route=await db.query(`INSERT INTO whatsapp_routes(phone_number_id,tenant_id,account_id) VALUES($1,$2,$3)
+  ON CONFLICT(phone_number_id) DO UPDATE SET account_id=EXCLUDED.account_id
+  WHERE whatsapp_routes.tenant_id=EXCLUDED.tenant_id RETURNING phone_number_id`,[phoneNumberId,actor.tenantId,r.rows[0].id]);
+ if(route.rowCount!==1)throw new HttpFailure(409,'Phone routing belongs to another company');
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_CONNECTED','whatsapp',$3)`,[actor.tenantId,actor.userId,phoneNumberId]);
  return r.rows[0];
 }

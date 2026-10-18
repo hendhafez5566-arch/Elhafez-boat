@@ -1,3 +1,7 @@
+# Current pilot authorization — 2026-10-18
+
+Owner permits preparation for one real WhatsApp test number, but requires separate explicit approval before hosting/account activation, and safe owner completion of Meta login/OTP. Other providers remain out of scope. See `docs/24-WHATSAPP-PILOT.md` and `PILOT-ACCEPTANCE-REPORT.md`. The historical checklist below is retained; its blanket earlier prohibition is superseded only by this narrow authorization.
+
 # Owner activation checklist — manual future work only
 
 No provider accounts were connected by this technical execution. Simulator checks do not establish live integration success. Keep PR #1 unmerged until review. Do not start outreach or campaigns during activation.
