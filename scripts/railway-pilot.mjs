@@ -25,16 +25,17 @@ if(!Number.isInteger(apiPort)||!Number.isInteger(webPort)||apiPort<1024||webPort
  throw new Error('BOAT_API_PORT / PORT must be distinct unprivileged port numbers');
 }
 const common={...process.env,AI_API_KEY:'',AI_BASE_URL:'',AI_MODEL:''};
+for(const name of ['MIGRATION_DATABASE_URL','BOOTSTRAP_PASSWORD','BOOTSTRAP_EMAIL','BOOTSTRAP_TENANT_SLUG','BOOTSTRAP_TENANT_NAME','POSTGRES_PASSWORD','TEST_RUNTIME_PASSWORD'])delete common[name];
 const processes=[
  {name:'api',entry:'.build/apps/api/src/server.js',env:{...common,PORT:String(apiPort)}},
  {name:'worker',entry:'.build/apps/worker/main.js',env:{...common}},
  {name:'web',entry:'apps/web/server.mjs',env:{...common,WEB_PORT:String(webPort),API_INTERNAL_ORIGIN:'http://127.0.0.1:'+apiPort}}
 ];
 const active=new Map();
-let stopping=false;
+let stopping=false,terminationCode=0;
 function terminate(code=0){
  if(stopping)return;
- stopping=true;
+ stopping=true;terminationCode=code;
  for(const child of active.values())if(child.exitCode===null)child.kill('SIGTERM');
  // Child processes receive SIGTERM; do not leave a zombie worker if the web dies.
  const wait=setTimeout(()=>{
@@ -50,7 +51,7 @@ for(const {name,entry,env} of processes){
  child.on('error',error=>{console.error('Pilot '+name+' failed to start:',error.code||'SPAWN_ERROR');terminate(1)});
  child.on('exit',(code,signal)=>{
   active.delete(name);
-  if(stopping){if(!active.size)process.exit(0);return}
+  if(stopping){if(!active.size)process.exit(terminationCode);return}
   console.error('Pilot '+name+' exited unexpectedly ('+(code??signal)+'); stopping sibling processes');
   terminate(1);
  });
