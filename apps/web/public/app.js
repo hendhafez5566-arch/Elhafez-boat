@@ -22,7 +22,10 @@ const uiErrorTranslations={
 function notify(message,type='success'){
  const n=$('notice'),raw=String(message||'');
  n.hidden=!raw;n.className='notice '+type;
- n.textContent=uiErrorTranslations[raw]||Object.entries(uiErrorTranslations).find(([key])=>raw.includes(key))?.[1]||raw;
+ n.replaceChildren();if(!raw)return;
+ n.append(document.createTextNode(uiErrorTranslations[raw]||Object.entries(uiErrorTranslations).find(([key])=>raw.includes(key))?.[1]||raw));
+ const close=document.createElement('button');close.type='button';close.className='notice-close';close.textContent='×';close.setAttribute('aria-label','إغلاق التنبيه');
+ close.onclick=()=>{n.hidden=true;n.replaceChildren()};n.append(close);
 }
 async function execute(fn){try{return await fn()}catch(e){notify(e.message||'تعذر إتمام العملية','error')}}
 async function api(path,{method='GET',body}={}){const token=state.token;const r=await fetch('/api/v1'+path,{method,headers:{...(token?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});const d=await r.json().catch(()=>({error:'تعذر قراءة رد الخادم'}));if(token!==state.token)throw new Error('انتهت الجلسة السابقة');if(!r.ok){const e=new Error(d.error||'تعذر الطلب');e.status=r.status;throw e}return d}

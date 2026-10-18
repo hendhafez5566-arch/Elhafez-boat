@@ -153,6 +153,12 @@ try{
  const collideDrag=await evaluate("(()=>{const nodes=[...document.querySelectorAll('.canvas-node')];const a=nodes.find(n=>n.dataset.nodeId==='welcome'),b=nodes.find(n=>n.classList.contains('canvas-text')&&n.dataset.nodeId!=='welcome');if(!a||!b)throw Error('drag nodes unavailable');const drag=b.querySelector('.canvas-title');drag.setPointerCapture=()=>{};const from=b.getBoundingClientRect(),to=a.getBoundingClientRect();const x=from.left+30,y=from.top+20;drag.onpointerdown({button:0,pointerId:41,clientX:x,clientY:y});drag.onpointermove({clientX:x+to.left-from.left,clientY:y+to.top-from.top});drag.onpointerup({});const aa=document.querySelector('.canvas-node[data-node-id=welcome]').getBoundingClientRect();const bb=document.querySelector('.canvas-node[data-node-id='+b.dataset.nodeId+']').getBoundingClientRect();return {overlap:aa.left<bb.right-3&&aa.right>bb.left+3&&aa.top<bb.bottom-3&&aa.bottom>bb.top+3}})()");
  assert.equal(collideDrag.overlap,false,'Manual pointer drag must refuse placement on top of an occupied card');
  await screenshot('premium-drag-collision-guard-desktop.png');
+ await evaluate("document.querySelector('.builder-properties > button')?.click()");
+ await evaluate("(()=>{const actions=[...document.querySelectorAll('.builder-view-actions button')];actions.find(x=>x.textContent.includes('إخفاء المكونات'))?.click();actions.find(x=>x.textContent.includes('الخطوة المختارة'))?.click()})()");
+ await sleep(180);
+ await screenshot('premium-readable-branch-desktop.png');
+ await evaluate("(()=>{const t=[...document.querySelectorAll('.builder-view-actions button')].find(x=>x.textContent.includes('إظهار المكونات'));t?.click()})()");
+
  console.log('PASS 3-branch graph, 6 connected new steps, undo/redo, collision-free auto layout and manual pointer drag');
 
 
