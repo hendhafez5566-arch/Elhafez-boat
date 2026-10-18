@@ -60,3 +60,12 @@ Implemented source: tenant/account-bound generic-to-Meta catalog mapping, offici
 
 
 Commerce source delivery: [c2487df](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/c2487dfb0673f3a53d477dfcb53b9507c36b1975). Development [push CI 39103361252](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39103361252) SUCCESS: **70/70**, migrations **0001–0025**, actual PostgreSQL Commerce mapping cross-tenant read/insert denial, FORCE/RLS gate and cart-as-interest lead/handoff assertions. Job 117603998394 logs inspected. Local 70/70 also passed. External provider activation and full browser/fault/load/restore acceptance remain unverified; this evidence does not claim those passed.
+
+
+## 2026-10-18 — actual runtime/browser/backup acceptance
+- New `tests/runtime-acceptance.mjs`: two-tenant non-owner PostgreSQL role, auth/catalog/FAQ, real flow save/publish/preview, website lead/human handoff and dedupe/origin, worker heartbeat, DELAY continuation once, 40-request smoke and logout.
+- New `tests/browser-acceptance.mjs`: Chrome DevTools login, dashboard/canvas desktop/mobile viewports and screenshots. Fixed race in test startup (wait for module login handler) rather than changing production auth.
+- New `scripts/ci-backup-restore.sh`: disposable PostgreSQL `pg_dump` + `pg_restore` into a new test DB, with migration/company/bot/catalog verification.
+- `.github/workflows/verify.yml`: new independent runtime acceptance job, real PostgreSQL/Chrome and screenshot artifact. Original check job retained.
+- Confirmed CI [39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303) SUCCESS across both jobs: 70/70 unit tests, migrations 0001–0025, RLS and new runtime/browser/restore checks.
+- This does NOT prove live Meta/Google/ecommerce accounts, real ClamAV/AI, production load/security or commercial readiness. See `project-management/ACCEPTANCE-EXECUTION-2026-10-18.md`.
