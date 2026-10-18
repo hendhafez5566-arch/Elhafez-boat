@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {randomUUID,randomBytes,createHash,createHmac} from 'node:crypto';
 import {writeFile,mkdir,readFile} from 'node:fs/promises';
 import {setTimeout as sleep} from 'node:timers/promises';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
+import {processDelay} from '../.build/apps/api/src/delay-scheduler.js';
 import {once} from 'node:events';
 import pg from 'pg';
 import {publicTenant} from '../.build/apps/api/src/public-tenant.js';
@@ -20,11 +21,11 @@ import {anonymizeContact,processRetention,exportContact} from '../.build/apps/ap
 import {saveSubflow} from '../.build/apps/api/src/subflows.js';
 import {groundedReply,saveAiSettings} from '../.build/apps/api/src/ai.js';
 import {sendWebhook} from '../.build/apps/api/src/integrations.js';
-export async function localClosure({db,env,sim,launch,request,expectCode}){
+export async function localClosure({db,env,sim,launch,request,expectCode,apiProcesses}){
  const pool=new pg.Pool({connectionString:env.DATABASE_URL,max:30});pool.on('error',()=>{});
  const tx=(tenant,fn)=>publicTenant(pool,tenant,fn),report={checks:[],mixed:null,explain:null};
  const check=(name)=>{report.checks.push(name);console.log('PASS LOCAL CLOSURE '+name)};
- const tenants=[],suffix=randomBytes(4).toString('hex');
+ const browserRoles=[];const tenants=[],suffix=randomBytes(4).toString('hex');
  const pass='Fixture-'+randomBytes(18).toString('hex'),hash=await passwordHash(pass);
  try{
  for(let i=0;i<4;i++){
@@ -34,11 +35,11 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
   await db.query("INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at) VALUES($1,'STARTER','TRIAL',now()+interval '14 days')",[tenant]);
   await db.query('INSERT INTO chatbot_usage_limits(tenant_id,daily_inbound,daily_templates,media_bytes) VALUES($1,100000,10000,52428800)',[tenant]);
   const token=randomBytes(32).toString('base64url');await db.query("INSERT INTO sessions(token_hash,tenant_id,user_id,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[tokenDigest(token),tenant,user]);
-  tenants.push({tenant,user,token,actor:{tenantId:tenant,userId:user,role:'OWNER'}});
+  tenants.push({tenant,user,token,slug:'mixed-'+suffix+'-'+i,actor:{tenantId:tenant,userId:user,role:'OWNER'}});
  }
  const a=tenants[0],b=tenants[1];
  // Seed linked immutable subflows and a delayed prompt -> handoff story in every company.
- const mixedWorkers=[launch('mixed-worker-1',process.execPath,['.build/apps/worker/main.js'],env),launch('mixed-worker-2',process.execPath,['.build/apps/worker/main.js'],env)];
+ const mixedWorkers=[];
  const clients=[];
  for(const t of tenants){
   const sub=await tx(t.tenant,c=>saveSubflow(c,t.actor,{definition:{name:'Pinned collect',startId:'s',nodes:[{id:'s',type:'START',next:'end'},{id:'end',type:'END',text:'Pinned company greeting'}]}}));
@@ -54,7 +55,22 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
  // Real mixed workload for >=20 seconds, 200 visitors, thousands of HTTP/message operations.
  let n=0;const samples=[],counts={};const started=performance.now(),cpu=process.cpuUsage();
  await Promise.all(Array.from({length:20},async()=>{while(n<200){const i=n++,t=tenants[i%4],start=performance.now();const visitor=await expectCode('/api/v1/widget/start',{method:'POST',headers:{origin:'http://127.0.0.1:3000'},body:{widgetKey:t.widgetKey,name:'Fixture visitor '+i}},201);clients.push({token:visitor.token,tenant:t.tenant});samples.push(performance.now()-start)}}));
+ await sleep(1100);
+ // Compare the exact legacy idle policy with the corrected policy on real due jobs.
+ // Two passes, four companies: identical production processor and eight jobs each.
+ const legacyStarted=performance.now();
+ for(let pass=0;pass<2;pass++){for(const t of tenants)assert.equal(await tx(t.tenant,c=>processDelay(c,t.tenant)),true);await sleep(2000)}
+ const legacyMs=performance.now()-legacyStarted,correctedStarted=performance.now();
+ for(let pass=0;pass<2;pass++)for(const t of tenants)assert.equal(await tx(t.tenant,c=>processDelay(c,t.tenant)),true);
+ report.schedulerComparison={scope:'single dispatcher idle-policy comparison, real processor/DB, eight due jobs per policy',legacyMs,correctedMs:performance.now()-correctedStarted};
+ mixedWorkers.push(launch('mixed-worker-1',process.execPath,['.build/apps/worker/main.js'],env),launch('mixed-worker-2',process.execPath,['.build/apps/worker/main.js'],env));
+ const hz=Number(execFileSync('getconf',['CLK_TCK'],{encoding:'utf8'}).trim());
+ const measured=[...apiProcesses,...mixedWorkers];
+ async function resource(p){const stat=await readFile('/proc/'+p.pid+'/stat','utf8'),fields=stat.slice(stat.lastIndexOf(')')+2).split(' '),status=await readFile('/proc/'+p.pid+'/status','utf8');return {cpuTicks:Number(fields[11])+Number(fields[12]),rss:Number(/VmRSS:\s+(\d+)/.exec(status)?.[1]||0)*1024}}
+ const initial=await Promise.all(measured.map(resource)),peak=initial.map(x=>x.rss);let peakQueueLag=0,sampling=false;
+ const sampler=setInterval(async()=>{if(sampling)return;sampling=true;try{for(let i=0;i<measured.length;i++){const r=await resource(measured[i]);peak[i]=Math.max(peak[i],r.rss)}const q=await db.query("SELECT coalesce(max(extract(epoch FROM now()-due_at)),0)::float lag FROM chatbot_delay_jobs WHERE tenant_id=ANY($1::uuid[]) AND status='PENDING'",[tenants.map(t=>t.tenant)]);peakQueueLag=Math.max(peakQueueLag,q.rows[0].lag)}catch{}finally{sampling=false}},500);
  let cursor=0;const until=performance.now()+30000;
+
  await Promise.all(Array.from({length:20},async()=>{while(performance.now()<until){const i=cursor++,t=tenants[i%4],visitor=clients[i%clients.length],start=performance.now();let r;
   const kind=i%5;
   if(kind===0)r=await request('/api/v1/widget/send',{method:'POST',token:visitor.token,headers:{origin:'http://127.0.0.1:3000'},body:{messageId:randomUUID(),text:'Fixture customer interest '+i,actionId:''}});
@@ -64,12 +80,13 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
   assert.ok([200,429].includes(r.status),'Mixed response '+r.status+': '+JSON.stringify(r.data));
   counts[r.status]=(counts[r.status]||0)+1;samples.push(performance.now()-start);await sleep(80);
  }}));
+ clearInterval(sampler);const serverResources=await Promise.all(measured.map(async(p,i)=>{const r=await resource(p);return {process:i<2?'api-'+i:'worker-'+(i-2),cpuMs:1000*(r.cpuTicks-initial[i].cpuTicks)/hz,peakSampledRssBytes:Math.max(peak[i],r.rss)}}));
  samples.sort((x,y)=>x-y);const elapsed=performance.now()-started;
  const messageCount=(await db.query('SELECT count(*)::int n FROM conversation_messages WHERE tenant_id=ANY($1::uuid[])',[tenants.map(t=>t.tenant)])).rows[0].n;
  const queue=(await db.query("SELECT count(*)::int n,coalesce(max(extract(epoch FROM now()-due_at)),0)::float AS lag FROM chatbot_delay_jobs WHERE tenant_id=ANY($1::uuid[]) AND status='PENDING'",[tenants.map(t=>t.tenant)])).rows[0];
- report.mixed={durationMs:elapsed,companies:4,visitors:200,persistedMessages:messageCount,operations:samples.length,statusCounts:counts,operationsPerSecond:samples.length*1000/elapsed,p50Ms:samples[Math.floor(samples.length*.5)],p95Ms:samples[Math.floor(samples.length*.95)],p99Ms:samples[Math.floor(samples.length*.99)],clientCpuMicroseconds:process.cpuUsage(cpu),clientRssBytes:process.memoryUsage().rss,pendingDelayJobs:queue.n,queueLagSeconds:queue.lag};
+ report.mixed={durationMs:elapsed,companies:4,visitors:200,persistedMessages:messageCount,operations:samples.length,statusCounts:counts,operationsPerSecond:samples.length*1000/elapsed,p50Ms:samples[Math.floor(samples.length*.5)],p95Ms:samples[Math.floor(samples.length*.95)],p99Ms:samples[Math.floor(samples.length*.99)],clientCpuMicroseconds:process.cpuUsage(cpu),clientRssBytes:process.memoryUsage().rss,pendingDelayJobs:queue.n,queueLagSeconds:queue.lag,peakQueueLagSeconds:peakQueueLag,serverResources};
  assert.equal(queue.n,0,'Workers must drain all initial delays during sustained workload');
- const plan=await tx(a.tenant,c=>c.query('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT id,body FROM conversation_messages WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC LIMIT 200',[a.tenant,(randomUUID())]));report.explain=plan.rows;
+ const plan=await tx(a.tenant,async c=>c.query('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT id,body FROM conversation_messages WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC LIMIT 200',[a.tenant,(await db.query('SELECT conversation_id FROM chatbot_delay_jobs WHERE tenant_id=$1 LIMIT 1',[a.tenant])).rows[0].conversation_id]));report.explain=plan.rows;
  check('30-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE');
  for(const p of mixedWorkers){p.kill('SIGTERM');await once(p,'exit')}
  // RLS remains effective with runtime role; role escalation and SQL payload cannot cross tenants.
@@ -78,6 +95,7 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
   const uid=(await db.query('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id',[role+'-'+suffix+'@example.invalid',hash])).rows[0].id;
   await db.query('INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,$3)',[a.tenant,uid,role]);
   const token=randomBytes(32).toString('base64url');await db.query("INSERT INTO sessions(token_hash,tenant_id,user_id,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[tokenDigest(token),a.tenant,uid]);
+  browserRoles.push({role,slug:a.slug,email:role+'-'+suffix+'@example.invalid',password:pass});
   await expectCode('/api/v1/privacy/settings',{token},403);
   await expectCode('/api/v1/catalog',{method:'POST',token,body:{kind:'SERVICE',title:'Role fixture',description:'Fixture'}},role==='MANAGER'?201:403);
  }
@@ -174,7 +192,7 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
  await tx(a.tenant,c=>uploadMedia(c,a.actor,{name:'Backup fixture.png',base64:png.toString('base64')}));
  const encrypted=(await db.query('SELECT credentials_encrypted FROM chatbot_connectors WHERE tenant_id=$1 LIMIT 1',[a.tenant])).rows[0].credentials_encrypted;assert.ok(openIntegrationSecret(encrypted));
  const {startWebsiteSession}=await import('../.build/apps/api/src/website.js');const pendingVisitor=await startWebsiteSession(pool,{widgetKey:a.widgetKey,name:'Pending backup visitor'},'http://127.0.0.1:3000');const delayed=(await db.query('SELECT s.conversation_id FROM chatbot_web_sessions s WHERE s.tenant_id=$1 AND s.token_hash=$2',[a.tenant,tokenDigest(pendingVisitor.token)])).rows[0].conversation_id;await db.query("UPDATE chatbot_delay_jobs SET due_at=now()+interval '1 day' WHERE tenant_id=$1 AND conversation_id=$2",[a.tenant,delayed]);
- await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/restore-fixture-private.json',JSON.stringify({tenant:a.tenant,contact:retained,conversation:delayed,runtimeUrl:env.DATABASE_URL,key:process.env.INTEGRATION_SECRET_ENCRYPTION_KEY}));
+ await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/browser-roles-private.json',JSON.stringify(browserRoles));await writeFile('acceptance-evidence/restore-fixture-private.json',JSON.stringify({tenant:a.tenant,contact:retained,conversation:delayed,runtimeUrl:env.DATABASE_URL,key:process.env.INTEGRATION_SECRET_ENCRYPTION_KEY}));
  const racing=clients[0];const racingContact=(await db.query('SELECT c.contact_id FROM chatbot_web_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id WHERE s.tenant_id=$1 AND s.token_hash=$2',[racing.tenant,tokenDigest(racing.token)])).rows[0].contact_id;const racingActor=tenants.find(t=>t.tenant===racing.tenant).actor;
  const outcomes=await Promise.allSettled([tx(racing.tenant,c=>anonymizeContact(c,racingActor,racingContact,{confirm:racingContact})),request('/api/v1/widget/send',{method:'POST',token:racing.token,headers:{origin:'http://127.0.0.1:3000'},body:{messageId:randomUUID(),text:'Concurrent private content fixture',actionId:''}})]);assert.equal(outcomes[0].status,'fulfilled');assert.ok([200,401].includes(outcomes[1].value?.status));
  assert.equal((await db.query('SELECT status FROM contacts WHERE tenant_id=$1 AND id=$2',[racing.tenant,racingContact])).rows[0].status,'ARCHIVED');

@@ -118,6 +118,17 @@ try{
  await evaluate("document.getElementById('logout').click()");
  await until("Boolean(document.getElementById('login')&&!document.getElementById('login').hidden)",'logout/login screen');
  assert.equal(await evaluate("document.getElementById('app').hidden"),true);
+ // Roles authenticate through the real login form; hidden admin controls cannot be used.
+ for(const roleAccount of account.roles||[]){
+  await send('Page.navigate',{url:base+'/'});await until("Boolean(document.getElementById('login-form')?.onsubmit)",'role login JS');
+  await evaluate(`(()=>{const p=${JSON.stringify(roleAccount)};const f=document.getElementById('login-form');f.elements.tenantSlug.value=p.slug;f.elements.email.value=p.email;f.elements.password.value=p.password;f.requestSubmit()})()`);
+  await until("!document.getElementById('app').hidden",'role dashboard '+roleAccount.role);
+  assert.equal(await evaluate("document.querySelector('[data-page=flow-builder]').hidden"),roleAccount.role!=='MANAGER');
+  await evaluate("document.querySelector('[data-page=wa-inbox]').click()");await until("!document.getElementById('wa-inbox').hidden",'role inbox');
+  await screenshot('role-'+roleAccount.role.toLowerCase()+'-inbox.png');
+  await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'role logout');
+ }
+ console.log('PASS browser MANAGER/AGENT/VIEWER real login, inbox, admin visibility and logout');
  // Customer-facing Website Widget: load actual deployed widget.js and talk to the
  // same PostgreSQL-backed flow engine; no provider accounts or mocked chat messages.
  assert.match(account.widgetKey||'',/^[A-Za-z0-9_-]{32}$/,'Acceptance widget key required');

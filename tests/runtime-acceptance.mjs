@@ -244,13 +244,13 @@ try{
   for(const p of processes.filter(p=>p!==apiProcess&&p!==webProcess&&p!==replica)){if(p.exitCode===null)p.kill('SIGTERM')}
   process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY=env.WHATSAPP_TOKEN_ENCRYPTION_KEY;process.env.INTEGRATION_SECRET_ENCRYPTION_KEY=env.INTEGRATION_SECRET_ENCRYPTION_KEY;process.env.META_GRAPH_VERSION='v24.0';
   // Keep two instrumented workers for mixed load; stop them before provider fixtures.
-  const {localClosure}=await import('./local-closure.mjs');await localClosure({db,env,sim,launch,request,expectCode});
+  const {localClosure}=await import('./local-closure.mjs');await localClosure({db,env,sim,launch,request,expectCode,apiProcesses:[apiProcess,replica]});
  }
  const browserFlow=await expectCode('/api/v1/flows',{token:one},200);await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{...def,expectedRevision:browserFlow.draft.draftRevision}},200);await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});
- await writeFile('acceptance-evidence/browser-account.json',JSON.stringify({...pageAuth,widgetKey:widgetConfig.widgetKey}));
+ await writeFile('acceptance-evidence/browser-account.json',JSON.stringify({...pageAuth,widgetKey:widgetConfig.widgetKey,roles:process.env.CI_LOCAL_CLOSURE==='1'?JSON.parse(await readFile('acceptance-evidence/browser-roles-private.json','utf8')):[]}));
  console.log('PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox');
  console.log('PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role');
  // Keep API/web running for browser test, executed as child before cleanup.
