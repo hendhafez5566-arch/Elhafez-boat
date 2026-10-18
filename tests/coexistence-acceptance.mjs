@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import {createHmac} from 'node:crypto';
 export async function coexistenceAcceptance({db,a,b,base,env}){
  const origin=env.APP_PUBLIC_ORIGIN;
- async function call(path,token=a.token,body,nonce,expected=200){
-  const response=await fetch(base+'/api/v1'+path,{method:body?'POST':'GET',headers:{authorization:'Bearer '+token,origin,'content-type':'application/json',...(nonce?{cookie:'eb_wa_signup='+nonce}:{})},body:body?JSON.stringify(body):undefined});
+ async function call(path,token=a.token,body,nonce,expected=200,method=body?'POST':'GET'){
+  const response=await fetch(base+'/api/v1'+path,{method,headers:{authorization:'Bearer '+token,origin,'content-type':'application/json',...(nonce?{cookie:'eb_wa_signup='+nonce}:{})},body:body?JSON.stringify(body):undefined});
   const data=await response.json();assert.equal(response.status,expected,JSON.stringify(data));return {data,cookie:response.headers.get('set-cookie')?.match(/eb_wa_signup=([^;]+)/)?.[1]};
  }
  const start=()=>call('/whatsapp/signup/start',a.token,{mode:'COEXISTENCE'},undefined,201);
@@ -30,6 +30,23 @@ export async function coexistenceAcceptance({db,a,b,base,env}){
  await webhook('history',{history:[{metadata:{progress:50,chunk_order:1},threads:[]}]});
  assert.equal((await db.query('SELECT sync_status FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2',[a.tenant,account])).rows[0].sync_status,'HISTORY_COMPLETE');
  assert.equal((await db.query("SELECT last_customer_message_at FROM conversations WHERE tenant_id=$1 AND whatsapp_account_id=$2",[a.tenant,account])).rows[0].last_customer_message_at,null);
+ // Complete customer journey through the real published engine, queued WhatsApp payloads and CRM.
+ const current=await call('/flows');
+ const definition={name:'Coexistence customer fixture',startId:'s',nodes:[{id:'s',type:'START',next:'menu'},{id:'menu',type:'BUTTONS',text:'كيف نساعدك؟',choices:[{id:'services',title:'الخدمات',next:'list'}]},{id:'list',type:'LIST',text:'اختر اهتمامك',choices:[{id:'service',title:'خدمة معتمدة',next:'ask'}]},{id:'ask',type:'INPUT',field:'interest',text:'ما التفاصيل المطلوبة؟',next:'human'},{id:'human',type:'HANDOFF',text:'الموظف سيساعدك'}]};
+ await call('/flows/draft',a.token,{...definition,expectedRevision:current.data.draft.draftRevision},undefined,200,'PUT');await call('/flows/publish',a.token,{});
+ const customer='16505551235';let serial=0;
+ const inbound=async(content)=>webhook('messages',{messages:[{id:'wamid.customer-'+(++serial),from:customer,timestamp:String(Math.floor(Date.now()/1000)),...content}],contacts:[{wa_id:customer,profile:{name:'Fixture customer'}}]});
+ await inbound({type:'text',text:{body:'مرحبا'}});
+ const pending=async()=>{const r=await db.query("SELECT j.payload FROM whatsapp_outbox j JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id WHERE j.tenant_id=$1 AND k.phone=$2 ORDER BY j.created_at DESC",[a.tenant,customer]);return r.rows.map(x=>x.payload)};
+ let messages=await pending();const buttons=messages.find(x=>x.interactive?.type==='button');assert.ok(buttons);
+ await inbound({type:'interactive',interactive:{button_reply:{id:buttons.interactive.action.buttons[0].reply.id,title:'الخدمات'}}});
+ messages=await pending();const list=messages.find(x=>x.interactive?.type==='list');assert.ok(list);
+ await inbound({type:'interactive',interactive:{list_reply:{id:list.interactive.action.sections[0].rows[0].id,title:'خدمة معتمدة'}}});
+ await inbound({type:'text',text:{body:'اهتمام تجريبي مسجل'}});
+ const conv=(await db.query("SELECT c.id,c.status FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id WHERE c.tenant_id=$1 AND k.phone=$2 AND c.channel='WHATSAPP'",[a.tenant,customer])).rows[0];assert.equal(conv.status,'HUMAN');
+ const lead=(await db.query('SELECT stage,custom_fields FROM chatbot_leads WHERE tenant_id=$1 AND conversation_id=$2',[a.tenant,conv.id])).rows[0];assert.equal(lead.stage,'READY_FOR_AGENT');assert.equal(lead.custom_fields.interest,'اهتمام تجريبي مسجل');
+ await call('/whatsapp/inbox/'+conv.id+'/reply',a.token,{body:'رد الموظف من المنصة'},undefined,202);
+ console.log('PASS COEXISTENCE signed customer -> real WhatsApp buttons/list/input -> CRM interest -> handoff -> manual reply queue');
  await webhook('account_update',{event:'ACCOUNT_OFFBOARDED'},now);await webhook('account_update',{event:'ACCOUNT_RECONNECTED'},now-100);
  assert.equal((await db.query('SELECT status FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2',[a.tenant,account])).rows[0].status,'DISABLED');
  console.log('PASS COEXISTENCE real API/DB: cancel/expiry/cookie+tenant binding/one-use code/ownership/CSRF/encrypted credentials; signed app echo dedupe without bot; consent history no service window; delayed chunks/offboarding');

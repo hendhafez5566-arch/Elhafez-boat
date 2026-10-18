@@ -82,6 +82,7 @@ export async function finishWhatsAppSignup(pool:SqlPool,actor:Actor,input:unknow
   if(phone.id!==d.phoneNumberId||attempt.mode==='COEXISTENCE'&&phone.is_on_biz_app!==true)throw new HttpFailure(400,'لم يؤكد Meta أن الرقم مؤهل للتعايش مع تطبيق بيزنس');
   // Claim tenant ownership before any subscription writes; connection validates WABA membership.
   const account=await withTenantTransaction(pool,actor,async db=>{
+   const current=await db.query("SELECT id FROM whatsapp_onboarding_attempts WHERE tenant_id=$1 AND id=$2 AND status='PROCESSING' AND expires_at>now() FOR UPDATE",[actor.tenantId,d.attemptId]);if(current.rowCount!==1)throw new HttpFailure(409,'ألغيت عملية الربط أو انتهت صلاحيتها');
    const account=await connectWhatsApp(db,actor,{phoneNumberId:d.phoneNumberId,wabaId:d.wabaId,accessToken:token});
    await db.query(`UPDATE whatsapp_accounts SET connection_mode=$3,authorization_status='VERIFIED',token_expires_at=$4,history_consent=$5,contacts_consent=$6,subscription_verified_at=NULL,phone_platform=$7,phone_verified_at=now() WHERE tenant_id=$1 AND id=$2`,[actor.tenantId,account.id,attempt.mode,expires,attempt.mode==='COEXISTENCE'&&d.historyConsent===true,attempt.mode==='COEXISTENCE'&&d.contactsConsent===true,phone.platform_type||null]);
    return account;
@@ -106,6 +107,7 @@ export async function finishWhatsAppSignup(pool:SqlPool,actor:Actor,input:unknow
 export async function selfServiceAccounts(db:SqlClient,actor:Actor){
  allow(actor,['OWNER','MANAGER']);return (await db.query(`SELECT a.id,a.phone_number_id AS "phoneNumberId",a.display_phone AS "displayPhone",a.status,a.phone_platform AS "phonePlatform",a.phone_verified_at AS "phoneVerifiedAt",a.connection_mode AS mode,CASE WHEN a.token_expires_at<=now() THEN 'REAUTH_REQUIRED' ELSE a.authorization_status END AS authorization,a.subscription_verified_at AS "subscriptionVerifiedAt",a.last_inbound_at AS "lastInboundAt",a.last_echo_at AS "lastEchoAt",a.token_expires_at AS "expiresAt",a.sync_status AS "syncStatus",
  (SELECT max(last_seen_at) FROM chatbot_worker_health WHERE tenant_id=$1) AS "workerSeenAt",
+ coalesce((SELECT jsonb_agg(jsonb_build_object('operation',o.operation,'status',o.status,'createdAt',o.created_at)) FROM whatsapp_signup_operations o WHERE o.tenant_id=a.tenant_id AND o.account_id=a.id),'[]'::jsonb) AS operations,
  (SELECT count(*)::int FROM whatsapp_outbox j WHERE j.tenant_id=a.tenant_id AND j.account_id=a.id AND j.status='UNCERTAIN') AS uncertain
  FROM whatsapp_accounts a WHERE a.tenant_id=$1 ORDER BY a.created_at DESC`,[actor.tenantId])).rows;
 }

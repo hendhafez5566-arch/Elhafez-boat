@@ -1,3 +1,7 @@
+# 2026-10-18 — Permanent WhatsApp company self-service
+
+Embedded Signup with owner/browser/tenant-bound one-use grant, encrypted phone choice, WABA/phone/app/scope validation, subscription checks; Arabic Cloud/Coexistence UI; consent-gated sync/registration; app echo/history/contact/account lifecycle and no-history service-window extension; migration 0028 RLS; real API/DB/browser fixture acceptance; local no-hosting profile. Flags remain off without official Meta setup/approval. No external accounts connected or costs created.
+
 # 2026-10-18 — WhatsApp pilot preparation
 
 - Validate phone belongs to supplied WABA; fail closed on malformed/oversized/redirected provider replies.

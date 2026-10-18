@@ -5,8 +5,8 @@ import assert from 'node:assert/strict';
 export async function browserCoexistence({ws,send,evaluate,until,screenshot,base}){
  let cookie='';const pending=new Set();
  const bridge=event=>{const e=JSON.parse(String(event.data));if(e.method!=='Fetch.requestPaused')return;
-  const task=(async()=>{const p=e.params,u=new URL(p.request.url);const headers={...p.request.headers,origin:'https://pilot.fixture.test'};
-   if(cookie)headers.cookie='eb_wa_signup='+cookie;
+  const task=(async()=>{const p=e.params,u=new URL(p.request.url);const headers=new Headers(p.request.headers);headers.set('origin','https://pilot.fixture.test');
+   if(cookie)headers.set('cookie','eb_wa_signup='+cookie);
    const r=await fetch(base+u.pathname,{method:p.request.method,headers,body:p.request.method==='GET'?undefined:p.request.postData});
    const set=r.headers.get('set-cookie')?.match(/eb_wa_signup=([^;]*)/);if(set)cookie=set[1];
    const text=await r.text();await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:r.status,responseHeaders:[{name:'content-type',value:'application/json'}],body:Buffer.from(text).toString('base64')});

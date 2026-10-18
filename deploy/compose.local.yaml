@@ -1,0 +1,15 @@
+# Free local disposable UI trial; pairs with compose.acceptance.yaml.
+# No public host and no provider egress. Owner secrets stay in .env.pilot.local.
+services:
+  local-owner:
+    image: elhafez-boat:ci
+    command: [node, scripts/bootstrap-owner.mjs]
+    networks: [isolated]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?required}@db:5432/elhafez_ci
+      BOOTSTRAP_TENANT_SLUG: ${BOOTSTRAP_TENANT_SLUG:?required}
+      BOOTSTRAP_TENANT_NAME: ${BOOTSTRAP_TENANT_NAME:?required}
+      BOOTSTRAP_EMAIL: ${BOOTSTRAP_EMAIL:?required}
+      BOOTSTRAP_PASSWORD: ${BOOTSTRAP_PASSWORD:?required}
+    depends_on:
+      grants: {condition: service_completed_successfully}

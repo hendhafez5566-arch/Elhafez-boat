@@ -1,3 +1,7 @@
+# Current scope: company self-service, not owner phone activation
+
+Implement permanent multi-tenant Embedded Signup/Coexistence. No real Meta login, phone linking, app review submission, live message or paid hosting is authorized. Flags stay off pending platform approval/configuration. Railway allowed read-only inventory/usage, with ZERO additional expense. See docs/25-META-PLATFORM-SETUP.md and WHATSAPP-COEXISTENCE-SELF-SERVICE-ACCEPTANCE.md. This supersedes earlier requests to link the owner's test number.
+
 # Current pilot authorization — 2026-10-18
 
 Owner permits preparation for one real WhatsApp test number, but requires separate explicit approval before hosting/account activation, and safe owner completion of Meta login/OTP. Other providers remain out of scope. See `docs/24-WHATSAPP-PILOT.md` and `PILOT-ACCEPTANCE-REPORT.md`. The historical checklist below is retained; its blanket earlier prohibition is superseded only by this narrow authorization.
