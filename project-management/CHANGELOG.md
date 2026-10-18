@@ -69,3 +69,6 @@ Commerce source delivery: [c2487df](https://github.com/hendhafez5566-arch/Elhafe
 - `.github/workflows/verify.yml`: new independent runtime acceptance job, real PostgreSQL/Chrome and screenshot artifact. Original check job retained.
 - Confirmed CI [39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303) SUCCESS across both jobs: 70/70 unit tests, migrations 0001–0025, RLS and new runtime/browser/restore checks.
 - This does NOT prove live Meta/Google/ecommerce accounts, real ClamAV/AI, production load/security or commercial readiness. See `project-management/ACCEPTANCE-EXECUTION-2026-10-18.md`.
+
+
+- Follow-up 2026-10-18: added security `.dockerignore`, container-image build/static HTTP smoke in CI, tested a `node:22-alpine` image and verified dashboard/Flow Builder/widget asset responses; [run 39105618688](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105618688) SUCCESS with both acceptance and original check jobs.
