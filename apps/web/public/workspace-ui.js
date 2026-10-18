@@ -65,7 +65,13 @@ export function initWorkspace(ctx){
    for(const l of found){
     const fields=Object.entries(l.custom_fields||{}).map(([k,v])=>k+': '+String(v)).join(' • ');
     const stageNames={READY_FOR_AGENT:'جاهز للموظف',INTERESTED:'مهتم',CONTACTED:'تم التواصل',CLOSED:'مغلق'};
-    const c=card(l.customer_name,[l.catalog_title,l.phone,fields].filter(Boolean).join(' • '));c.classList.add('crm-lead-card');c.prepend(statusChip(stageNames[l.stage]||l.stage,l.stage==='CLOSED'?'neutral':l.stage==='READY_FOR_AGENT'?'success':'warning'));
+    const c=el('article',undefined,'card crm-lead-card vessel-lead-card');
+     const head=el('header',undefined,'vessel-lead-head');
+     const avatar=el('span',(l.customer_name||'؟').trim().slice(0,1),'vessel-lead-avatar');
+     const identity=el('div',undefined,'vessel-lead-identity');
+     identity.append(el('strong',l.customer_name),el('p',[l.catalog_title,l.phone,fields].filter(Boolean).join(' • ')));
+     head.append(avatar,identity,statusChip(stageNames[l.stage]||l.stage,l.stage==='CLOSED'?'neutral':l.stage==='READY_FOR_AGENT'?'success':'warning'));
+     c.append(head);
     const badge=el('div','أولوية متابعة: '+Number(l.priorityScore||0)+'/100'+(l.open_tasks?' • مهام مفتوحة: '+l.open_tasks:''),'crm-lead-score');
     c.append(badge);
     if(l.next_followup_at)c.append(el('p','المتابعة القادمة: '+new Date(l.next_followup_at).toLocaleString('ar-EG'),'muted'));
