@@ -79,6 +79,12 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .platform-shell{max-width:1250px;margin:auto;padding:25px}
 .form-grid{display:grid;gap:10px}.ops-stack{display:grid;gap:12px}
 .studio-focus .layout{grid-template-columns:0 minmax(0,1fr)}
+.studio-focus .topbar{display:none}
+.studio-focus #flow-builder>.section-heading,.studio-focus #flow-builder>.builder-toolbar,.studio-focus #flow-builder>.boat-guide-mount{display:none}
+.studio-focus #flow-builder .builder-extras,.studio-focus #flow-builder .builder-palette{display:none}
+.studio-focus #flow-builder .builder-studio{grid-template-columns:minmax(0,1fr)}
+.studio-focus #flow-builder .builder-stage{grid-column:1}
+.studio-focus #flow-builder .builder-stage .flow-canvas{height:calc(100vh - 148px);min-height:360px}
 .studio-focus .sidebar{display:none}
 .studio-focus .content{max-width:none;padding:15px}
 @media(max-width:1100px){.layout{grid-template-columns:210px minmax(0,1fr)}.content{padding:22px}.inbox-layout{grid-template-columns:270px minmax(0,1fr)}}

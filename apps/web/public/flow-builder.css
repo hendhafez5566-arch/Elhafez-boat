@@ -96,6 +96,7 @@
 #flow-builder .canvas-buttons .canvas-kind-indicator,#flow-builder .canvas-list .canvas-kind-indicator{background:#158a7e;box-shadow:0 0 0 4px #e3f6ef}
 #flow-builder .canvas-handoff .canvas-kind-indicator{background:#e6a13e;box-shadow:0 0 0 4px #fff3db}
 #flow-builder .canvas-start .canvas-kind-indicator{background:#29a565}
+#flow-builder .canvas-title,#flow-builder .canvas-output{touch-action:none}
 #flow-builder .canvas-node .canvas-title{display:block;flex:1;background:transparent;color:#253c53;border:0;border-radius:0;padding:0;box-shadow:none;font-size:13px;font-weight:900;cursor:grab;text-align:right}
 #flow-builder .canvas-message{padding:16px 14px 13px;background:#fff}
 #flow-builder .canvas-message-text{border-radius:13px 13px 4px 13px;background:#eff8f2;color:#213b36;white-space:pre-wrap;overflow-wrap:anywhere;padding:13px 14px;line-height:1.7;font-size:13px;margin:0;max-height:155px;overflow:auto}

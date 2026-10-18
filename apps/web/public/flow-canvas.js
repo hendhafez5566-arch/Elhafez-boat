@@ -34,6 +34,10 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
     for(const n of f.nodes){
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
       card.dataset.nodeId=n.id;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
+      card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(titles[n.type]||'محادثة'));
+      const chooseCard=()=>{active=n.id;select(n.id,false);highlight(n.id)};
+      card.addEventListener('click',event=>{if(!event.target.closest('button'))chooseCard()});
+      card.addEventListener('keydown',event=>{if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();chooseCard()}});
       const head=mk('div',undefined,'canvas-node-head'),drag=btn(titles[n.type]||'خطوة','canvas-title',e=>{active=n.id;select(n.id,e.shiftKey);highlight(n.id)});
       drag.setAttribute('aria-label','اختيار وتحريك '+(titles[n.type]||'خطوة'));
       head.append(mk('span',undefined,'canvas-kind-indicator'),drag);card.append(head);
