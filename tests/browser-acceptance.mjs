@@ -50,6 +50,17 @@ try{
  await until("Boolean(document.getElementById('company-name')?.textContent)",'company header');
  assert.equal(await evaluate("document.getElementById('company-name').textContent"),account.slug);
  await mkdir('acceptance-evidence',{recursive:true});await screenshot('dashboard-desktop.png');
+ // Vessel workspace acceptance: real nav buttons moved, drawer opens and search works.
+ assert.equal(await evaluate("document.querySelectorAll('.vessel-rail .vessel-rail-item').length"),5,'Expected five focus destinations in narrow rail');
+ assert.equal(await evaluate("Boolean(document.querySelector('.vessel-home .vessel-hero') && document.querySelector('.vessel-home-panels #dashboard-ready'))"),true,'Dashboard widgets survive layout composition');
+ await evaluate("document.querySelector('.vessel-menu-button').click()");
+ assert.equal(await evaluate("document.querySelector('.vessel-drawer').hidden"),false,'Navigation drawer opens');
+ await screenshot('vessel-navigation-open-desktop.png');
+ const matching=await evaluate("(()=>{const s=document.querySelector('.vessel-search');s.value='الخصوصية';s.dispatchEvent(new Event('input',{bubbles:true}));return [...document.querySelectorAll('.vessel-menu-section button[data-page]')].filter(b=>b.style.display!=='none'&&!b.hidden).map(b=>b.dataset.page)})()");
+ assert.deepEqual(matching,['privacy'],'Search should show only matching destination');
+ await evaluate("document.querySelector('.vessel-close').click()");
+ assert.equal(await evaluate("document.querySelector('.vessel-drawer').hidden"),true,'Navigation drawer closes');
+
  await evaluate("document.querySelector('[data-page=flow-builder]').click()");
  await until("Boolean(document.getElementById('flow-builder')&&!document.getElementById('flow-builder').hidden)",'flow builder');
  await until("Boolean(document.querySelector('.canvas-node'))",'flow canvas blocks');
