@@ -82,7 +82,26 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .studio-focus .sidebar{display:none}
 .studio-focus .content{max-width:none;padding:15px}
 @media(max-width:1100px){.layout{grid-template-columns:210px minmax(0,1fr)}.content{padding:22px}.inbox-layout{grid-template-columns:270px minmax(0,1fr)}}
-@media(max-width:800px){.layout{display:block}.sidebar{position:relative;height:auto;padding:17px}.sidebar .brand{font-size:18px;padding:0}.sidebar nav{display:flex;overflow-x:auto;padding-bottom:8px}.sidebar nav .nav{width:auto}.sidebar .company{display:none}.sidebar>#logout{align-self:flex-start}.grid,.inbox-layout{grid-template-columns:1fr}.topbar{padding:16px 19px;min-height:65px}.content{padding:18px}.panel{padding:19px}.chat{height:360px;min-height:0}.login{padding:26px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.studio-focus .layout{display:block}}
+@media(max-width:800px){
+ .layout{display:block}
+ .sidebar{position:relative;height:auto;min-height:0;overflow:visible;padding:12px 15px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px 12px}
+ .sidebar .brand{grid-row:1;grid-column:1;font-size:18px;padding:0;margin:0}
+ .sidebar .brand small{font-size:9px}
+ .sidebar .company{display:none}
+ .sidebar>#logout{grid-row:1;grid-column:2;margin:0;padding:8px 10px;font-size:11px;align-self:center}
+ .sidebar nav{grid-column:1/-1;grid-row:2;display:flex;align-items:center;gap:7px;overflow-x:auto;overflow-y:hidden;min-height:50px;height:50px;padding:2px 0 5px;scrollbar-width:thin}
+ .sidebar nav>.nav,.sidebar nav .nav{flex:0 0 auto;width:auto;height:42px;min-height:42px;padding:8px 12px;white-space:nowrap;font-size:12px;align-self:center;margin:0}
+ .sidebar nav .nav-advanced{margin:0;padding:0;border:0;position:static;flex:0 0 auto;align-self:center}
+ .sidebar nav .nav-advanced>summary{display:flex;align-items:center;height:42px;white-space:nowrap;margin:0;padding:8px 12px;border-radius:10px;background:#ffffff10;font-size:12px}
+ .sidebar nav .nav-advanced-buttons{position:fixed;inset:105px 12px auto 12px;z-index:99;background:#193653;border:1px solid #ffffff28;box-shadow:0 16px 45px #132b4380;padding:10px;border-radius:14px;max-height:60vh;overflow-y:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ .sidebar nav .nav-advanced-buttons .nav{width:100%;white-space:normal;height:auto;min-height:40px;font-size:12px}
+ .grid,.inbox-layout{grid-template-columns:1fr}
+ .topbar{padding:13px 17px;min-height:62px}
+ .content{padding:16px}
+ .panel{padding:18px}.chat{height:360px;min-height:0}
+ .login{padding:26px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .studio-focus .layout{display:block}
+}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 
 /* Responsive layout and typography live in the consolidated design system above. */
