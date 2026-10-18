@@ -1,3 +1,9 @@
+## 2026-10-18 — Manual Railway test-number pilot staged (NO deployment)
+
+Owner confirmed GitHub autodeploy disabled on new Railway project industrious-flow / Elhafez-boat service. Source scripts/railway-pilot.mjs and scripts/railway-pilot-setup.mjs provide a guarded all-in-one demo (web/API/worker) and first-run migrations/bootstrap for a fresh boat_pilot DB using a separate non-BYPASSRLS runtime role. Test scripts block AI provider configuration and non-pilot database targets. A second PostgreSQL service + 512MB volume, generated HTTPS test domain and isolated secret/DB connection variables are STAGED ONLY on Railway. No resources deployed, and old Railway/ERP projects unaffected.
+
+Source branch feat/stage0-foundation, draft PR #1. Meta app secret and the official test WABA connection are still missing; no actual inbound/outbound bot message was tested. No live Coexistence with the owner's business phone. See docs/33-RAILWAY-MANUAL-PILOT.md. Railway bill overage cannot be guaranteed away: min hard compute limit $10 vs $5 included Hobby usage. Owner alone approves and triggers Apply Changes / Deploy after review, never the assistant. Initial admin setup secrets must be removed after first successful boot. Latest CI must be verified for exact HEAD.
+
 ## 2026-10-18 — Vessel extended page UI (source 8fcc8e13f)
 Source updates: contextual Vessel headings on 18 existing business pages; catalog gets rendered-items-only search without changing CRUD; CRM uses customer identity/status cards; analytics turns tenant API daily activity into two-series bars. Existing IDs, permissions, API schemas, bot runtime and Meta connections are unchanged. New Chromium coverage added; final CI results for the ultimate documentation HEAD must be verified. No merge, deploy or paid/external-provider operations. Scope details: docs/32-VESSEL-PAGES.md.
 
