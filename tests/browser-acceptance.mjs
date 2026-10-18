@@ -39,6 +39,7 @@ try{
   if(response?.url&&((response.status>=400)||['Script','XHR','Fetch'].includes(value.params?.type))){network.push({url:new URL(response.url).pathname,status:response.status,type:value.params?.type});if(network.length>50)network.shift()}
  }else if(value.method==='Network.loadingFailed')network.push({failure:String(value.params?.errorText||'unknown')});});
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Log.enable');
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
  await send('Page.navigate',{url:base+'/'});
  await until("Boolean(document.querySelector('#login-form input[name=tenantSlug]'))",'login form');
  await until("Boolean(document.getElementById('login-form')?.onsubmit)",'login JS initialization');
@@ -54,9 +55,13 @@ try{
  await until("Boolean(document.querySelector('.canvas-node'))",'flow canvas blocks');
  const count=await evaluate("document.querySelectorAll('.canvas-node').length");assert.ok(count>=2,'Expected editable flow steps');
  await screenshot('flow-builder-desktop.png');
+ await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
+ await sleep(200);await screenshot('flow-builder-canvas-desktop.png');
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
- await sleep(300);await screenshot('flow-builder-mobile.png');
+ await sleep(300);await evaluate("window.scrollTo(0,0)");await screenshot('flow-builder-mobile.png');
+ await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
+ await sleep(250);await screenshot('flow-builder-canvas-mobile.png');
  const bodyWidth=await evaluate('document.documentElement.scrollWidth');
  assert.ok(Number.isFinite(bodyWidth)&&bodyWidth<3000,'Mobile flow canvas overflows document excessively');
  await evaluate("document.getElementById('logout').click()");
@@ -64,7 +69,7 @@ try{
  assert.equal(await evaluate("document.getElementById('app').hidden"),true);
  assert.deepEqual(exceptions,[],`Browser JavaScript exceptions: ${exceptions.join(', ')}`);
  console.log('PASS headless Chrome: RTL company login, real dashboard, flow canvas, mobile viewport, logout');
- console.log('PASS screenshots saved: dashboard-desktop.png, flow-builder-desktop.png, flow-builder-mobile.png');
+ console.log('PASS screenshots: dashboard, desktop/mobile flow builder and actual canvas views');
 }catch(error){console.error('BROWSER ACCEPTANCE FAILURE:',error);process.exitCode=1}
 finally{
  if(ws){ws.close();await sleep(100)}
