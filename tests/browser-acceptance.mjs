@@ -13,7 +13,7 @@ const profile=await mkdtemp(join(tmpdir(),'boat-chromium-'));
 const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
  '--no-first-run','--no-default-browser-check','--disable-background-networking',
  '--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
-let ws;let commandId=0;const pending=new Map(),exceptions=[];
+let ws;let commandId=0;const pending=new Map(),exceptions=[],network=[];
 async function waitForPort(){for(let i=0;i<120;i++){if(child.exitCode!==null)throw new Error('Chrome exited before launching');try{
  const info=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).trim().split('\n');return Number(info[0]);
  }catch{}await sleep(150)}throw new Error('Chrome DevTools port unavailable')}
@@ -23,15 +23,22 @@ function send(method,params={}){const id=++commandId;return new Promise((resolve
  pending.set(id,{resolve:result=>{clearTimeout(timeout);resolve(result)},reject:error=>{clearTimeout(timeout);reject(error)}});
  ws.send(JSON.stringify({id,method,params}));
  })}
-async function until(predicate,name){for(let i=0;i<70;i++){if(await evaluate(predicate))return;await sleep(160)}throw new Error('Browser UI timed out waiting for '+name)}
+async function until(predicate,name){
+ for(let i=0;i<70;i++){if(await evaluate(predicate))return;await sleep(160)}
+ const state=await evaluate("JSON.stringify({loginHidden:document.getElementById('login')?.hidden,appHidden:document.getElementById('app')?.hidden,notice:document.getElementById('notice')?.textContent,readyState:document.readyState})").catch(()=>null);
+ throw new Error('Browser UI timed out waiting for '+name+'; state='+state+'; exceptions='+JSON.stringify(exceptions.slice(-8))+'; network='+JSON.stringify(network.slice(-15)));
+}
 async function screenshot(filename){const r=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile('acceptance-evidence/'+filename,Buffer.from(r.data,'base64'))}
 try{
  const port=await waitForPort();
  let target;for(let i=0;i<30;i++){try{const pages=await (await fetch('http://127.0.0.1:'+port+'/json/list')).json();target=pages.find(p=>p.type==='page'&&p.webSocketDebuggerUrl);if(target)break}catch{}await sleep(120)}
  assert.ok(target?.webSocketDebuggerUrl,'No debuggable Chrome page');
  ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true})});
- ws.addEventListener('message',event=>{const value=JSON.parse(String(event.data));if(value.id){const entry=pending.get(value.id);if(entry){pending.delete(value.id);value.error?entry.reject(new Error(JSON.stringify(value.error))):entry.resolve(value.result)}}else if(value.method==='Runtime.exceptionThrown')exceptions.push(value.params.exceptionDetails?.text||'JavaScript exception')});
- await send('Page.enable');await send('Runtime.enable');
+ ws.addEventListener('message',event=>{const value=JSON.parse(String(event.data));if(value.id){const entry=pending.get(value.id);if(entry){pending.delete(value.id);value.error?entry.reject(new Error(JSON.stringify(value.error))):entry.resolve(value.result)}}else if(value.method==='Runtime.exceptionThrown')exceptions.push(JSON.stringify(value.params.exceptionDetails||{}).slice(0,900));else if(value.method==='Network.responseReceived'){
+  const response=value.params?.response;
+  if(response?.url?.includes('/api/')){network.push({url:new URL(response.url).pathname,status:response.status});if(network.length>50)network.shift()}
+ }else if(value.method==='Network.loadingFailed')network.push({failure:String(value.params?.errorText||'unknown')});});
+ await send('Page.enable');await send('Runtime.enable');await send('Network.enable');
  await send('Page.navigate',{url:base+'/'});
  await until("Boolean(document.querySelector('#login-form input[name=tenantSlug]'))",'login form');
  assert.equal(await evaluate("document.documentElement.getAttribute('dir')"),'rtl');
