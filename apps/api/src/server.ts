@@ -22,7 +22,7 @@ import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import {analyticsOverview} from './analytics.js';
-import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask } from './chatbot-leads.js';
+import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
@@ -227,7 +227,9 @@ const server=createServer(async(req,res)=>{
      if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/analytics/overview'){const days=new URL(req.url||'/','http://local').searchParams.get('days')||'30';if(!['7','30','90'].includes(days))throw new HttpFailure(400,'Invalid reporting period');return json(res,200,await run(tx=>analyticsOverview(tx,actor,Number(days))));}
-    const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);
+    const leadAssignment=/^\/api\/v1\/leads\/([^/]+)\/assign$/.exec(pathname);
+     if(req.method==='PATCH'&&leadAssignment)return json(res,200,await runBody((tx,input)=>assignLead(tx,actor,leadAssignment[1],input)));
+     const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);
     if(req.method==='PATCH'&&leadStage)return json(res,200,await runBody((tx,input)=>updateLeadStage(tx,actor,leadStage[1],input)));
     const leadTasks=/^\/api\/v1\/leads\/([^/]+)\/tasks$/.exec(pathname);
     if(req.method==='GET'&&leadTasks)return json(res,200,await run(tx=>listLeadTasks(tx,actor,leadTasks[1])));

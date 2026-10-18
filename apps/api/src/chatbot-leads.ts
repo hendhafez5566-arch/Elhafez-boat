@@ -101,3 +101,18 @@ export async function completeLeadTask(db:SqlClient,actor:Actor,leadId:string,ta
  await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'LEAD_FOLLOWUP_COMPLETED','chatbot_lead_task',$3)",[actor.tenantId,actor.userId,taskId]);
  return r.rows[0];
 }
+
+// Internal CRM assignment: only active leads to an existing company staff member.
+// Does not send a message or change the bot/human handoff state.
+export async function assignLead(db:SqlClient,actor:Actor,id:string,input:unknown){
+ allow(actor,['OWNER','MANAGER']);
+ const d=input&&typeof input==='object'&&!Array.isArray(input)?input as Record<string,unknown>:{};
+ const userId=d.userId;
+ if(!isUuid(id)||!isUuid(userId))throw new HttpFailure(400,'Valid lead and staff IDs required');
+ const member=await db.query("SELECT user_id FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role IN ('OWNER','MANAGER','AGENT')",[actor.tenantId,userId]);
+ if(!member.rowCount)throw new HttpFailure(404,'Staff member not found in company');
+ const updated=await db.query("UPDATE conversations SET assigned_user_id=$3 WHERE tenant_id=$1 AND id=(SELECT conversation_id FROM chatbot_leads WHERE tenant_id=$1 AND id=$2 AND stage!='CLOSED') RETURNING id",[actor.tenantId,id,userId]);
+ if(!updated.rowCount)throw new HttpFailure(404,'Active lead not found');
+ await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'LEAD_ASSIGNED','chatbot_lead',$3)",[actor.tenantId,actor.userId,id]);
+ return {leadId:id,assignedUserId:userId};
+}

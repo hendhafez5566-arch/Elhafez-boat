@@ -20,7 +20,10 @@ export function initWorkspace(ctx){
    const option=el('option',title);option.value=value;filter.append(option);
   }
   const summary=el('p','أولوية العميل تقدير واضح من اهتمامه وحداثة المحادثة، وليست توقعًا آليًا للبيع.','muted');
-  host.append(summary,filter);
+  const search=el('input');search.placeholder='ابحث باسم العميل أو هاتفه أو الاحتياج';search.setAttribute('aria-label','بحث العملاء');
+  const order=el('select');order.setAttribute('aria-label','ترتيب العملاء');
+  for(const [value,title] of [['priority','الأعلى أولوية'],['recent','الأحدث'],['due','الأقرب متابعة']]){const o=el('option',title);o.value=value;order.append(o)}
+  host.append(summary,filter,search,order);
   const results=el('div',undefined,'cards');host.append(results);
   async function showTasks(container,lead){
    container.replaceChildren();const tasks=await api('/leads/'+lead.id+'/tasks');
@@ -53,7 +56,12 @@ export function initWorkspace(ctx){
   }
   function render(){
    results.replaceChildren();
-   for(const l of rows.filter(r=>filter.value==='ALL'||r.stage===filter.value)){
+   const found=rows.filter(r=>(filter.value==='ALL'||r.stage===filter.value)&&
+    (r.customer_name+' '+(r.phone||'')+' '+JSON.stringify(r.custom_fields||{})).toLocaleLowerCase().includes(search.value.trim().toLocaleLowerCase()));
+   found.sort((a,b)=>order.value==='recent'?new Date(b.updated_at).getTime()-new Date(a.updated_at).getTime():
+    order.value==='due'?(a.next_followup_at?new Date(a.next_followup_at).getTime():Infinity)-(b.next_followup_at?new Date(b.next_followup_at).getTime():Infinity):
+    Number(b.priorityScore||0)-Number(a.priorityScore||0));
+   for(const l of found){
     const fields=Object.entries(l.custom_fields||{}).map(([k,v])=>k+': '+String(v)).join(' • ');
     const stageNames={READY_FOR_AGENT:'جاهز للموظف',INTERESTED:'مهتم',CONTACTED:'تم التواصل',CLOSED:'مغلق'};
     const c=card(l.customer_name+' — '+(stageNames[l.stage]||l.stage),[l.catalog_title,l.phone,fields].filter(Boolean).join(' • '));
@@ -61,6 +69,13 @@ export function initWorkspace(ctx){
     c.append(badge);
     if(l.next_followup_at)c.append(el('p','المتابعة القادمة: '+new Date(l.next_followup_at).toLocaleString('ar-EG'),'muted'));
     c.append(button('افتح المحادثات',()=>ctx.choose('wa-inbox')));
+    if(['OWNER','MANAGER'].includes(state.role)&&state.team?.length&&l.stage!=='CLOSED'){
+     const staff=el('select');staff.setAttribute('aria-label','موظف المتابعة');
+     const empty=el('option','تعيين موظف');empty.value='';staff.append(empty);
+     for(const m of state.team.filter(member=>member.role!=='VIEWER')){const option=el('option',m.email);option.value=m.id;staff.append(option)}
+     staff.value=l.assigned_user_id||'';
+     c.append(staff,button('حفظ المسؤول',async()=>{if(!staff.value)throw new Error('اختار موظفًا');await api('/leads/'+l.id+'/assign',{method:'PATCH',body:{userId:staff.value}});await leads();notify('تم تحديد الموظف بدون إرسال رسالة للعميل')}));
+    }
     if(state.role!=='VIEWER')for(const [stage,label] of [['READY_FOR_AGENT','جاهز للموظف'],['CONTACTED','تم التواصل'],['CLOSED','إغلاق']]){
      if(stage===l.stage)continue;
      c.append(button(label,async()=>{await api('/leads/'+l.id+'/stage',{method:'PATCH',body:{stage}});await leads()}));
@@ -71,7 +86,7 @@ export function initWorkspace(ctx){
    }
    if(!results.children.length)results.append(el('p','مفيش عملاء في المرحلة دي.'));
   }
-  filter.onchange=render;render();
+  filter.onchange=render;search.oninput=render;order.onchange=render;render();
  }
  $('leads-refresh').onclick=()=>execute(leads);
  async function connection(){const host=$('wa-connections');host.replaceChildren();const rows=await api('/whatsapp/connection');if(!rows.length)host.append(el('p','لا يوجد رقم متصل.'));for(const r of rows){const c=card(r.displayPhone||r.phoneNumberId,r.status);if(state.role==='OWNER'&&r.status==='CONNECTED')c.append(button('فصل الاتصال',async()=>{if(confirm('فصل الرقم؟')){await api('/whatsapp/connection/'+r.id,{method:'DELETE'});await connection()}},'danger'));host.append(c)}}
