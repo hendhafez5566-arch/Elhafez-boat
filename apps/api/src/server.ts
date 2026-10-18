@@ -225,7 +225,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&rollback)return json(res,200,await run(tx=>rollbackFlow(tx,actor,rollback[1])));
     if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
-    if(req.method==='GET'&&pathname==='/api/v1/analytics/overview')return json(res,200,await run(tx=>analyticsOverview(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/analytics/overview'){const days=new URL(req.url||'/','http://local').searchParams.get('days')||'30';if(!['7','30','90'].includes(days))throw new HttpFailure(400,'Invalid reporting period');return json(res,200,await run(tx=>analyticsOverview(tx,actor,Number(days))));}
     const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);
     if(req.method==='PATCH'&&leadStage)return json(res,200,await runBody((tx,input)=>updateLeadStage(tx,actor,leadStage[1],input)));
     const leadTasks=/^\/api\/v1\/leads\/([^/]+)\/tasks$/.exec(pathname);

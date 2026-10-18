@@ -15,7 +15,7 @@ test('insights renders a real nonzero lead capture percentage and preserves zero
  const root=node('div');
  const data={conversations:40,leads:15,leadCapturePct:37.5,ready:3,contacted:2,closedLeads:1,
   tasks:{open:4,overdue:1,done:7},campaigns:{active:0,total:2},channels:[],daily:[]};
- const api=async path=>{assert.equal(path,'/analytics/overview');return data};
+ const api=async path=>{assert.equal(path,'/analytics/overview?days=30');return data};
  const insights=initInsights({api,$:id=>{assert.equal(id,'bot-insights');return root},el:node});
  await insights.load();
  const title='نسبة تحويل المحادثة إلى اهتمام';

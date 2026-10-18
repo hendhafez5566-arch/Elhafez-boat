@@ -1,5 +1,6 @@
 /** Clear owner/staff analytics; figures come from real tenant-scoped API only. */
 export function initInsights({api,$,el}){
+ let periodDays=30;
  const clear=()=>{const host=$('bot-insights');if(host)host.replaceChildren()};
  const number=value=>new Intl.NumberFormat('ar-EG').format(Number(value)||0);
  function metric(host,title,value,note,unit=''){
@@ -10,8 +11,12 @@ export function initInsights({api,$,el}){
  }
  async function load(){
   const host=$('bot-insights');host.replaceChildren();
-  const data=await api('/analytics/overview');
-  const note=el('p','كل الأرقام هنا من بيانات الشركة خلال آخر 30 يومًا. نسبة تسجيل الاهتمام ليست نسبة مبيعات أو حجوزات.','muted');
+  const period=el('select');period.setAttribute('aria-label','فترة التحليلات');
+  for(const days of [7,30,90]){const option=el('option','آخر '+days+' يوم');option.value=String(days);period.append(option)}
+  period.value=String(periodDays);period.onchange=()=>{periodDays=Number(period.value);void load()};
+  host.append(period);
+  const data=await api('/analytics/overview?days='+periodDays);
+  const note=el('p','كل الأرقام عن الفترة المختارة للشركة. تسجيل الاهتمام ليس مبيعات أو حجوزات.','muted');
   host.append(note);
   const metrics=el('div',undefined,'metrics');
   metric(metrics,'المحادثات الواردة',data.conversations);
@@ -35,6 +40,13 @@ export function initInsights({api,$,el}){
    const rail=el('div',undefined,'insight-rail'),fill=el('div',undefined,'insight-fill');fill.style.width=(data.leads?Math.round(Number(count)*100/data.leads):0)+'%';rail.append(fill);row.append(rail);funnel.append(row);
   }
   grid.append(channels,funnel);host.append(grid);
+  const activity=el('section',undefined,'panel');activity.append(el('h3','المحادثات والعملاء المهتمون يوميًا'));
+  const incoming=new Map((data.daily||[]).map(x=>[x.day,Number(x.conversations)]));
+  const captured=new Map((data.leadDaily||[]).map(x=>[x.day,Number(x.leads)]));
+  const dates=[...new Set([...incoming.keys(),...captured.keys()])].sort();
+  if(!dates.length)activity.append(el('p','لا يوجد نشاط في الفترة المحددة.','muted'));
+  for(const day of dates)activity.append(el('p',day+' — محادثات: '+number(incoming.get(day)||0)+' • اهتمام: '+number(captured.get(day)||0)));
+  host.append(activity);
   const footer=el('p',undefined,'muted');
   footer.textContent='مهام متابعة مفتوحة: '+number(data.tasks.open)+' • مكتملة: '+number(data.tasks.done)+' • إجمالي الحملات خلال الفترة: '+number(data.campaigns.total);
   host.append(footer);
