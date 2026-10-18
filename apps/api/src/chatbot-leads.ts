@@ -34,15 +34,15 @@ export async function listLeads(db:SqlClient,actor:Actor){
    CASE l.stage WHEN 'READY_FOR_AGENT' THEN 0 WHEN 'INTERESTED' THEN 1 WHEN 'CONTACTED' THEN 2 ELSE 3 END,
    l.updated_at DESC LIMIT 200`,[actor.tenantId])).rows.map(lead=>{
    // Transparent, rule-based prioritization; never confuse this with ML scoring.
-   const fields=lead.custom_fields&&typeof lead.custom_fields==='object'?lead.custom_fields:{};
+   const fields:Record<string,unknown>=lead.custom_fields&&typeof lead.custom_fields==='object'?lead.custom_fields as Record<string,unknown>:{};
    const stage=String(lead.stage),weight:Record<string,number>={READY_FOR_AGENT:65,INTERESTED:40,CONTACTED:22,CLOSED:0};
    let score=weight[stage]??0;
    if(lead.catalog_title)score+=10;
    if(fields.customer_need)score+=12;
    if(fields.customer_name)score+=5;
    if(fields.customer_phone)score+=5;
-   if(Date.now()-new Date(lead.updated_at).getTime()<86400000)score+=8;
-   if(lead.next_followup_at&&new Date(lead.next_followup_at).getTime()<Date.now()&&stage!=='CLOSED')score+=8;
+   if(Date.now()-new Date(String(lead.updated_at)).getTime()<86400000)score+=8;
+   if(lead.next_followup_at&&new Date(String(lead.next_followup_at)).getTime()<Date.now()&&stage!=='CLOSED')score+=8;
    return {...lead,priorityScore:Math.min(100,score)};
   });
 }
