@@ -65,6 +65,7 @@ export async function updateLeadStage(db:SqlClient,actor:Actor,id:string,input:u
  const result=await db.query(`UPDATE chatbot_leads SET stage=$3,updated_at=now() WHERE tenant_id=$1 AND id=$2
  RETURNING id,stage`,[actor.tenantId,id,stage]);
  if(result.rowCount!==1)throw new HttpFailure(404,'Lead not found');
+ if(stage==='CLOSED')await db.query("UPDATE chatbot_lead_tasks SET status='DONE',completed_at=now() WHERE tenant_id=$1 AND lead_id=$2 AND status='OPEN'",[actor.tenantId,id]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id)
  VALUES($1,$2,'LEAD_STAGE_UPDATED','chatbot_lead',$3)`,[actor.tenantId,actor.userId,id]);
  return result.rows[0];
