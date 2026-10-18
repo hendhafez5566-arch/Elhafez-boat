@@ -5,6 +5,7 @@ import {initInsights} from '../apps/web/public/insights-ui.js';
 function node(tag,text='',className=''){
  return {tag,textContent:text??'',className,style:{},children:[],
   append(...items){this.children.push(...items)},
+  setAttribute(name,value){(this.attributes??={})[name]=value},
   replaceChildren(...items){this.children=items}};
 }
 function findMetric(root,title){
