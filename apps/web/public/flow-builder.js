@@ -209,7 +209,10 @@ export function initFlowBuilder({state,api,notify,execute}){
  const simulatorDialog=el('dialog',undefined,'builder-preview-dialog');
  const simulatorHead=el('header',undefined,'builder-dialog-header');
  simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
- simulatorDialog.append(simulatorHead,simulator);document.body.append(simulatorDialog);
+ const phoneShell=el('div',undefined,'builder-phone-shell');
+ const phoneBar=el('div','Elhafez Boat · محادثة تجريبية','builder-phone-bar');
+ phoneShell.append(phoneBar,simulator);
+ simulatorDialog.append(simulatorHead,phoneShell);document.body.append(simulatorDialog);
  simulatorDialog.addEventListener('click',e=>{if(e.target===simulatorDialog)simulatorDialog.close()});
  function showSimulator(){if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');resetPreview()}
  const picker=el('dialog',undefined,'builder-component-dialog'),pickerHead=el('header',undefined,'builder-dialog-header');

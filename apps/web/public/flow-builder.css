@@ -146,3 +146,12 @@
 @media(max-width:1120px){#flow-builder .builder-studio{grid-template-columns:190px minmax(0,1fr)}#flow-builder .builder-quick{grid-template-columns:1fr}#flow-builder .builder-view-actions button{padding:7px;font-size:11px}}
 @media(max-width:760px){#flow-builder .builder-studio{display:grid;grid-template-columns:1fr}#flow-builder .builder-stage{grid-column:1;grid-row:1}#flow-builder .builder-palette{grid-column:1;grid-row:2;position:static;max-height:none}#flow-builder .builder-quick{grid-template-columns:repeat(4,minmax(0,1fr))}#flow-builder .builder-studio.palette-collapsed{grid-template-columns:1fr}#flow-builder .builder-stage .flow-canvas{height:530px;min-height:530px}#flow-builder .builder-stage-head{padding:13px}#flow-builder>.builder-toolbar label{flex:1 1 100%;max-width:none}#flow-builder .builder-inspector{width:100vw}#flow-builder .builder-view-actions{width:100%}}
 @media(max-width:480px){#flow-builder .builder-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.builder-picker-grid{grid-template-columns:1fr}#flow-builder .builder-stage .flow-canvas{height:460px;min-height:460px}#flow-builder .builder-view-actions{max-height:122px;overflow:auto}}
+
+/* Dedicated phone frame inside the on-demand simulator; retains original preview DOM and engine. */
+.builder-preview-dialog .builder-phone-shell{width:min(392px,100%);margin:0 auto;padding:17px 11px 16px;border:6px solid #21343e;background:#12242f;border-radius:35px;box-shadow:0 18px 42px #152b4660}
+.builder-preview-dialog .builder-phone-shell:before{content:"";display:block;width:90px;height:15px;border-radius:0 0 15px 15px;background:#07131b;margin:-17px auto 15px}
+.builder-preview-dialog .builder-phone-bar{background:#116e63;color:white;font-weight:800;font-size:13px;padding:15px;border-radius:16px 16px 0 0}
+.builder-preview-dialog .builder-phone-shell .builder-simulator{background:#f6faf7;padding:12px!important;border-radius:0 0 17px 17px;max-height:64vh;overflow:auto}
+.builder-preview-dialog .builder-phone-shell .builder-simulator>h3{font-size:13px;margin:0 0 8px}
+.builder-preview-dialog .builder-phone-shell .builder-preview-window{max-height:34vh;min-height:195px}
+@media(max-width:470px){.builder-preview-dialog{padding:12px}.builder-preview-dialog .builder-phone-shell{padding:12px 7px 9px;border-width:4px}.builder-preview-dialog .builder-phone-shell .builder-preview-window{min-height:180px;max-height:32vh}}
