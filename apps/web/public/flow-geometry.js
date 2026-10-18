@@ -13,8 +13,8 @@ export function collides(a,b,gap=GAP){
         a.y < b.y+b.height+gap && a.y+a.height+gap > b.y;
 }
 const clamp=(n)=>Math.max(0,Math.min(MAX_POSITION,Math.round(Number(n)||0)));
-export function placeWithoutOverlap(point,node,existing=[],gap=GAP){
- const footprint=nodeFootprint(node);
+export function placeWithoutOverlap(point,node,existing=[],gap=GAP,measured=null){
+ const footprint=measured||nodeFootprint(node);
  const base={x:clamp(point.x),y:clamp(point.y),...footprint};
  if(!existing.some(r=>collides(base,r,gap)))return {x:base.x,y:base.y};
  const nearby=[...existing].sort((a,b)=>Math.hypot(a.x-base.x,a.y-base.y)-Math.hypot(b.x-base.x,b.y-base.y)).slice(0,24);

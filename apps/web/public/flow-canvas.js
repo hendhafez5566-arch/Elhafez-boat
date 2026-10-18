@@ -94,12 +94,18 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
         drag.onpointermove=ev=>{
           if(Math.abs(ev.clientX-start.x)+Math.abs(ev.clientY-start.y)>5)moved=true;
           if(!moved)return;
-          const others=f.nodes.filter(other=>other.id!==n.id).map(other=>({
-            ...positions[other.id],...nodeFootprint(other)
-          }));
+          const others=f.nodes.filter(other=>other.id!==n.id).map(other=>{
+            const element=cards.get(other.id);return {
+              ...positions[other.id],
+              width:Math.max(NODE_WIDTH,element?.offsetWidth||nodeFootprint(other).width),
+              height:Math.max(element?.offsetHeight||0,nodeFootprint(other).height)
+            };
+          });
+          const size={width:Math.max(NODE_WIDTH,card.offsetWidth||0),
+            height:Math.max(card.offsetHeight||0,nodeFootprint(n).height)};
           const safe=placeWithoutOverlap({
             x:original.x+(ev.clientX-start.x)/zoom,y:original.y+(ev.clientY-start.y)/zoom
-          },n,others);
+          },n,others,28,size);
           f.layout[n.id]=safe;card.style.left=safe.x+'px';card.style.top=safe.y+'px';
         };
         const stop=()=>{drag.onpointermove=null;drag.onpointerup=null;drag.onpointercancel=null;if(moved){changed();draw()}};
