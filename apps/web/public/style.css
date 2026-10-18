@@ -79,7 +79,7 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .ops-row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
 .platform-shell{max-width:1250px;margin:auto;padding:25px}
 .form-grid{display:grid;gap:10px}.ops-stack{display:grid;gap:12px}
-.studio-focus .layout{grid-template-columns:0 minmax(0,1fr)}
+.studio-focus .layout{grid-template-columns:minmax(0,1fr)}
 .studio-focus .topbar{display:none}
 .studio-focus #flow-builder>.section-heading,.studio-focus #flow-builder>.builder-toolbar,.studio-focus #flow-builder>.boat-guide-mount{display:none}
 .studio-focus #flow-builder .builder-extras,.studio-focus #flow-builder .builder-palette{display:none}
