@@ -214,3 +214,13 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .boat-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;background:#edf1f5;color:#51657a}
 .boat-status-success{background:#def5e8;color:#086647}.boat-status-warning{background:#fff0d5;color:#915b11}.boat-status-error{background:#ffeaee;color:#a92d40}
 @media(max-width:800px){.boat-filterbar{grid-template-columns:1fr}.boat-filterbar input,.boat-filterbar select{width:100%}}
+
+/* Progressive disclosure for catalog metadata and per-contact CRM operations. */
+.catalog-optional{border:1px solid var(--line);border-radius:12px;background:#f8fafb;padding:12px 14px;margin:12px 0 16px}
+.catalog-optional summary{font-size:13px;color:#3f5a6d;font-weight:750}
+.catalog-optional[open] label:first-of-type{margin-top:14px}
+.crm-lead-more{background:#f8fafb;border:1px solid var(--line);border-radius:12px;padding:10px 13px;margin-top:9px}
+.crm-lead-more summary{font-size:13px;color:#39556a}
+.crm-lead-more[open]{padding-bottom:16px}
+.crm-lead-more>button{margin-top:9px}
+.crm-lead-card>.primary{justify-self:start}

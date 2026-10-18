@@ -19,6 +19,17 @@ const ctx={state,api,notify,execute,canEdit,$,el,button,card,bind};
 ctx.commerce=initCommerce(ctx);
 const whatsappSignup=initWhatsAppSignup(ctx);
 const advanced=initAdvanced(ctx),workspace=initWorkspace(ctx),extensions=initExtensions(ctx),builder=initFlowBuilder(ctx),insights=initInsights(ctx);
+ // Keep everyday catalog fields visible, move optional channels/metadata to a disclosure.
+ // All original input elements remain inside the SAME form for FormData and validation.
+ const catalogForm=$('catalog-form');
+ const advancedCatalog=el('details',undefined,'catalog-optional');
+ advancedCatalog.append(el('summary','بيانات إضافية: التصنيف والصورة والرابط'));
+ for(const name of ['categoryLabel','imageUrl','externalUrl']){
+  const field=catalogForm.querySelector('[name="'+name+'"]')?.closest('label');
+  if(field)advancedCatalog.append(field);
+ }
+ catalogForm.insertBefore(advancedCatalog,catalogForm.querySelector('button.primary'));
+
 // First-time company owners see the 9 everyday destinations; advanced settings remain
 // one disclosure away. This only reorganizes navigation, not API permissions.
 const nav=document.querySelector('.sidebar nav');
