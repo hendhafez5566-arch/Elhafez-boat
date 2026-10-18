@@ -358,6 +358,13 @@ export function initFlowBuilder({state,api,notify,execute}){
  }
  function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
  async function load(){
+   // Navigating to the catalog or company dashboard must not silently discard
+   // a just-generated bot or changes to a linked subflow. Explicit save is required.
+   if(dirty){
+     renderAll();
+     notify('المسار فيه تعديلات غير محفوظة. راجعها واحفظ المسودة قبل التنقل أو النشر.');
+     return;
+   }
    editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
    const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
