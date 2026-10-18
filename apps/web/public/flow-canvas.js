@@ -166,6 +166,11 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
     const stop=()=>{host.removeEventListener('pointermove',move);host.removeEventListener('pointerup',stop);host.removeEventListener('pointercancel',stop)};
     host.addEventListener('pointermove',move);host.addEventListener('pointerup',stop);host.addEventListener('pointercancel',stop);
   });
-  return {draw,fit,reset,autoLayout,highlight,zoomIn:()=>zoomTo(zoom*1.2),zoomOut:()=>zoomTo(zoom/1.2),
+  function focus(id){
+    const p=positionsFor(getFlow())[id];if(!p)return fit();
+    const area=host.getBoundingClientRect();zoom=1;
+    pan={x:Math.round(area.width/2-(p.x+NODE_WIDTH/2)),y:Math.round(area.height/2-(p.y+155))};transform();
+  }
+  return {draw,fit,focus,reset,autoLayout,highlight,zoomIn:()=>zoomTo(zoom*1.2),zoomOut:()=>zoomTo(zoom/1.2),
     coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(9000,Math.round((clientX-r.left-pan.x)/zoom-130))),y:Math.max(0,Math.min(9000,Math.round((clientY-r.top-pan.y)/zoom-60)))}}};
 }

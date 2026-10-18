@@ -185,8 +185,8 @@ export function initFlowBuilder({state,api,notify,execute}){
  stageHead.append(el('h3','مساحة تصميم المحادثة'),el('p','اضغط على الرسالة لتحريرها، أو اضغط + لإضافة خطوة داخل المسار.'));
  const actions=el('div',undefined,'builder-view-actions');
  const paletteToggle=button('إخفاء المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات'});
- const focusToggle=button('ملء الشاشة',()=>{const on=document.body.classList.toggle('studio-focus');focusToggle.textContent=on?'إنهاء ملء الشاشة':'ملء الشاشة';stagePanel.scrollIntoView({block:'start'});requestAnimationFrame(()=>canvas.fit())});
- actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('إعادة العرض',()=>canvas.reset()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
+ const focusToggle=button('ملء الشاشة',()=>{const on=document.body.classList.toggle('studio-focus');focusToggle.textContent=on?'إنهاء ملء الشاشة':'ملء الشاشة';stagePanel.scrollIntoView({block:'start'});requestAnimationFrame(()=>{window.scrollTo(0,0);canvas.fit()})});
+ actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('إعادة العرض',()=>canvas.reset()),button('الخطوة المختارة',()=>canvas.focus(selected)),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
  stageHead.append(actions);
  stagePanel.append(stageHead,tools,canvasHost);
  canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');

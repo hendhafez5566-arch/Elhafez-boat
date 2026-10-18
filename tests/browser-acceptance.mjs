@@ -99,6 +99,8 @@ try{
  await evaluate("document.querySelector('.builder-preview-dialog .builder-dialog-header button').click()");
  await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
  assert.equal(await evaluate("document.body.classList.contains('studio-focus')"),true,'Full-screen studio hides navigation');
+ await sleep(200);
+ assert.equal(await evaluate("(()=>{const r=document.querySelector('.flow-canvas').getBoundingClientRect();return r.top<innerHeight&&r.bottom>70&&r.width>600})()"),true,'Focus mode must actually show a usable canvas in viewport');
  await screenshot('premium-studio-focus-desktop.png');
  await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
  console.log('PASS contextual add step, graph insertion, live inspector update, zoom, phone modal and full-screen');

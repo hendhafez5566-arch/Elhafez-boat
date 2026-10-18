@@ -55,7 +55,7 @@
 #flow-builder>.builder-toolbar label{margin:0;min-width:180px;flex:0 1 235px;font-size:12px}
 #flow-builder>.builder-toolbar #builder-name{min-width:170px}
 #flow-builder>.builder-toolbar button{min-height:44px;font-size:12px}
-#flow-builder .builder-studio{display:grid;grid-template-columns:260px minmax(0,1fr);gap:15px;direction:rtl;align-items:start;position:relative}
+#flow-builder .builder-studio{display:grid;grid-template-columns:210px minmax(0,1fr);gap:15px;direction:rtl;align-items:start;position:relative}
 #flow-builder .builder-studio.palette-collapsed{grid-template-columns:minmax(0,1fr)}
 #flow-builder .builder-studio>.builder-column{background:#fff;border:1px solid var(--line);border-radius:19px;padding:17px;min-width:0;box-shadow:var(--shadow)}
 #flow-builder .builder-palette{grid-column:1;position:sticky;top:16px;max-height:calc(100vh - 35px);overflow:auto;scrollbar-width:thin}
