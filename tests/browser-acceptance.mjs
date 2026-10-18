@@ -134,7 +134,9 @@ try{
  await sleep(200);await screenshot('flow-builder-canvas-desktop.png');
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
  await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
- await sleep(300);await evaluate("window.scrollTo(0,0)");await screenshot('flow-builder-mobile.png');
+ await sleep(300);
+ assert.equal(await evaluate("document.querySelector('.nav-advanced')?.open"),false,'Advanced navigation must auto-close on mobile viewport');
+ await evaluate("window.scrollTo(0,0)");await screenshot('flow-builder-mobile.png');
  await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
  await sleep(250);await screenshot('flow-builder-canvas-mobile.png');
  await evaluate("document.querySelector('.builder-view-actions button.primary').click()");
