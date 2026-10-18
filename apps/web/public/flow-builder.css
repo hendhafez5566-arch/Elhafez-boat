@@ -155,3 +155,8 @@
 .builder-preview-dialog .builder-phone-shell .builder-simulator>h3{font-size:13px;margin:0 0 8px}
 .builder-preview-dialog .builder-phone-shell .builder-preview-window{max-height:34vh;min-height:195px}
 @media(max-width:470px){.builder-preview-dialog{padding:12px}.builder-preview-dialog .builder-phone-shell{padding:12px 7px 9px;border-width:4px}.builder-preview-dialog .builder-phone-shell .builder-preview-window{min-height:180px;max-height:32vh}}
+
+.builder-choice-heading{display:block;color:#2b4c60;margin-bottom:9px}
+.builder-choice-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.builder-choice-actions button{padding:7px 10px;font-size:11px!important}
+#flow-builder .canvas-output.connecting{background:#dff5ed;color:#0d796c;box-shadow:0 0 0 3px #0d998928}

@@ -12,7 +12,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
   const transform=()=>{stage.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`};
   const mk=(tag,text,klass)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(klass)n.className=klass;return n};
   const btn=(text,klass,action)=>{const b=mk('button',text,klass);b.type='button';b.onclick=action;return b};
-  const positionsFor=f=>{const proposed=arrangeFlow(f);return Object.fromEntries(f.nodes.map(n=>[n.id,f.layout?.[n.id]||proposed[n.id]]))};
+  const positionsFor=f=>{const missing=f.nodes.some(n=>!f.layout?.[n.id]);const proposed=missing?arrangeFlow(f):null;return Object.fromEntries(f.nodes.map(n=>[n.id,f.layout?.[n.id]||proposed[n.id]]))};
   function highlight(id){active=id;stage.querySelectorAll('.canvas-node').forEach(n=>n.classList.toggle('selected',n.dataset.nodeId===id));
     svg.querySelectorAll('.canvas-edge').forEach(n=>n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id));
   }

@@ -1,7 +1,8 @@
+import {emptyState,filterBar,statusChip} from './ui-states.js';
 export function initWorkspace(ctx){
  const {state,api,$,el,button,card,bind,notify,canEdit,execute}=ctx;let threads=[],selected=null,templates=[],members=[];
  const options=(select,rows,label)=>{select.replaceChildren();for(const r of rows){const o=el('option',label(r));o.value=r.id;select.append(o)}};
- function renderThreads(){const host=$('inbox-list');host.replaceChildren();const q=$('inbox-search').value.trim().toLowerCase(),filter=$('inbox-filter').value;for(const t of threads.filter(t=>(t.customer_name+' '+(t.phone||'')).toLowerCase().includes(q)&&(filter==='ALL'||filter==='UNREAD'&&Number(t.unread_count)>0||filter==='MINE'&&t.assigned_user_id===state.userId||filter===t.status))){const b=button(t.customer_name,()=>thread(t),'thread'+(selected?.id===t.id?' active':''));b.append(el('small',t.channel+' • '+t.status+(t.unread_count?' • '+t.unread_count+' غير مقروءة':'')));host.append(b)}if(!host.children.length)host.append(el('p','لا توجد محادثات مطابقة.'))}
+ function renderThreads(){const host=$('inbox-list');host.replaceChildren();const q=$('inbox-search').value.trim().toLowerCase(),filter=$('inbox-filter').value;for(const t of threads.filter(t=>(t.customer_name+' '+(t.phone||'')).toLowerCase().includes(q)&&(filter==='ALL'||filter==='UNREAD'&&Number(t.unread_count)>0||filter==='MINE'&&t.assigned_user_id===state.userId||filter===t.status))){const b=button(t.customer_name,()=>thread(t),'thread'+(selected?.id===t.id?' active':''));b.append(el('small',t.channel+' • '+t.status+(t.unread_count?' • '+t.unread_count+' غير مقروءة':'')));host.append(b)}if(!host.children.length)emptyState(host,'لا توجد محادثات مطابقة','جرّب تعديل البحث أو الفلتر.')}
  async function inbox(){selected=null;$('thread-tools').hidden=true;$('thread-messages').replaceChildren();$('thread-title').textContent='اختار محادثة';$('inbox-list').replaceChildren();threads=await api('/whatsapp/inbox');renderThreads()}
  async function thread(t){selected=t;renderThreads();$('thread-title').textContent=t.customer_name+' — '+t.channel;const context=$('thread-context');context.replaceChildren();if(t.custom_fields)for(const [k,v] of Object.entries(t.custom_fields))context.append(el('span',k+': '+String(v)+'  '));const host=$('thread-messages');host.replaceChildren();const messages=await api('/whatsapp/inbox/'+t.id+'/messages');if(selected?.id!==t.id)return;for(const m of messages){const b=el('div',undefined,'bubble '+(m.kind==='INBOUND'?'incoming':m.kind==='INTERNAL_NOTE'?'internal':'outgoing'));b.append(el('p',m.body),el('small',m.kind==='INTERNAL_NOTE'?'ملاحظة داخلية':m.message_source==='BUSINESS_APP'?'من تطبيق واتساب بيزنس':m.imported_history?'سجل سابق — لا يشغّل البوت':m.delivery_status||m.kind));host.append(b)}host.scrollTop=host.scrollHeight;t.unread_count=0;renderThreads();$('thread-tools').hidden=state.role==='VIEWER';$('thread-take').textContent=t.status==='HUMAN'?'تسليم للبوت':'استلام';$('reply-form').querySelector('button.primary').disabled=t.status!=='HUMAN';$('thread-assignee').hidden=!canEdit();$('thread-assign').hidden=!canEdit();options($('thread-assignee'),state.team.filter(m=>m.role!=='VIEWER'),m=>m.email);if(t.assigned_user_id)$('thread-assignee').value=t.assigned_user_id;await replies()}
  async function replies(){const rows=await api('/saved-replies');const s=$('reply-saved');s.replaceChildren();const empty=el('option','اختار ردًا محفوظًا');empty.value='';s.append(empty);const host=$('saved-reply-list');host.replaceChildren();for(const r of rows){const o=el('option',r.title);o.value=r.body;s.append(o);const c=card(r.title,r.body);if(canEdit())c.append(button('تعديل',async()=>{const title=prompt('عنوان الرد',r.title);if(!title)return;const body=prompt('نص الرد',r.body);if(!body)return;await api('/saved-replies/'+r.id,{method:'PUT',body:{title,body}});await replies()}),button('حذف',async()=>{await api('/saved-replies/'+r.id,{method:'DELETE'});await replies()},'danger'));host.append(c)}}
@@ -14,7 +15,7 @@ export function initWorkspace(ctx){
  async function leads(){
   const host=$('lead-list');host.replaceChildren();
   const rows=await api('/leads');
-  if(!rows.length){host.append(el('p','لسه مفيش عملاء مهتمين. بعد نشر البوت وتحويل أول عميل هتظهر بياناته هنا.'));return}
+  if(!rows.length){emptyState(host,'لا يوجد عملاء مهتمون حتى الآن','ستظهر هنا المتابعات الجديدة بعد نشر البوت.');return}
   const filter=el('select');filter.setAttribute('aria-label','تصفية العملاء حسب مرحلة المتابعة');
   for(const [value,title] of [['ALL','كل المراحل'],['READY_FOR_AGENT','جاهزون للموظف'],['INTERESTED','مهتمون'],['CONTACTED','تم التواصل'],['CLOSED','مغلقون']]){
    const option=el('option',title);option.value=value;filter.append(option);
@@ -23,11 +24,11 @@ export function initWorkspace(ctx){
   const search=el('input');search.placeholder='ابحث باسم العميل أو هاتفه أو الاحتياج';search.setAttribute('aria-label','بحث العملاء');
   const order=el('select');order.setAttribute('aria-label','ترتيب العملاء');
   for(const [value,title] of [['priority','الأعلى أولوية'],['recent','الأحدث'],['due','الأقرب متابعة']]){const o=el('option',title);o.value=value;order.append(o)}
-  host.append(summary,filter,search,order);
+  host.append(summary,filterBar(search,filter,order));
   const results=el('div',undefined,'cards');host.append(results);
   async function showTasks(container,lead){
    container.replaceChildren();const tasks=await api('/leads/'+lead.id+'/tasks');
-   if(!tasks.length)container.append(el('p','مفيش مهام متابعة للعميل ده.','muted'));
+   if(!tasks.length)emptyState(container,'لا توجد مهام متابعة','أضف موعدًا واضحًا للخطوة القادمة.');
    for(const task of tasks){
     const taskRow=el('div',undefined,'crm-task');
     const date=new Date(task.dueAt),overdue=task.status==='OPEN'&&date.getTime()<Date.now();
@@ -64,7 +65,7 @@ export function initWorkspace(ctx){
    for(const l of found){
     const fields=Object.entries(l.custom_fields||{}).map(([k,v])=>k+': '+String(v)).join(' • ');
     const stageNames={READY_FOR_AGENT:'جاهز للموظف',INTERESTED:'مهتم',CONTACTED:'تم التواصل',CLOSED:'مغلق'};
-    const c=card(l.customer_name+' — '+(stageNames[l.stage]||l.stage),[l.catalog_title,l.phone,fields].filter(Boolean).join(' • '));
+    const c=card(l.customer_name,[l.catalog_title,l.phone,fields].filter(Boolean).join(' • '));c.classList.add('crm-lead-card');c.prepend(statusChip(stageNames[l.stage]||l.stage,l.stage==='CLOSED'?'neutral':l.stage==='READY_FOR_AGENT'?'success':'warning'));
     const badge=el('div','أولوية متابعة: '+Number(l.priorityScore||0)+'/100'+(l.open_tasks?' • مهام مفتوحة: '+l.open_tasks:''),'crm-lead-score');
     c.append(badge);
     if(l.next_followup_at)c.append(el('p','المتابعة القادمة: '+new Date(l.next_followup_at).toLocaleString('ar-EG'),'muted'));
@@ -84,12 +85,12 @@ export function initWorkspace(ctx){
     c.append(button('مواعيد المتابعة',async()=>{taskPane.hidden=!taskPane.hidden;if(!taskPane.hidden)await showTasks(taskPane,l)},'secondary'),taskPane);
     results.append(c);
    }
-   if(!results.children.length)results.append(el('p','مفيش عملاء في المرحلة دي.'));
+   if(!results.children.length)emptyState(results,'لا توجد نتائج','جرّب تغيير الفلتر أو البحث.');
   }
   filter.onchange=render;search.oninput=render;order.onchange=render;render();
  }
  $('leads-refresh').onclick=()=>execute(leads);
- async function connection(){const host=$('wa-connections');host.replaceChildren();const rows=await api('/whatsapp/connection');if(!rows.length)host.append(el('p','لا يوجد رقم متصل.'));for(const r of rows){const c=card(r.displayPhone||r.phoneNumberId,r.status==='CONNECTED'?'اعتماد محفوظ — يلزم فحص الاتصال':'مفصول محليًا');if(state.role==='OWNER'&&r.status==='CONNECTED')c.append(button('فحص الاتصال الآن',async()=>{const d=await api('/whatsapp/connection/'+r.id+'/diagnose',{method:'POST'});notify(d.verified?(d.subscribed?'تم التحقق من الرقم واشتراك التطبيق؛ وصول الرسائل يحتاج تجربة فعلية':d.appConfigured?'الرقم صحيح؛ اشتراك التطبيق غير مؤكد. راجع إعدادات Webhook في Meta':'الرقم صحيح؛ اضبط META_APP_ID على الخادم لفحص اشتراك التطبيق'):'الرقم مفصول')}),button('فصل الاتصال',async()=>{if(confirm('فصل الرقم محليًا وإيقاف استقبال وإرسال المنصة؟ هذا لا يحذف الرقم أو يلغي الاشتراك في Meta. يمكن إعادة ربطه بنفس الشركة. الرسائل المنتظرة ستُوقف؛ الرسالة الجاري إرسالها قد تصل ولا يمكن سحبها.')){await api('/whatsapp/connection/'+r.id,{method:'DELETE'});await connection()}},'danger'));host.append(c)}}
+ async function connection(){const host=$('wa-connections');host.replaceChildren();const rows=await api('/whatsapp/connection');if(!rows.length)emptyState(host,'لا يوجد رقم متصل','يمكن لمالك الشركة إضافة اتصال عند الجاهزية.');for(const r of rows){const c=card(r.displayPhone||r.phoneNumberId,r.status==='CONNECTED'?'اعتماد محفوظ — يلزم فحص الاتصال':'مفصول محليًا');if(state.role==='OWNER'&&r.status==='CONNECTED')c.append(button('فحص الاتصال الآن',async()=>{const d=await api('/whatsapp/connection/'+r.id+'/diagnose',{method:'POST'});notify(d.verified?(d.subscribed?'تم التحقق من الرقم واشتراك التطبيق؛ وصول الرسائل يحتاج تجربة فعلية':d.appConfigured?'الرقم صحيح؛ اشتراك التطبيق غير مؤكد. راجع إعدادات Webhook في Meta':'الرقم صحيح؛ اضبط META_APP_ID على الخادم لفحص اشتراك التطبيق'):'الرقم مفصول')}),button('فصل الاتصال',async()=>{if(confirm('فصل الرقم محليًا وإيقاف استقبال وإرسال المنصة؟ هذا لا يحذف الرقم أو يلغي الاشتراك في Meta. يمكن إعادة ربطه بنفس الشركة. الرسائل المنتظرة ستُوقف؛ الرسالة الجاري إرسالها قد تصل ولا يمكن سحبها.')){await api('/whatsapp/connection/'+r.id,{method:'DELETE'});await connection()}},'danger'));host.append(c)}}
  bind('wa-form',async(d,f)=>{await api('/whatsapp/connection',{method:'POST',body:d});f.reset();await connection();notify('تم حفظ اتصال الرقم؛ تحقق من Webhook في Meta')});
  async function team(){const host=$('team-list'),invites=$('team-invites');host.replaceChildren();invites.replaceChildren();const [users,invitations]=await Promise.all([api('/team'),api('/team/invitations')]);members=users;state.team=users;for(const m of users){const c=card(m.email,m.role);if(state.role==='OWNER'&&m.role!=='OWNER'){const select=el('select');options(select,[{id:'MANAGER'},{id:'AGENT'},{id:'VIEWER'}],x=>x.id);select.value=m.role;c.append(select,button('حفظ الدور',async()=>{await api('/team/members/'+m.id+'/role',{method:'PATCH',body:{role:select.value}});await team()}))}host.append(c)}for(const inv of invitations){const c=card(inv.email,inv.role+' • '+inv.status);if(inv.status==='PENDING')c.append(button('إلغاء الدعوة',async()=>{await api('/team/invitations/'+inv.id+'/revoke',{method:'POST'});await team()},'danger'));invites.append(c)}}
  bind('invite-form',async(d,f)=>{const r=await api('/team/invitations',{method:'POST',body:d});$('invite-result').textContent=location.origin+'/join.html#team.'+r.inviteToken;f.elements.email.value='';await team();notify('رابط الدعوة يظهر مرة واحدة. شاركه بأمان مع الموظف.')});

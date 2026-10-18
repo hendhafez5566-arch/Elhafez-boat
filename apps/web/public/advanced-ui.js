@@ -1,3 +1,4 @@
+import {emptyState} from './ui-states.js';
 /** Authenticated advanced settings. Every action calls the real API; secrets never render. */
 export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
  let connectors=[];
@@ -29,14 +30,14 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
  }
  const jobs=await api('/connectors/jobs');const block=el('section');block.append(el('h3','نتائج المزامنة'));for(const j of jobs)block.append(card(j.id,j.status+' • محاولات '+j.attempts+' • '+(j.last_error||'')));host.append(block);
  }
- async function channelPage(){const host=$('social-accounts');host.replaceChildren();const rows=await api('/channels/accounts');if(!rows.length)host.append(el('p','لا توجد قنوات اجتماعية مربوطة. بيانات الحساب وصلاحيات المنصة مطلوبة.'));for(const r of rows){const c=card(r.channel,r.external_id+' • '+(r.enabled?'مفعل في الإعدادات — اختبر الاستقبال والتسليم':'معطل'));if(state.role==='OWNER'&&r.enabled)c.append(button('تعطيل الحساب',async()=>{await api('/channels/accounts/'+r.id,{method:'DELETE'});await channelPage()},'danger'));host.append(c)}$('social-form').hidden=state.role!=='OWNER';}
+ async function channelPage(){const host=$('social-accounts');host.replaceChildren();const rows=await api('/channels/accounts');if(!rows.length)emptyState(host,'لا توجد قنوات مرتبطة','الربط يحتاج بيانات وصلاحيات حساب الشركة.');for(const r of rows){const c=card(r.channel,r.external_id+' • '+(r.enabled?'مفعل في الإعدادات — اختبر الاستقبال والتسليم':'معطل'));if(state.role==='OWNER'&&r.enabled)c.append(button('تعطيل الحساب',async()=>{await api('/channels/accounts/'+r.id,{method:'DELETE'});await channelPage()},'danger'));host.append(c)}$('social-form').hidden=state.role!=='OWNER';}
  bind('social-form',async(d,f)=>{await api('/channels/accounts',{method:'POST',body:d});f.reset();await channelPage();notify('تم التحقق من اعتماد الحساب وحفظ الإعدادات؛ لم يُثبت اختبار محادثة حقيقية')});
  async function commentPage(){
   const rulesHost=$('comment-rule-editor'),candidatesHost=$('comment-candidates');rulesHost.replaceChildren();candidatesHost.replaceChildren();
   rulesHost.append(el('h3','قواعد استقبال التعليقات'));
   const [accounts,rules,candidates]=await Promise.all([api('/channels/accounts'),api('/comments/rules'),api('/comments/candidates')]);
   const meta=accounts.filter(a=>['MESSENGER','INSTAGRAM'].includes(a.channel));
-  if(!meta.length)rulesHost.append(el('p','لا توجد حسابات Meta متاحة؛ إنشاء القاعدة يحتاج حسابًا تابعًا للشركة. لا يتم ربط أي حساب تلقائيًا.'));
+  if(!meta.length)emptyState(rulesHost,'لا يوجد حساب مؤهل للتعليقات','أضف الحساب يدويًا قبل إنشاء قواعد التعليقات.');
   else{
    const form=makeForm();
    const account=select(form,'حساب Meta','accountId',meta.map(a=>[a.id,a.channel+' — '+a.external_id]));
@@ -60,7 +61,7 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
    },'secondary'));rulesHost.append(box);
   }
   candidatesHost.append(el('h3','قائمة الرسائل المرشحة'));
-  if(!candidates.length)candidatesHost.append(el('p','لا توجد تعليقات مطابقة مسجلة بعد.'));
+  if(!candidates.length)emptyState(candidatesHost,'لا توجد تعليقات للمراجعة','تظهر هنا النتائج عند مطابقة القواعد.');
   for(const candidate of candidates){
    const box=card(candidate.ruleName,candidate.channel+' • '+candidate.status+' • تعليق '+candidate.commentId);
    box.append(el('p',candidate.replyText));

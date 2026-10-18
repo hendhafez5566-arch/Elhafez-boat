@@ -197,3 +197,14 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .platform-login-panel{max-width:480px;margin:24px auto 0}
 .premium-platform .ops-card{background:white}.premium-platform .ops-row{align-items:end}
 .premium-platform .ops-row>h3{flex:1}
+
+/* Shared accessible states and responsive search controls for dynamic sections. */
+.boat-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:165px;padding:22px;text-align:center;border:1px dashed #c8dbe1;border-radius:17px;background:linear-gradient(135deg,#fff,#f4faf8);gap:8px}
+.boat-empty-symbol{display:grid;place-items:center;width:48px;height:48px;background:#e3f6ed;color:#0b766a;border-radius:15px;font-size:25px}
+.boat-empty strong{color:#1d3d48;font-size:15px}.boat-empty p{font-size:12px;max-width:450px;margin:0}
+.boat-filterbar{display:grid;grid-template-columns:minmax(160px,1fr) minmax(140px,210px) minmax(140px,210px);gap:10px;align-items:center;padding:12px;background:#fff;border:1px solid var(--line);border-radius:15px;margin-bottom:16px}
+.boat-filterbar input,.boat-filterbar select{height:44px}
+.crm-lead-card{display:grid;gap:8px;align-content:start}.crm-lead-card .boat-status{justify-self:start}
+.boat-status{display:inline-flex;align-items:center;border-radius:999px;padding:4px 12px;font-size:12px;font-weight:800;background:#edf1f5;color:#51657a}
+.boat-status-success{background:#def5e8;color:#086647}.boat-status-warning{background:#fff0d5;color:#915b11}.boat-status-error{background:#ffeaee;color:#a92d40}
+@media(max-width:800px){.boat-filterbar{grid-template-columns:1fr}.boat-filterbar input,.boat-filterbar select{width:100%}}
