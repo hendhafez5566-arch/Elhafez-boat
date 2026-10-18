@@ -1,3 +1,4 @@
+import {prepareCommerceTemplate} from './commerce.js';
 import {validateManagedMedia} from './media.js';
 import {templateComponents,type TemplateValues} from './template-components.js';
 /** Official Meta-approved template registry + explicit marketing consent; no bulk send endpoint. */
@@ -8,7 +9,7 @@ const names=/^[a-z0-9_]{2,120}$/;
 const langs=/^[a-z]{2}(_[A-Z]{2})?$/;
 const categories=['UTILITY','MARKETING'] as const;
 const graphVersion=()=>{const v=process.env.META_GRAPH_VERSION||'';if(!/^v\d{1,2}\.\d{1,2}$/.test(v))throw new HttpFailure(503,'Meta Graph version is not configured');return v;};
-function token(encrypted:string):string{
+export function whatsappToken(encrypted:string):string{
  const parts=encrypted.split('.');if(parts.length!==4||parts[0]!=='v1')throw new HttpFailure(500,'Token encryption format invalid');
  const k=Buffer.from(process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY||'','base64');
  if(k.length!==32)throw new HttpFailure(503,'Token encryption key is not configured');
@@ -30,7 +31,7 @@ export async function registerApprovedTemplate(db:SqlClient,actor:Actor,input:un
  if(account.rowCount!==1)throw new HttpFailure(404,'WhatsApp account not connected');
  const a=account.rows[0];let response:Response;
  try{response=await fetch(`https://graph.facebook.com/${graphVersion()}/${a.waba_id}/message_templates?fields=name,language,status,category,components&limit=100&name=${encodeURIComponent(name)}`,{
-  headers:{Authorization:'Bearer '+token(String(a.access_token_encrypted))},signal:AbortSignal.timeout(10000)
+  headers:{Authorization:'Bearer '+whatsappToken(String(a.access_token_encrypted))},signal:AbortSignal.timeout(10000)
  });}catch{throw new HttpFailure(502,'Failed to contact Meta template API')}
  if(!response.ok)throw new HttpFailure(502,'Meta denied template verification');
  const result=record(await response.json());const items=Array.isArray(result.data)?result.data:[];
@@ -40,7 +41,7 @@ export async function registerApprovedTemplate(db:SqlClient,actor:Actor,input:un
  const parts=Array.isArray(template.components)?template.components.map(record):[];
  // Registration stores provider structure. Sending validates required values against it.
  if(parts.some(p=>!['BODY','HEADER','FOOTER','BUTTONS','CAROUSEL'].includes(String(p.type))))
-   throw new HttpFailure(409,'Template has unsupported authentication or catalog components');
+   throw new HttpFailure(409,'Template has unsupported unsupported authentication/provider components');
  const carousel=parts.filter(p=>p.type==='CAROUSEL');
  if(carousel.length>1||carousel.length&&template.category!=='MARKETING')
    throw new HttpFailure(409,'Carousel is only supported in approved marketing templates');
@@ -83,25 +84,27 @@ export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknow
  WHERE t.tenant_id=$1 AND t.id=$2`,[actor.tenantId,templateId]);
  if(t.rowCount!==1)throw new HttpFailure(404,'Approved template or connection not found');
  if(!customer.rows[0].phone)throw new HttpFailure(400,'Contact has no WhatsApp phone');
- if(Date.now()-new Date(String(t.rows[0].last_provider_verification)).getTime()>86400000){
+ if((d.parameters as TemplateValues|undefined)?.catalog||(d.parameters as TemplateValues|undefined)?.itemId||(Array.isArray((d.parameters as TemplateValues|undefined)?.cards)&&(d.parameters as TemplateValues).cards!.some(c=>c?.itemId))||Date.now()-new Date(String(t.rows[0].last_provider_verification)).getTime()>86400000){
   const item=t.rows[0];const url=`https://graph.facebook.com/${graphVersion()}/${item.waba_id}/message_templates?fields=name,language,status,category,components&limit=100&name=${encodeURIComponent(String(item.template_name))}`;
-  let response:Response;try{response=await fetch(url,{headers:{Authorization:'Bearer '+token(String(item.access_token_encrypted))},signal:AbortSignal.timeout(10000),redirect:'error'})}catch{throw new HttpFailure(502,'Meta approval refresh unavailable')}
+  let response:Response;try{response=await fetch(url,{headers:{Authorization:'Bearer '+whatsappToken(String(item.access_token_encrypted))},signal:AbortSignal.timeout(10000),redirect:'error'})}catch{throw new HttpFailure(502,'Meta approval refresh unavailable')}
   if(!response.ok)throw new HttpFailure(502,'Meta approval refresh denied');const result=record(await response.json());const current=(Array.isArray(result.data)?result.data:[]).map(record).find(x=>x.name===item.template_name&&x.language===item.language_code&&x.status==='APPROVED'&&categories.includes(x.category as 'UTILITY'|'MARKETING'));
-  if(!current)throw new HttpFailure(409,'Template no longer approved');item.components=current.components;
+  if(!current)throw new HttpFailure(409,'Template no longer approved');item.components=current.components;item.category=current.category;
   await db.query('UPDATE whatsapp_approved_templates SET components=$3::jsonb,last_provider_verification=now() WHERE tenant_id=$1 AND id=$2',[actor.tenantId,templateId,JSON.stringify(current.components)]);
  }
 
- const components=templateComponents(t.rows[0].components,d.parameters as TemplateValues|undefined);
+ const prepared=await prepareCommerceTemplate(db,actor.tenantId,String(t.rows[0].account_id),t.rows[0].components,d.parameters as TemplateValues|undefined);
+ if(prepared.refs.length&&t.rows[0].category!=='MARKETING')throw new HttpFailure(409,'Commerce templates require approved MARKETING category');
+ const components=prepared.components;
  if((d.parameters as TemplateValues|undefined)?.mediaUrl){const header=(t.rows[0].components as {type:string;format?:string}[]).find(p=>p.type==='HEADER');if(header?.format)await validateManagedMedia(db,actor.tenantId,String((d.parameters as TemplateValues).mediaUrl),header.format.toLowerCase())}
  const cardValues=(d.parameters as TemplateValues|undefined)?.cards;
  if(cardValues){
    const parts=t.rows[0].components as {type:string;cards?:{components?:{type:string;format?:string}[]}[]}[];
    const carousel=parts.find(p=>p.type==='CAROUSEL');
-   if(!carousel||carousel.cards?.length!==cardValues.length)throw new HttpFailure(400,'Carousel metadata or card values mismatch');
+   if(!carousel||!carousel.cards?.length)throw new HttpFailure(400,'Carousel metadata or card values mismatch');
    for(const [i,card] of cardValues.entries()){
-     const header=carousel.cards[i].components?.find(p=>p.type==='HEADER');
+     const header=(carousel.cards[i]||carousel.cards[0]).components?.find(p=>p.type==='HEADER');
      if(!header?.format)throw new HttpFailure(400,'Invalid approved card media');
-     await validateManagedMedia(db,actor.tenantId,card.mediaUrl,header.format.toLowerCase());
+     if(header.format!=='PRODUCT')await validateManagedMedia(db,actor.tenantId,String(card.mediaUrl),header.format.toLowerCase());
    }
  }
  if(customer.rows[0].do_not_contact)throw new HttpFailure(403,'Customer has opted out of WhatsApp messages');
@@ -114,8 +117,8 @@ export async function sendApprovedTemplate(db:SqlClient,actor:Actor,input:unknow
  DO UPDATE SET whatsapp_account_id=$3 RETURNING id`,[actor.tenantId,contactId,accountId]);
  const conversationId=String(conversation.rows[0].id);
  const payload={messaging_product:'whatsapp',type:'template',template:{name:t.rows[0].template_name,language:{code:t.rows[0].language_code},...(components.length?{components}:{})}};
- const outbox=await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload,scheduled_for,next_attempt_at)
- VALUES($1,$2,$3,$4,$5::jsonb,$6,coalesce($6,now())) RETURNING id`,[actor.tenantId,accountId,conversationId,phone,JSON.stringify(payload),scheduledFor?.toISOString()??null]);
+ const outbox=await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload,scheduled_for,next_attempt_at,commerce_refs)
+ VALUES($1,$2,$3,$4,$5::jsonb,$6,coalesce($6,now()),$7::jsonb) RETURNING id`,[actor.tenantId,accountId,conversationId,phone,JSON.stringify(payload),scheduledFor?.toISOString()??null,JSON.stringify(prepared.refs)]);
  await db.query(`INSERT INTO template_message_activity(tenant_id,contact_id,template_id,conversation_id,sent_by)
  VALUES($1,$2,$3,$4,$5)`,[actor.tenantId,contactId,templateId,conversationId,actor.userId]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id)

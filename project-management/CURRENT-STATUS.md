@@ -24,8 +24,12 @@ This continuation verified actual starting HEAD `da1c6a3a92ae863215fbe355c6dfd3f
 
 ## Scope not closed
 
-**The seven advanced areas are not all fully closed:** Meta Commerce product-card carousel and SPM/MPM/catalog-template variants remain unsupported/fail closed. Live OAuth/provider/account permissions, Meta review/subscriptions, HTTPS and ClamAV need external configuration and acceptance. Historical tables/backups and older unattributed webhook payloads require separate erasure handling. No commercial readiness or final acceptance PASS.
+Meta Commerce product-card carousel and SPM/MPM/catalog-template source is now implemented in the continuation below; no live provider activation is implied. Live OAuth/provider/account permissions, Meta review/subscriptions, HTTPS and ClamAV need external configuration and acceptance. Historical tables/backups and older unattributed webhook payloads require separate erasure handling. No commercial readiness or final acceptance PASS.
 
 Read [advanced runtime](../docs/19-ADVANCED-RUNTIME.md), [remaining](REMAINING.md), and [handover](HANDOVER.md). The one formal comprehensive acceptance campaign remains deferred until remaining source scope is closed/agreed.
 
 Latest source correction **9a338d6** also passed [push CI 39100475500](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39100475500) and [PR CI 39100478270](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39100478270): **55/55**, migration 0024 and PostgreSQL gate. Logs inspected directly. This is not the formal final acceptance campaign.
+
+
+## 2026-10-18 — Meta Commerce continuation from 5c03106
+Implemented source: tenant/account-bound generic-to-Meta catalog mapping, official CATALOG/SPM/MPM/PRODUCT Carousel components, exact named/numbered template variables, real mapping/product/section/card UI for individual sends and campaigns, queue snapshot and pre-dispatch revalidation, inbound cart/referred-product interest-to-staff handoff. Migration **0025** adds FORCE/RLS mappings; existing consent/usage/ownership and image/video carousel remain. No orders, inventory, payment or ERP created. Local build/syntax/HTTP and 70/70 unit checks passed; provider-contract/text-bound cases included. Live Meta credentials/Commerce permissions/approvals and comprehensive browser/fault/load/restore acceptance remain unverified. Exact implementation/activation limits: docs/20-META-COMMERCE.md. Earlier statements that all Commerce source variants are absent are superseded by this entry; source completion does not prove provider activation. CI/commit evidence follows after push.

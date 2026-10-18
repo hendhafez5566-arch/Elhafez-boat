@@ -6,6 +6,7 @@ if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an intern
 const assets={
  '/':['index.html','text/html; charset=utf-8'],
  '/widget.js':['widget.js','text/javascript; charset=utf-8'],
+ '/commerce-ui.js':['commerce-ui.js','text/javascript; charset=utf-8'],
  '/advanced-ui.js':['advanced-ui.js','text/javascript; charset=utf-8'],
  '/extensions.js':['extensions.js','text/javascript; charset=utf-8'],
  '/app.js':['app.js','text/javascript; charset=utf-8'],

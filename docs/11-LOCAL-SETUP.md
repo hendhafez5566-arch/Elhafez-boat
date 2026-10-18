@@ -21,7 +21,7 @@ npm run db:migrate
 npm run db:bootstrap
 ```
 
-Migrations 0001–0024 preserve historical tables and add the generic chatbot features. Bootstrap requires BOOTSTRAP_TENANT_SLUG, BOOTSTRAP_TENANT_NAME, BOOTSTRAP_EMAIL and BOOTSTRAP_PASSWORD; creates one company, owner membership and 14-day trial. Use unique values; it is not an idempotent account reset. Remove bootstrap secrets after provisioning.
+Migrations 0001–0025 preserve historical tables and add the generic chatbot features. Bootstrap requires BOOTSTRAP_TENANT_SLUG, BOOTSTRAP_TENANT_NAME, BOOTSTRAP_EMAIL and BOOTSTRAP_PASSWORD; creates one company, owner membership and 14-day trial. Use unique values; it is not an idempotent account reset. Remove bootstrap secrets after provisioning.
 
 The DB administrator must grant the runtime role schema usage and the table/sequence operations used by these services, including new chatbot tables and opaque routing tables. Do not grant ownership or BYPASSRLS. Table grants/RLS must be checked with the actual runtime role in final acceptance; this environment did not exercise them.
 
@@ -79,3 +79,5 @@ Migration 0022 adds runtime tables and allows website contacts without phone num
 Template schema reference consulted during implementation: Meta's official WhatsApp collection at https://www.postman.com/meta/whatsapp-business-platform/ and hosted SDK component reference https://whatsapp.github.io/WhatsApp-Nodejs-SDK/api-reference/types/component_object/ . Provider validation remains the final authority; no live integration success is inferred from documentation.
 
 Advanced connectors, social channels, privacy, rate-limit secrets and ClamAV configuration: [advanced runtime](19-ADVANCED-RUNTIME.md). Set RATE_LIMIT_SECRET before API authentication; media remains private until ClamAV scanning succeeds.
+
+Meta catalog/product permissions and mapping setup: [Commerce](20-META-COMMERCE.md).

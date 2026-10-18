@@ -1,3 +1,4 @@
+import {prepareCommerceTemplate} from './commerce.js';
 /** Consent-filtered campaigns and conservative template sequences; no unapproved free-text outreach. */
 import {allow,HttpFailure,isUuid,type Actor,type SqlClient} from './services.js';
 import {sendApprovedTemplate} from './templates.js';
@@ -16,7 +17,7 @@ export function campaignInput(input:unknown){
 }
 export async function listCampaigns(db:SqlClient,actor:Actor){allow(actor,['OWNER','MANAGER']);return (await db.query(`SELECT c.*,(SELECT count(*)::int FROM chatbot_campaign_jobs j WHERE j.tenant_id=c.tenant_id AND j.campaign_id=c.id) AS total,((SELECT count(*)::int FROM chatbot_campaign_jobs j WHERE j.tenant_id=c.tenant_id AND j.campaign_id=c.id AND j.status='FAILED')+(SELECT count(*)::int FROM whatsapp_outbox o WHERE o.tenant_id=c.tenant_id AND o.campaign_id=c.id AND o.status='FAILED')) AS failed,(SELECT count(*)::int FROM whatsapp_outbox o WHERE o.tenant_id=c.tenant_id AND o.campaign_id=c.id AND o.status='SENT') AS sent,(SELECT count(*)::int FROM chatbot_campaign_jobs j WHERE j.tenant_id=c.tenant_id AND j.campaign_id=c.id AND j.status='SKIPPED') AS skipped FROM chatbot_campaigns c WHERE tenant_id=$1 ORDER BY created_at DESC LIMIT 100`,[actor.tenantId])).rows}
 export async function createCampaign(db:SqlClient,actor:Actor,input:unknown){
- allow(actor,['OWNER','MANAGER']);const d=campaignInput(input);for(const step of d.steps){const r=await db.query('SELECT id,components FROM whatsapp_approved_templates WHERE tenant_id=$1 AND id=$2',[actor.tenantId,step.templateId]);if(!r.rowCount)throw new HttpFailure(400,'Campaign references an unregistered template');templateComponents(r.rows[0].components,step.parameters)}
+ allow(actor,['OWNER','MANAGER']);const d=campaignInput(input);for(const step of d.steps){const r=await db.query('SELECT id,components FROM whatsapp_approved_templates WHERE tenant_id=$1 AND id=$2',[actor.tenantId,step.templateId]);if(!r.rowCount)throw new HttpFailure(400,'Campaign references an unregistered template');await prepareCommerceTemplate(db,actor.tenantId,String(r.rows[0].account_id),r.rows[0].components,step.parameters)}
  return (await db.query('INSERT INTO chatbot_campaigns(tenant_id,name,segment,steps,start_at,created_by) VALUES($1,$2,$3::jsonb,$4::jsonb,$5,$6) RETURNING *',[actor.tenantId,d.name,JSON.stringify(d.segment),JSON.stringify(d.steps),d.startAt,actor.userId])).rows[0];
 }
 export async function launchCampaign(db:SqlClient,actor:Actor,id:string){

@@ -38,7 +38,7 @@ export function initWorkspace(ctx){
           field(host,b.type==='URL'?'قيمة رابط '+b.text:'إجراء زر '+b.text+' (اختياري)',
             'button_'+i,b.type==='URL',b.type==='URL'?200:128);
       }
-    }else if(p.type==='CAROUSEL'){
+    }else if(p.type==='CAROUSEL'&&!p.cards?.some(c=>c.components?.some(h=>h.format==='PRODUCT'))){
       for(const [i,card] of (p.cards||[]).entries()){
         const pane=el('fieldset',undefined,'template-carousel-card');
         pane.append(el('legend','بطاقة '+(i+1)+' — حسب قالب Meta المعتمد'));
@@ -64,10 +64,12 @@ export function initWorkspace(ctx){
       }
     }
   }
+  ctx.commerce.editor(host,t,{mediaCards:false});
 }
 function values(d){
  const out={body:[],header:[],buttons:{}},cards=[];
  for(const [k,v] of Object.entries(d)){
+  if(k.startsWith('body_named_')||k.startsWith('header_named_'))continue;
   if(k.startsWith('body_'))out.body[Number(k.slice(5))]=v;
   else if(k.startsWith('header_'))out.header[Number(k.slice(7))]=v;
   else if(k.startsWith('button_')&&v)out.buttons[k.slice(7)]=v;
@@ -83,9 +85,9 @@ function values(d){
   }
  }
  if(cards.length)out.cards=cards;
- return out;
+ return ctx.commerce.read(d,out);
 }
- async function templatePage(){const host=$('template-list');host.replaceChildren();const [accounts,t,contacts]=await Promise.all([api('/whatsapp/connection'),api('/whatsapp/templates'),api('/contacts')]);templates=t;state.contacts=contacts;state.templateCatalog=(await api('/catalog')).filter(x=>x.status==='PUBLISHED');options($('template-account'),accounts.filter(a=>a.status==='CONNECTED').map(a=>({...a,id:a.id})),a=>a.displayPhone||a.phoneNumberId);options($('consent-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-template'),t,t=>t.name+' • '+t.language);if(!t.length)host.append(el('p','لا توجد قوالب معتمدة محفوظة.'));for(const r of t)host.append(card(r.name,r.language+' • '+r.category+' • آخر تحقق '+new Date(r.lastVerifiedAt).toLocaleString('ar-EG')));parameterEditor()}
+ async function templatePage(){const host=$('template-list');host.replaceChildren();const [accounts,t,contacts]=await Promise.all([api('/whatsapp/connection'),api('/whatsapp/templates'),api('/contacts')]);templates=t;state.contacts=contacts;await ctx.commerce.load();state.templateCatalog=(await api('/catalog')).filter(x=>x.status==='PUBLISHED');options($('template-account'),accounts.filter(a=>a.status==='CONNECTED').map(a=>({...a,id:a.id})),a=>a.displayPhone||a.phoneNumberId);options($('consent-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-contact'),contacts.filter(c=>c.phone),c=>c.full_name+' • '+c.phone);options($('send-template'),t,t=>t.name+' • '+t.language);if(!t.length)host.append(el('p','لا توجد قوالب معتمدة محفوظة.'));for(const r of t)host.append(card(r.name,r.language+' • '+r.category+' • آخر تحقق '+new Date(r.lastVerifiedAt).toLocaleString('ar-EG')));parameterEditor()}
  $('send-template').onchange=parameterEditor;
  bind('template-register',async(d,f)=>{await api('/whatsapp/templates',{method:'POST',body:d});f.elements.name.value='';await templatePage()});bind('consent-form',async d=>{await api('/contacts/'+d.contactId+'/marketing-consent',{method:'PATCH',body:{optIn:d.optIn==='true',evidence:d.evidence}});notify('تم تسجيل الموافقة ودليلها')});bind('template-send',async d=>{if(!confirm('إرسال القالب لهذا العميل وفق موافقته المسجلة؟'))return;await api('/whatsapp/templates/send',{method:'POST',body:{contactId:d.contactId,templateId:d.templateId,parameters:values(d),scheduleAt:d.scheduleAt?new Date(d.scheduleAt).toISOString():undefined}});notify('تمت إضافة الرسالة للطابور؛ ليست تأكيد تسليم')});
  let polling=false;

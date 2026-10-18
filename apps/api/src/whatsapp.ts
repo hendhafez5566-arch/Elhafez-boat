@@ -1,3 +1,4 @@
+import {recordCommerceInterest} from './commerce.js';
 import {consumeUsage} from './usage.js';
 import {matchTrigger} from './triggers.js';
 import {deliverConversation} from './channels.js';
@@ -101,7 +102,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const conversationId=String(conversation.rows[0].id),status=str(conversation.rows[0].status);
  const interactive=asObject(message.interactive),reply=asObject(interactive.list_reply||interactive.button_reply);
  const action=limited(reply.id||asObject(message.button).payload,200);
- const msgType=str(message.type),body=msgType==='text'?limited(asObject(message.text).body,4000):msgType==='button'?limited(asObject(message.button).text,4000):action?'اختيار: '+action:'[رسالة واتساب غير نصية]';
+ const msgType=str(message.type),body=msgType==='order'?'[اهتمام بمنتجات كتالوج Meta — يحتاج مراجعة موظف]':msgType==='text'?limited(asObject(message.text).body,4000):msgType==='button'?limited(asObject(message.button).text,4000):action?'اختيار: '+action:'[رسالة واتساب غير نصية]';
  await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id)
   VALUES($1,$2,'INBOUND',$3,$4)`,[tenantId,conversationId,body,messageId]);
  await db.query(`INSERT INTO whatsapp_conversation_states(tenant_id,conversation_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,[tenantId,conversationId]);
@@ -127,6 +128,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
    return;
  }
  if(contact.rows[0].do_not_contact)return;
+ if(await recordCommerceInterest(db,tenantId,accountId,conversationId,contactId,message)){if(status!=='HUMAN')await respond(textPayload('وصل اهتمامك بالمنتجات للموظف المختص. سيراجع معك التفاصيل؛ لم يتم تأكيد طلب أو دفع.'));return;}
  if(status==='HUMAN')return; // Human takeover is always authoritative.
  const catalogInterest=/^catalog-interest:([0-9a-f-]{36})$/i.exec(action);
  if(catalogInterest){

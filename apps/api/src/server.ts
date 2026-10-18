@@ -1,3 +1,4 @@
+import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
 import {compileSubflows} from './subflows.js';
 import {distributedLimit} from './rate-limit.js';
@@ -148,6 +149,11 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/channels/accounts')return json(res,201,await runBody((tx,input)=>connectSocial(tx,actor,input)));
     const social=/^\/api\/v1\/channels\/accounts\/([^/]+)$/.exec(pathname);
     if(social&&req.method==='DELETE')return json(res,200,await run(tx=>disableSocial(tx,actor,social[1])));
+    if(req.method==='GET'&&pathname==='/api/v1/commerce/links')return json(res,200,await run(tx=>listCommerceLinks(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/commerce/links')return json(res,201,await runBody((tx,input)=>saveCommerceLink(tx,actor,input)));
+    const commerceLink=/^\/api\/v1\/commerce\/links\/([^/]+)\/([^/]+)$/.exec(pathname);
+    if(req.method==='DELETE'&&commerceLink)return json(res,200,await run(tx=>disableCommerceLink(tx,actor,commerceLink[1],commerceLink[2])));
+    if(req.method==='GET'&&pathname==='/api/v1/commerce/resources'){const q=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>commerceResources(tx,actor,{accountId:q.get('accountId')||'',catalogId:q.get('catalogId')||undefined,after:q.get('after')||undefined})));}
     if(req.method==='GET'&&pathname==='/api/v1/whatsapp/connection')return json(res,200,await run(tx=>whatsappConnection(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);

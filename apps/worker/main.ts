@@ -1,3 +1,4 @@
+import {verifyCommerceRefs,type CommerceRef} from '../api/src/commerce.js';
 import {processConnector} from '../api/src/connectors.js';
 import {processMediaScan} from '../api/src/media-scan.js';
 import {processRetention} from '../api/src/privacy.js';
@@ -88,6 +89,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
    if(recent.rows[0]?.last){await tx.query(`UPDATE whatsapp_outbox SET next_attempt_at=$3::timestamptz+interval '24 hours' WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,recent.rows[0].last]);await tx.query('COMMIT');return true}
    if(!job.usage_reserved_today){await tx.query('SAVEPOINT usage_reservation');try{await consumeUsage(tx,tenantId,'templates');await tx.query('UPDATE whatsapp_outbox SET usage_day=CURRENT_DATE WHERE tenant_id=$1 AND id=$2',[tenantId,job.id])}catch(e){await tx.query('ROLLBACK TO SAVEPOINT usage_reservation');await tx.query("UPDATE whatsapp_outbox SET next_attempt_at=now()+interval '1 hour',last_error='Daily template limit reached' WHERE tenant_id=$1 AND id=$2",[tenantId,job.id]);await tx.query('COMMIT');return true}}
   }
+  if(Array.isArray(job.commerce_refs)&&job.commerce_refs.length){await tx.query('SAVEPOINT commerce_check');try{await verifyCommerceRefs(tx,tenantId,String(job.account_id),job.commerce_refs as CommerceRef[])}catch(e){await tx.query('ROLLBACK TO SAVEPOINT commerce_check');const retry=(e as {status?:number}).status===502&&Number(job.attempt_count)<7;await tx.query("UPDATE whatsapp_outbox SET status=$3,attempt_count=attempt_count+1,next_attempt_at=now()+interval '5 minutes',last_error='Commerce product/account approval check failed' WHERE tenant_id=$1 AND id=$2",[tenantId,job.id,retry?'PENDING':'FAILED']);await tx.query('COMMIT');began=false;return true;}}
   // Commit a durable claim BEFORE the network call. A crashed worker must not resend
   // an ambiguous request: the recovery sweep marks orphaned claims UNCERTAIN.
   await tx.query("UPDATE whatsapp_outbox SET status='PROCESSING',locked_at=now(),attempt_count=attempt_count+1 WHERE tenant_id=$1 AND id=$2",[tenantId,job.id]);

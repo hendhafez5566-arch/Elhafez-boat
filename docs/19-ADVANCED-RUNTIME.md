@@ -56,3 +56,6 @@ Privacy does not recall already-sent content, remote exports or backups. The int
 - https://core.telegram.org/bots/api
 - https://www.postman.com/meta/messenger-platform-api/documentation/iyp204x/messenger-platform-api
 - https://www.postman.com/meta/instagram/documentation/6yqw8pt/instagram-api
+
+## Subsequent Commerce continuation
+The previously open Commerce source formats are implemented by docs/20-META-COMMERCE.md and migration 0025. Its narrower supported shapes and live activation limitations apply.
