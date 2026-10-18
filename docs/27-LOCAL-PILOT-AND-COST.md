@@ -17,3 +17,6 @@
 بيئة هذه الجلسة لا تحتوي Docker/PostgreSQL/Chromium محليًا؛ التنفيذ الفعلي للـDB والمتصفح والحاويات يتم في CI المؤقت القائم. ملفات local overlay وسكربت التحضير تفحص منفصلًا؛ لا ندعي تشغيل جهازك أو تشغيل استضافة دائمة.
 
 Cloudflare Quick Tunnel خيار مؤقت فقط، وليس استضافة إنتاجية أو ضمان صلاحية نطاق OAuth/Embedded Signup في Meta. لم نشغله ولم نعرّض بيانات أو خدمات عامة. يحتاج تشغيلًا محليًا مستمرًا واعتماد نطاقه لدى Meta، لذلك ليس بديلًا تلقائيًا عن متطلبات HTTPS والنطاق الرسمي. لا يمكن ضمان استضافة SaaS دائمة بلا تكلفة من بيانات الحساب المتاحة.
+
+## Runtime verification update
+CI 39126328249 on source f82fda3 executed the actual Compose local overlay with disposable owner bootstrap and real login successfully, alongside main runtime/browser/restore gates. This supersedes the earlier local-overlay-unverified caveat for the tested container profile only; your physical machine and permanent public hosting were not tested.

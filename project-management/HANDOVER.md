@@ -1,3 +1,11 @@
+# Verified WhatsApp self-service — 2026-10-18
+
+Executable source f82fda33efff23bbb6318208e4d88371bf574356 passed both jobs of CI 39126328249; logs inspected: 99/99, 28 migrations/RLS, real API/DB Coexistence + Cloud/registration, Chromium self-service selection/cancel/desktop/mobile, signed customer/buttons/list/CRM/handoff/echo/history/delayed-account events, restore/ClamAV/Docker/two-replica Compose and local owner bootstrap/login. See root WHATSAPP-COEXISTENCE-SELF-SERVICE-ACCEPTANCE.md for exact scope and initial failures resolved without weakening protection.
+
+BLOCKED/NOT TESTED: live Meta app approval/eligibility/domain/SDK popup/phone and real sends; full historical media/edit/revoke/every-button/physical-device/security certification. Self-service flags default off until official setup. Railway read-only: 3 projects/10 services, CPU/RAM samples zero but no bill/credit guarantee. No cloud resource, fee commitment, live account, production deploy or merge. Local free profile is verified in disposable CI; not an always-on public host.
+
+---
+
 # WhatsApp self-service / Coexistence — 2026-10-18
 
 Permanent company self-service source implemented on the same branch/PR. Owner and company guides: docs/25-META-PLATFORM-SETUP.md, docs/26-COMPANY-WHATSAPP-SELF-SERVICE.md; local/cost: docs/27-LOCAL-PILOT-AND-COST.md. Authoritative evidence/limits: root WHATSAPP-COEXISTENCE-SELF-SERVICE-ACCEPTANCE.md.

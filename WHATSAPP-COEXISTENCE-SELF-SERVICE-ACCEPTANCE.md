@@ -1,3 +1,34 @@
+# Verified executable-source acceptance — 2026-10-18
+
+**PASS:** source [f82fda3](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/f82fda33efff23bbb6318208e4d88371bf574356), [CI 39126328249](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39126328249), both jobs SUCCESS; runtime job 117672117913 logs inspected. Supersedes all at-submission pending rows and intermediate failures below. No executable edits in this evidence-only update.
+
+| Final check | Result | Actual evidence |
+| --- | --- | --- |
+| TypeScript/build/unit/regression | PASS | 99/99; zero fail/skip |
+| Migration and tenant security | PASS | 28 migrations, RLS/FORCE gates, actor/cookie/tenant binding, phone takeover denied |
+| Coexistence authorization success/cancel/expiry/reuse/failure | PASS with provider fixtures | Real HTTP API, PostgreSQL, code exchange/debug/asset checks, invalid Origin/cookie denied |
+| Cloud path and registration separation | PASS with provider fixtures | Cloud authorization and register once; repeat denied; Coexistence refuses register; denied provider grant sanitized |
+| Business-app Echo | PASS | Signed HTTP webhook, outbound source, human handoff, duplicate one row, no bot send |
+| Customer message -> buttons/list/input -> CRM -> employee | PASS with provider fixtures | Real published engine, generated WhatsApp payloads, custom interest persisted, handoff/manual outbox reply |
+| History and delayed events | PASS | Consent + once-only request, no reopened 24h window; progress cannot regress; delayed account event cannot re-enable connection |
+| Actual Chromium self-service | PASS with SDK/transport fixtures | Two Arabic paths, authorized phone selection backed by real API/DB, cancelled popup, truthful incomplete-reception state, desktop/mobile screenshots |
+| Broader UI | PASS for executed scope | 63 screen/viewport visits, guide/draft save/publish, catalog CRUD, roles and platform-admin company creation; not every action |
+| Reliability and restore | PASS | API/worker faults, in-flight UNCERTAIN/receipt correlation, RLS grants/seeded media/keys/queue restore, real ClamAV, two-API/two-worker Compose DB outage |
+| Local no-hosting alternative | PASS in disposable CI | Compose local overlay parsed/executed, owner bootstrap, actual login with random private credentials |
+| Live Meta SDK/popup, eligibility and real phone | BLOCKED / NOT TESTED | Not authorized, no approved app/domain/number used |
+| Complete historical media/edit/revoke and all-device/accessibility/security certification | NOT TESTED in full | Unsupported mutations do not execute the bot; old media not automatically downloaded |
+| Additional cloud expenditure | None created | Railway read-only inventory/CPU/RAM; no changes, services, upgrades, domains or live Meta billable actions |
+
+The browser bridge rewrites only test-harness Origin/cookie handling between loopback HTTP and the configured test HTTPS origin; production keeps strict Origin, HttpOnly/Secure cookies and no simulation switch. This is not a live TLS/Meta acceptance. Source uses only official provider endpoints; platform review/configuration flags default off.
+
+Actual browser evidence: [82 PNG screenshots and metrics](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39126328249/artifacts/12136321724), including four dedicated self-service journey screenshots. Archive SHA256 `9c791334985a82e15420214386cffd3192ad5f88743e15f297fe70bac7244a1c`. These depict disposable fixtures, not an actual Meta account.
+
+Source history: [d23f886](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/d23f8869cc78967fc76ef91d2b71149db40024c7), [bbb52f3](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/bbb52f3a08d4b846ca48ccafb5a020a5c5a6b88b), [27f9169](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/27f916931f53b1461381e47b8cea32a040e1b84a), [d7b05c9](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/d7b05c9b10649b541bf8c0d46670ad67a02d8744), f82fda3 above. Existing [draft PR #1](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/1) remains unmerged and undeployed.
+
+**Practical state:** permanent self-service source and executed fixture acceptance are delivered. A company cannot use live onboarding until the platform owner completes the one-time Meta/HTTPS/app approval setup. This task did not authorize that account operation or paid hosting. No permanent public URL is claimed. This report does not certify live provider acceptance, every UI edge, or commercial-scale readiness. Historical re-import versus later contact erasure/re-consent is not comprehensively certified; retention/backups/provider copies need the documented separate privacy process.
+
+---
+
 # WhatsApp Coexistence Self-Service Acceptance — 2026-10-18
 
 ## Decision
