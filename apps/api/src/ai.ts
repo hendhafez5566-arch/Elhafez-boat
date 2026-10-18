@@ -14,6 +14,31 @@ export async function saveAiSettings(db:SqlClient,actor:Actor,input:unknown){
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'AI_SETTINGS_CHANGED','ai','default')`,[actor.tenantId,actor.userId]);return aiSettings(db,actor);
 }
 export function exactGroundedAnswer(sources:GroundSource[],question:string){const normalized=normalizeQuestion(question);return sources.find(s=>normalizeQuestion(s.question)===normalized)||null}
+/**
+ * Conservative offline matching for approved FAQ/catalog entries when a model is
+ * disconnected. Never synthesize text or guess between similarly named products.
+ */
+export function conservativeSourceMatch(sources:GroundSource[],question:string):GroundSource|null {
+ const stop=new Set(['هو','هي','ما','متي','امتي','كم','بكام','بكم','سعر','اسعار','الثمن','سؤال','تفاصيل','لو','في','من','عن','علي','الى','عايز','عاوز','ممكن','اعرف','اعرفه','ايه','هل','شركه']);
+ const alias:Record<string,string>={مواعيد:'ساعات',الاسعار:'سعر',اسعار:'سعر',العمرة:'عمره'};
+ const tokens=(value:string)=>{
+  const cleaned=normalizeQuestion(value);
+  return [...new Set(cleaned.split(' ').filter(Boolean).map(raw=>{
+   const stem=raw.startsWith('ال')&&raw.length>4?raw.slice(2):raw;
+   return alias[stem]||stem;
+  }).filter(w=>w.length>1&&!stop.has(w)))];
+ };
+ const query=tokens(question);if(query.length<2||sources.length===0)return null;
+ const ranks=sources.map(source=>{
+  const keys=tokens(source.question);
+  const common=keys.filter(k=>query.includes(k)).length;
+  const quality=common>=2&&common/query.length>=0.6&&common/Math.max(1,keys.length)>=0.5?
+   (2*common)/(query.length+keys.length):0;
+  return {source,quality};
+ }).sort((a,b)=>b.quality-a.quality);
+ if(ranks[0].quality<0.72||ranks[0].quality-(ranks[1]?.quality??0)<0.17)return null;
+ return ranks[0].source;
+}
 export async function groundedReply(db:SqlClient,tenantId:string,question:string):Promise<{text:string;sources:string[];handoff:boolean}>{
  // Serialize per-tenant usage reservations so concurrent requests cannot exceed the cap.
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[tenantId]);
@@ -24,7 +49,8 @@ export async function groundedReply(db:SqlClient,tenantId:string,question:string
  const faq=await db.query(`SELECT id,question,answer FROM tenant_knowledge_articles WHERE tenant_id=$1 AND status='PUBLISHED' ORDER BY updated_at DESC LIMIT 100`,[tenantId]);
  const catalog=await db.query(`SELECT id,title,description,price_text,external_url FROM chatbot_catalog_items WHERE tenant_id=$1 AND status='PUBLISHED' ORDER BY updated_at DESC LIMIT 100`,[tenantId]);
  const sources:GroundSource[]=[...faq.rows.map(x=>({id:'faq:'+x.id,question:String(x.question),answer:String(x.answer)})),...catalog.rows.map(x=>({id:'catalog:'+x.id,question:String(x.title),answer:[x.title,x.description,x.price_text,x.external_url].filter(Boolean).join('\n')}))];
- let selected=exactGroundedAnswer(sources,question),outcome=selected?'EXACT':'UNCERTAIN';
+ const exact=exactGroundedAnswer(sources,question);
+ let selected=exact||conservativeSourceMatch(sources,question),outcome=exact?'EXACT':selected?'KEYWORD_APPROVED':'UNCERTAIN';
  if(!selected&&sources.length&&process.env.AI_API_KEY&&process.env.AI_BASE_URL&&process.env.AI_MODEL){
   try{
    const endpoint=new URL(process.env.AI_BASE_URL);if(endpoint.protocol!=='https:'||endpoint.username||endpoint.password)throw new Error('Invalid configured AI endpoint');
