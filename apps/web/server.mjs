@@ -15,6 +15,7 @@ const assets={
  '/workspace-ui.js':['workspace-ui.js','text/javascript; charset=utf-8'],
  '/operations.css':['style.css','text/css; charset=utf-8'],
  '/flow-canvas.js':['flow-canvas.js','text/javascript; charset=utf-8'],
+ '/flow-geometry.js':['flow-geometry.js','text/javascript; charset=utf-8'],
  '/flow-builder.js':['flow-builder.js','text/javascript; charset=utf-8'],
  '/flow-onboarding.js':['flow-onboarding.js','text/javascript; charset=utf-8'],
  '/insights-ui.js':['insights-ui.js','text/javascript; charset=utf-8'],
