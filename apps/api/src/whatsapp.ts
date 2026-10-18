@@ -138,6 +138,11 @@ async function queue(db:SqlClient,tenantId:string,accountId:string,conversationI
 async function scoped<T>(pool:SqlPool,tenantId:string,action:(tx:SqlClient)=>Promise<T>):Promise<T>{
  const client=await pool.connect();let started=false;try{await client.query('BEGIN');started=true;await client.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const r=await action(client);await client.query('COMMIT');return r;}catch(e){if(started)await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}
 }
+/** Meta permits one-character profile names; our contacts table requires at least two characters. */
+export function whatsappContactName(value:unknown):string {
+ const name=limited(value,120);
+ return [...name].length>=2?name:'عميل واتساب';
+}
 async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,message:Record<string,unknown>,profile:Record<string,unknown>){
  // Message mutations are not new customer input and must never advance the bot.
  if(['edit','revoke'].includes(str(message.type)))return;
@@ -146,7 +151,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  if(rec.rowCount!==1)return; // durable, idempotent event processing
  const receivedAt=eventTime(message.timestamp)||new Date();
  await db.query(`UPDATE whatsapp_accounts SET last_inbound_at=greatest(last_inbound_at,$3::timestamptz) WHERE tenant_id=$1 AND id=$2`,[tenantId,accountId,receivedAt]);
- const name=limited(profile.name,120)||'عميل واتساب';
+ const name=whatsappContactName(profile.name);
  const contact=await db.query(`INSERT INTO contacts(tenant_id,full_name,phone,source) VALUES($1,$2,$3,'WHATSAPP')
   ON CONFLICT(tenant_id,phone) DO UPDATE SET updated_at=now() RETURNING id,do_not_contact`,[tenantId,name,from]);
  const contactId=String(contact.rows[0].id);
