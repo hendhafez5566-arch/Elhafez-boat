@@ -5,6 +5,7 @@ export function createCanvas({host,getFlow,select,changed,notify}){
  const stage=document.createElement('div');stage.className='flow-stage';host.append(stage);
  const svg=document.createElementNS(ns,'svg');svg.classList.add('flow-lines');stage.append(svg);
  const transform=()=>{stage.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`};
+ const titles={START:'البداية',TEXT:'رسالة نصية',BUTTONS:'أزرار تفاعلية',LIST:'قائمة اختيارات',INPUT:'جمع بيانات',QUESTION:'سؤال',CONDITION:'شرط',CATALOG:'عرض المنتجات',HANDOFF:'تحويل لموظف',MEDIA:'وسائط',END:'النهاية',TAG:'تصنيف',DELAY:'انتظار',AI:'مساعد ذكي',SUBFLOW:'مسار فرعي'};
  const edges=n=>n.choices?n.choices.map((c,i)=>({key:'choice:'+i,to:c.next,label:c.title})):(n.type==='CONDITION'||n.type==='KEYWORD')?[{key:'yes',to:n.yes,label:'نعم'},{key:'no',to:n.no,label:'لا'}]:'next'in n?[{key:'next',to:n.next,label:'التالي'}]:[];
  function draw(){
   const f=getFlow();f.layout=Object.assign(Object.create(null),f.layout||{});stage.querySelectorAll('.canvas-node,.canvas-group').forEach(n=>n.remove());svg.replaceChildren();
@@ -23,8 +24,8 @@ export function createCanvas({host,getFlow,select,changed,notify}){
     box.append(heading);stage.append(box);
   }
   for(const n of f.nodes){
-   const p=positions[n.id],card=document.createElement('article');card.className='canvas-node';card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
-   const title=document.createElement('button');title.type='button';title.className='canvas-title';title.textContent=n.type+' · '+n.id;title.onclick=event=>select(n.id,event.shiftKey);card.append(title);
+   const p=positions[n.id],card=document.createElement('article');card.className='canvas-node canvas-'+n.type.toLowerCase();card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
+   const title=document.createElement('button');title.type='button';title.className='canvas-title';title.textContent=(titles[n.type]||n.type)+' · '+n.id;title.onclick=event=>select(n.id,event.shiftKey);card.append(title);
    const desc=document.createElement('p');desc.textContent=(n.text||n.field||n.tag||'بداية المحادثة').slice(0,65);card.append(desc);
    const input=document.createElement('button');input.type='button';input.textContent='◉ توصيل هنا';input.onclick=()=>{
     if(!source){notify('اختار مخرج من خطوة أولًا');return}
@@ -45,5 +46,5 @@ export function createCanvas({host,getFlow,select,changed,notify}){
  }
  host.onwheel=e=>{e.preventDefault();zoom=Math.max(.25,Math.min(2,zoom*(e.deltaY>0?.9:1.1)));transform()};
  host.onpointerdown=e=>{if(e.target!==host&&e.target!==stage&&e.target!==svg)return;const start={x:e.clientX,y:e.clientY},old={...pan};host.setPointerCapture(e.pointerId);host.onpointermove=ev=>{pan={x:old.x+ev.clientX-start.x,y:old.y+ev.clientY-start.y};transform()};host.onpointerup=()=>{host.onpointermove=null;host.onpointerup=null}};
- return {draw,reset(){zoom=1;pan={x:0,y:0};transform()}};
+ return {draw,coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(9000,Math.round((clientX-r.left-pan.x)/zoom-115))),y:Math.max(0,Math.min(9000,Math.round((clientY-r.top-pan.y)/zoom-35)))}}},reset(){zoom=1;pan={x:0,y:0};transform()}};
 }

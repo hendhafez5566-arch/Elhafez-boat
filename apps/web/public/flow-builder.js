@@ -30,7 +30,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  const canvas=createCanvas({host:canvasHost,getFlow:()=>flow,select:(id,add=false)=>{
    if(add){if(selectedNodes.has(id))selectedNodes.delete(id);else selectedNodes.add(id);}
    else selectedNodes=new Set([id]);
-   selected=id;renderEditor();showSelection();
+   selected=id;renderBlocks();renderEditor();showSelection();
  },changed:()=>{markDirty();renderBlocks()},notify});
  const tools=el('div',undefined,'builder-toolbar');canvasHost.before(tools);
  const selectionBadge=el('span','خطوة واحدة محددة','builder-selection');
@@ -155,6 +155,53 @@ export function initFlowBuilder({state,api,notify,execute}){
  reuseActions.append(saveSnippet,insertSaved,deleteSaved);
  reuseHost.append(reuseFields,reuseActions);
  tools.after(reuseHost);
+
+ // New visual studio structure; all runtime/editor IDs are preserved.
+ const workspace=$('builder-nodes').closest('.builder-layout');
+ const palette=$('builder-nodes').closest('.builder-column');
+ const properties=$('builder-editor').closest('.builder-column');
+ const simulator=$('builder-preview').closest('.builder-column');
+ workspace.classList.add('builder-studio');
+ palette.classList.add('builder-palette');
+ properties.classList.add('builder-properties');
+ simulator.classList.add('builder-simulator');
+ palette.querySelector('h3').textContent='مكتبة المكونات';
+ const intro=el('p','اضغط لإضافة مكون، أو اسحبه إلى لوحة التصميم.','builder-hint');
+ const quick=el('div',undefined,'builder-quick');
+ const kinds=[['TEXT','▤'],['BUTTONS','▣'],['LIST','☷'],['INPUT','?'],['CONDITION','◇'],['CATALOG','▦'],['MEDIA','▧'],['HANDOFF','♙']];
+ for(const [kind,symbol] of kinds){
+   const item=button(types[kind],()=>addNode(kind),'builder-quick-item');
+   item.draggable=true;item.setAttribute('aria-label','إضافة '+types[kind]);item.prepend(el('span',symbol,'builder-quick-symbol'));
+   item.ondragstart=e=>{e.dataTransfer?.setData('application/x-boat-block',kind);if(e.dataTransfer)e.dataTransfer.effectAllowed='copy'};
+   quick.append(item);
+ }
+ palette.querySelector('h3').after(intro,quick);
+ const steps=el('details',undefined,'builder-steps-list');steps.open=true;
+ steps.append(el('summary','خطوات المحادثة'),$('builder-nodes'));palette.append(steps);
+ const more=el('details',undefined,'builder-more-list');
+ more.append(el('summary','المزيد من المكونات'),palette.querySelector('.builder-toolbar'));palette.append(more);
+ const stagePanel=el('section',undefined,'builder-stage');
+ const stageHead=el('header',undefined,'builder-stage-head');
+ stageHead.append(el('h3','لوحة تصميم المحادثة'),el('p','اسحب الخطوات لترتيبها. للتوصيل اختار المخرج ثم «توصيل هنا».'));
+ stagePanel.append(stageHead,tools,canvasHost);
+ canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');
+ canvasHost.addEventListener('dragover',e=>{
+  if(e.dataTransfer&&Array.from(e.dataTransfer.types).includes('application/x-boat-block')){e.preventDefault();e.dataTransfer.dropEffect='copy'}
+ });
+ canvasHost.addEventListener('drop',e=>{
+  const kind=e.dataTransfer?.getData('application/x-boat-block');
+  if(!kinds.some(([type])=>type===kind))return;
+  e.preventDefault();const at=canvas.coordinates(e.clientX,e.clientY);
+  addNode(kind);flow.layout??={};flow.layout[selected]=at;markDirty();renderAll();
+ });
+ const inspector=el('aside',undefined,'builder-inspector');
+ properties.querySelector('h3').textContent='خصائص الخطوة';
+ simulator.querySelector('h3').textContent='تجربة المحادثة';
+ inspector.append(properties,simulator);
+ const advanced=el('details',undefined,'builder-extras');
+ advanced.append(el('summary','مكتبة الخطوات والمسارات المتقدمة'),linked,reuseHost);
+ workspace.replaceChildren(palette,stagePanel,inspector,advanced);
+
  const markDirty=()=>{dirty=true;checkpoint();renderStatus()};
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
@@ -260,6 +307,23 @@ export function initFlowBuilder({state,api,notify,execute}){
        node.choices.push({id,title:'اختيار جديد',next:flow.nodes.at(-1).id});markDirty();renderAll();
      }));
    }
+
+   // Visual-only preview: does not invoke the engine or transmit messages.
+   const sample=el('section',undefined,'builder-step-sample');
+   const paint=()=>{
+     sample.replaceChildren(el('h4','شكل الرسالة للعميل'),el('p','معاينة تصميمية؛ ليست رسالة واتساب فعلية.','builder-sample-caption'));
+     const screen=el('div',undefined,'builder-sample-screen');
+     screen.append(el('div',String(node.text||node.caption||types[node.type]||'').trim(),'builder-sample-bubble'));
+     if(node.type==='BUTTONS'||node.type==='LIST'){
+       const choices=el('div',undefined,'builder-sample-choices');
+       if(node.type==='LIST')choices.append(el('strong',node.buttonText||'عرض القائمة'));
+       for(const choice of node.choices){const c=el('div',choice.title||'اختيار','builder-sample-choice');if(node.type==='LIST'&&choice.description)c.append(el('small',choice.description));choices.append(c)}
+       screen.append(choices);
+     }
+     sample.append(screen);
+   };
+   paint();host.addEventListener('input',paint);host.append(sample);
+
    if(node.type!=='START')host.append(button('حذف الخطوة',()=>{
      if(!confirm('هتتحذف الخطوة، ولازم تصلح أي روابط كانت رايحة لها قبل النشر.'))return;
      flow.nodes=flow.nodes.filter(n=>n!==node);
