@@ -61,7 +61,7 @@ export function buildGuidedFlow(options={}){
   {id:'catalog',type:'CATALOG',category,next:'need'},
   {id:'need',type:'INPUT',field:'customer_need',text:goal==='support'?'اكتب سؤالك بالتفصيل عشان نوصلك بالشخص المناسب.':'إيه اللي محتاج تعرفه؟ مثال: '+sector.example,next:'contactname'},
   {id:'contactname',type:'INPUT',field:'customer_name',text:'تحب نسجل طلبك باسم مين؟',next:collectPhone?'contactphone':'qualify'},
-  ...(collectPhone?[{id:'contactphone',type:'INPUT',field:'customer_phone',text:'اكتب رقم تليفون للتواصل (اختياري لو حابب ترد هنا).',next:'qualify'}]:[]),
+  ...(collectPhone?[{id:'contactphone',type:'INPUT',field:'customer_phone',text:'اكتب رقم تليفون للتواصل لاستكمال الطلب، أو اختار التحدث مع موظف.',next:'qualify'}]:[]),
   {id:'qualify',type:'TAG',tag:'interested',next:'handoff'},
   {id:'handoff',type:'HANDOFF',text:'شكرًا لك. تم تسجيل اهتمامك، وفريق '+businessName+' هيكمل معاك من هنا.'}
  ];
@@ -150,7 +150,7 @@ export function mountGuidedWizard({host,onGenerate,onNotice,isEditingSubflow}){
    const botName=make('input');botName.type='text';botName.maxLength=100;botName.placeholder='مثال: مساعد خدمة العملاء';botName.value=state.botName;botName.oninput=()=>{state.botName=botName.value};
    const category=make('input');category.maxLength=80;category.placeholder='اختياري — اتركه فارغًا لعرض كل العناصر المنشورة';category.value=state.category;category.oninput=()=>{state.category=category.value};
    const phone=make('input');phone.type='checkbox';phone.checked=state.collectPhone;phone.onchange=()=>{state.collectPhone=phone.checked};
-   const phoneLabel=make('label','boat-guide-check');phoneLabel.append(phone,make('span','','اسأل العميل عن رقم تواصل (من غير تحقق آلي من الرقم)'));
+   const phoneLabel=make('label','boat-guide-check');phoneLabel.append(phone,make('span','','اطلب رقم تواصل لاستكمال الطلب (الرقم مطلوب عند اختيار هذه الخطوة؛ بلا تحقق آلي)'));
    body.append(field('نوع النشاط',industry),field('اسم الشركة اللي هيشوفه العميل',name),field('اسم البوت داخل لوحة التحكم',botName),field('تصنيف الكتالوج — اختياري',category),phoneLabel);
    body.append(make('p','boat-guide-hint','المنتجات والأسعار لازم تدخلها في الكتالوج وتنشرها بنفسك؛ المعالج مش هيخترع بيانات.'));
   }else{
