@@ -55,6 +55,21 @@ try{
  await until("Boolean(document.querySelector('.canvas-node'))",'flow canvas blocks');
  const count=await evaluate("document.querySelectorAll('.canvas-node').length");assert.ok(count>=2,'Expected editable flow steps');
  await screenshot('flow-builder-desktop.png');
+ // Exercise the real guided builder in Chrome, without saving/publishing or connecting accounts.
+ assert.equal(await evaluate("Boolean(document.querySelector('.boat-guide-hero button'))"),true,'Guided bot creator must be on Flow Builder');
+ await evaluate("document.querySelector('.boat-guide-hero button').click()");
+ await until("!document.querySelector('.boat-guide-panel').hidden",'guided bot setup');
+ await screenshot('guided-bot-01-goal-desktop.png');
+ await evaluate("(()=>{const a=document.querySelector('.boat-guide-quick textarea');a.value='شركة سياحة تعرض برامج العمرة والأسعار';a.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.boat-guide-quick button').click()})()");
+ await evaluate("document.querySelector('.boat-guide-actions .primary').click()");
+ await until("Boolean(document.querySelector('.boat-guide-body input[maxlength=\"80\"]'))",'guided company information');
+ await screenshot('guided-bot-02-company-desktop.png');
+ await evaluate("(()=>{const a=document.querySelector('.boat-guide-body input[maxlength=\"80\"]');a.value='شركة رواد السياحة التجريبية';a.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.boat-guide-actions .primary').click()})()");
+ await until("Boolean(document.querySelector('.boat-guide-map li'))",'generated journey review');
+ await screenshot('guided-bot-03-journey-desktop.png');
+ await evaluate("document.querySelector('.boat-guide-hero button').click()");
+ console.log('PASS browser guided creator: plain Arabic description, company data, publishable journey review; no external send');
+
  await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
  await sleep(200);await screenshot('flow-builder-canvas-desktop.png');
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
