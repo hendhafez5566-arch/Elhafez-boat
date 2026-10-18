@@ -1,3 +1,6 @@
+## 2026-10-18 — Vessel extended page UI (source 8fcc8e13f)
+Source updates: contextual Vessel headings on 18 existing business pages; catalog gets rendered-items-only search without changing CRUD; CRM uses customer identity/status cards; analytics turns tenant API daily activity into two-series bars. Existing IDs, permissions, API schemas, bot runtime and Meta connections are unchanged. New Chromium coverage added; final CI results for the ultimate documentation HEAD must be verified. No merge, deploy or paid/external-provider operations. Scope details: docs/32-VESSEL-PAGES.md.
+
 ## 2026-10-18 — Vessel visual workspace (structural redesign)
 
 Implemented new narrow icon rail, searchable categorized navigation drawer, transformed company dashboard/real metrics/onboarding, re-composed Inbox and full-width bot Canvas with contextual palette. Actual DOM controls and endpoints preserved; no database, provider, Meta, Railway, production merge/deploy or paid dependency. Evidence: [docs/31-VESSEL-WORKSPACE.md](../docs/31-VESSEL-WORKSPACE.md). Final browser screenshot acceptance must be checked on the final HEAD. Full platform-wide nested-page redesign and live WhatsApp activation are NOT claimed complete.
