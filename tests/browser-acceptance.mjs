@@ -70,6 +70,38 @@ try{
  assert.equal(dropped.after,dropped.before+1,'Dropping a palette block should create a canvas node');
  console.log('PASS visual studio palette, list/buttons sample and canvas block drop in Chromium');
 
+ // Premium studio acceptance: real browser and real draft editor, not mock screenshots.
+ const startPorts=await evaluate("document.querySelectorAll('.canvas-node[data-node-id=start] .canvas-add').length");
+ assert.ok(startPorts>=1,'Starting step needs contextual add button');
+ const beforeInsert=await evaluate("document.querySelectorAll('.canvas-node').length");
+ await evaluate("document.querySelector('.canvas-node[data-node-id=start] .canvas-add').click()");
+ await until("Boolean(document.querySelector('.builder-component-dialog[open] .builder-picker-grid button'))",'contextual component picker');
+ await screenshot('premium-component-picker-desktop.png');
+ await evaluate("(()=>{const p=document.querySelector('.builder-component-dialog');const search=p.querySelector('input[type=search]');search.value='رسالة';search.dispatchEvent(new Event('input',{bubbles:true}));const choice=[...p.querySelectorAll('.builder-picker-item')].find(b=>b.textContent.includes('رسالة نصية'));if(!choice)throw Error('TEXT missing from searchable picker');choice.click()})()");
+ await until("document.querySelectorAll('.canvas-node').length>"+beforeInsert,'contextual step insertion');
+ assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),beforeInsert+1,'Contextual insertion adds exactly one node');
+ await until("Boolean(document.querySelector('.builder-inspector:not([hidden]) textarea'))",'contextual inspector');
+ await evaluate(`(()=>{const t=document.querySelector('.builder-inspector textarea');t.value=${JSON.stringify(newMessage)};t.dispatchEvent(new Event('input',{bubbles:true})})()`);
+ assert.ok((await evaluate("document.querySelector('.canvas-node.selected .canvas-message-text')?.textContent||''")).includes('رسالة جديدة'),'Live canvas message must reflect inspector edits');
+ await screenshot('premium-new-message-inspector-desktop.png');
+ await evaluate("document.querySelector('.builder-properties > button').click()");
+ assert.equal(await evaluate("document.querySelector('.builder-inspector').hidden"),true,'Inspector closes without losing draft');
+ const viewBefore=await evaluate("document.querySelector('.flow-stage').style.transform");
+ await evaluate("document.querySelector('.builder-view-actions button:nth-child(3)').click()");
+ assert.notEqual(await evaluate("document.querySelector('.flow-stage').style.transform"),viewBefore,'Zoom toolbar updates canvas');
+ await evaluate("document.querySelector('.builder-view-actions button:nth-child(4)').click()");
+ await screenshot('premium-full-canvas-desktop.png');
+ await evaluate("document.querySelector('.builder-view-actions button.primary').click()");
+ await until("Boolean(document.querySelector('.builder-preview-dialog[open]'))",'phone simulator dialog');
+ await sleep(450);await screenshot('premium-phone-simulator-desktop.png');
+ await evaluate("document.querySelector('.builder-preview-dialog .builder-dialog-header button').click()");
+ await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
+ assert.equal(await evaluate("document.body.classList.contains('studio-focus')"),true,'Full-screen studio hides navigation');
+ await screenshot('premium-studio-focus-desktop.png');
+ await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
+ console.log('PASS contextual add step, graph insertion, live inspector update, zoom, phone modal and full-screen');
+
+
  // Exercise the real guided builder in Chrome, without saving/publishing or connecting accounts.
  assert.equal(await evaluate("Boolean(document.querySelector('.boat-guide-hero button'))"),true,'Guided bot creator must be on Flow Builder');
  await evaluate("document.querySelector('.boat-guide-hero button').click()");
@@ -103,6 +135,10 @@ try{
  await sleep(300);await evaluate("window.scrollTo(0,0)");await screenshot('flow-builder-mobile.png');
  await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
  await sleep(250);await screenshot('flow-builder-canvas-mobile.png');
+ await evaluate("document.querySelector('.builder-view-actions button.primary').click()");
+ await until("Boolean(document.querySelector('.builder-preview-dialog[open]'))",'mobile phone simulator');
+ await screenshot('premium-phone-simulator-mobile.png');
+ await evaluate("document.querySelector('.builder-preview-dialog .builder-dialog-header button').click()");
  const bodyWidth=await evaluate('document.documentElement.scrollWidth');
  assert.ok(Number.isFinite(bodyWidth)&&bodyWidth<3000,'Mobile flow canvas overflows document excessively');
  // Actual owner CRUD and publication through rendered forms, including stored-XSS probe.
