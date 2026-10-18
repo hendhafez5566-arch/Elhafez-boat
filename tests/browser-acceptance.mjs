@@ -249,6 +249,7 @@ try{
  await evaluate("document.querySelector('[data-page=catalog]').click()");
  await until("Boolean(document.querySelector('#catalog .vessel-library-search'))",'Catalog search');
  assert.equal(await evaluate("Boolean(document.querySelector('#catalog .vessel-catalog-editor #catalog-form'))"),true,'Existing catalog form preserved');
+ await until("document.querySelectorAll('#catalog-items > .card').length>0",'real catalog items loaded before filtering');
  const originalCards=await evaluate("document.querySelectorAll('#catalog-items > .card').length");
  await evaluate("(()=>{const q=document.querySelector('.vessel-library-search');q.value='__no_matching_items__';q.dispatchEvent(new Event('input',{bubbles:true}))})()");
  assert.equal(await evaluate("document.querySelectorAll('#catalog-items > .card:not([hidden])').length"),0,'Catalog local filter');
