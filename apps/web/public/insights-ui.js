@@ -45,7 +45,17 @@ export function initInsights({api,$,el}){
   const captured=new Map((data.leadDaily||[]).map(x=>[x.day,Number(x.leads)]));
   const dates=[...new Set([...incoming.keys(),...captured.keys()])].sort();
   if(!dates.length)activity.append(el('p','لا يوجد نشاط في الفترة المحددة.','muted'));
-  for(const day of dates)activity.append(el('p',day+' — محادثات: '+number(incoming.get(day)||0)+' • اهتمام: '+number(captured.get(day)||0)));
+  const chart=el('div',undefined,'vessel-activity-series'),peak=Math.max(1,...dates.flatMap(day=>[incoming.get(day)||0,captured.get(day)||0]));
+  for(const day of dates){
+   const row=el('div',undefined,'vessel-activity-day'),bars=el('div',undefined,'vessel-activity-bars');
+   row.append(el('span',day,'vessel-activity-date'));
+   for(const [kind,value,title] of [['incoming',incoming.get(day)||0,'محادثات'],['captured',captured.get(day)||0,'عملاء مهتمون']]){
+    const track=el('div',undefined,'vessel-activity-rail'),fill=el('div',undefined,'vessel-activity-fill vessel-activity-'+kind);
+    track.setAttribute('aria-label',day+' — '+title+': '+number(value));fill.style.width=Math.round(value*100/peak)+'%';track.append(fill);bars.append(track);
+   }
+   row.append(bars,el('small',number(incoming.get(day)||0)+' / '+number(captured.get(day)||0),'vessel-activity-values'));chart.append(row);
+  }
+  if(dates.length)activity.append(el('p','المحادثات / العملاء المهتمون','vessel-activity-legend'),chart);
   host.append(activity);
   const footer=el('p',undefined,'muted');
   footer.textContent='مهام متابعة مفتوحة: '+number(data.tasks.open)+' • مكتملة: '+number(data.tasks.done)+' • إجمالي الحملات خلال الفترة: '+number(data.campaigns.total);
