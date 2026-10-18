@@ -130,6 +130,30 @@ try{
  assert.equal(await evaluate("document.getElementById('builder-unsaved').textContent"),'تعديلات غير محفوظة');
  console.log('PASS browser guide: actual flow generation plus unsaved draft preserved across catalog navigation; no external send');
 
+ // Build a meaningful 3-way flow in the real editor, not a two-node demonstration.
+ const originalGraphCount=await evaluate("document.querySelectorAll('.canvas-node').length");
+ for(let branch=0;branch<3;branch++)for(let depth=0;depth<2;depth++){
+   await evaluate(`document.querySelectorAll('.canvas-node[data-node-id=menu] .canvas-add')[${branch}].click()`);
+   await until("Boolean(document.querySelector('.builder-component-dialog[open] .builder-picker-item'))",'branch step picker');
+   await evaluate("(()=>{const p=document.querySelector('.builder-component-dialog');const t=[...p.querySelectorAll('.builder-picker-item')].find(b=>b.textContent.includes('رسالة نصية'));if(!t)throw Error('TEXT picker missing');t.click()})()");
+ }
+ assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Expected six connected branch steps');
+ await evaluate("(()=>{const bar=document.querySelector('.builder-stage>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='تراجع');btn.click()})()");
+ assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+5,'Undo must remove last branch step');
+ await evaluate("(()=>{const bar=document.querySelector('.builder-stage>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
+ assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Redo must restore last branch step');
+ await evaluate("(()=>{const btn=[...document.querySelectorAll('.builder-view-actions button')].find(b=>b.textContent==='ترتيب تلقائي');btn.click()})()");
+ const overlaps=await evaluate("(()=>{const r=[...document.querySelectorAll('.canvas-node')].map(n=>({id:n.dataset.nodeId,b:n.getBoundingClientRect()}));let count=0;for(let i=0;i<r.length;i++)for(let j=0;j<i;j++){const a=r[i].b,b=r[j].b;if(a.left<b.right-3&&a.right>b.left+3&&a.top<b.bottom-3&&a.bottom>b.top+3)count++}return count})()");
+ assert.equal(overlaps,0,'Actual DOM canvas cards cannot overlap after auto-layout');
+ await evaluate("document.querySelector('.builder-stage').scrollIntoView({block:'start'})");
+ await screenshot('premium-large-branching-flow-desktop.png');
+ // Real DOM pointer handlers: attempt to drag a card directly onto an occupied card.
+ const collideDrag=await evaluate("(()=>{const nodes=[...document.querySelectorAll('.canvas-node')];const a=nodes.find(n=>n.dataset.nodeId==='welcome'),b=nodes.find(n=>n.classList.contains('canvas-text')&&n.dataset.nodeId!=='welcome');if(!a||!b)throw Error('drag nodes unavailable');const drag=b.querySelector('.canvas-title');drag.setPointerCapture=()=>{};const from=b.getBoundingClientRect(),to=a.getBoundingClientRect();const x=from.left+30,y=from.top+20;drag.onpointerdown({button:0,pointerId:41,clientX:x,clientY:y});drag.onpointermove({clientX:x+to.left-from.left,clientY:y+to.top-from.top});drag.onpointerup({});const aa=document.querySelector('.canvas-node[data-node-id=welcome]').getBoundingClientRect();const bb=document.querySelector('.canvas-node[data-node-id='+b.dataset.nodeId+']').getBoundingClientRect();return {overlap:aa.left<bb.right-3&&aa.right>bb.left+3&&aa.top<bb.bottom-3&&aa.bottom>bb.top+3}})()");
+ assert.equal(collideDrag.overlap,false,'Manual pointer drag must refuse placement on top of an occupied card');
+ await screenshot('premium-drag-collision-guard-desktop.png');
+ console.log('PASS 3-branch graph, 6 connected new steps, undo/redo, collision-free auto layout and manual pointer drag');
+
+
  await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
  await sleep(200);await screenshot('flow-builder-canvas-desktop.png');
  await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
