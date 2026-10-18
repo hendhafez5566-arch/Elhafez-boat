@@ -58,3 +58,11 @@
 .crm-followup-form label{margin:0}
 .crm-followup-form button{margin:0;white-space:nowrap}
 @media(max-width:850px){.crm-followup-form{grid-template-columns:1fr}.crm-followup-form button{width:100%}}
+
+
+/* Honest conversion and channel reports; clear zero states and mobile bars. */
+.insight-row{display:grid;gap:6px;margin:12px 0}
+.insight-row>span{font-weight:650;font-size:14px}
+.insight-rail{height:14px;background:#e6eef3;border:1px solid #d0dce4;border-radius:8px;overflow:hidden}
+.insight-fill{height:100%;background:#087d69;border-radius:8px;min-width:0}
+#bot-insights>.grid{margin:16px 0}
