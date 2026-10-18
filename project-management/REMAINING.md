@@ -1,3 +1,21 @@
+# Technical execution update — 2026-10-18 (authoritative latest entry)
+
+Owner constraint: **no external platform activation**, no merge/deploy. Starting HEAD c0a3f27; source fix eec89da93552ef4c7ff8a23a4be2f9b1802ae9be.
+
+PASS evidence: [CI 39107646599](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39107646599): 74/74 unit/regression checks, migrations/RLS, two-API restricted-role runtime, API SIGKILL/restart, worker loss with pending delay continuation exactly once, idle PostgreSQL connection termination/recovery, shared throttle 20 accepted / 20 rejected out of 40, 400 authenticated catalog reads at concurrency 40: **625.92 req/s, P50 47.88 ms / P95 177.55 ms / P99 186.05 ms**, 57 page/viewport visits (19 owner pages × desktop/tablet/mobile), no JS exception/server 5xx, 60 actual PNG screenshots, database restore counts and Docker packaging. Screenshots/metrics: [artifact 12128977727](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39107646599/artifacts/12128977727).
+
+Source fixes: ambiguous WhatsApp 5xx/408/network/invalid-success results quarantine UNCERTAIN, 429 bounded retry preserved, redirects blocked, account identifier validated, response size bounded; idle DB pool errors handled in API/worker; successful heartbeat clears stale error. Loopback WhatsApp production-send tests plus fixtures for all requested provider families. Other provider fixtures exercise simulator contracts, **not end-to-end production connector OAuth/signatures**.
+
+Added further execution: isolated Compose (2 APIs/2 workers/network egress disabled), all-table restored row fingerprints, read-only local operational alarm and maintenance guide. These additions require their own latest CI evidence below; initial CI above does not establish their success.
+
+NOT TESTED / remaining: sustained mixed HTTP/message/catalog/lead/subflow/delay load with DB query profiling and per-server CPU/RAM; in-flight provider-send worker kill and receipt reconciliation; every UI action/form and platform administration, formal WCAG, real ClamAV/EICAR, restore with seeded encrypted secrets/media/pending queues and independent production grants; full SQLi/XSS/SSRF/DNS-rebinding/replay penetration campaign; complete adapter-level provider OAuth/refresh/signature failure matrix. Provider fixture schemas alone cannot close these.
+
+BLOCKED by owner decision: **all live provider activation**, intentionally deferred. Local container/DB/browser binaries unavailable; real runtime evidence is from disposable GitHub CI. No commercial readiness claim. Owner steps: [OWNER-ACTIVATION-CHECKLIST.md](../OWNER-ACTIVATION-CHECKLIST.md). Operations: [docs/21-OPERATIONS-ISOLATED.md](../docs/21-OPERATIONS-ISOLATED.md).
+
+Earlier historical status entries below are retained for traceability and superseded where inconsistent.
+
+---
+
 # Remaining — advanced continuation 2026-10-18
 
 Latest source continuation starts at actual remote HEAD `da1c6a3`. See docs/19-ADVANCED-RUNTIME.md and CURRENT-STATUS.md for implemented behavior; earlier reports of missing native connectors, linked subflows and social adapter source are superseded.

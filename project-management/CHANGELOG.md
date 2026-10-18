@@ -1,3 +1,7 @@
+## 2026-10-18 — isolated technical execution
+
+WhatsApp ambiguous-send regression fix; API/worker idle DB recovery; two-replica fault and throttle checks; engine microbenchmark; all-page Chrome viewport traversal; local provider fixtures; isolated Compose; backup fingerprints; read-only alarms; owner activation and maintenance guides. Evidence and untested scope in CURRENT-STATUS.md. No activation/merge/deploy.
+
 # Changelog — latest first
 
 ## 2026-10-18 — Core runtime and real workspace continuation from d31c20e
