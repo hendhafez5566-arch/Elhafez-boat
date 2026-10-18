@@ -28,6 +28,14 @@ const advancedLabel=document.createElement('summary');advancedLabel.textContent=
 const advancedButtons=document.createElement('div');advancedButtons.className='nav-advanced-buttons';
 for(const tab of [...nav.querySelectorAll('[data-page]')])if(!basics.has(tab.dataset.page))advancedButtons.append(tab);
 advancedNav.append(advancedButtons);nav.append(advancedNav);
+ // Switching desktop -> mobile must never leave an expanded advanced section over the workspace.
+ const mobileNavQuery=window.matchMedia('(max-width:800px)');
+ mobileNavQuery.addEventListener?.('change',event=>{if(event.matches)advancedNav.open=false});
+ document.addEventListener('click',event=>{
+   if(!mobileNavQuery.matches||!advancedNav.open||advancedNav.contains(event.target))return;
+   advancedNav.open=false;
+ });
+
  // Lightweight inline SVG icon vocabulary shared by everyday and advanced destinations.
  // Unlike font glyphs, these render consistently in Arabic RTL and require no icon CDN.
  const navIcons={
@@ -64,7 +72,7 @@ advancedNav.append(advancedButtons);nav.append(advancedNav);
  }
 
 const names=Object.fromEntries([...document.querySelectorAll('[data-page]')].map(n=>[n.dataset.page,n.textContent.trim()]));
-async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();}if(!basics.has(page))advancedNav.open=true;if(window.matchMedia('(max-width:800px)').matches)advancedNav.open=false;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
+async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();}if(!basics.has(page)&&!mobileNavQuery.matches)advancedNav.open=true;else advancedNav.open=false;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
 ctx.choose=choose;
 async function onboardingProgress(){
  const host=$('getting-started');host.replaceChildren();host.hidden=!canEdit();
