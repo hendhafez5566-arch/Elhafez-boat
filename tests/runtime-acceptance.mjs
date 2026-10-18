@@ -25,8 +25,8 @@ let apiProcess,webProcess;
 const logs=[];
 const processes=[];
 const base='http://127.0.0.1:3000';
-async function request(path,{method='GET',token,body}={}){
- const response=await fetch(base+path,{method,headers:{...(token?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(8000)});
+async function request(path,{method='GET',token,body,headers={}}={}){
+ const response=await fetch(base+path,{method,headers:{...headers,...(token?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,signal:AbortSignal.timeout(8000)});
  const contentType=response.headers.get('content-type')||'';
  const data=contentType.includes('application/json')?await response.json():await response.text();
  return {status:response.status,data};
@@ -105,6 +105,30 @@ try{
  const preview=await expectCode('/api/v1/flows/preview',{method:'POST',token:one,body:{definition:def,state:{at:null,answers:{},tags:[]}}},200);
  assert.ok(preview.messages.some(m=>m.text?.includes('أهلًا')));
  assert.ok(preview.messages.some(m=>m.type==='BUTTONS'));
+ const widgetConfig=await expectCode('/api/v1/widget/settings',{method:'PUT',token:one,body:{
+   enabled:true,title:'اختبار مساعد الموقع',origins:[base]}},200);
+ assert.match(widgetConfig.widgetKey,/^[A-Za-z0-9_-]{32}$/);
+ const visitor=await expectCode('/api/v1/widget/start',{method:'POST',headers:{origin:base},body:{
+   widgetKey:widgetConfig.widgetKey,name:'زائر تجريبي'}},201);
+ assert.match(visitor.token,/^[A-Za-z0-9_-]{43}$/);
+ const visitorOpts={token:visitor.token,headers:{origin:base}};
+ const initialWidget=await expectCode('/api/v1/widget/messages',visitorOpts,200);
+ assert.ok(initialWidget.messages.some(m=>String(m.body).includes('أهلًا')),'Widget must deliver published greeting');
+ await expectCode('/api/v1/widget/messages',{token:visitor.token,headers:{origin:'https://unapproved.example'}},401);
+ const visitorMessage=randomUUID();
+ await expectCode('/api/v1/widget/send',{method:'POST',...visitorOpts,body:{
+   messageId:visitorMessage,text:'',actionId:'flow:menu:agent'}},200);
+ const duplicate=await expectCode('/api/v1/widget/send',{method:'POST',...visitorOpts,body:{
+   messageId:visitorMessage,text:'',actionId:'flow:menu:agent'}},200);
+ assert.equal(duplicate.duplicate,true,'Website message dedupe must reject replay');
+ const afterWidget=await expectCode('/api/v1/widget/messages',visitorOpts,200);
+ assert.equal(afterWidget.status,'HUMAN','Staff handoff must silence bot');
+ const leadsA=await expectCode('/api/v1/leads',{token:one},200);
+ assert.ok(leadsA.some(l=>l.stage==='READY_FOR_AGENT'),'Website visitor should become qualified lead');
+ assert.equal((await expectCode('/api/v1/leads',{token:two},200)).length,0,'Company B must not see Company A visitor');
+ const inboxA=await expectCode('/api/v1/whatsapp/inbox',{token:one},200);
+ assert.ok(inboxA.some(c=>c.channel==='WEBSITE'&&c.status==='HUMAN'),'Employee inbox must show handoff');
+ console.log('PASS real Website Chat: published greeting, origin restriction, dedupe, lead qualification and staff handoff');
  await expectCode('/api/v1/leads',{token:one},200);
  await expectCode('/api/v1/contacts',{token:one},200);
  await expectCode('/api/v1/team',{token:one},200);
