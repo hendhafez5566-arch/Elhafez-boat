@@ -15,7 +15,29 @@ export function initExtensions(ctx){
   const baseRender=render;const renderAll=()=>{baseRender();const t=campaignTemplates.find(t=>t.id===template.value);if(t)ctx.commerce.editor(params,t)};
   template.onchange=renderAll;field.append(l,ml,params,button('حذف الخطوة',()=>field.remove(),'danger'));$('campaign-steps').append(field);renderAll();
  }
- async function campaigns(){const host=$('campaign-list');host.replaceChildren();const [rows,t]=await Promise.all([api('/campaigns'),api('/whatsapp/templates')]);campaignTemplates=t;await ctx.commerce.load();if(!$('campaign-steps').children.length)addStep(0);if(!rows.length)host.append(el('p','لا توجد حملات. أضف قالبًا معتمدًا وموافقات العملاء قبل إنشاء الحملة.'));for(const r of rows){const c=card(r.name,r.status+' • إجمالي الخطوات للعملاء: '+r.total+' • أرسلت: '+r.sent+' • تخطيت: '+r.skipped+' • فشل: '+r.failed);if(r.status==='DRAFT')c.append(button('بدء الحملة',async()=>{if(!confirm('بدء الحملة للعملاء الموافقين المطابقين للشريحة؟'))return;const result=await api('/campaigns/'+r.id+'/launch',{method:'POST'});notify('تم تجهيز '+result.recipients+' عميل؛ الإرسال عبر الطابور');await campaigns()},'primary'));if(['DRAFT','ACTIVE'].includes(r.status))c.append(button('إلغاء الرسائل المتبقية',async()=>{await api('/campaigns/'+r.id+'/cancel',{method:'POST'});await campaigns()},'danger'));host.append(c)}}
+ function installCampaignAssistant(){
+  if($('campaign-quick-start'))return;
+  const helper=el('div',undefined,'campaign-quick-start');helper.id='campaign-quick-start';
+  helper.append(el('h3','حملتك في خطوة واحدة — جهّز مسودة فقط'),
+   el('p','اختار هدف المتابعة. هنملأ الاسم والجمهور وميعاد البداية؛ لازم تختار قالب Meta معتمد وتراجع موافقات العملاء بنفسك. لن نرسل أي شيء تلقائيًا.'));
+  const presets=[
+   ['متابعة العملاء المهتمين','interested','متابعة العملاء المهتمين'],
+   ['تذكير بطلب المساعدة','interested','متابعة طلبات خدمة العملاء'],
+   ['إعلان جديد للموافقين فقط','','إعلان خدمات جديدة']
+  ];
+  for(const [title,tag,name] of presets){
+   helper.append(button(title,()=>{
+    const form=$('campaign-form');
+    if(form.elements.name.value.trim()&&!confirm('استبدال بيانات نموذج الحملة غير المحفوظة؟'))return;
+    form.elements.name.value=name;form.elements.tag.value=tag;form.elements.field.value='';form.elements.value.value='';
+    const time=new Date(Date.now()+86400000);time.setMinutes(time.getMinutes()-time.getTimezoneOffset());
+    form.elements.startAt.value=time.toISOString().slice(0,16);
+    notify('اتجهزت المسودة في النموذج. اختار القالب المعتمد، احفظ، وبعد المراجعة قرر بدء الحملة بنفسك.');
+   },'secondary'));
+  }
+  $('campaign-form').prepend(helper);
+ }
+ async function campaigns(){installCampaignAssistant();const host=$('campaign-list');host.replaceChildren();const [rows,t]=await Promise.all([api('/campaigns'),api('/whatsapp/templates')]);campaignTemplates=t;await ctx.commerce.load();if(!$('campaign-steps').children.length)addStep(0);if(!rows.length)host.append(el('p','لا توجد حملات. أضف قالبًا معتمدًا وموافقات العملاء قبل إنشاء الحملة.'));for(const r of rows){const c=card(r.name,r.status+' • إجمالي الخطوات للعملاء: '+r.total+' • أرسلت: '+r.sent+' • تخطيت: '+r.skipped+' • فشل: '+r.failed);if(r.status==='DRAFT')c.append(button('بدء الحملة',async()=>{if(!confirm('بدء الحملة للعملاء الموافقين المطابقين للشريحة؟'))return;const result=await api('/campaigns/'+r.id+'/launch',{method:'POST'});notify('تم تجهيز '+result.recipients+' عميل؛ الإرسال عبر الطابور');await campaigns()},'primary'));if(['DRAFT','ACTIVE'].includes(r.status))c.append(button('إلغاء الرسائل المتبقية',async()=>{await api('/campaigns/'+r.id+'/cancel',{method:'POST'});await campaigns()},'danger'));host.append(c)}}
  $('campaign-add-step').onclick=()=>{const all=[...$('campaign-steps').querySelectorAll('[data-offset]')];if(all.length>=10){notify('الحد الأقصى 10 خطوات','error');return}addStep(Number(all.at(-1)?.value||0)+1440)};
  bind('campaign-form',async(d,f)=>{const steps=[...$('campaign-steps').children].map(field=>{const parameters={body:[],header:[],buttons:{}};for(const input of field.querySelectorAll('[data-kind]')){if(input.dataset.kind==='mediaUrl')parameters.mediaUrl=input.value;else if(input.value)parameters[input.dataset.kind][input.dataset.index]=input.value}const d=Object.fromEntries([...field.querySelectorAll('[name]')].filter(n=>n.type!=='checkbox'||n.checked).map(n=>[n.name,n.value]));ctx.commerce.read(d,parameters);return {templateId:field.querySelector('[data-template]').value,offsetMinutes:Number(field.querySelector('[data-offset]').value),parameters}});await api('/campaigns',{method:'POST',body:{name:d.name,startAt:new Date(d.startAt).toISOString(),segment:{tag:d.tag,field:d.field,value:d.value},steps}});f.reset();$('campaign-steps').replaceChildren();await campaigns();notify('تم حفظ المسودة؛ راجعها قبل البدء')});
  async function integrations(){const host=$('integration-list');host.replaceChildren();for(const r of await api('/integrations')){const c=card(r.name,r.url+' • '+(r.enabled?'مفعّل':'متوقف')+' • '+(r.authMode||'NONE'));c.append(el('p','معرّف عقدة Webhook: '+r.id));if(r.authMode!=='NONE')c.append(button('استبدال سر التكامل',async()=>{const secret=prompt('السر الجديد — لن يظهر بعد حفظه');if(!secret)return;await api('/integrations/'+r.id,{method:'PATCH',body:{enabled:r.enabled,secret}});notify('تم تشفير السر الجديد وحفظه')}));c.append(button(r.enabled?'إيقاف':'تفعيل',async()=>{await api('/integrations/'+r.id,{method:'PATCH',body:{enabled:!r.enabled}});await integrations()}));host.append(c)}$('key-form').hidden=state.role!=='OWNER';if(state.role==='OWNER')await keys()}
