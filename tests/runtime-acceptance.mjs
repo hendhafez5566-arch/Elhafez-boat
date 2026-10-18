@@ -106,6 +106,9 @@ try{
  assert.ok(preview.messages.some(m=>m.text?.includes('أهلًا')));
  assert.ok(preview.messages.some(m=>m.type==='BUTTONS'));
  await expectCode('/api/v1/leads',{token:one},200);
+ await expectCode('/api/v1/contacts',{token:one},200);
+ await expectCode('/api/v1/team',{token:one},200);
+ await expectCode('/api/v1/summary',{token:one},200);
  await expectCode('/api/v1/whatsapp/inbox',{token:one},200);
  const home=await request('/');assert.equal(home.status,200);assert.match(home.data,/Elhafez Boat/);
  const widget=await request('/widget.js');assert.equal(widget.status,200);assert.match(widget.data,/widget/i);
