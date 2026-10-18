@@ -87,7 +87,7 @@ export async function addLeadTask(db:SqlClient,actor:Actor,leadId:string,input:u
  const date=typeof d.dueAt==='string'?new Date(d.dueAt):new Date(NaN);
  if(description.length<2||description.length>500||!Number.isFinite(date.getTime())||date.getTime()<Date.now()-60000||date.getTime()>Date.now()+366*86400000)throw new HttpFailure(400,'Description and future due date required');
  const exists=await db.query("SELECT id FROM chatbot_leads WHERE tenant_id=$1 AND id=$2 AND stage!='CLOSED'",[actor.tenantId,leadId]);
- if(!exists.rowCount)throw new HttpFailure(409,'Active lead not found');
+ if(!exists.rowCount)throw new HttpFailure(404,'Active lead not found');
  const r=await db.query("INSERT INTO chatbot_lead_tasks(tenant_id,lead_id,description,due_at,created_by) VALUES($1,$2,$3,$4,$5) RETURNING id,description,due_at AS \"dueAt\",status",[actor.tenantId,leadId,description,date.toISOString(),actor.userId]);
  await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'LEAD_FOLLOWUP_CREATED','chatbot_lead_task',$3)",[actor.tenantId,actor.userId,r.rows[0].id]);
  return r.rows[0];
