@@ -82,7 +82,8 @@ try{
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),beforeInsert+1,'Contextual insertion adds exactly one node');
  await until("Boolean(document.querySelector('.builder-inspector:not([hidden]) textarea'))",'contextual inspector');
  const newMessage='رسالة جديدة من تجربة المتصفح — لا ترسل إلى عملاء حقيقيين';
- await evaluate(`(()=>{const t=document.querySelector('.builder-inspector textarea');t.value=${JSON.stringify(newMessage)};t.dispatchEvent(new Event('input',{bubbles:true})})()`);
+ const editResult=await evaluate(`(()=>{try{const t=document.querySelector('.builder-inspector textarea');t.value=${JSON.stringify(newMessage)};t.dispatchEvent(new Event('input',{bubbles:true}));return {ok:true}}catch(e){return {error:String(e),stack:String(e.stack||'')}}})()`);
+ assert.equal(editResult.error,undefined,'Inspector input must not throw: '+JSON.stringify(editResult));
  assert.ok((await evaluate("document.querySelector('.canvas-node.selected .canvas-message-text')?.textContent||''")).includes('رسالة جديدة'),'Live canvas message must reflect inspector edits');
  await screenshot('premium-new-message-inspector-desktop.png');
  await evaluate("document.querySelector('.builder-properties > button').click()");
