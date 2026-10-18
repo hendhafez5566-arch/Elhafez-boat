@@ -1,5 +1,5 @@
 # Isolated local acceptance. Requires caller-supplied disposable passwords/keys.
-# No provider accounts are connected. Internal network denies external egress.
+# No provider accounts are connected. API/worker internal network denies external egress; web has a separate ingress bridge.
 x-app: &app
   image: elhafez-boat:ci
   build: {context: ..}
@@ -61,6 +61,7 @@ services:
     restart: on-failure
   web:
     <<: *app
+    networks: [isolated, ingress]
     command: [node, apps/web/server.mjs]
     environment: {WEB_PORT: 3000, API_INTERNAL_ORIGIN: 'http://api:4000'}
     ports: ['127.0.0.1:3016:3000']
@@ -75,5 +76,6 @@ services:
     networks: [isolated]
 networks:
   isolated: {internal: true}
+  ingress: {driver: bridge}
 volumes:
   acceptance-db:

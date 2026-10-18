@@ -3,7 +3,8 @@
  */
 import assert from 'node:assert/strict';
 import {randomBytes,randomUUID} from 'node:crypto';
-import {spawn} from 'node:child_process';
+import {spawn,execFileSync} from 'node:child_process';
+import {readFile} from 'node:fs/promises';
 import {once} from 'node:events';
 import {setTimeout as sleep} from 'node:timers/promises';
 import pg from 'pg';
@@ -210,10 +211,19 @@ try{
  const recovered=await expectCode('/api/v1/widget/messages',waitingOpts,200);
  assert.equal(recovered.messages.filter(m=>String(m.body).includes('بعد الانتظار')).length,1);
  console.log('PASS API SIGKILL/restart, competing worker survival, idle PostgreSQL disconnect/reconnect, durable session and completed delay preserved');
+ const restartedWorker=launch('worker-restarted',process.execPath,['.build/apps/worker/main.js'],{...env,META_GRAPH_VERSION:'v24.0'});
+ const hz=Number(execFileSync('getconf',['CLK_TCK'],{encoding:'utf8'}).trim());
+ async function resources(child){const stat=await readFile('/proc/'+child.pid+'/stat','utf8'),fields=stat.slice(stat.lastIndexOf(')')+2).split(' ');const status=await readFile('/proc/'+child.pid+'/status','utf8');return {cpuTicks:Number(fields[11])+Number(fields[12]),rssBytes:Number(/VmRSS:\s+(\d+)/.exec(status)?.[1]||0)*1024}}
+ const measured=[['api',apiProcess],['api-replica',replica],['worker',secondWorker],['worker-restarted',restartedWorker]];
+ const initialResources=await Promise.all(measured.map(async([name,p])=>({name,...await resources(p)})));
+ const peakRss=initialResources.map(r=>r.rssBytes);let sampling=false;
+ const sampler=setInterval(async()=>{if(sampling)return;sampling=true;try{for(let i=0;i<measured.length;i++){const r=await resources(measured[i][1]);peakRss[i]=Math.max(peakRss[i],r.rssBytes)}}catch{}finally{sampling=false}},50);
  const latency=[];let next=0;const loadStarted=performance.now();
+
  await Promise.all(Array.from({length:40},async()=>{while(next<400){const i=next++;const t=performance.now();const response=i%2?await replicaRead():await fetch('http://127.0.0.1:4000/api/v1/catalog',{headers:{authorization:'Bearer '+one}});await response.arrayBuffer();assert.equal(response.status,200);latency.push(performance.now()-t)}}));
  latency.sort((a,b)=>a-b);const loadMs=performance.now()-loadStarted;
- const load={requests:400,concurrency:40,apiInstances:2,workers:2,elapsedMs:loadMs,requestsPerSecond:400000/loadMs,p50Ms:latency[200],p95Ms:latency[380],p99Ms:latency[396],scope:'authenticated catalog reads only; not full workload capacity'};
+ clearInterval(sampler);const serverResources=await Promise.all(measured.map(async([name,p],i)=>{const r=await resources(p);return {name,cpuMs:1000*(r.cpuTicks-initialResources[i].cpuTicks)/hz,peakSampledRssBytes:Math.max(peakRss[i],r.rssBytes)}}));
+ const load={requests:400,concurrency:40,apiInstances:2,workers:2,elapsedMs:loadMs,requestsPerSecond:400000/loadMs,p50Ms:latency[200],p95Ms:latency[380],p99Ms:latency[396],serverResources,scope:'authenticated catalog reads only; not full workload capacity'};
  const fs=await import('node:fs/promises');await fs.mkdir('acceptance-evidence',{recursive:true});await fs.writeFile('acceptance-evidence/http-load.json',JSON.stringify(load,null,2));console.log('PASS HTTP load '+JSON.stringify(load));
  // A shared identity must enforce a single budget across independent DB clients.
  const {distributedLimit}=await import('../.build/apps/api/src/rate-limit.js');

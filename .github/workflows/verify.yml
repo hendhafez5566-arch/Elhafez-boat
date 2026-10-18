@@ -104,7 +104,7 @@ jobs:
           export TEST_ENCRYPTION_KEY="$(openssl rand -base64 32)"
           export TEST_RATE_LIMIT_SECRET="$(openssl rand -hex 32)"
           compose=(docker compose -p boat-acceptance -f deploy/compose.acceptance.yaml)
-          trap '"${compose[@]}" stop >/dev/null 2>&1 || true' EXIT
+          trap 'status=$?; if [ "$status" -ne 0 ]; then "${compose[@]}" logs --no-color --tail 35 api worker web; fi; "${compose[@]}" stop >/dev/null 2>&1 || true; exit "$status"' EXIT
           "${compose[@]}" config --quiet
           "${compose[@]}" run --rm simulators
           "${compose[@]}" up -d --wait --wait-timeout 120 --scale api=2 --scale worker=2 web worker
@@ -125,7 +125,7 @@ jobs:
             test "$(docker inspect "$container" --format '{{.RestartCount}}')" = 0
           done
           "${compose[@]}" exec -T api node scripts/ops-health.mjs
-          echo 'PASS isolated Compose: 2 API / 2 workers, no external egress, loopback web, fixtures, persistent database and outage recovery without process restart'
+          echo 'PASS isolated Compose: 2 API / 2 workers with isolated backend network, loopback web, fixtures, persistent database and outage recovery without process restart'
       - name: Upload non-sensitive browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
