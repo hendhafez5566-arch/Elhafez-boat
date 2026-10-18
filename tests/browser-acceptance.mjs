@@ -141,6 +141,10 @@ try{
  await until("Boolean(document.querySelector('.builder-preview-dialog[open]'))",'mobile phone simulator');
  await screenshot('premium-phone-simulator-mobile.png');
  await evaluate("document.querySelector('.builder-preview-dialog .builder-dialog-header button').click()");
+ const mobileMeasure=await evaluate("(()=>{const nav=document.querySelector('.sidebar nav'),sidebar=document.querySelector('.sidebar'),page=document.getElementById('flow-builder');return {sidebarHeight:Math.round(sidebar.getBoundingClientRect().height),navHeight:Math.round(nav.getBoundingClientRect().height),pageTop:Math.round(page.getBoundingClientRect().top)}})()");
+ assert.ok(mobileMeasure.sidebarHeight<220,'Mobile header must not consume full viewport: '+JSON.stringify(mobileMeasure));
+ assert.ok(mobileMeasure.navHeight<90,'Mobile nav must be horizontally scrollable, not vertically expanded: '+JSON.stringify(mobileMeasure));
+ assert.ok(mobileMeasure.pageTop<650,'Mobile main content should be reachable in first viewport: '+JSON.stringify(mobileMeasure));
  const bodyWidth=await evaluate('document.documentElement.scrollWidth');
  assert.ok(Number.isFinite(bodyWidth)&&bodyWidth<3000,'Mobile flow canvas overflows document excessively');
  // Actual owner CRUD and publication through rendered forms, including stored-XSS probe.
