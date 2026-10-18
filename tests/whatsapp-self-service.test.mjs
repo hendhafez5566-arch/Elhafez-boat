@@ -21,5 +21,5 @@ test('Meta window event origin/type validation rejects forged and malformed resu
 });
 test('app echoes preserve outbound identity and provider timestamp; history cannot open a customer service window',()=>{
  const now=String(Math.floor(Date.now()/1000)-5),m={id:'wamid.fixture',from:'15550783881',to:'16505551234',timestamp:now,type:'text',text:{body:'Company reply'}};
- assert.equal(normalizeAppMessage(m,'15550783881').kind,'OUTBOUND');assert.equal(normalizeAppMessage(m,'15550783881').source,'BUSINESS_APP');assert.equal(normalizeAppMessage(m,'15550783881',true).source,'HISTORY');assert.equal(eventTime('bad'),null);assert.equal(eventTime(Date.now()),null);assert.equal(normalizeAppMessage({...m,to:'bad'},'15550783881'),null);
+ assert.equal(normalizeAppMessage(m,'15550783881').kind,'OUTBOUND');assert.equal(normalizeAppMessage(m,'15550783881').source,'BUSINESS_APP');assert.equal(normalizeAppMessage(m,'15550783881',true).source,'HISTORY');assert.equal(eventTime('bad'),null);assert.equal(eventTime(Date.now()),null);assert.equal(normalizeAppMessage({...m,to:'bad'},'15550783881'),null);assert.equal(normalizeAppMessage({...m,to:undefined},'15550783881',true,'16505551234').phone,'16505551234');assert.equal(normalizeAppMessage({...m,type:'revoke'},'15550783881'),null);
 });

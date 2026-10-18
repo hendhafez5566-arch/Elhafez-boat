@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
-import {createHmac} from 'node:crypto';
+import {createHmac,randomBytes,randomUUID} from 'node:crypto';
+import {tokenDigest} from '../.build/apps/api/src/auth.js';
 export async function coexistenceAcceptance({db,a,b,base,env}){
+ // Independent actors isolate functional onboarding from the prior deliberate load/throttle workload.
+ async function freshOwner(t){const uid=randomUUID(),token=randomBytes(32).toString('base64url');
+  await db.query('INSERT INTO users(id,email,password_hash) VALUES($1,$2,$3)',[uid,uid+'@example.invalid','not-a-login-fixture']);
+  await db.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')",[t.tenant,uid]);
+  await db.query("INSERT INTO sessions(token_hash,tenant_id,user_id,expires_at) VALUES($1,$2,$3,now()+interval '1 hour')",[tokenDigest(token),t.tenant,uid]);
+  return {...t,user:uid,token};}
+ a=await freshOwner(a);b=await freshOwner(b);
  const origin=env.APP_PUBLIC_ORIGIN;
  async function call(path,token=a.token,body,nonce,expected=200,method=body?'POST':'GET'){
   const response=await fetch(base+'/api/v1'+path,{method,headers:{authorization:'Bearer '+token,origin,'content-type':'application/json',...(nonce?{cookie:'eb_wa_signup='+nonce}:{})},body:body?JSON.stringify(body):undefined});

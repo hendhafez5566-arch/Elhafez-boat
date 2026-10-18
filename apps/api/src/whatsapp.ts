@@ -139,6 +139,8 @@ async function scoped<T>(pool:SqlPool,tenantId:string,action:(tx:SqlClient)=>Pro
  const client=await pool.connect();let started=false;try{await client.query('BEGIN');started=true;await client.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const r=await action(client);await client.query('COMMIT');return r;}catch(e){if(started)await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}
 }
 async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,message:Record<string,unknown>,profile:Record<string,unknown>){
+ // Message mutations are not new customer input and must never advance the bot.
+ if(['edit','revoke'].includes(str(message.type)))return;
  const messageId=limited(message.id,256),from=str(message.from);if(!messageId||!customerPhonePattern.test(from))return;
  const rec=await db.query(`INSERT INTO whatsapp_receipts(tenant_id,account_id,message_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING message_id`,[tenantId,accountId,messageId]);
  if(rec.rowCount!==1)return; // durable, idempotent event processing

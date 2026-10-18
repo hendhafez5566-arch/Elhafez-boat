@@ -17,6 +17,7 @@ export async function browserCoexistence({ws,send,evaluate,until,screenshot,base
  try{
   await evaluate(`(()=>{window.FB={init(){},login(callback,options){window.__signupOptions=options;window.__signupCallback=callback}};document.querySelector('[data-page="wa-connect"]').click()})()`);
   await until("document.querySelectorAll('#wa-self-service .card').length===2",'self-service number choices');
+  await evaluate("document.getElementById('wa-self-service').scrollIntoView({block:'start'})");
   await screenshot('coexistence-01-number-choice-desktop.png');
   await evaluate("document.querySelector('#wa-self-service .card button').click()");
   await until("[...document.querySelectorAll('#wa-choose-phone button')].some(b=>b.textContent==='متابعة في Meta')",'prepared SDK gesture');
@@ -28,6 +29,7 @@ export async function browserCoexistence({ws,send,evaluate,until,screenshot,base
   await evaluate("document.querySelector('#wa-choose-phone button').click()");
   await until("document.getElementById('wa-self-service').textContent.includes('واتساب بيزنس + المنصة')",'stored real tenant connection');
   assert.equal(await evaluate("document.getElementById('wa-self-service').textContent.includes('استقبال الرسائل: لم يُثبت بعد')"),true);
+  await evaluate("document.querySelector('#wa-self-service > article')?.scrollIntoView({block:'start'})");
   await screenshot('coexistence-03-authorized-not-live.png');
   await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
   await screenshot('coexistence-04-mobile.png');

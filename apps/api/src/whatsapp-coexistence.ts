@@ -11,9 +11,10 @@ export function eventTime(value:unknown):Date|null{
 }
 export function normalizeAppMessage(message:unknown,businessPhone:string,history=false,threadId?:string){
  const m=obj(message),at=eventTime(m.timestamp),id=text(m.id,256);
+ if(['edit','revoke'].includes(m.type))return null;
  if(!id||!at)return null;
  const outgoing=m.from===businessPhone||(!history&&phone(m.to));
- const recipient=outgoing?m.to:phone(m.from)?m.from:threadId;
+ const recipient=outgoing?(phone(m.to)?m.to:threadId):phone(m.from)?m.from:threadId;
  if(!phone(recipient))return null;
  const body=m.type==='text'?text(obj(m.text).body):'[رسالة '+text(m.type,30)+' من تطبيق واتساب بيزنس]';
  return {id,at,phone:recipient,kind:outgoing?'OUTBOUND':'INBOUND',body,source:history?'HISTORY':'BUSINESS_APP'};

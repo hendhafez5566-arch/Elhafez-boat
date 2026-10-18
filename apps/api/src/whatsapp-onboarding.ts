@@ -65,7 +65,7 @@ export async function finishWhatsAppSignup(pool:SqlPool,actor:Actor,input:unknow
    token=tokenReply.access_token;if(typeof token!=='string'||token.length<20||token.length>2048)throw new HttpFailure(502,'لم يُرجع Meta تفويضًا صالحًا');
    expires=checkTokenDebug(await signupGraph('debug_token?'+new URLSearchParams({input_token:token}),cfg.appId+'|'+appSecret),d.wabaId);
    const list=await signupGraph(d.wabaId+'/phone_numbers?fields=id,display_phone_number,is_on_biz_app,platform_type&limit=100',token);
-   const phones=(Array.isArray(list.data)?list.data:[]).filter((p:any)=>digits(p.id)&&(attempt.mode!=='COEXISTENCE'||p.is_on_biz_app===true));
+   const phones=(Array.isArray(list.data)?list.data:[]).filter((p:any)=>digits(p.id)&&(attempt.mode==='COEXISTENCE'?p.is_on_biz_app===true:p.is_on_biz_app!==true));
    if(d.phoneNumberId&&!phones.some((p:any)=>p.id===d.phoneNumberId))throw new HttpFailure(400,'الرقم المختار لا ينتمي إلى الحساب المفوض');
    if(!d.phoneNumberId&&phones.length===1)d.phoneNumberId=phones[0].id;
    if(!d.phoneNumberId){
@@ -80,6 +80,7 @@ export async function finishWhatsAppSignup(pool:SqlPool,actor:Actor,input:unknow
   }
   const phone=await signupGraph(d.phoneNumberId+'?fields=id,is_on_biz_app,platform_type',token);
   if(phone.id!==d.phoneNumberId||attempt.mode==='COEXISTENCE'&&phone.is_on_biz_app!==true)throw new HttpFailure(400,'لم يؤكد Meta أن الرقم مؤهل للتعايش مع تطبيق بيزنس');
+  if(attempt.mode==='CLOUD'&&phone.is_on_biz_app===true)throw new HttpFailure(400,'هذا الرقم يستخدم تطبيق Business؛ اختر مسار واتساب بيزنس الحالي');
   // Claim tenant ownership before any subscription writes; connection validates WABA membership.
   const account=await withTenantTransaction(pool,actor,async db=>{
    const current=await db.query("SELECT id FROM whatsapp_onboarding_attempts WHERE tenant_id=$1 AND id=$2 AND status='PROCESSING' AND expires_at>now() FOR UPDATE",[actor.tenantId,d.attemptId]);if(current.rowCount!==1)throw new HttpFailure(409,'ألغيت عملية الربط أو انتهت صلاحيتها');
@@ -118,6 +119,7 @@ export async function requestSignupOperation(pool:SqlPool,actor:Actor,accountId:
  if(!isUuid(accountId)||!['history','smb_app_state_sync','register'].includes(operation))throw new HttpFailure(400,'عملية غير صالحة');
  const account=await withTenantTransaction(pool,actor,async db=>{
   const r=await db.query(`SELECT a.*,s.id AS attempt_id FROM whatsapp_accounts a JOIN whatsapp_onboarding_attempts s ON s.tenant_id=a.tenant_id AND s.account_id=a.id AND s.status='COMPLETE' WHERE a.tenant_id=$1 AND a.id=$2 AND a.status='CONNECTED' ORDER BY s.completed_at DESC LIMIT 1 FOR UPDATE OF a`,[actor.tenantId,accountId]);const a=r.rows[0];if(!a)throw new HttpFailure(404,'أعد التفويض قبل تهيئة الرقم');
+  const cfg=onboardingConfiguration();if(!(a.connection_mode==='COEXISTENCE'?cfg.coexistenceAvailable:cfg.cloudAvailable))throw new HttpFailure(503,'التهيئة غير مفعلة على المنصة');
   if(operation==='register'){if(a.connection_mode!=='CLOUD'||typeof d.pin!=='string'||!/^\d{6}$/.test(d.pin))throw new HttpFailure(400,'تهيئة Cloud فقط: أدخل رمز حماية جديدًا من 6 أرقام، وليس OTP');}
   else if(a.connection_mode!=='COEXISTENCE'||d.consent!==true)throw new HttpFailure(400,'موافقة صريحة مطلوبة قبل المزامنة');
   const claim=await db.query(`INSERT INTO whatsapp_signup_operations(tenant_id,account_id,attempt_id,operation) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING RETURNING operation`,[actor.tenantId,accountId,a.attempt_id,operation]);if(claim.rowCount!==1)throw new HttpFailure(409,'سبق طلب هذه العملية؛ افحص الحالة ولا تكرر طلبًا مجهول المصير');
