@@ -39,3 +39,16 @@ The first real browser acceptance run failed because the **test itself submitted
 - `acceptance-evidence/browser-account.json` contains only disposable CI fixture credentials, **not uploaded** as an artifact. Only `*.png` evidence is uploaded; credentials are intentionally never committed.
 
 **Verdict:** concrete working paths have passed now. Keep PR #1 draft/unmerged until provider activation and the remaining operational acceptance are reviewed by the owner.
+
+
+## Additional container-packaging verification
+
+Following the above acceptance, [CI run 39105618688](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105618688) **PASSED both jobs** after adding `.dockerignore` and the packaging smoke step:
+
+- The multi-stage `Dockerfile` built a real `node:22-alpine` image from source using `npm ci` and `npm run build`.
+- A disposable image inspection confirmed compiled API present and no `/app/.env` or hidden real secret file in the image.
+- A real Docker web process served dashboard `/`, `/flow-builder.js` and `/widget.js` successfully over HTTP.
+- The `.dockerignore` now prevents untracked secrets, Git history, local `node_modules`, exports and screenshots from entering Docker build context.
+- Original 70/70 checks, browser/runtime/widget/worker/DELAY and backup/restore gates remained passing.
+
+This is **packaging and static HTTP acceptance**, not production Docker Compose networking/TLS, Meta webhook, provider authorizations or multi-replica reliability validation. No deployment happened.
