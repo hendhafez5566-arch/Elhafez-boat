@@ -50,10 +50,11 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
   const item=await expectCode('/api/v1/catalog',{method:'POST',token:t.token,body:{kind:'SERVICE',title:'Fixture <img src=x onerror=alert(1)>',description:"SQL fixture '; DROP TABLE contacts; --",categoryLabel:'Fixture',priceText:'100',imageUrl:'',externalUrl:''}},201);t.item=item.id;
   await expectCode('/api/v1/catalog/'+item.id+'/publish',{method:'POST',token:t.token},200);
  }
+ await expectCode('/api/v1/catalog/'+a.item,{method:'PUT',token:b.token,body:{kind:'SERVICE',title:'Cross company',description:'Forbidden'}},404);
  // Real mixed workload for >=20 seconds, 200 visitors, thousands of HTTP/message operations.
  let n=0;const samples=[],counts={};const started=performance.now(),cpu=process.cpuUsage();
  await Promise.all(Array.from({length:20},async()=>{while(n<200){const i=n++,t=tenants[i%4],start=performance.now();const visitor=await expectCode('/api/v1/widget/start',{method:'POST',headers:{origin:'http://127.0.0.1:3000'},body:{widgetKey:t.widgetKey,name:'Fixture visitor '+i}},201);clients.push({token:visitor.token,tenant:t.tenant});samples.push(performance.now()-start)}}));
- let cursor=0;const until=performance.now()+20000;
+ let cursor=0;const until=performance.now()+30000;
  await Promise.all(Array.from({length:20},async()=>{while(performance.now()<until){const i=cursor++,t=tenants[i%4],visitor=clients[i%clients.length],start=performance.now();let r;
   const kind=i%5;
   if(kind===0)r=await request('/api/v1/widget/send',{method:'POST',token:visitor.token,headers:{origin:'http://127.0.0.1:3000'},body:{messageId:randomUUID(),text:'Fixture customer interest '+i,actionId:''}});
@@ -64,14 +65,15 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
   counts[r.status]=(counts[r.status]||0)+1;samples.push(performance.now()-start);await sleep(80);
  }}));
  samples.sort((x,y)=>x-y);const elapsed=performance.now()-started;
+ const messageCount=(await db.query('SELECT count(*)::int n FROM conversation_messages WHERE tenant_id=ANY($1::uuid[])',[tenants.map(t=>t.tenant)])).rows[0].n;
  const queue=(await db.query("SELECT count(*)::int n,coalesce(max(extract(epoch FROM now()-due_at)),0)::float AS lag FROM chatbot_delay_jobs WHERE tenant_id=ANY($1::uuid[]) AND status='PENDING'",[tenants.map(t=>t.tenant)])).rows[0];
- report.mixed={durationMs:elapsed,companies:4,visitors:200,operations:samples.length,statusCounts:counts,operationsPerSecond:samples.length*1000/elapsed,p50Ms:samples[Math.floor(samples.length*.5)],p95Ms:samples[Math.floor(samples.length*.95)],p99Ms:samples[Math.floor(samples.length*.99)],clientCpuMicroseconds:process.cpuUsage(cpu),clientRssBytes:process.memoryUsage().rss,pendingDelayJobs:queue.n,queueLagSeconds:queue.lag};
+ report.mixed={durationMs:elapsed,companies:4,visitors:200,persistedMessages:messageCount,operations:samples.length,statusCounts:counts,operationsPerSecond:samples.length*1000/elapsed,p50Ms:samples[Math.floor(samples.length*.5)],p95Ms:samples[Math.floor(samples.length*.95)],p99Ms:samples[Math.floor(samples.length*.99)],clientCpuMicroseconds:process.cpuUsage(cpu),clientRssBytes:process.memoryUsage().rss,pendingDelayJobs:queue.n,queueLagSeconds:queue.lag};
  assert.equal(queue.n,0,'Workers must drain all initial delays during sustained workload');
  const plan=await tx(a.tenant,c=>c.query('EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) SELECT id,body FROM conversation_messages WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC LIMIT 200',[a.tenant,(randomUUID())]));report.explain=plan.rows;
- check('20-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE');
+ check('30-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE');
  for(const p of mixedWorkers){p.kill('SIGTERM');await once(p,'exit')}
  // RLS remains effective with runtime role; role escalation and SQL payload cannot cross tenants.
- await expectCode('/api/v1/catalog/'+a.item,{method:'PUT',token:b.token,body:{kind:'SERVICE',title:'Cross company',description:'Forbidden'}},404);
+
  for(const role of ['MANAGER','AGENT','VIEWER']){
   const uid=(await db.query('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id',[role+'-'+suffix+'@example.invalid',hash])).rows[0].id;
   await db.query('INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,$3)',[a.tenant,uid,role]);
@@ -102,6 +104,17 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
  }
  assert.ok(sim.calls.some(c=>c.body.grant_type==='refresh_token'));
  check('production Google PKCE/OAuth single-use state/refresh/RAW Sheets and HubSpot/Shopify/WooCommerce deduplicated contact sync');
+ const google=(await db.query("SELECT id FROM chatbot_connectors WHERE tenant_id=$1 AND provider='GOOGLE_SHEETS'",[a.tenant])).rows[0].id;
+ for(const code of ['401','403','429','500','reset']){sim.modes.set('sheets.googleapis.com',code);await assert.rejects(tx(a.tenant,c=>connectorResources(c,a.actor,google,'fixture_sheet_123')))}sim.modes.delete('sheets.googleapis.com');
+ const {fixtureDNS}=await import('./support/offline-transport.mjs');const {providerHTTP}=await import('../.build/apps/api/src/provider-http.js');
+ for(const addresses of [[{address:'127.0.0.1',family:4}],[{address:'93.184.216.34',family:4},{address:'169.254.169.254',family:4}]]){fixtureDNS.set('woo.fixture.test',addresses);await assert.rejects(providerHTTP(new URL('https://woo.fixture.test/test'),['woo.fixture.test']),/DNS rejected/)}fixtureDNS.delete('woo.fixture.test');
+ process.env.OUTBOUND_WEBHOOK_HOSTS='webhook.fixture.test';process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET='fixture-only-signing-secret';const webhookBody={event:'fixture',contactId:contact};
+ await sendWebhook('https://webhook.fixture.test/receive',webhookBody,'stable-fixture-key');await sendWebhook('https://webhook.fixture.test/receive',webhookBody,'stable-fixture-key');
+ const hooks=sim.calls.filter(c=>c.host==='webhook.fixture.test');assert.equal(hooks.length,2);assert.ok(hooks.every(c=>c.idempotencyKey==='stable-fixture-key'&&c.signature==='sha256='+createHmac('sha256',process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET).update(JSON.stringify(webhookBody)).digest('hex')));
+ process.env.AI_BASE_URL='https://ai.fixture.test/v1';process.env.AI_API_KEY='fixture-ai-key';process.env.AI_MODEL='fixture-model';await tx(a.tenant,c=>saveAiSettings(c,a.actor,{enabled:true,instructions:'Company fixture',monthlyLimit:10}));
+ const ai=await tx(a.tenant,c=>groundedReply(c,a.tenant,'Unknown fixture query'));assert.deepEqual(ai.sources,[]);assert.ok(sim.calls.some(c=>c.host==='ai.fixture.test'));
+ check('production provider 401/403/429/500/reset matrix, mixed/private DNS rejection, webhook HMAC/stable keys and grounded AI fallback');
+
  // Native social validation and dispatch through the same production code.
  for(const channel of ['MESSENGER','INSTAGRAM','TELEGRAM']){
   const account=await tx(a.tenant,c=>connectSocial(c,a.actor,{channel,externalId:'123456',token:channel==='TELEGRAM'?'123456:'+'a'.repeat(30):'fixture-social-token-123'}));
@@ -131,7 +144,7 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
  await tx(a.tenant,c=>reconcileWhatsAppReceipt(c,a.tenant,wa.id,receipt));await tx(a.tenant,c=>reconcileWhatsAppReceipt(c,a.tenant,wa.id,{...receipt,status:'sent'}));
  assert.equal((await db.query('SELECT status FROM whatsapp_outbox WHERE tenant_id=$1 AND id=$2',[a.tenant,queued])).rows[0].status,'SENT');
  assert.equal((await db.query('SELECT delivery_status FROM conversation_messages WHERE tenant_id=$1 AND whatsapp_message_id=$2',[a.tenant,accepted.id])).rows[0].delivery_status,'read');
- recovery.kill('SIGTERM');
+ recovery.kill('SIGTERM');await once(recovery,'exit');
  check('actual worker accepted-send SIGKILL -> PROCESSING -> UNCERTAIN -> correlated SENT; one send; duplicate/out-of-order receipt preserves read');
  // Actual ClamAV INSTREAM, not a fake scanner. Custom local acceptance signature database only.
  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==','base64');
@@ -144,6 +157,8 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
   process.env.MEDIA_PUBLIC_ORIGIN='https://media.fixture.test';await assert.rejects(tx(b.tenant,c=>validateManagedMedia(c,b.tenant,'https://media.fixture.test/api/v1/media/public/'+token,'image')));
   await tx(a.tenant,c=>deleteMedia(c,a.actor,asset.id));await assert.rejects(publicMedia(pool,token),e=>e.status===410);
   await assert.rejects(tx(a.tenant,c=>uploadMedia(c,a.actor,{name:'fake.png',base64:Buffer.from('not png').toString('base64')})));
+  await assert.rejects(tx(a.tenant,c=>uploadMedia(c,a.actor,{name:'oversized.png',base64:Buffer.concat([png,Buffer.alloc(5242881)]).toString('base64')})));
+  const infected=await tx(a.tenant,c=>uploadMedia(c,a.actor,{name:'EICAR fixture.pdf',base64:Buffer.concat([Buffer.from('%PDF-1.0\n'),eicar]).toString('base64')}));await tx(a.tenant,c=>processMediaScan(c,a.tenant));assert.equal((await db.query('SELECT scan_status FROM chatbot_media WHERE tenant_id=$1 AND id=$2',[a.tenant,infected.id])).rows[0].scan_status,'QUARANTINED');
   const old=process.env.CLAMAV_SOCKET;process.env.CLAMAV_SOCKET='/tmp/no-scanner-'+suffix;await assert.rejects(scanBytes(png));process.env.CLAMAV_SOCKET=old;assert.equal(await scanBytes(png),'CLEAN');
   check('real ClamAV CLEAN/EICAR QUARANTINED, pending inaccessible, tenant media denial, deleted link revoked, fake MIME denied, offline/recovery');
  }else throw new Error('Real scanner is mandatory for new closure gate');
@@ -160,6 +175,11 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
  const encrypted=(await db.query('SELECT credentials_encrypted FROM chatbot_connectors WHERE tenant_id=$1 LIMIT 1',[a.tenant])).rows[0].credentials_encrypted;assert.ok(openIntegrationSecret(encrypted));
  const {startWebsiteSession}=await import('../.build/apps/api/src/website.js');const pendingVisitor=await startWebsiteSession(pool,{widgetKey:a.widgetKey,name:'Pending backup visitor'},'http://127.0.0.1:3000');const delayed=(await db.query('SELECT s.conversation_id FROM chatbot_web_sessions s WHERE s.tenant_id=$1 AND s.token_hash=$2',[a.tenant,tokenDigest(pendingVisitor.token)])).rows[0].conversation_id;await db.query("UPDATE chatbot_delay_jobs SET due_at=now()+interval '1 day' WHERE tenant_id=$1 AND conversation_id=$2",[a.tenant,delayed]);
  await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/restore-fixture-private.json',JSON.stringify({tenant:a.tenant,contact:retained,conversation:delayed,runtimeUrl:env.DATABASE_URL,key:process.env.INTEGRATION_SECRET_ENCRYPTION_KEY}));
+ const racing=clients[0];const racingContact=(await db.query('SELECT c.contact_id FROM chatbot_web_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id WHERE s.tenant_id=$1 AND s.token_hash=$2',[racing.tenant,tokenDigest(racing.token)])).rows[0].contact_id;const racingActor=tenants.find(t=>t.tenant===racing.tenant).actor;
+ const outcomes=await Promise.allSettled([tx(racing.tenant,c=>anonymizeContact(c,racingActor,racingContact,{confirm:racingContact})),request('/api/v1/widget/send',{method:'POST',token:racing.token,headers:{origin:'http://127.0.0.1:3000'},body:{messageId:randomUUID(),text:'Concurrent private content fixture',actionId:''}})]);assert.equal(outcomes[0].status,'fulfilled');assert.ok([200,401].includes(outcomes[1].value?.status));
+ assert.equal((await db.query('SELECT status FROM contacts WHERE tenant_id=$1 AND id=$2',[racing.tenant,racingContact])).rows[0].status,'ARCHIVED');
+ assert.equal((await db.query("SELECT 1 FROM conversation_messages m JOIN conversations c ON c.tenant_id=m.tenant_id AND c.id=m.conversation_id WHERE c.tenant_id=$1 AND c.contact_id=$2 AND m.body LIKE '%Concurrent private content%'",[racing.tenant,racingContact])).rowCount,0);
+ check('concurrent customer message and owner erasure: no resurrected contact or retained message content');
  check('retention preserves scheduled work, owner export/anonymization cancels jobs; seeded media/ciphertext/audit/pending queue for restore');
  }finally{await pool.end();await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/local-closure.json',JSON.stringify(report,null,2))}
 }

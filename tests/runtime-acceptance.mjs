@@ -144,7 +144,7 @@ try{
  await expectCode('/api/v1/whatsapp/inbox',{token:one},200);
  const home=await request('/');assert.equal(home.status,200);assert.match(home.data,/Elhafez Boat/);
  const widget=await request('/widget.js');assert.equal(widget.status,200);assert.match(widget.data,/widget/i);
- const pageAuth={slug:slugA,email:`${slugA}@example.invalid`,password:pass};
+ const pageAuth={slug:slugA,email:`${slugA}@example.invalid`,password:pass,platform:{email,password:pass}};
  // Publish a new version with a real short delay. Earlier customer sessions remain pinned.
  const flowRevision=await expectCode('/api/v1/flows',{token:one},200);
  const delayedFlow={name:'Delayed support flow',startId:'start',nodes:[
@@ -246,6 +246,7 @@ try{
   // Keep two instrumented workers for mixed load; stop them before provider fixtures.
   const {localClosure}=await import('./local-closure.mjs');await localClosure({db,env,sim,launch,request,expectCode});
  }
+ const browserFlow=await expectCode('/api/v1/flows',{token:one},200);await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{...def,expectedRevision:browserFlow.draft.draftRevision}},200);await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});

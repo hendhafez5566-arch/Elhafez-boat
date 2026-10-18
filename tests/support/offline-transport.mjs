@@ -15,8 +15,9 @@ globalThis.fetch=(url,options={})=>{
  const headers=new Headers(options.headers);headers.set('x-fixture-host',target.hostname);
  return originalFetch(origin.origin+target.pathname+target.search,{...options,headers});
 };
+export const fixtureDNS=new Map();
 const lookup=dns.promises.lookup.bind(dns.promises);
-dns.promises.lookup=async(host,...args)=>{if(allowed(host))return args[0]?.all?[{address:'93.184.216.34',family:4}]:{address:'93.184.216.34',family:4};if(host==='localhost'||host==='127.0.0.1')return lookup(host,...args);throw new Error('Offline test blocked DNS')};
+dns.promises.lookup=async(host,...args)=>{if(allowed(host)&&fixtureDNS.has(host))return fixtureDNS.get(host);if(allowed(host))return args[0]?.all?[{address:'93.184.216.34',family:4}]:{address:'93.184.216.34',family:4};if(host==='localhost'||host==='127.0.0.1')return lookup(host,...args);throw new Error('Offline test blocked DNS')};
 https.request=(url,options,callback)=>{
  const target=new URL(url);if(!allowed(target.hostname))throw new Error('Offline test blocked HTTPS');
  // Exercise the production DNS pin callback, then use a loopback-only socket.

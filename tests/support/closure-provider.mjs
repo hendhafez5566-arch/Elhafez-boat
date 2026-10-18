@@ -5,7 +5,7 @@ export async function closureProvider(){
   let raw='';for await(const b of req)raw+=b;
   const host=req.headers['x-fixture-host'],url=new URL(req.url,'http://fixture');
   const body=(req.headers['content-type']||'').includes('json')&&raw?JSON.parse(raw):Object.fromEntries(new URLSearchParams(raw));
-  calls.push({host,path:url.pathname,method:req.method,body});res.setHeader('content-type','application/json');
+  calls.push({host,path:url.pathname,method:req.method,body,signature:req.headers['x-elhafez-signature'],idempotencyKey:req.headers['idempotency-key']});res.setHeader('content-type','application/json');
   const mode=modes.get(host)||'';
   if(/^\d+$/.test(mode)){res.writeHead(Number(mode)).end('{}');return}
   if(mode==='reset'){req.socket.destroy();return}

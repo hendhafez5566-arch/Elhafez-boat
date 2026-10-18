@@ -34,7 +34,7 @@ try{
  let target;for(let i=0;i<30;i++){try{const pages=await (await fetch('http://127.0.0.1:'+port+'/json/list')).json();target=pages.find(p=>p.type==='page'&&p.webSocketDebuggerUrl);if(target)break}catch{}await sleep(120)}
  assert.ok(target?.webSocketDebuggerUrl,'No debuggable Chrome page');
  ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true})});
- ws.addEventListener('message',event=>{const value=JSON.parse(String(event.data));if(value.id){const entry=pending.get(value.id);if(entry){pending.delete(value.id);value.error?entry.reject(new Error(JSON.stringify(value.error))):entry.resolve(value.result)}}else if(value.method==='Runtime.exceptionThrown')exceptions.push(JSON.stringify(value.params.exceptionDetails||{}).slice(0,900));else if(value.method==='Log.entryAdded'){consoleErrors.push(String(value.params?.entry?.text||'').slice(0,650));}else if(value.method==='Runtime.consoleAPICalled'&&value.params?.type==='error'){consoleErrors.push((value.params.args||[]).map(a=>a.value||a.description||'').join(' ').slice(0,650));}else if(value.method==='Network.responseReceived'){
+ ws.addEventListener('message',event=>{const value=JSON.parse(String(event.data));if(value.id){const entry=pending.get(value.id);if(entry){pending.delete(value.id);value.error?entry.reject(new Error(JSON.stringify(value.error))):entry.resolve(value.result)}}else if(value.method==='Page.javascriptDialogOpening'){send('Page.handleJavaScriptDialog',{accept:true}).catch(()=>{});}else if(value.method==='Runtime.exceptionThrown')exceptions.push(JSON.stringify(value.params.exceptionDetails||{}).slice(0,900));else if(value.method==='Log.entryAdded'){consoleErrors.push(String(value.params?.entry?.text||'').slice(0,650));}else if(value.method==='Runtime.consoleAPICalled'&&value.params?.type==='error'){consoleErrors.push((value.params.args||[]).map(a=>a.value||a.description||'').join(' ').slice(0,650));}else if(value.method==='Network.responseReceived'){
   const response=value.params?.response;
   if(response?.url&&((response.status>=400)||['Script','XHR','Fetch'].includes(value.params?.type))){network.push({url:new URL(response.url).pathname,status:response.status,type:value.params?.type});if(network.length>50)network.shift()}
  }else if(value.method==='Network.loadingFailed')network.push({failure:String(value.params?.errorText||'unknown')});});
@@ -64,6 +64,40 @@ try{
  await sleep(250);await screenshot('flow-builder-canvas-mobile.png');
  const bodyWidth=await evaluate('document.documentElement.scrollWidth');
  assert.ok(Number.isFinite(bodyWidth)&&bodyWidth<3000,'Mobile flow canvas overflows document excessively');
+ // Actual owner CRUD and publication through rendered forms, including stored-XSS probe.
+ await evaluate("document.querySelector('[data-page=catalog]').click()");
+ await until("!document.getElementById('catalog').hidden && Boolean(document.getElementById('catalog-form')?.onsubmit)",'catalog form initialization');
+ const probe='Browser fixture <img src=x onerror=window.__xssProbe=1>';
+ await evaluate(`(()=>{const f=document.getElementById('catalog-form');f.elements.title.value=${JSON.stringify(probe)};f.elements.description.value='Browser-approved fixture';f.requestSubmit()})()`);
+ await until(`Boolean([...document.querySelectorAll('#catalog-items article')].find(c=>c.textContent.includes(${JSON.stringify(probe)})))`,'catalog created');
+ assert.equal(await evaluate('Boolean(window.__xssProbe)'),false);
+ const findCard=`[...document.querySelectorAll('#catalog-items article')].find(c=>c.textContent.includes(${JSON.stringify(probe)}))`;
+ await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='تعديل').click()`);
+ await until(`document.getElementById('catalog-form').elements.title.value===${JSON.stringify(probe)}`,'edit populated');
+ await evaluate("(()=>{const f=document.getElementById('catalog-form');f.elements.description.value='Edited through browser';f.requestSubmit()})()");
+ await until(`(${findCard})?.textContent.includes('Edited through browser')`,'catalog edit saved');
+ await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='اعتماد ونشر').click()`);
+ await until(`(${findCard})?.textContent.includes('PUBLISHED')`,'catalog published');
+ await screenshot('catalog-crud-published.png');
+ await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='أرشفة').click()`);
+ await until(`(${findCard})?.textContent.includes('ARCHIVED')`,'catalog archived');
+ await evaluate("document.querySelector('[data-page=flow-builder]').click()");
+ await until("Boolean(document.querySelector('.canvas-node'))",'editable canvas');
+ await evaluate("(()=>{const input=document.getElementById('builder-name');input.value='Browser saved publication';input.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('builder-save').click()})()");
+ await until("document.getElementById('notice').textContent.includes('تم حفظ مسودة')",'flow save');
+ await evaluate("document.getElementById('builder-publish').click()");
+ await until("document.getElementById('notice').textContent.includes('تم نشر إصدار')",'flow publish');
+ await evaluate("document.querySelector('[data-page=privacy]').click()");
+ await until("Boolean(document.querySelector('#privacy-tools input[name=days]'))",'privacy settings');
+ await evaluate("(()=>{const h=document.getElementById('privacy-tools');h.querySelector('input[name=days]').value='31';h.querySelector('button.primary').click()})()");
+ await until("document.querySelector('#privacy-tools input[name=days]')?.value==='31'",'privacy saved');
+ await evaluate("document.querySelector('[data-page=integrations]').click()");
+ await until("!document.getElementById('integrations').hidden",'integration validation page');
+ await evaluate("(()=>{const f=document.getElementById('integration-form');f.elements.name.value='Rejected destination';f.elements.url.value='https://unapproved.fixture.test';f.requestSubmit()})()");
+ await until("document.getElementById('notice').classList.contains('error')",'unapproved host error');
+ await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
+ assert.ok(await evaluate("document.activeElement!==document.body"),'Keyboard Tab must reach an actionable control');
+ console.log('PASS browser real catalog create/edit/publish/archive + stored XSS text safety; flow save/publish; privacy save; rejected integration host; keyboard Tab');
  // Visit every owner page at desktop/tablet/mobile widths; no connect/send/publish actions.
  const pages=await evaluate("[...document.querySelectorAll('[data-page]')].map(n=>n.dataset.page)");
  const pageEvidence=[];
@@ -105,6 +139,18 @@ try{
  assert.equal(network.some(n=>n.status>=500),false,'Customer widget must not encounter server 5xx');
  console.log('PASS actual Website Widget desktop/mobile with published flow and customer-to-employee handoff; three extra Chromium PNGs');
  assert.deepEqual(exceptions,[],`Browser JavaScript exceptions: ${exceptions.join(', ')}`);
+ if(account.platform){
+  await send('Page.navigate',{url:base+'/platform.html'});
+  await until("Boolean(document.getElementById('platform-refresh')?.onclick)",'platform JS');
+  await evaluate(`(()=>{const f=document.getElementById('platform-login-form');const p=${JSON.stringify(account.platform)};f.elements.email.value=p.email;f.elements.password.value=p.password;f.requestSubmit()})()`);
+  await until("!document.getElementById('platform-workspace').hidden && document.getElementById('platform-plans').options.length>0",'platform login');
+  await screenshot('platform-admin-authenticated.png');
+  await evaluate(`(()=>{const f=document.getElementById('platform-create-form');f.elements.name.value='Browser company fixture';f.elements.slug.value='browser-'+Date.now();f.elements.ownerEmail.value='browser-owner@example.invalid';f.requestSubmit()})()`);
+  await until("!document.getElementById('platform-invite-result').hidden && document.getElementById('platform-invite-link').value.includes('#owner.')",'platform company create');
+  await evaluate("document.getElementById('platform-logout').click()");
+  await until("!document.getElementById('platform-login').hidden",'platform logout');
+  console.log('PASS actual platform-admin browser login/company creation/invite generation/logout; private invitation never captured');
+ }
  console.log('PASS headless Chrome: RTL company login, real dashboard, flow canvas, mobile viewport, logout');
  console.log('PASS screenshots: dashboard, desktop/mobile flow builder and actual canvas views');
 }catch(error){console.error('BROWSER ACCEPTANCE FAILURE:',error);process.exitCode=1}
