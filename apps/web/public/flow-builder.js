@@ -237,7 +237,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
  const control=(value,change,large=false)=>{
-   const c=el(large?'textarea':'input');if(large)c.rows=3;c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();canvas.draw();renderBlocks()});return c;
+   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();canvas.draw();renderBlocks()});return c;
  };
  const target=(value,change)=>{
    const s=el('select');for(const node of flow.nodes){const option=el('option',(types[node.type]||'خطوة')+' — '+String(node.text||'').slice(0,28));option.value=node.id;s.append(option)}
@@ -322,17 +322,29 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    if('next'in node)developerSettings.append(label('الخطوة التالية',target(node.next,value=>{node.next=value})));
    if(node.type==='BUTTONS'||node.type==='LIST'){
-     if(node.type==='LIST')host.append(label('عنوان زر فتح القائمة',control(node.buttonText||'اختار',value=>{node.buttonText=value})));
+     if(node.type==='LIST'){const listButton=control(node.buttonText||'اختار',value=>{node.buttonText=value});listButton.maxLength=20;host.append(label('عنوان زر فتح القائمة',listButton));}
      host.append(el('h4','الاختيارات والزراير'));
      for(const [i,choice] of node.choices.entries()){
        const block=el('div',undefined,'builder-choice');
-       block.append(label('عنوان الاختيار',control(choice.title,value=>{choice.title=value})));
+       const titleInput=control(choice.title,value=>{choice.title=value});titleInput.maxLength=node.type==='BUTTONS'?20:24;
+       titleInput.setAttribute('aria-label','عنوان الاختيار '+(i+1));
+       block.append(el('strong','الاختيار '+(i+1),'builder-choice-heading'),label('عنوان الاختيار',titleInput));
        const advancedChoice=el('details',undefined,'builder-choice-advanced');advancedChoice.append(el('summary','وجهة الاختيار وإعداداته'));
        advancedChoice.append(label('معرّف الاختيار',control(choice.id,value=>{choice.id=value})));
-       if(node.type==='LIST')block.append(label('وصف قصير',control(choice.description||'',value=>{choice.description=value})));
+       if(node.type==='LIST'){const description=control(choice.description||'',value=>{choice.description=value});description.maxLength=72;block.append(label('وصف قصير',description));}
        advancedChoice.append(label('عند الضغط ينتقل إلى',target(choice.next,value=>{choice.next=value})));
        block.append(advancedChoice);
-       block.append(button('حذف الاختيار',()=>{node.choices.splice(i,1);markDirty();renderAll()},'danger'));
+       const moveChoice=(offset)=>{
+         const other=i+offset;if(other<0||other>=node.choices.length)return;
+         [node.choices[i],node.choices[other]]=[node.choices[other],node.choices[i]];markDirty();renderAll();
+       };
+       const reorder=el('div',undefined,'builder-choice-actions');
+       const moveUp=button('↑ لأعلى',()=>moveChoice(-1));moveUp.disabled=i===0;
+       const moveDown=button('↓ لأسفل',()=>moveChoice(1));moveDown.disabled=i===node.choices.length-1;
+       reorder.append(moveUp,moveDown,button('حذف الاختيار',()=>{
+         if(node.choices.length<=1){notify('لا يمكن حذف آخر اختيار. أضف اختيارًا آخر أولًا.','error');return;}
+         node.choices.splice(i,1);markDirty();renderAll();
+       },'danger'));block.append(reorder);
        host.append(block);
      }
      const limit=node.type==='BUTTONS'?3:10;
@@ -360,7 +372,21 @@ export function initFlowBuilder({state,api,notify,execute}){
    paint();host.oninput=paint;host.prepend(sample);host.append(developerSettings);
 
    if(node.type!=='START')host.append(button('حذف الخطوة',()=>{
-     if(!confirm('هتتحذف الخطوة، ولازم تصلح أي روابط كانت رايحة لها قبل النشر.'))return;
+     const inbound=flow.nodes.filter(n=>n!==node&&(
+       n.next===node.id||n.yes===node.id||n.no===node.id||
+       (Array.isArray(n.choices)&&n.choices.some(c=>c.next===node.id))
+     ));
+     const options='next'in node?[node.next]:Array.isArray(node.choices)?node.choices.map(c=>c.next):
+       ('yes'in node?[node.yes,node.no]:[]);
+     const safe=options.length&&options.every(id=>id===options[0]&&id!==node.id)&&nodeById(options[0])?options[0]:null;
+     if(inbound.length&&!safe){notify('هذه الخطوة متصلة بفروع أخرى. غيّر وجهة الفروع أولًا من لوحة التصميم قبل الحذف.','error');return;}
+     if(!confirm(inbound.length?'حذف الخطوة وربط المسارات السابقة تلقائيًا بالخطوة التالية؟':'حذف الخطوة غير المرتبطة؟'))return;
+     for(const parent of inbound){
+       if(parent.next===node.id)parent.next=safe;
+       if(parent.yes===node.id)parent.yes=safe;
+       if(parent.no===node.id)parent.no=safe;
+       for(const choice of parent.choices||[])if(choice.next===node.id)choice.next=safe;
+     }
      flow.nodes=flow.nodes.filter(n=>n!==node);
      if(flow.layout)delete flow.layout[node.id];
      flow.groups=(flow.groups||[]).map(g=>({...g,nodeIds:g.nodeIds.filter(id=>id!==node.id)})).filter(g=>g.nodeIds.length>=2);
@@ -375,6 +401,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    $('builder-name').value=flow.name;renderStatus();renderBlocks();renderEditor();canvas.draw();canvas.highlight(selected);
  }
  function addNode(type,anchor=null){
+   if(flow.nodes.length>=100){notify('وصلت للحد الأقصى 100 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
+   if(anchor&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
    const origin=anchor?nodeById(anchor.nodeId):null;
    const oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.[Number(anchor.key.split(':')[1])]?.next:origin[anchor.key]):null;
    let n=flow.nodes.length+1,id='step'+n;while(nodeById(id))id='step'+(++n);
@@ -401,7 +429,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      if('next'in inserted)inserted.next=oldTarget;
      if('yes'in inserted){inserted.yes=oldTarget;inserted.no=oldTarget;}
      if(Array.isArray(inserted.choices))for(const choice of inserted.choices)choice.next=oldTarget;
-     const pos=flow.layout?.[origin.id]||{x:80,y:80};flow.layout??={};flow.layout[id]={x:Math.min(8700,pos.x+365),y:pos.y+315};
+     const pos=flow.layout?.[origin.id]||{x:80,y:80};flow.layout??={};flow.layout[id]={x:Math.min(8700,pos.x+365),y:Math.min(9000,pos.y+315)};
    }
    selected=id;selectedNodes=new Set([selected]);markDirty();renderAll();showInspector();
  }
