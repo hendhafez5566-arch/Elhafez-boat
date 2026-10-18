@@ -37,6 +37,13 @@ async function withSession<T>(pool:SqlClient&SqlPool,bearer:string,origin:string
  const token=bearer.replace(/^Bearer /,'');if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new HttpFailure(401,'Invalid visitor token');
  const hash=tokenDigest(token),route=await pool.query('SELECT tenant_id,session_id FROM chatbot_web_routes WHERE token_hash=$1',[hash]);if(!route.rowCount)throw new HttpFailure(401,'Session expired');const tenantId=String(route.rows[0].tenant_id);
  return publicTenant(pool,tenantId,async db=>{
+  // Consistent contact-before-conversation locking prevents a website message from
+  // resurrecting erased personal data during concurrent privacy anonymization.
+  // Lock only the contact, not the whole tenant, to preserve chat concurrency.
+  const ref=await db.query('SELECT c.contact_id FROM chatbot_web_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id WHERE s.tenant_id=$1 AND s.id=$2 AND s.token_hash=$3 AND s.origin=$4 AND s.expires_at>now()',[tenantId,route.rows[0].session_id,hash,origin]);
+  if(!ref.rowCount)throw new HttpFailure(401,'Visitor session unavailable');
+  const contact=await db.query('SELECT status FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,ref.rows[0].contact_id]);
+  if(!contact.rowCount||contact.rows[0].status==='ARCHIVED')throw new HttpFailure(401,'Visitor session expired after privacy erasure');
   const session=await db.query(`SELECT s.id,s.conversation_id,c.contact_id,c.status FROM chatbot_web_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id JOIN chatbot_widget_settings w ON w.tenant_id=s.tenant_id WHERE s.tenant_id=$1 AND s.id=$2 AND s.token_hash=$3 AND s.origin=$4 AND s.expires_at>now() AND w.enabled=true AND w.origins ? $4 FOR UPDATE OF c`,[tenantId,route.rows[0].session_id,hash,origin]);
   if(!session.rowCount)throw new HttpFailure(401,'Visitor session unavailable');return task(db,tenantId,session.rows[0]);
  });
