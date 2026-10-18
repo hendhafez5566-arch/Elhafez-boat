@@ -1,3 +1,7 @@
+## 2026-10-18 — Verified code correction: analytics percentage display
+
+On the existing draft PR #1 branch, corrected the tenant insights UI to format the numeric lead-capture ratio *before* appending the Arabic percent symbol. Previously the UI passed e.g. `37.5%` to `Number()` and displayed zero. Added `tests/insights-display.test.mjs` to verify nonzero and zero UI values. This is a display correction only: no API, business figures, data migrations, outbound integrations, deployment, or account activation changed. The new commit needs matching CI evidence; no new CI success is claimed here. Existing broader commercial and feature limitations remain unchanged.
+
 ## Final isolated execution verification
 
 CI 39108014870 PASS including Compose replicas/database outage/persistence/operational alarm and every restored-table fingerprint. Added platform-pool recovery, server CPU/RSS measurement and 4 security regression tests (local 78/78). Latest source d5ac76c CI 39108108402 also PASS both jobs, 78/78 plus full Compose/restore/browser/runtime. Detailed proof/remaining scope in TECHNICAL-EXECUTION-2026-10-18.md.

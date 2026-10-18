@@ -2,9 +2,9 @@
 export function initInsights({api,$,el}){
  const clear=()=>{const host=$('bot-insights');if(host)host.replaceChildren()};
  const number=value=>new Intl.NumberFormat('ar-EG').format(Number(value)||0);
- function metric(host,title,value,note){
+ function metric(host,title,value,note,unit=''){
   const card=el('article',undefined,'metric');
-  card.append(el('span',title),el('strong',number(value)));
+  card.append(el('span',title),el('strong',number(value)+unit));
   if(note)card.append(el('small',note,'muted'));
   host.append(card);
  }
@@ -16,7 +16,7 @@ export function initInsights({api,$,el}){
   const metrics=el('div',undefined,'metrics');
   metric(metrics,'المحادثات الواردة',data.conversations);
   metric(metrics,'عملاء سجلوا اهتمامهم',data.leads);
-  metric(metrics,'نسبة تحويل المحادثة إلى اهتمام',data.leadCapturePct+'%');
+  metric(metrics,'نسبة تحويل المحادثة إلى اهتمام',data.leadCapturePct,undefined,'٪');
   metric(metrics,'جاهزون للموظف',data.ready);
   metric(metrics,'مهام متابعة متأخرة',data.tasks.overdue);
   metric(metrics,'حملات نشطة',data.campaigns.active);
