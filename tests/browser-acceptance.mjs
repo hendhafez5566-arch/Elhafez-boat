@@ -41,6 +41,7 @@ try{
  await send('Page.enable');await send('Runtime.enable');await send('Network.enable');await send('Log.enable');
  await send('Page.navigate',{url:base+'/'});
  await until("Boolean(document.querySelector('#login-form input[name=tenantSlug]'))",'login form');
+ await until("Boolean(document.getElementById('login-form')?.onsubmit)",'login JS initialization');
  assert.equal(await evaluate("document.documentElement.getAttribute('dir')"),'rtl');
  const payload=JSON.stringify(account);
  await evaluate(`(()=>{const p=${payload};const f=document.getElementById('login-form');f.querySelector('[name=tenantSlug]').value=p.slug;f.querySelector('[name=email]').value=p.email;f.querySelector('[name=password]').value=p.password;f.requestSubmit();return true})()`);
