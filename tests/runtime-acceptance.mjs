@@ -134,6 +134,21 @@ try{
  const leadsA=await expectCode('/api/v1/leads',{token:one},200);
  assert.ok(leadsA.some(l=>l.stage==='READY_FOR_AGENT'),'Website visitor should become qualified lead');
  assert.equal((await expectCode('/api/v1/leads',{token:two},200)).length,0,'Company B must not see Company A visitor');
+ const leadId=String(leadsA[0].id);
+ const dueAt=new Date(Date.now()+86400000).toISOString();
+ const task=await expectCode('/api/v1/leads/'+leadId+'/tasks',{method:'POST',token:one,body:{description:'اتصال متابعة تجريبي',dueAt}},201);
+ const tasks=await expectCode('/api/v1/leads/'+leadId+'/tasks',{token:one},200);
+ assert.ok(tasks.some(t=>t.id===task.id&&t.status==='OPEN'),'CRM task must persist');
+ await expectCode('/api/v1/leads/'+leadId+'/tasks',{token:two},404);
+ const score=(await expectCode('/api/v1/leads',{token:one},200)).find(l=>l.id===leadId);
+ assert.ok(Number(score.priorityScore)>=0&&Number(score.priorityScore)<=100,'CRM priority must be bounded');
+ const analytics=await expectCode('/api/v1/analytics/overview',{token:one},200);
+ assert.ok(analytics.conversations>=1&&analytics.leads>=1&&analytics.tasks.open>=1,'Live tenant analytics must include lead and task');
+ assert.equal((await expectCode('/api/v1/analytics/overview',{token:two},200)).leads,0,'Analytics must isolate companies');
+ await expectCode('/api/v1/leads/'+leadId+'/tasks/'+task.id+'/complete',{method:'POST',token:one},200);
+ assert.ok((await expectCode('/api/v1/leads/'+leadId+'/tasks',{token:one},200)).some(t=>t.id===task.id&&t.status==='DONE'));
+ console.log('PASS real CRM follow-up task, role-scoped endpoint, lead priority and tenant-isolated analytics');
+
  const inboxA=await expectCode('/api/v1/whatsapp/inbox',{token:one},200);
  assert.ok(inboxA.some(c=>c.channel==='WEBSITE'&&c.status==='HUMAN'),'Employee inbox must show handoff');
  console.log('PASS real Website Chat: published greeting, origin restriction, dedupe, lead qualification and staff handoff');
