@@ -33,3 +33,9 @@ Implemented source: tenant/account-bound generic-to-Meta catalog mapping, offici
 
 
 Commerce source delivery: [c2487df](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/c2487dfb0673f3a53d477dfcb53b9507c36b1975). Development [push CI 39103361252](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39103361252) SUCCESS: **70/70**, migrations **0001–0025**, actual PostgreSQL Commerce mapping cross-tenant read/insert denial, FORCE/RLS gate and cart-as-interest lead/handoff assertions. Job 117603998394 logs inspected. Local 70/70 also passed. External provider activation and full browser/fault/load/restore acceptance remain unverified; this evidence does not claim those passed.
+
+
+## NEW acceptance handover — 2026-10-18
+Last **confirmed passing runtime evidence**: [CI run 39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303); see `project-management/ACCEPTANCE-EXECUTION-2026-10-18.md`. New files `tests/runtime-acceptance.mjs`, `tests/browser-acceptance.mjs` and `scripts/ci-backup-restore.sh`; `.github/workflows/verify.yml` gained independent `acceptance-runtime` gate. Existing 70/70 tests, 25 migrations, RLS and real nonowner runtime/auth/widget/worker/delay/Chrome/pg_dump-restore passed in CI. Five screenshot PNGs are available as an artifact (not fabricated screenshots). Browser login test originally submitted before module load; fixed waiting for `onsubmit` initialization. The main application was not changed for that test issue.
+
+Do NOT claim live Meta/Google/Shopify/Messenger/Instagram/Telegram/ClamAV/remote-AI performance; these depend on external accounts and/or production environment. Provider-specific failover/security/load and live pilot remain essential, PR #1 DRAFT/UNMERGED. Verify current HEAD before changes; this entry supersedes older notes claiming **no browser acceptance**.
