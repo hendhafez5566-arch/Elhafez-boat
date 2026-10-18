@@ -66,6 +66,20 @@ try{
  await evaluate("document.querySelector('.builder-quick-item[aria-label=\"إضافة أزرار رد\"]').click()");
  await until("Boolean(document.querySelector('.builder-properties .builder-step-sample .builder-sample-choice'))",'Buttons preview');
  await screenshot('visual-studio-buttons-editor-desktop.png');
+
+ // Real business-user choice editor: 3 WhatsApp buttons, 10 WhatsApp list items.
+ await evaluate("(()=>{const host=document.getElementById('builder-editor');const add=()=>[...host.querySelectorAll('button')].find(b=>b.textContent.trim()==='إضافة اختيار').click();add();add()})()");
+ assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),3,'WhatsApp buttons cap is 3');
+ await evaluate("(()=>{const input=document.querySelector('#builder-editor .builder-choice input[aria-label]');input.value='استفسار سريع';input.dispatchEvent(new Event('input',{bubbles:true}));const move=document.querySelector('#builder-editor .builder-choice-actions button:nth-child(2)');move.click()})()");
+ assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice input[aria-label]')[1].value"),'استفسار سريع','Choice reorder must preserve its title');
+ await evaluate("(()=>{const btn=[...document.querySelectorAll('#builder-editor button')].find(b=>b.textContent.trim()==='إضافة اختيار');btn.click()})()");
+ assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),3,'Fourth WhatsApp button must be rejected');
+ await evaluate("document.querySelector('.builder-quick-item[aria-label=\"إضافة قائمة اختيارات\"]').click()");
+ await until("document.querySelectorAll('#builder-editor .builder-choice').length===1",'list editor initialized');
+ await evaluate("(()=>{const add=()=>[...document.querySelectorAll('#builder-editor button')].find(b=>b.textContent.trim()==='إضافة اختيار').click();for(let i=1;i<10;i++)add();add()})()");
+ assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),10,'WhatsApp list cap is 10');
+ console.log('PASS choice editor: live titles, ordering and real WhatsApp 3-button / 10-list limits');
+
  const dropped=await evaluate("(()=>{const area=document.querySelector('.flow-canvas'),data=new DataTransfer(),before=document.querySelectorAll('.canvas-node').length,r=area.getBoundingClientRect();data.setData('application/x-boat-block','TEXT');area.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data,clientX:r.left+Math.min(150,r.width/2),clientY:r.top+150}));return {before,after:document.querySelectorAll('.canvas-node').length}})()");
  assert.equal(dropped.after,dropped.before+1,'Dropping a palette block should create a canvas node');
  console.log('PASS visual studio palette, list/buttons sample and canvas block drop in Chromium');
