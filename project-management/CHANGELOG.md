@@ -1,3 +1,10 @@
+## 2026-10-18 — Premium UI completion pass (verified source ea1e0e56)
+
+- Canvas now uses measured collision-safe pointer positioning, topology aware auto layout, real branch-port connection controls and focus/immersive view.
+- Inspector supports WhatsApp choice ordering and exact button/list count + length constraints; safe one-successor step deletion.
+- Cross-platform visual improvements: accessible empty states, grouped CRM filters/actions, optional catalog metadata disclosure, localized roles/toasts, mobile and navigation retained.
+- Added actual Chromium branching, collision, choice-limit/ordering and viewport assertions. Source run 39139907714 both jobs SUCCESS; see `docs/30-PREMIUM-UI-CLOSURE.md` for honest limits.
+
 ## Verified premium UI browser acceptance — 2026-10-18
 
 Executable UI SHA: `f86e3e86ad19038aca380419d496d05738209878`.
