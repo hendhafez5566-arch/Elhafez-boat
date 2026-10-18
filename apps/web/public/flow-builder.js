@@ -30,8 +30,8 @@ export function initFlowBuilder({state,api,notify,execute}){
  const canvas=createCanvas({host:canvasHost,getFlow:()=>flow,select:(id,add=false)=>{
    if(add){if(selectedNodes.has(id))selectedNodes.delete(id);else selectedNodes.add(id);}
    else selectedNodes=new Set([id]);
-   selected=id;renderBlocks();renderEditor();showSelection();
- },changed:()=>{markDirty();renderBlocks()},notify});
+   selected=id;renderBlocks();renderEditor();showSelection();canvas.highlight(id);showInspector();
+ },changed:()=>{markDirty();renderBlocks()},notify,addAfter:anchor=>openInsert(anchor)});
  const tools=el('div',undefined,'builder-toolbar');canvasHost.before(tools);
  const selectionBadge=el('span','خطوة واحدة محددة','builder-selection');
  const showSelection=()=>{selectionBadge.textContent=selectedNodes.size+' خطوة محددة — Shift للاختيار المتعدد'};
@@ -168,7 +168,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  palette.querySelector('h3').textContent='مكتبة المكونات';
  const intro=el('p','اضغط لإضافة مكون، أو اسحبه إلى لوحة التصميم.','builder-hint');
  const quick=el('div',undefined,'builder-quick');
- const kinds=[['TEXT','▤'],['BUTTONS','▣'],['LIST','☷'],['INPUT','?'],['CONDITION','◇'],['CATALOG','▦'],['MEDIA','▧'],['HANDOFF','♙']];
+ const kinds=[['TEXT','✉'],['BUTTONS','☷'],['LIST','≡'],['INPUT','?'],['CONDITION','◇'],['CATALOG','▦'],['MEDIA','▣'],['HANDOFF','↗']];
  for(const [kind,symbol] of kinds){
    const item=button(types[kind],()=>addNode(kind),'builder-quick-item');
    item.draggable=true;item.setAttribute('aria-label','إضافة '+types[kind]);item.prepend(el('span',symbol,'builder-quick-symbol'));
@@ -182,7 +182,12 @@ export function initFlowBuilder({state,api,notify,execute}){
  more.append(el('summary','المزيد من المكونات'),palette.querySelector('.builder-toolbar'));palette.append(more);
  const stagePanel=el('section',undefined,'builder-stage');
  const stageHead=el('header',undefined,'builder-stage-head');
- stageHead.append(el('h3','لوحة تصميم المحادثة'),el('p','اسحب الخطوات لترتيبها. للتوصيل اختار المخرج ثم «توصيل هنا».'));
+ stageHead.append(el('h3','مساحة تصميم المحادثة'),el('p','اضغط على الرسالة لتحريرها، أو اضغط + لإضافة خطوة داخل المسار.'));
+ const actions=el('div',undefined,'builder-view-actions');
+ const paletteToggle=button('إخفاء المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات'});
+ const focusToggle=button('ملء الشاشة',()=>{const on=document.body.classList.toggle('studio-focus');focusToggle.textContent=on?'إنهاء ملء الشاشة':'ملء الشاشة';canvas.fit()});
+ actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('إعادة العرض',()=>canvas.reset()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
+ stageHead.append(actions);
  stagePanel.append(stageHead,tools,canvasHost);
  canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');
  canvasHost.addEventListener('dragover',e=>{
@@ -197,7 +202,30 @@ export function initFlowBuilder({state,api,notify,execute}){
  const inspector=el('aside',undefined,'builder-inspector');
  properties.querySelector('h3').textContent='خصائص الخطوة';
  simulator.querySelector('h3').textContent='تجربة المحادثة';
- inspector.append(properties,simulator);
+ inspector.append(properties);
+ properties.prepend(button('إغلاق ×',()=>{inspector.hidden=true;workspace.classList.remove('inspector-open')}));
+ inspector.hidden=true;
+ function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open')}
+ const simulatorDialog=el('dialog',undefined,'builder-preview-dialog');
+ const simulatorHead=el('header',undefined,'builder-dialog-header');
+ simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
+ simulatorDialog.append(simulatorHead,simulator);document.body.append(simulatorDialog);
+ simulatorDialog.addEventListener('click',e=>{if(e.target===simulatorDialog)simulatorDialog.close()});
+ function showSimulator(){if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');resetPreview()}
+ const picker=el('dialog',undefined,'builder-component-dialog'),pickerHead=el('header',undefined,'builder-dialog-header');
+ pickerHead.append(el('strong','أضف الخطوة التالية'),button('إغلاق ×',()=>picker.close()));
+ const pickerSearch=el('input');pickerSearch.type='search';pickerSearch.placeholder='ابحث عن رسالة، زر، قائمة، شرط...';pickerSearch.setAttribute('aria-label','البحث عن المكونات');
+ const pickerGrid=el('div',undefined,'builder-picker-grid');picker.append(pickerHead,pickerSearch,pickerGrid);document.body.append(picker);
+ let insertAnchor=null;
+ function paintPicker(){pickerGrid.replaceChildren();const q=pickerSearch.value.trim().toLowerCase();
+   for(const [kind] of kinds.concat([['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
+     if(!types[kind].toLowerCase().includes(q)&&!kind.toLowerCase().includes(q))continue;
+     pickerGrid.append(button(types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)},'builder-picker-item'));
+   }
+   if(!pickerGrid.children.length)pickerGrid.append(el('p','لا توجد مكونات مطابقة للبحث'));
+ }
+ function openInsert(anchor){insertAnchor=anchor;pickerSearch.value='';paintPicker();if(picker.showModal)picker.showModal();else picker.setAttribute('open','');pickerSearch.focus()}
+ pickerSearch.oninput=paintPicker;
  const advanced=el('details',undefined,'builder-extras');
  advanced.append(el('summary','مكتبة الخطوات والمسارات المتقدمة'),linked,reuseHost);
  workspace.replaceChildren(palette,stagePanel,inspector,advanced);
