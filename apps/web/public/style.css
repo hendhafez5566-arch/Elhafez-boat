@@ -8,3 +8,42 @@
 .template-carousel-card legend{font-weight:700;color:#234d70;padding:0 9px}
 .template-carousel-card label{display:grid;gap:5px}
 .template-carousel-card input{width:100%;min-width:0}
+
+
+/* Guided onboarding: high-contrast, responsive and keyboard-navigable. */
+.boat-guide-mount{margin-bottom:24px}
+.boat-guide{border:1px solid #87bba9;background:#f6fcfa;border-radius:18px;overflow:hidden;box-shadow:0 7px 22px #1436570d}
+.boat-guide-hero{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px}
+.boat-guide-hero h3{font-size:21px;margin:0 0 4px;color:var(--navy)}
+.boat-guide-hero p{margin:0;max-width:690px;color:#345367}
+.boat-guide-panel{border-top:1px solid #b6d9cf;padding:18px 22px 22px;background:#fff}
+.boat-guide-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;list-style:none;margin:0 0 22px;padding:0}
+.boat-guide-progress li{border:1px solid #c7d9df;color:#425f6f;background:#f7fbfd;border-radius:11px;padding:11px 12px;font-size:13px;font-weight:650}
+.boat-guide-progress li.active{border-color:#087d69;background:#e8f7f2;color:#075a4b}
+.boat-guide-progress li.done{background:#ecf4f9}
+.boat-guide-step-link{padding:1px 8px;background:transparent;color:#075a4b;border:0;text-decoration:underline}
+.boat-guide-body{max-width:930px}
+.boat-guide-body h4{font-size:18px;margin:0 0 14px;color:#17364a}
+.boat-guide-goals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.boat-guide-goal{background:white;color:#17364a;border:2px solid #c9d8df;display:flex;flex-direction:column;gap:8px;text-align:right;min-height:130px}
+.boat-guide-goal strong{font-size:15px}
+.boat-guide-goal span{color:#3f5b69;font-size:13px;font-weight:400;line-height:1.7}
+.boat-guide-goal.selected,.boat-guide-goal[aria-pressed="true"]{border-color:#087d69;background:#e7f7f2}
+.boat-guide-field{max-width:570px}
+.boat-guide-check{display:flex;align-items:center;gap:10px;font-weight:600}
+.boat-guide-check input{width:19px;height:19px;flex:0 0 auto}
+.boat-guide-hint{font-size:13px;margin:13px 0 0;color:#365e6c}
+.boat-guide-error{font-weight:700;color:#ad2d35}
+.boat-guide-actions{display:flex;gap:10px;justify-content:flex-start;margin-top:22px}
+.boat-guide-map{margin:0;padding-inline-start:28px;display:grid;gap:12px}
+.boat-guide-map li{padding:9px 12px;background:#f4f8fa;border-radius:9px}
+@media(max-width:800px){
+ .boat-guide-hero{align-items:stretch;flex-direction:column;padding:17px}
+ .boat-guide-hero .primary{width:100%}
+ .boat-guide-panel{padding:15px}
+ .boat-guide-goals{grid-template-columns:1fr}
+ .boat-guide-goal{min-height:unset}
+ .boat-guide-progress{grid-template-columns:1fr}
+ .boat-guide-progress li{padding:8px}
+ .boat-guide-actions button{flex:1}
+}
