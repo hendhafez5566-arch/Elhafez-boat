@@ -6,6 +6,7 @@ import {listSubflows,saveSubflow} from './subflows.js';
 import {privacySettings,savePrivacySettings,privacyCandidates,exportContact,anonymizeContact} from './privacy.js';
 import {listConnectors,saveConnector,beginConnectorOAuth,finishConnectorOAuth,connectorResources,syncContact,connectorJobs} from './connectors.js';
 import {listSocialAccounts,connectSocial,disableSocial,receiveTelegram,receiveMetaSocial} from './social.js';
+import {listCommentRules,saveCommentRule,listCommentCandidates,decideComment,receiveMetaComments} from './comment-automation.js';
 import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
 import {listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
@@ -60,7 +61,7 @@ const server=createServer(async(req,res)=>{
     if(telegram&&req.method==='POST')return json(res,200,await receiveTelegram(pool,telegram[1],String(req.headers['x-telegram-bot-api-secret-token']||''),await body(req,1048576)));
     if(pathname==='/api/v1/channels/meta/webhook'){
       if(req.method==='GET'){const q=new URL(req.url||'/','http://local').searchParams;if(q.get('hub.mode')!=='subscribe'||!process.env.META_SOCIAL_VERIFY_TOKEN||q.get('hub.verify_token')!==process.env.META_SOCIAL_VERIFY_TOKEN)throw new HttpFailure(403,'Verification rejected');res.writeHead(200,{'content-type':'text/plain'});res.end(q.get('hub.challenge')||'');return;}
-      if(req.method==='POST'){const chunks:Buffer[]=[];let size=0;for await(const c of req){const b=Buffer.from(c);size+=b.length;if(size>1048576)throw new HttpFailure(413,'Webhook too large');chunks.push(b)}const raw=Buffer.concat(chunks);if(!verifyWebhookSignature(raw,req.headers['x-hub-signature-256'],process.env.META_SOCIAL_APP_SECRET||''))throw new HttpFailure(401,'Invalid social signature');let payload;try{payload=JSON.parse(raw.toString())}catch{throw new HttpFailure(400,'Invalid webhook JSON')}return json(res,200,await receiveMetaSocial(pool,payload));}
+      if(req.method==='POST'){const chunks:Buffer[]=[];let size=0;for await(const c of req){const b=Buffer.from(c);size+=b.length;if(size>1048576)throw new HttpFailure(413,'Webhook too large');chunks.push(b)}const raw=Buffer.concat(chunks);if(!verifyWebhookSignature(raw,req.headers['x-hub-signature-256'],process.env.META_SOCIAL_APP_SECRET||''))throw new HttpFailure(401,'Invalid social signature');let payload;try{payload=JSON.parse(raw.toString())}catch{throw new HttpFailure(400,'Invalid webhook JSON')}await receiveMetaComments(pool,payload);return json(res,200,await receiveMetaSocial(pool,payload));}
     }
     if(pathname.startsWith('/api/v1/widget/')&&pathname!=='/api/v1/widget/settings'){
       const origin=typeof req.headers.origin==='string'?req.headers.origin:typeof req.headers['x-widget-origin']==='string'?req.headers['x-widget-origin']:'';
@@ -147,7 +148,12 @@ const server=createServer(async(req,res)=>{
     if(connector&&connector[2]==='oauth'&&req.method==='POST'){const result=await run(tx=>beginConnectorOAuth(tx,actor,connector[1]));res.setHeader('set-cookie','eb_oauth='+result.cookie+'; HttpOnly; Secure; SameSite=Lax; Path=/api/v1/connectors/oauth; Max-Age=600');return json(res,200,{url:result.url});}
     if(connector&&connector[2]==='resources'&&req.method==='GET')return json(res,200,await run(tx=>connectorResources(tx,actor,connector[1],new URL(req.url||'/','http://local').searchParams.get('spreadsheetId')||undefined)));
     if(connector&&connector[2]==='sync'&&req.method==='POST')return json(res,202,await runBody((tx,input)=>syncContact(tx,actor,connector[1],input)));
-    if(req.method==='GET'&&pathname==='/api/v1/channels/accounts')return json(res,200,await run(tx=>listSocialAccounts(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/comments/rules')return json(res,200,await run(tx=>listCommentRules(tx,actor)));
+     if(req.method==='POST'&&pathname==='/api/v1/comments/rules')return json(res,201,await runBody((tx,input)=>saveCommentRule(tx,actor,input)));
+     if(req.method==='GET'&&pathname==='/api/v1/comments/candidates')return json(res,200,await run(tx=>listCommentCandidates(tx,actor)));
+     const commentDecision=/^\/api\/v1\/comments\/candidates\/([^/]+)\/decision$/.exec(pathname);
+     if(req.method==='POST'&&commentDecision)return json(res,200,await runBody((tx,input)=>decideComment(tx,actor,commentDecision[1],input)));
+     if(req.method==='GET'&&pathname==='/api/v1/channels/accounts')return json(res,200,await run(tx=>listSocialAccounts(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/channels/accounts')return json(res,201,await runBody((tx,input)=>connectSocial(tx,actor,input)));
     const social=/^\/api\/v1\/channels\/accounts\/([^/]+)$/.exec(pathname);
     if(social&&req.method==='DELETE')return json(res,200,await run(tx=>disableSocial(tx,actor,social[1])));

@@ -31,9 +31,52 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
  }
  async function channelPage(){const host=$('social-accounts');host.replaceChildren();const rows=await api('/channels/accounts');if(!rows.length)host.append(el('p','لا توجد قنوات اجتماعية مربوطة. بيانات الحساب وصلاحيات المنصة مطلوبة.'));for(const r of rows){const c=card(r.channel,r.external_id+' • '+(r.enabled?'مفعل في الإعدادات — اختبر الاستقبال والتسليم':'معطل'));if(state.role==='OWNER'&&r.enabled)c.append(button('تعطيل الحساب',async()=>{await api('/channels/accounts/'+r.id,{method:'DELETE'});await channelPage()},'danger'));host.append(c)}$('social-form').hidden=state.role!=='OWNER';}
  bind('social-form',async(d,f)=>{await api('/channels/accounts',{method:'POST',body:d});f.reset();await channelPage();notify('تم التحقق من اعتماد الحساب وحفظ الإعدادات؛ لم يُثبت اختبار محادثة حقيقية')});
- async function privacyPage(){const host=$('privacy-tools');host.replaceChildren();if(state.role!=='OWNER'){host.append(el('p','إدارة الخصوصية متاحة لمالك الشركة فقط'));return}const p=await api('/privacy/settings'),form=makeForm();const days=field(form,'مدة الاحتفاظ 30–3650 يومًا','days','number',p.retention_days,true);days.min='30';days.max='3650';const enabled=select(form,'إخفاء العملاء القدامى تلقائيًا — المحادثات المغلقة فقط','enabled',[['false','متوقف'],['true','مفعل']]);enabled.value=String(p.cleanup_enabled);form.append(button('حفظ سياسة الاحتفاظ',async()=>{if(!form.reportValidity())return;await api('/privacy/settings',{method:'PUT',body:{retentionDays:Number(days.value),cleanupEnabled:enabled.value==='true'}});await privacyPage()},'primary'));host.append(form);
+ async function commentPage(){
+  const rulesHost=$('comment-rule-editor'),candidatesHost=$('comment-candidates');rulesHost.replaceChildren();candidatesHost.replaceChildren();
+  rulesHost.append(el('h3','قواعد استقبال التعليقات'));
+  const [accounts,rules,candidates]=await Promise.all([api('/channels/accounts'),api('/comments/rules'),api('/comments/candidates')]);
+  const meta=accounts.filter(a=>['MESSENGER','INSTAGRAM'].includes(a.channel));
+  if(!meta.length)rulesHost.append(el('p','لا توجد حسابات Meta متاحة؛ إنشاء القاعدة يحتاج حسابًا تابعًا للشركة. لا يتم ربط أي حساب تلقائيًا.'));
+  else{
+   const form=makeForm();
+   const account=select(form,'حساب Meta','accountId',meta.map(a=>[a.id,a.channel+' — '+a.external_id]));
+   field(form,'اسم القاعدة','name','text','',true);field(form,'الكلمة المفتاحية','keyword','text','',true);
+   field(form,'نص الرسالة الخاصة المقترحة','replyText','textarea','',true);
+   const mode=select(form,'طريقة التنفيذ','mode',[['REVIEW','مراجعة موظف قبل الإرسال'],['AUTO','تجهيز تلقائي بعد المطابقة']]);
+   const enabled=select(form,'تنشيط مطابقة التعليقات','enabled',[['false','متوقفة'],['true','مفعّلة لاستقبال الأحداث الموثقة']]);
+   form.append(button('حفظ قاعدة التعليقات',async()=>{
+    if(!form.reportValidity())return;
+    const data=Object.fromEntries(new FormData(form));
+    await api('/comments/rules',{method:'POST',body:{...data,enabled:data.enabled==='true'}});
+    form.reset();await commentPage();notify('تم حفظ القاعدة. لا توجد أي رسائل خرجت من المنصة.');
+   },'primary'));rulesHost.append(form);
+  }
+  for(const rule of rules){
+   const box=card(rule.name,rule.channel+' • الكلمة: '+rule.keyword+' • '+rule.mode+' • '+(rule.enabled?'مطابقة مفعّلة':'مطابقة متوقفة'));
+   box.append(el('p',rule.replyText));
+   box.append(button(rule.enabled?'إيقاف المطابقة':'تفعيل المطابقة',async()=>{
+    await api('/comments/rules',{method:'POST',body:{id:rule.id,accountId:rule.accountId,name:rule.name,keyword:rule.keyword,replyText:rule.replyText,mode:rule.mode,enabled:!rule.enabled}});
+    await commentPage();
+   },'secondary'));rulesHost.append(box);
+  }
+  candidatesHost.append(el('h3','قائمة الرسائل المرشحة'));
+  if(!candidates.length)candidatesHost.append(el('p','لا توجد تعليقات مطابقة مسجلة بعد.'));
+  for(const candidate of candidates){
+   const box=card(candidate.ruleName,candidate.channel+' • '+candidate.status+' • تعليق '+candidate.commentId);
+   box.append(el('p',candidate.replyText));
+   if(candidate.status==='REVIEW')box.append(button('اعتماد المسودة',async()=>{
+    await api('/comments/candidates/'+candidate.id+'/decision',{method:'POST',body:{approve:true}});
+    await commentPage();notify('تم اعتماد المسودة داخل الطابور؛ الإرسال الخارجي مقفول افتراضيًا');
+   }),button('تخطي',async()=>{
+    await api('/comments/candidates/'+candidate.id+'/decision',{method:'POST',body:{approve:false}});
+    await commentPage();
+   },'secondary'));
+   candidatesHost.append(box);
+  }
+ }
+  async function privacyPage(){const host=$('privacy-tools');host.replaceChildren();if(state.role!=='OWNER'){host.append(el('p','إدارة الخصوصية متاحة لمالك الشركة فقط'));return}const p=await api('/privacy/settings'),form=makeForm();const days=field(form,'مدة الاحتفاظ 30–3650 يومًا','days','number',p.retention_days,true);days.min='30';days.max='3650';const enabled=select(form,'إخفاء العملاء القدامى تلقائيًا — المحادثات المغلقة فقط','enabled',[['false','متوقف'],['true','مفعل']]);enabled.value=String(p.cleanup_enabled);form.append(button('حفظ سياسة الاحتفاظ',async()=>{if(!form.reportValidity())return;await api('/privacy/settings',{method:'PUT',body:{retentionDays:Number(days.value),cleanupEnabled:enabled.value==='true'}});await privacyPage()},'primary'));host.append(form);
  host.append(button('معاينة العملاء المستحقين للتنظيف',async()=>{const ids=await api('/privacy/candidates');notify('مرشحون حاليًا (حتى 20): '+(ids.map(x=>x.id).join('، ')||'لا يوجد'))}));
  const contacts=await api('/contacts');const tools=makeForm(),contact=select(tools,'العميل','contactId',contacts.map(c=>[c.id,c.full_name]));tools.append(button('تصدير بيانات العميل',async()=>{if(!contact.value)return;const data=await api('/privacy/contacts/'+contact.value+'/export'),url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})),a=el('a');a.href=url;a.download='contact-'+contact.value+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}),button('إخفاء بيانات العميل نهائيًا',async()=>{if(!contact.value)return;const confirmation=prompt('إجراء دائم: اكتب معرف العميل لتأكيد إخفاء بياناته ومحادثاته: '+contact.value);if(confirmation!==contact.value)return;await api('/privacy/contacts/'+contact.value+'/anonymize',{method:'POST',body:{confirm:confirmation}});await privacyPage();notify('تم إخفاء البيانات وتسجيل الإجراء؛ حذف النسخ لدى الأنظمة الخارجية مسؤوليتها')},'danger'));host.append(tools,el('p','الملفات الجديدة تظل خاصة حتى فحص ClamAV. التنظيف لا يحذف بيانات تاريخية للحجوزات؛ هذه تحتاج سياسة ترحيل مستقلة. النسخ الاحتياطية والأنظمة الخارجية لها دورة حذف منفصلة.'));
  }
- return {load:page=>({connectors:connectorPage,channels:channelPage,privacy:privacyPage}[page])(),reset(){connectors=[];for(const id of ['native-connectors','social-accounts','privacy-tools'])$(id).replaceChildren();$('social-form').reset()}};
+ return {load:page=>({connectors:connectorPage,channels:channelPage,privacy:privacyPage,'comment-automation':commentPage}[page])(),reset(){connectors=[];for(const id of ['native-connectors','social-accounts','privacy-tools','comment-rule-editor','comment-candidates'])$(id).replaceChildren();$('social-form').reset()}};
 }
