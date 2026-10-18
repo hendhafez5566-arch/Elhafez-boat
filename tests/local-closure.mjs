@@ -158,8 +158,8 @@ export async function localClosure({db,env,sim,launch,request,expectCode}){
  // Leave seeded PENDING delay, media bytes, ciphertext and audit for independent backup restore.
  await tx(a.tenant,c=>uploadMedia(c,a.actor,{name:'Backup fixture.png',base64:png.toString('base64')}));
  const encrypted=(await db.query('SELECT credentials_encrypted FROM chatbot_connectors WHERE tenant_id=$1 LIMIT 1',[a.tenant])).rows[0].credentials_encrypted;assert.ok(openIntegrationSecret(encrypted));
- await db.query("UPDATE chatbot_delay_jobs SET status='PENDING',due_at=now()+interval '1 day' WHERE tenant_id=$1 AND conversation_id=$2",[a.tenant,retainedConv]);
- await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/restore-fixture-private.json',JSON.stringify({tenant:a.tenant,contact:retained,conversation:retainedConv,key:process.env.INTEGRATION_SECRET_ENCRYPTION_KEY}));
+ const {startWebsiteSession}=await import('../.build/apps/api/src/website.js');const pendingVisitor=await startWebsiteSession(pool,{widgetKey:a.widgetKey,name:'Pending backup visitor'},'http://127.0.0.1:3000');const delayed=(await db.query('SELECT s.conversation_id FROM chatbot_web_sessions s WHERE s.tenant_id=$1 AND s.token_hash=$2',[a.tenant,tokenDigest(pendingVisitor.token)])).rows[0].conversation_id;await db.query("UPDATE chatbot_delay_jobs SET due_at=now()+interval '1 day' WHERE tenant_id=$1 AND conversation_id=$2",[a.tenant,delayed]);
+ await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/restore-fixture-private.json',JSON.stringify({tenant:a.tenant,contact:retained,conversation:delayed,runtimeUrl:env.DATABASE_URL,key:process.env.INTEGRATION_SECRET_ENCRYPTION_KEY}));
  check('retention preserves scheduled work, owner export/anonymization cancels jobs; seeded media/ciphertext/audit/pending queue for restore');
  }finally{await pool.end();await mkdir('acceptance-evidence',{recursive:true});await writeFile('acceptance-evidence/local-closure.json',JSON.stringify(report,null,2))}
 }

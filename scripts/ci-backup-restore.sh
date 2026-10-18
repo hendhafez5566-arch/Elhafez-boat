@@ -33,3 +33,17 @@ restored_fingerprint="$(fingerprint elhafez_ci_restored)"
 [[ -n "$source_fingerprint" && "$source_fingerprint" == "$restored_fingerprint" ]] || { echo "Restored table content mismatch" >&2; exit 1; }
 echo 'PASS exact row-content fingerprints for every public table (including present media/queues/secrets)'
 echo "PASS disposable PostgreSQL pg_dump/pg_restore: $migrations migrations, $tenants tenants, $published published flows, $catalog catalog items"
+
+if [[ "${CI_LOCAL_CLOSURE:-}" == "1" ]]; then
+  # Failed restore is confined to a NEW empty disposable database and one transaction.
+  docker exec "$docker_id" createdb -U postgres elhafez_ci_failed_restore
+  broken="$(mktemp /tmp/boat-broken-XXXXXX.dump)"
+  head -c 4096 "$archive" > "$broken"
+  if docker exec -i "$docker_id" pg_restore --single-transaction --exit-on-error --no-owner --no-acl -U postgres -d elhafez_ci_failed_restore < "$broken"; then
+    rm -f "$broken"; echo 'Expected truncated restore failure' >&2; exit 1
+  fi
+  rm -f "$broken"
+  [[ "$(fingerprint elhafez_ci_restored)" == "$restored_fingerprint" ]] || { echo 'Failed restore affected valid restored database' >&2; exit 1; }
+  node tests/restore-seeded.mjs
+  echo 'PASS failed isolated restore does not alter original or successful restored database'
+fi
