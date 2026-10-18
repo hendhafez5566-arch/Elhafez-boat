@@ -6,6 +6,7 @@ import {initInsights} from './insights-ui.js';
 import {initWorkspace} from './workspace-ui.js';
 import {initExtensions} from './extensions.js';
 import {initVesselWorkspace} from './vessel.js';
+import {initVesselPages} from './vessel-pages.js';
 const $=id=>document.getElementById(id);
 const el=(tag,text,klass)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(klass)n.className=klass;return n};
 const state={token:'',role:'',tenantId:'',userId:'',demo:false,page:'overview',team:[],contacts:[]};
@@ -136,4 +137,5 @@ bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'PO
 $('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;if(state.token)await api('/auth/logout',{method:'POST'}).catch(()=>{});state.token='';state.userId='';state.tenantId='';state.contacts=[];state.templateCatalog=[];state.team=[];ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
 document.querySelectorAll('[data-page]').forEach(n=>n.onclick=()=>choose(n.dataset.page));document.querySelectorAll('[data-goto]').forEach(n=>n.onclick=()=>choose(n.dataset.goto));
 initVesselWorkspace();
+initVesselPages();
 setInterval(()=>{if(state.token&&!document.hidden)refreshNotifications().catch(()=>{})},20000);
