@@ -156,14 +156,14 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
 #app .vessel-catalog-library #catalog-items{display:grid;gap:12px}
 #app .vessel-catalog-library #catalog-items>.card{margin:0;padding:18px}
 #app .vessel-catalog-library #catalog-items>.card[hidden]{display:none!important}
-#app .vessel-page-leads #lead-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
-#app .vessel-page-leads #lead-list>.crm-lead-card{margin:0;min-height:223px;display:flex;flex-direction:column;gap:9px;padding:19px}
+#app .vessel-page-leads #lead-list{display:block}#app .vessel-page-leads #lead-list>.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+#app .vessel-page-leads #lead-list>.cards>.crm-lead-card{margin:0;min-height:223px;display:flex;flex-direction:column;gap:9px;padding:19px}
 #app .vessel-lead-head{display:flex;align-items:flex-start;gap:11px;margin-bottom:5px}
 .vessel-lead-avatar{display:grid;place-items:center;flex:0 0 43px;width:43px;height:43px;background:#eeebff;color:#5d50d0;border-radius:13px;font-size:20px;font-weight:900}
 .vessel-lead-identity{flex:1;min-width:0}
 #app .vessel-lead-identity strong{display:block;font-size:14px;margin:3px 0 5px}
 #app .vessel-lead-identity p{font-size:11px;margin:0;line-height:1.6;overflow-wrap:anywhere}
-#app .vessel-lead-head>.status-chip{flex:0 0 auto}
+#app .vessel-lead-head>.boat-status{flex:0 0 auto}
 #app .vessel-lead-card .crm-lead-score{margin:0;font-size:11px;background:#f5f3ff;color:#4d4795;border-inline-start:3px solid #8b7ee4}
 #app .vessel-lead-card>button.primary{align-self:start;margin:2px 0}
 #app .vessel-lead-card>details{margin-top:auto}
@@ -180,6 +180,6 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
 .vessel-activity-incoming{background:#6a5ad5}
 .vessel-activity-captured{background:#28a58d}
 .vessel-activity-values{font-size:11px;color:#737a96;direction:ltr;text-align:left}
-@media(max-width:1220px){#app .vessel-catalog-layout{grid-template-columns:1fr}#app .vessel-catalog-editor,#app .vessel-catalog-library{grid-column:1}#app .vessel-page-leads #lead-list{grid-template-columns:1fr}#app .vessel-page-analytics #bot-insights>.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1220px){#app .vessel-catalog-layout{grid-template-columns:1fr}#app .vessel-catalog-editor,#app .vessel-catalog-library{grid-column:1}#app .vessel-page-leads #lead-list>.cards{grid-template-columns:1fr}#app .vessel-page-analytics #bot-insights>.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.vessel-page-hero{padding:19px;border-radius:18px;min-height:125px}.vessel-page-symbol{height:58px;flex-basis:58px;border-radius:16px}.vessel-page-symbol svg{width:28px;height:28px}#app .vessel-page-hero h2{font-size:23px}.vessel-activity-day{grid-template-columns:74px minmax(0,1fr) 65px;gap:6px}}
 @media(max-width:450px){.vessel-page-symbol{display:none}#app .vessel-page-analytics #bot-insights>.metrics{grid-template-columns:1fr}#app .vessel-library-search{width:100%}}
