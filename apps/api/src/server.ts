@@ -21,6 +21,7 @@ import {executeFlow} from './flow-service.js';
 import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
+import {analyticsOverview} from './analytics.js';
 import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
@@ -224,6 +225,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&rollback)return json(res,200,await run(tx=>rollbackFlow(tx,actor,rollback[1])));
     if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
+    if(req.method==='GET'&&pathname==='/api/v1/analytics/overview')return json(res,200,await run(tx=>analyticsOverview(tx,actor)));
     const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);
     if(req.method==='PATCH'&&leadStage)return json(res,200,await runBody((tx,input)=>updateLeadStage(tx,actor,leadStage[1],input)));
     const leadTasks=/^\/api\/v1\/leads\/([^/]+)\/tasks$/.exec(pathname);
