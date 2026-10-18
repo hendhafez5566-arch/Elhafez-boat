@@ -55,6 +55,21 @@ try{
  await until("Boolean(document.querySelector('.canvas-node'))",'flow canvas blocks');
  const count=await evaluate("document.querySelectorAll('.canvas-node').length");assert.ok(count>=2,'Expected editable flow steps');
  await screenshot('flow-builder-desktop.png');
+
+ // Real Chromium verifies new layout/palette and a visual-only step sample.
+ assert.equal(await evaluate("Boolean(document.querySelector('.builder-studio .builder-stage .flow-canvas'))"),true,'Canvas should be central');
+ assert.equal(await evaluate("Boolean(document.querySelector('.builder-palette .builder-quick'))"),true,'Quick palette should exist');
+ await evaluate("document.querySelector('.builder-quick-item[aria-label=\"إضافة قائمة اختيارات\"]').click()");
+ await until("Boolean(document.querySelector('.builder-properties .builder-step-sample .builder-sample-choice'))",'List preview');
+ await evaluate("document.querySelector('.builder-stage').scrollIntoView({block:'start'})");
+ await screenshot('visual-studio-list-editor-desktop.png');
+ await evaluate("document.querySelector('.builder-quick-item[aria-label=\"إضافة أزرار رد\"]').click()");
+ await until("Boolean(document.querySelector('.builder-properties .builder-step-sample .builder-sample-choice'))",'Buttons preview');
+ await screenshot('visual-studio-buttons-editor-desktop.png');
+ const dropped=await evaluate("(()=>{const area=document.querySelector('.flow-canvas'),data=new DataTransfer(),before=document.querySelectorAll('.canvas-node').length,r=area.getBoundingClientRect();data.setData('application/x-boat-block','TEXT');area.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data,clientX:r.left+Math.min(150,r.width/2),clientY:r.top+150}));return {before,after:document.querySelectorAll('.canvas-node').length}})()");
+ assert.equal(dropped.after,dropped.before+1,'Dropping a palette block should create a canvas node');
+ console.log('PASS visual studio palette, list/buttons sample and canvas block drop in Chromium');
+
  // Exercise the real guided builder in Chrome, without saving/publishing or connecting accounts.
  assert.equal(await evaluate("Boolean(document.querySelector('.boat-guide-hero button'))"),true,'Guided bot creator must be on Flow Builder');
  await evaluate("document.querySelector('.boat-guide-hero button').click()");
