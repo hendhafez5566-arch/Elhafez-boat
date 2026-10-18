@@ -33,3 +33,9 @@ Implemented source: tenant/account-bound generic-to-Meta catalog mapping, offici
 
 
 Commerce source delivery: [c2487df](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/c2487dfb0673f3a53d477dfcb53b9507c36b1975). Development [push CI 39103361252](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39103361252) SUCCESS: **70/70**, migrations **0001–0025**, actual PostgreSQL Commerce mapping cross-tenant read/insert denial, FORCE/RLS gate and cart-as-interest lead/handoff assertions. Job 117603998394 logs inspected. Local 70/70 also passed. External provider activation and full browser/fault/load/restore acceptance remain unverified; this evidence does not claim those passed.
+
+
+## Verified runtime acceptance update — 2026-10-18
+New independent CI gate **PASSED** on [run 39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303): real PostgreSQL non-owner role and two-company isolation, auth/catalog/FAQ/flow publication, real WEBSITE client interest-to-employee handoff, origin and replay guards, worker heartbeats and scheduled DELAY exactly once, Chrome desktop/mobile-viewport UI and logout, 40-request concurrency smoke, pg_dump/pg_restore with data checks. Five browser screenshots were captured as CI artifacts. This explicitly supersedes earlier lines above saying *no authenticated browser* or *no backup/restore exercise* happened.
+
+**Still open for production decision:** real provider/account Meta, Google, HubSpot, Shopify, WooCommerce and social API handshakes and error paths; real ClamAV/AI, production secrets/grants/TLS, realistic multi-instance load and fault injection, backup/restore with roles/media/secrets, browser/device accessibility review and documented data removal from historical backups. No production or sale readiness claim. Details: [ACCEPTANCE-EXECUTION-2026-10-18.md](ACCEPTANCE-EXECUTION-2026-10-18.md).
