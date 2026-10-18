@@ -1,4 +1,5 @@
 import {createCanvas} from './flow-canvas.js';
+import {mountGuidedWizard} from './flow-onboarding.js';
 /** Company-specific visual block editor, no industry assumptions or customer data. */
 export function initFlowBuilder({state,api,notify,execute}){
  const $=id=>document.getElementById(id);
@@ -362,6 +363,23 @@ export function initFlowBuilder({state,api,notify,execute}){
    const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();resetPreview();
  }
+ const guideHost=el('div',undefined,'boat-guide-mount');
+ $('builder-industry').closest('.builder-toolbar').before(guideHost);
+ const guide=mountGuidedWizard({
+   host:guideHost,
+   isEditingSubflow:()=>Boolean(mainSnapshot),
+   onNotice:(message,level)=>notify(message,level),
+   onGenerate:draft=>{
+     if((published||draftRevision||dirty)&&!confirm('تجهيز قالب جديد هيستبدل المسودة الحالية في شاشة التحرير فقط. الإصدار المنشور مش هيتغير إلا لو حفظت ونشرت بنفسك. نكمل؟'))return false;
+     const previous=deep(flow);
+     flow=deep(draft);
+     selected='menu';selectedNodes=new Set([selected]);
+     history=[previous];cursor=0;dirty=false;
+     markDirty();renderAll();resetPreview();
+     guideHost.scrollIntoView({block:'nearest',behavior:'smooth'});
+     return true;
+   }
+ });
  $('builder-load-preset').onclick=()=>{
    if(dirty&&!confirm('استبدال التعديلات غير المحفوظة بقالب جديد؟'))return;
    flow=preset($('builder-industry').value);selected='menu';markDirty();renderAll();resetPreview();
@@ -385,5 +403,5 @@ export function initFlowBuilder({state,api,notify,execute}){
  $('builder-export').onclick=()=>{
    const data=JSON.stringify(flow,null,2);navigator.clipboard?.writeText(data).then(()=>notify('تم نسخ المسار JSON')).catch(()=>notify('انسخ المسار من شاشة التحرير','error'));
  };
- return {load,reset(){subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,reset(){guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }
