@@ -4,14 +4,16 @@ import { createRequire } from 'node:module';
 import { passwordHash, tokenDigest, verifyPassword } from './auth.js';
 import { HttpFailure, type SqlClient } from './services.js';
 const require=createRequire(import.meta.url);
-type Pool=SqlClient&{connect():Promise<SqlClient&{release():void}>};
+type Pool=SqlClient&{on(event:string,listener:(error:{code?:string})=>void):void;connect():Promise<SqlClient&{release():void}>};
 let ownedPool:Pool|undefined;
 function adminPool():Pool {
  if(ownedPool)return ownedPool;
  const url=process.env.PLATFORM_DATABASE_URL;
  if(!url)throw new HttpFailure(503,'Platform admin database is not configured');
  const {Pool}=require('pg') as {Pool:new(o:{connectionString:string;max:number})=>Pool};
- ownedPool=new Pool({connectionString:url,max:3});return ownedPool;
+ ownedPool=new Pool({connectionString:url,max:3});
+ ownedPool.on('error',error=>console.error('Platform database connection lost',{code:error.code||'DB_CONNECTION_LOST'}));
+ return ownedPool;
 }
 const object=(v:unknown)=>v&&typeof v==='object'&&!Array.isArray(v)?v as Record<string,unknown>:{};
 const emailPattern=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;

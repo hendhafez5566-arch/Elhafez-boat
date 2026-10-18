@@ -58,6 +58,8 @@ try{
  await db.query(`GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO ${role}`);
  await db.query(`GRANT USAGE,SELECT,UPDATE ON ALL SEQUENCES IN SCHEMA public TO ${role}`);
  const hash=await passwordHash(pass);
+ await db.query('INSERT INTO platform_owners(email,password_hash) VALUES($1,$2)',[email,hash]);
+ const platformUrl=new URL(adminUrl);platformUrl.searchParams.set('application_name','boat-platform-'+suffix);
  const ids=[];
  for(const [slug,name] of [[slugA,'Acceptance Company A'],[slugB,'Acceptance Company B']]){
   const t=(await db.query('INSERT INTO tenants(slug,name) VALUES($1,$2) RETURNING id',[slug,name])).rows[0].id;
@@ -67,7 +69,7 @@ try{
   ids.push({tenantId:t,userId:u,slug});
  }
  // A real low-privilege role (unlike SET ROLE from a privileged connection).
- const env={DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:adminUrl,PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
+ const env={DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
  apiProcess=launch('api',process.execPath,['.build/apps/api/src/server.js'],env);
  webProcess=launch('web',process.execPath,['apps/web/server.mjs'],env);
  await waitForHealth();
@@ -77,6 +79,9 @@ try{
  const one=first.token,two=second.token;
  assert.equal((await expectCode('/api/v1/auth/me',{token:one},200)).tenantId,ids[0].tenantId);
  assert.equal((await expectCode('/api/v1/auth/me',{token:two},200)).tenantId,ids[1].tenantId);
+ await expectCode('/api/v1/platform/tenants',{token:one},401);
+ const platformSession=await expectCode('/api/v1/platform/auth/login',{method:'POST',body:{email,password:pass}},200);
+ await expectCode('/api/v1/platform/tenants',{token:platformSession.token},200);
  const item=await expectCode('/api/v1/catalog',{method:'POST',token:one,body:{kind:'SERVICE',title:'اختبار خدمة الشركة الأولى',description:'خدمة خاصة بالشركة الأولى',categoryLabel:'خدمات',priceText:'100 EGP',imageUrl:'',externalUrl:''}},201);
  assert.ok(item.id,'Expected item ID');
  await expectCode('/api/v1/catalog/'+item.id+'/publish',{method:'POST',token:one},200);
@@ -192,7 +197,12 @@ try{
  await sleep(300);
  await db.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename=$1 AND state=\'idle\'',[role]);
  await sleep(500);
+ await expectCode('/api/v1/platform/tenants',{token:platformSession.token},200);
+ await db.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE application_name=$1 AND state=\'idle\'',['boat-platform-'+suffix]);
+ await sleep(200);
  assert.equal(apiProcess.exitCode,null,'Idle DB disconnect must not crash API');
+ await expectCode('/api/v1/platform/tenants',{token:platformSession.token},200);
+ console.log('PASS platform admin pool reconnects; company token cannot access platform administration');
  assert.equal(secondWorker.exitCode,null,'Idle DB disconnect must not crash worker');
  assert.equal((await replicaRead()).status,200,'Replica reconnects after DB connection termination');
  let crashReplies;for(let i=0;i<60;i++){crashReplies=await expectCode('/api/v1/widget/messages',{token:crashVisitor.token,headers:{origin:base}},200);if(crashReplies.messages.some(m=>String(m.body).includes('بعد الانتظار')))break;await sleep(250)}
