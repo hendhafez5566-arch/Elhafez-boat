@@ -81,3 +81,12 @@ Template schema reference consulted during implementation: Meta's official Whats
 Advanced connectors, social channels, privacy, rate-limit secrets and ClamAV configuration: [advanced runtime](19-ADVANCED-RUNTIME.md). Set RATE_LIMIT_SECRET before API authentication; media remains private until ClamAV scanning succeeds.
 
 Meta catalog/product permissions and mapping setup: [Commerce](20-META-COMMERCE.md).
+
+
+## New execution evidence / reproduction (2026-10-18)
+
+The earlier notes above predating the advanced releases are superseded for CI coverage: branch `feat/stage0-foundation` now contains migrations **0001–0025**, implemented native connector/social/Meta Commerce source and the separate disposable runtime acceptance suite. A confirmed CI pass is [39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303).
+
+The CI job `acceptance-runtime` provisions a disposable `elhafez_ci` database, grants a **non-owner/non-BYPASSRLS login** to a new role, runs real API + web + worker + Chrome and backs up/restores using PostgreSQL tools. It intentionally requires `CI_RUNTIME_ACCEPTANCE=1` and `CI_ACCEPTANCE_DISPOSABLE_DB=YES`, and the database URL path must contain `elhafez_ci`. **Never point these fixtures at a real customer or production database**. Chrome PNGs alone go to the CI artifact; temporary test credentials do not.
+
+The current deployment still needs owner-supplied provider accounts/approvals, separate production secrets/roles/grants, TLS/hosting, maintained ClamAV and live service-level provider acceptance. No default credentials exist. See [recorded gates and limits](../project-management/ACCEPTANCE-EXECUTION-2026-10-18.md).
