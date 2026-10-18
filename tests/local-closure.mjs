@@ -99,6 +99,7 @@ export async function localClosure({db,env,sim,launch,request,expectCode,apiProc
   await expectCode('/api/v1/privacy/settings',{token},403);
   await expectCode('/api/v1/catalog',{method:'POST',token,body:{kind:'SERVICE',title:'Role fixture',description:'Fixture'}},role==='MANAGER'?201:403);
  }
+ const {coexistenceAcceptance}=await import('./coexistence-acceptance.mjs');await coexistenceAcceptance({db,a:tenants[2],b:tenants[3],base:'http://127.0.0.1:3000',env});
  check('actual API roles OWNER/MANAGER/AGENT/VIEWER and cross-tenant write denial');
  // Original OAuth/PKCE + refresh + contact sync through loopback transport.
  process.env.APP_PUBLIC_ORIGIN='https://app.fixture.test';process.env.GOOGLE_CLIENT_ID='fixture-google-id';process.env.GOOGLE_CLIENT_SECRET='fixture-google-secret';process.env.HUBSPOT_CLIENT_ID='fixture-hubspot-id';process.env.HUBSPOT_CLIENT_SECRET='fixture-hubspot-secret';process.env.SHOPIFY_CLIENT_ID='fixture-shopify-id';process.env.SHOPIFY_CLIENT_SECRET='fixture-shopify-secret';process.env.SHOPIFY_API_VERSION='2026-10';process.env.WOOCOMMERCE_HOSTS='woo.fixture.test';

@@ -1,3 +1,4 @@
+import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
 import {compileSubflows} from './subflows.js';
@@ -162,8 +163,27 @@ const server=createServer(async(req,res)=>{
     const commerceLink=/^\/api\/v1\/commerce\/links\/([^/]+)\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&commerceLink)return json(res,200,await run(tx=>disableCommerceLink(tx,actor,commerceLink[1],commerceLink[2])));
     if(req.method==='GET'&&pathname==='/api/v1/commerce/resources'){const q=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>commerceResources(tx,actor,{accountId:q.get('accountId')||'',catalogId:q.get('catalogId')||undefined,after:q.get('after')||undefined})));}
+    if(req.method==='GET'&&pathname==='/api/v1/whatsapp/signup/config'){allow(actor,['OWNER','MANAGER']);return json(res,200,onboardingConfiguration());}
+    if(req.method==='GET'&&pathname==='/api/v1/whatsapp/signup/accounts')return json(res,200,await run(tx=>selfServiceAccounts(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/whatsapp/signup/start'){
+      requireSignupOrigin(req.headers.origin);const input=await body(req);const result=await run(tx=>beginWhatsAppSignup(tx,actor,input));
+      res.setHeader('set-cookie','eb_wa_signup='+result.nonce+'; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/whatsapp/signup; Max-Age=600');
+      const {nonce,...safe}=result;return json(res,201,safe);
+    }
+    if(req.method==='POST'&&pathname==='/api/v1/whatsapp/signup/complete'){
+      requireSignupOrigin(req.headers.origin);const nonce=/(?:^|; )eb_wa_signup=([A-Za-z0-9_-]{43})(?:;|$)/.exec(req.headers.cookie||'')?.[1]||'';
+      const result=await finishWhatsAppSignup(pool,actor,await body(req),nonce);
+      if(!result.requiresSelection)res.setHeader('set-cookie','eb_wa_signup=; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/whatsapp/signup; Max-Age=0');return json(res,200,result);
+    }
+    if(req.method==='POST'&&pathname==='/api/v1/whatsapp/signup/cancel'){
+      requireSignupOrigin(req.headers.origin);const nonce=/(?:^|; )eb_wa_signup=([A-Za-z0-9_-]{43})(?:;|$)/.exec(req.headers.cookie||'')?.[1]||'';
+      const d=await body(req) as {attemptId:string};const result=await run(tx=>cancelWhatsAppSignup(tx,actor,d.attemptId,nonce));
+      res.setHeader('set-cookie','eb_wa_signup=; HttpOnly; Secure; SameSite=Strict; Path=/api/v1/whatsapp/signup; Max-Age=0');return json(res,200,result);
+    }
+    const signupOperation=pathname.match(/^\/api\/v1\/whatsapp\/signup\/accounts\/([0-9a-f-]+)\/operation$/);
+    if(req.method==='POST'&&signupOperation){requireSignupOrigin(req.headers.origin);return json(res,200,await requestSignupOperation(pool,actor,signupOperation[1],await body(req)));}
     const waDiagnosis=pathname.match(/^\/api\/v1\/whatsapp\/connection\/([0-9a-f-]+)\/diagnose$/);
-    if(req.method==='POST'&&waDiagnosis)return json(res,200,await run(tx=>diagnoseWhatsApp(tx,actor,waDiagnosis[1])));
+    if(req.method==='POST'&&waDiagnosis)return json(res,200,await run(tx=>diagnoseSignupAccount(tx,actor,waDiagnosis[1])));
     if(req.method==='GET'&&pathname==='/api/v1/whatsapp/connection')return json(res,200,await run(tx=>whatsappConnection(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);

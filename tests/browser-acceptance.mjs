@@ -124,6 +124,7 @@ try{
  await send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});await send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
  assert.ok(await evaluate("document.activeElement!==document.body"),'Keyboard Tab must reach an actionable control');
  console.log('PASS browser real catalog create/edit/publish/archive + stored XSS text safety; flow save/publish; privacy save; rejected integration host; keyboard Tab');
+ if(process.env.CI_LOCAL_CLOSURE==='1'){const {browserCoexistence}=await import('./browser-coexistence.mjs');await browserCoexistence({ws,send,evaluate,until,screenshot,base});}
  // Visit every owner page at desktop/tablet/mobile widths; no connect/send/publish actions.
  const pages=await evaluate("[...document.querySelectorAll('[data-page]')].map(n=>n.dataset.page)");
  const pageEvidence=[];
