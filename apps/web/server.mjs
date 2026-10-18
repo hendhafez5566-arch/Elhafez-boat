@@ -13,6 +13,7 @@ const assets={
  '/style.css':['style.css','text/css; charset=utf-8'],
  '/whatsapp-signup.js':['whatsapp-signup.js','text/javascript; charset=utf-8'],
  '/workspace-ui.js':['workspace-ui.js','text/javascript; charset=utf-8'],
+ '/ui-states.js':['ui-states.js','text/javascript; charset=utf-8'],
  '/operations.css':['style.css','text/css; charset=utf-8'],
  '/flow-canvas.js':['flow-canvas.js','text/javascript; charset=utf-8'],
  '/flow-geometry.js':['flow-geometry.js','text/javascript; charset=utf-8'],
