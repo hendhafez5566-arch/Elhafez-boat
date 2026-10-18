@@ -80,6 +80,13 @@ export async function receiveMetaComments(pool:SqlClient&SqlPool,payload:unknown
   });
  }
 }
+/** Official messaging edge for comment-scoped private replies, one candidate per comment. */
+export function privateReplyRequest(channel:string,accountId:string,commentId:string,replyText:string,version:string){
+ if(!['INSTAGRAM','MESSENGER'].includes(channel)||!validId(accountId)||!validId(commentId)||!/^v\d{1,2}\.\d{1,2}$/.test(version))throw new Error('Invalid private reply route');
+ return {host:channel==='INSTAGRAM'?'graph.instagram.com':'graph.facebook.com',
+  path:version+'/'+accountId+'/messages',
+  body:{recipient:{comment_id:commentId},message:{text:replyText}}};
+}
 /** Dispatch is opt-in at the server level, disabled by default. Claims are durable before HTTP. */
 export async function processPrivateReply(pool:SqlClient&SqlPool,tenantId:string){
  if(process.env.ENABLE_META_PRIVATE_REPLIES!=='true')return;
@@ -96,10 +103,8 @@ export async function processPrivateReply(pool:SqlClient&SqlPool,tenantId:string
   let status='SENT',error='';
   try{
    const channel=String(item.channel),token=openIntegrationSecret(String(item.token_encrypted)),v=graphVersion();
-   const host=channel==='INSTAGRAM'?'graph.instagram.com':'graph.facebook.com';
-   const path=channel==='INSTAGRAM'?v+'/'+item.comment_id+'/private_replies':v+'/'+item.external_id+'/messages';
-   const body=channel==='INSTAGRAM'?{message:item.reply_text}:{recipient:{comment_id:item.comment_id},message:{text:item.reply_text}};
-   const response=await providerHTTP(new URL('https://'+host+'/'+path),[host],'POST',{'content-type':'application/json',authorization:'Bearer '+token},body);
+   const request=privateReplyRequest(channel,String(item.external_id),String(item.comment_id),String(item.reply_text),v);
+   const response=await providerHTTP(new URL('https://'+request.host+'/'+request.path),[request.host],'POST',{'content-type':'application/json',authorization:'Bearer '+token},request.body);
    if(!response?.id&&!response?.message_id)throw new ProviderFailure(0,true);
   }catch(e){
    const code=e instanceof ProviderFailure?e.status:0;

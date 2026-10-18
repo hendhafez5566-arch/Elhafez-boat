@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseMetaComments,matchComment,saveCommentRule,decideComment} from '../.build/apps/api/src/comment-automation.js';
+import {parseMetaComments,matchComment,saveCommentRule,decideComment,privateReplyRequest} from '../.build/apps/api/src/comment-automation.js';
 const tenant='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',account='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 const actor={tenantId:tenant,userId:tenant,role:'OWNER'};
 test('Meta comment extractor only considers new supported comments',()=>{
@@ -33,4 +33,15 @@ test('approval is per-tenant and only from REVIEW',async()=>{
  const result=await decideComment(db,actor,tenant,{approve:true});
  assert.equal(result.status,'APPROVED');assert.deepEqual(calls[0].params,[tenant,tenant,'APPROVED']);
  assert.ok(calls[0].sql.includes("status='REVIEW'"));
+});
+
+test('private replies are addressed by comment ID through channel-specific messages edge',()=>{
+ const ig=privateReplyRequest('INSTAGRAM','123456','123_789','أهلًا','v25.0');
+ assert.equal(ig.host,'graph.instagram.com');
+ assert.equal(ig.path,'v25.0/123456/messages');
+ assert.deepEqual(ig.body.recipient,{comment_id:'123_789'});
+ const fb=privateReplyRequest('MESSENGER','123456','123_789','أهلًا','v25.0');
+ assert.equal(fb.host,'graph.facebook.com');
+ assert.equal(fb.path,'v25.0/123456/messages');
+ assert.throws(()=>privateReplyRequest('TELEGRAM','123456','123_789','أهلًا','v25.0'));
 });
