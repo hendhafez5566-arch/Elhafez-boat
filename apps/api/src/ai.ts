@@ -63,3 +63,29 @@ export async function groundedReply(db:SqlClient,tenantId:string,question:string
  await db.query(`INSERT INTO chatbot_ai_events(tenant_id,source_ids,outcome) VALUES($1,$2::jsonb,$3)`,[tenantId,JSON.stringify(selected?[selected.id]:[]),outcome]);
  return selected?{text:selected.answer,sources:[selected.id],handoff:false}:{text:fallback,sources:[],handoff:true};
 }
+
+// Deterministic, bounded intent/action planner. No generative claims, external calls or side effects.
+export function planApprovedAgent(question:string,sources:GroundSource[]){
+ const q=normalizeQuestion(question).trim();
+ const selected=exactGroundedAnswer(sources,q)||conservativeSourceMatch(sources,q);
+ if(selected)return {intent:'ANSWER',message:selected.answer,sourceIds:[selected.id],actions:['FOLLOW_UP','HANDOFF'],needsStaff:false};
+ if(/موظف|بشري|مندوب|مبيعات|اتصل/.test(q))return {intent:'HANDOFF',message:'ممكن أوصلك بفريق الشركة لمساعدتك؟',sourceIds:[],actions:['HANDOFF'],needsStaff:true};
+ if(/احجز|اطلب|اشتري|تسجيل|مهتم|تواصل/.test(q))return {intent:'CAPTURE',message:'قول لنا اسمك ووسيلة التواصل المناسبة، والموظف هيتابع معاك.',sourceIds:[],actions:['COLLECT_NAME','COLLECT_CONTACT','HANDOFF'],needsStaff:true};
+ if(/منتج|خدمه|كتالوج|قائمه|برامج|منيو/.test(q))return {intent:'CATALOG',message:'تقدر تشوف المعلومات المنشورة في كتالوج الشركة، أو تطلب مساعدة موظف.',sourceIds:[],actions:['SHOW_PUBLISHED_CATALOG','HANDOFF'],needsStaff:false};
+ return {intent:'CLARIFY',message:fallback,sourceIds:[],actions:['ASK_CLARIFICATION','HANDOFF'],needsStaff:true};
+}
+export async function previewAgent(db:SqlClient,actor:Actor,input:unknown){
+ allow(actor,['OWNER','MANAGER']);
+ const body=input&&typeof input==='object'&&!Array.isArray(input)?input as Record<string,unknown>:{};
+ const question=typeof body.question==='string'?body.question.trim():'';
+ if(question.length<3||question.length>600)throw new HttpFailure(400,'Question must be 3 to 600 characters');
+ const [faq,catalog]=await Promise.all([
+  db.query("SELECT id,question,answer FROM tenant_knowledge_articles WHERE tenant_id=$1 AND status='PUBLISHED' ORDER BY updated_at DESC LIMIT 100",[actor.tenantId]),
+  db.query("SELECT id,title,description,price_text,external_url FROM chatbot_catalog_items WHERE tenant_id=$1 AND status='PUBLISHED' ORDER BY updated_at DESC LIMIT 100",[actor.tenantId])
+ ]);
+ const sources:GroundSource[]=[
+  ...faq.rows.map(x=>({id:'faq:'+x.id,question:String(x.question),answer:String(x.answer)})),
+  ...catalog.rows.map(x=>({id:'catalog:'+x.id,question:String(x.title),answer:[x.title,x.description,x.price_text,x.external_url].filter(Boolean).join('\n')}))
+ ];
+ return {...planApprovedAgent(question,sources),preview:true,sourceCount:sources.length,outboundMessages:0};
+}

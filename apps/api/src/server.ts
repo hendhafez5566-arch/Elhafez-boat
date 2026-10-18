@@ -16,7 +16,7 @@ import {usageSummary} from './usage.js';
 import {authenticateAccessKey,listAccessKeys,createAccessKey,revokeAccessKey} from './access-keys.js';
 import {listIntegrations,createIntegration,updateIntegration} from './integrations.js';
 import {savedReplies,createSavedReply,deleteSavedReply,updateSavedReply,inboxNote} from './inbox.js';
-import {aiSettings,saveAiSettings} from './ai.js';
+import {aiSettings,saveAiSettings,previewAgent} from './ai.js';
 import {executeFlow} from './flow-service.js';
 import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
@@ -223,7 +223,8 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&pathname==='/api/v1/flows/versions')return json(res,200,await run(tx=>listFlowVersions(tx,actor)));
     const rollback=/^\/api\/v1\/flows\/versions\/([0-9]+)\/rollback$/.exec(pathname);
     if(req.method==='POST'&&rollback)return json(res,200,await run(tx=>rollbackFlow(tx,actor,rollback[1])));
-    if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/ai/agent/preview')return json(res,200,await runBody((tx,input)=>previewAgent(tx,actor,input)));
+     if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/analytics/overview'){const days=new URL(req.url||'/','http://local').searchParams.get('days')||'30';if(!['7','30','90'].includes(days))throw new HttpFailure(400,'Invalid reporting period');return json(res,200,await run(tx=>analyticsOverview(tx,actor,Number(days))));}
     const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);

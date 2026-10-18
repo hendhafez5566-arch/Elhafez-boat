@@ -1,6 +1,14 @@
 export function initExtensions(ctx){
  const {state,api,$,el,button,card,bind,notify,execute}=ctx;let widgetKey='',campaignTemplates=[],stepIndex=0;
  async function ai(){const r=await api('/ai/settings'),f=$('ai-form');f.elements.enabled.value=String(r.enabled);f.elements.instructions.value=r.instructions;f.elements.monthlyLimit.value=r.monthlyLimit;$('ai-provider-status').textContent=r.providerConfigured?'المزود مضبوط في الخادم؛ الاتصال الفعلي يحتاج تحققًا':'بدون مزود خارجي — إجابات مطابقة معتمدة وتحويل آمن'}
+ bind('agent-preview-form',async d=>{
+  const answer=await api('/ai/agent/preview',{method:'POST',body:{question:d.question}});
+  const host=$('agent-preview-result');host.replaceChildren();
+  host.append(el('h4','الرد المقترح'),el('p',answer.message),el('p','المسار: '+answer.intent+' • المراجع: '+(answer.sourceIds.join('، ')||'لا يوجد')));
+  host.append(el('p','الخطوات المتاحة: '+answer.actions.join(' ← ')));
+  if(answer.needsStaff)host.append(el('p','مطلوب تدخل موظف أو توضيح إضافي.'));
+  notify('معاينة محلية، بدون اتصال خارجي أو إرسال');
+ });
  bind('ai-form',async d=>{await api('/ai/settings',{method:'PUT',body:{enabled:d.enabled==='true',instructions:d.instructions,monthlyLimit:Number(d.monthlyLimit)}});notify('تم حفظ إعدادات المساعد')});
  async function triggers(){const host=$('trigger-list');host.replaceChildren();const [rows,cfg]=await Promise.all([api('/triggers'),api('/flows')]);const select=$('trigger-target');select.replaceChildren();for(const n of cfg.published?.definition?.nodes||[]){const o=el('option',n.id+' • '+n.type);o.value=n.id;select.append(o)}if(!rows.length)host.append(el('p','انشر مسارك أولًا، ثم أضف قواعد التشغيل.'));for(const r of rows){const c=card(r.kind==='FIRST_MESSAGE'?'أول محادثة':r.phrase,r.match_mode+' → '+r.target_node);c.append(button('حذف القاعدة',async()=>{await api('/triggers/'+r.id,{method:'DELETE'});await triggers()},'danger'));host.append(c)}}
  bind('trigger-form',async(d,f)=>{await api('/triggers',{method:'POST',body:{...d,priority:Number(d.priority)}});f.reset();await triggers()});
