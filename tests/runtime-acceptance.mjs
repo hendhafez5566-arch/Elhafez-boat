@@ -16,6 +16,8 @@ const adminUrl=process.env.MIGRATION_DATABASE_URL;
 if(!adminUrl||!/elhafez_ci/.test(new URL(adminUrl).pathname))
  throw new Error('Acceptance requires named disposable elhafez_ci database');
 const db=new pg.Client({connectionString:adminUrl});await db.connect();
+const {closureProvider}=await import('./support/closure-provider.mjs');const sim=await closureProvider();
+process.env.OFFLINE_PROVIDER_ORIGIN=sim.origin;await import('./support/offline-transport.mjs');
 const suffix=randomBytes(5).toString('hex');
 const role='boat_accept_'+suffix,password='SafeTest-'+randomBytes(15).toString('hex');
 const runtimeUrl=new URL(adminUrl);
@@ -70,7 +72,7 @@ try{
   ids.push({tenantId:t,userId:u,slug});
  }
  // A real low-privilege role (unlike SET ROLE from a privileged connection).
- const env={DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
+ const env={NODE_OPTIONS:'--import=./tests/support/offline-transport.mjs',OFFLINE_PROVIDER_ORIGIN:sim.origin,CLAMAV_SOCKET:process.env.CLAMAV_SOCKET,DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
  apiProcess=launch('api',process.execPath,['.build/apps/api/src/server.js'],env);
  webProcess=launch('web',process.execPath,['apps/web/server.mjs'],env);
  await waitForHealth();
@@ -237,6 +239,13 @@ try{
  assert.ok(batch.every(x=>x.status===200),'Concurrent catalog requests failed');
  assert.ok(elapsed<10000,'40 concurrent authenticated catalog requests exceeded 10s on CI');
  console.log('PASS 40 concurrent authenticated catalog requests in '+Math.round(elapsed)+'ms (CI smoke, not load benchmark)');
+ // Existing smoke remains; new closure gaps run independently of it.
+ if(process.env.CI_LOCAL_CLOSURE==='1'){
+  for(const p of processes.filter(p=>p!==apiProcess&&p!==webProcess&&p!==replica)){if(p.exitCode===null)p.kill('SIGTERM')}
+  process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY=env.WHATSAPP_TOKEN_ENCRYPTION_KEY;process.env.INTEGRATION_SECRET_ENCRYPTION_KEY=env.INTEGRATION_SECRET_ENCRYPTION_KEY;process.env.META_GRAPH_VERSION='v24.0';
+  // Keep two instrumented workers for mixed load; stop them before provider fixtures.
+  const {localClosure}=await import('./local-closure.mjs');await localClosure({db,env,sim,launch,request,expectCode});
+ }
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});
@@ -254,6 +263,6 @@ try{
 }catch(error){console.error('ACCEPTANCE FAILURE:',error);console.error(logs.slice(-12).join('\n'));process.exitCode=1;}
 finally{
  for(const p of processes){if(p?.exitCode===null){p.kill('SIGTERM');await Promise.race([once(p,'exit').catch(()=>{}),sleep(2500)]);if(p.exitCode===null)p.kill('SIGKILL')}}
- await db.end();
+ await sim.close();await db.end();
  // Test fixture accounts intentionally remain only in the disposable CI database.
 }

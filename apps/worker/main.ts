@@ -36,7 +36,7 @@ async function dispatch(job:Record<string,unknown>,account:Record<string,unknown
  const token=decrypt(String(account.access_token_encrypted));
  const payload=job.payload as Record<string,unknown>;
  // All customer-facing traffic originates from stored internal payloads, not arbitrary URLs.
- return sendWhatsApp(graphVersion(),String(account.phone_number_id),token,{...payload,messaging_product:'whatsapp',to:job.recipient_phone});
+ return sendWhatsApp(graphVersion(),String(account.phone_number_id),token,{...payload,messaging_product:'whatsapp',to:job.recipient_phone,biz_opaque_callback_data:String(job.id)});
 }
 async function processTenant(tenantId:string):Promise<boolean>{
  const tx=await pool.connect();let began=false;
@@ -99,20 +99,20 @@ async function processTenant(tenantId:string):Promise<boolean>{
     const source=job.payload as {type?:string;text?:{body?:string};interactive?:{body?:{text?:string}}};
     const message=source.text?.body||source.interactive?.body?.text||(source.type==='template'?'[قالب واتساب معتمد]':'[رسالة تفاعلية]');
     await tx.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,delivery_status)
-      VALUES($1,$2,'OUTBOUND',$3,$4,'sent')`,[tenantId,job.conversation_id,message,providerId]);
+      VALUES($1,$2,'OUTBOUND',$3,$4,'sent') ON CONFLICT DO NOTHING`,[tenantId,job.conversation_id,message,providerId]);
     await tx.query(`UPDATE conversations SET last_message_at=now() WHERE tenant_id=$1 AND id=$2`,[tenantId,job.conversation_id]);
   }else{
     const count=Number(job.attempt_count)+1;
     const status=disposition==='UNCERTAIN'?'UNCERTAIN':disposition==='FAILED'||count>=8?'FAILED':'PENDING';
     const delay=Math.min(3600,Math.pow(2,count)*20);
     await tx.query(`UPDATE whatsapp_outbox SET status=$3,attempt_count=$4,next_attempt_at=now()+($5::integer*interval '1 second'),last_error=$6
-     WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,status,count,delay,lastError]);
+     WHERE tenant_id=$1 AND id=$2 AND status='PROCESSING'`,[tenantId,job.id,status,count,delay,lastError]);
   }
   await tx.query('COMMIT');return true;
  }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
 }
 async function tenantTask(tenantId:string,task:(db:import('../api/src/services.js').SqlClient,id:string)=>Promise<unknown>,activeOnly=true){
- const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);if(active.rowCount||!activeOnly)await task(tx,tenantId);await tx.query('INSERT INTO chatbot_worker_health(tenant_id,last_seen_at,last_error_code) VALUES($1,now(),NULL) ON CONFLICT(tenant_id) DO UPDATE SET last_seen_at=now(),last_error_code=NULL',[tenantId]);await tx.query('COMMIT')}catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}finally{tx.release()}
+ const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);let didWork=false;if(active.rowCount||!activeOnly)didWork=Boolean(await task(tx,tenantId));await tx.query('INSERT INTO chatbot_worker_health(tenant_id,last_seen_at,last_error_code) VALUES($1,now(),NULL) ON CONFLICT(tenant_id) DO UPDATE SET last_seen_at=now(),last_error_code=NULL',[tenantId]);await tx.query('COMMIT');return didWork}catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}finally{tx.release()}
 }
 async function run(){
  console.log('WhatsApp outbox worker started');
@@ -122,7 +122,7 @@ async function run(){
    // The tenants table has no tenant RLS; each tenant's jobs still run inside RLS-scoped transactions.
    if(Date.now()-maintainedAt>3600000){await pool.query("DELETE FROM chatbot_rate_buckets WHERE window_at<now()-interval '1 day'");await pool.query('DELETE FROM chatbot_oauth_states WHERE expires_at<now()');maintainedAt=Date.now();}
    const t=await pool.query('SELECT id FROM tenants ORDER BY id LIMIT 10000');
-   for(const row of t.rows){if(!running)break;const id=String(row.id);try{await tenantTask(id,processDelay);await tenantTask(id,processCampaign);await tenantTask(id,processIntegrationJob);await tenantTask(id,processConnector);await tenantTask(id,processMediaScan);await tenantTask(id,processRetention,false);await processSocial(pool,id);worked=(await processTenant(id))||worked}catch(e){console.error('Tenant worker task failed',{tenant:id,code:(e as {code?:string}).code||'TASK_FAILED'});await tenantTask(id,async db=>{await db.query("UPDATE chatbot_worker_health SET last_error_code='TASK_FAILED' WHERE tenant_id=$1",[id])}).catch(()=>{})}}
+   for(const row of t.rows){if(!running)break;const id=String(row.id);try{worked=(await tenantTask(id,processDelay))||worked;await tenantTask(id,processCampaign);await tenantTask(id,processIntegrationJob);await tenantTask(id,processConnector);await tenantTask(id,processMediaScan);await tenantTask(id,processRetention,false);await processSocial(pool,id);worked=(await processTenant(id))||worked}catch(e){console.error('Tenant worker task failed',{tenant:id,code:(e as {code?:string}).code||'TASK_FAILED'});await tenantTask(id,async db=>{await db.query("UPDATE chatbot_worker_health SET last_error_code='TASK_FAILED' WHERE tenant_id=$1",[id])}).catch(()=>{})}}
   }catch(e){console.error('Worker poll failed',{code:(e as {code?:string}).code||'POLL_FAILED'});}
   if(!worked)await wait(2000);
  }
