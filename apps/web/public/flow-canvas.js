@@ -46,5 +46,5 @@ export function createCanvas({host,getFlow,select,changed,notify}){
  }
  host.onwheel=e=>{e.preventDefault();zoom=Math.max(.25,Math.min(2,zoom*(e.deltaY>0?.9:1.1)));transform()};
  host.onpointerdown=e=>{if(e.target!==host&&e.target!==stage&&e.target!==svg)return;const start={x:e.clientX,y:e.clientY},old={...pan};host.setPointerCapture(e.pointerId);host.onpointermove=ev=>{pan={x:old.x+ev.clientX-start.x,y:old.y+ev.clientY-start.y};transform()};host.onpointerup=()=>{host.onpointermove=null;host.onpointerup=null}};
- return {draw,coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(9000,Math.round((clientX-r.left-pan.x)/zoom-115))),y:Math.max(0,Math.min(9000,Math.round((clientY-r.top-pan.y)/zoom-35)))}}},reset(){zoom=1;pan={x:0,y:0};transform()}};
+ return {draw,coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(9000,Math.round((clientX-r.left-pan.x)/zoom-115))),y:Math.max(0,Math.min(9000,Math.round((clientY-r.top-pan.y)/zoom-35)))}},reset(){zoom=1;pan={x:0,y:0};transform()}};
 }
