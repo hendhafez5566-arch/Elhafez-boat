@@ -113,6 +113,22 @@ try{
  const home=await request('/');assert.equal(home.status,200);assert.match(home.data,/Elhafez Boat/);
  const widget=await request('/widget.js');assert.equal(widget.status,200);assert.match(widget.data,/widget/i);
  const pageAuth={slug:slugA,email:`${slugA}@example.invalid`,password:pass};
+ const worker=launch('worker',process.execPath,['.build/apps/worker/main.js'],{...env,META_GRAPH_VERSION:'v24.0'});
+ let healthy=false;
+ for(let i=0;i<35;i++){
+   if(worker.exitCode!==null)throw new Error('Worker exited during poll');
+   const seen=await db.query('SELECT count(*)::int AS n FROM chatbot_worker_health WHERE tenant_id=ANY($1::uuid[]) AND last_error_code IS NULL',[ids.map(x=>x.tenantId)]);
+   if(Number(seen.rows[0]?.n)>=2){healthy=true;break}
+   await sleep(350);
+ }
+ assert.ok(healthy,'Worker did not process both tenants using restricted runtime role');
+ console.log('PASS background worker heartbeat for both scoped tenant queues');
+ const started=performance.now();
+ const batch=await Promise.all(Array.from({length:40},()=>request('/api/v1/catalog',{token:one})));
+ const elapsed=performance.now()-started;
+ assert.ok(batch.every(x=>x.status===200),'Concurrent catalog requests failed');
+ assert.ok(elapsed<10000,'40 concurrent authenticated catalog requests exceeded 10s on CI');
+ console.log('PASS 40 concurrent authenticated catalog requests in '+Math.round(elapsed)+'ms (CI smoke, not load benchmark)');
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});
