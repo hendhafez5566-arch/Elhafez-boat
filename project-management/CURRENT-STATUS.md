@@ -1,3 +1,13 @@
+# Final technical execution evidence — 2026-10-18
+
+Authoritative detail: [TECHNICAL-EXECUTION-2026-10-18.md](TECHNICAL-EXECUTION-2026-10-18.md). Source continued from c0a3f27 through d5ac76c on the same branch; no live platform activation, merge or deploy.
+
+**PASS:** CI [39108014870](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39108014870) both jobs, including real 2 API/2 worker Compose, full DB stop/start and persistence without application restart, full-table restore fingerprints, restricted-role runtime/fault tests, platform-pool reconnect, browser 57 viewport/page visits and Docker packaging. Latest source d5ac76c also passed **both jobs** on [CI 39108108402](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39108108402): **78/78**, PostgreSQL RLS, browser, full-table restore and Compose outage/recovery. Logs inspected directly. **FAIL:** initial isolated-web ingress error fixed/retested; no remaining failure in that passing run. **BLOCKED by owner decision:** live platform activation. **NOT TESTED:** complete adapter simulation, sustained mixed workload/query profiling, in-flight provider crash, all UI actions/accessibility, real ClamAV and fully seeded role/media/key/queue restore; security/privacy penetration and concurrency gaps remain as listed in the detailed report.
+
+400-read sample: **555.73 req/s; P50 61.24 / P95 185.27 / P99 204.39 ms**. Per-process CPU/RAM in report. Simulator coverage is not live-provider acceptance. Owner activation is not the sole remaining task. [Owner checklist](../OWNER-ACTIVATION-CHECKLIST.md) and [local operational guide](../docs/21-OPERATIONS-ISOLATED.md) added. This entry supersedes earlier claims that Compose/full-table fingerprints/per-server resource samples were unrun.
+
+---
+
 # Technical execution update — 2026-10-18 (authoritative latest entry)
 
 Owner constraint: **no external platform activation**, no merge/deploy. Starting HEAD c0a3f27; source fix eec89da93552ef4c7ff8a23a4be2f9b1802ae9be.

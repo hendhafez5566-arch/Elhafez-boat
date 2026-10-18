@@ -1,3 +1,7 @@
+## Final isolated execution verification
+
+CI 39108014870 PASS including Compose replicas/database outage/persistence/operational alarm and every restored-table fingerprint. Added platform-pool recovery, server CPU/RSS measurement and 4 security regression tests (local 78/78). Latest source d5ac76c CI 39108108402 also PASS both jobs, 78/78 plus full Compose/restore/browser/runtime. Detailed proof/remaining scope in TECHNICAL-EXECUTION-2026-10-18.md.
+
 ## 2026-10-18 — isolated technical execution
 
 WhatsApp ambiguous-send regression fix; API/worker idle DB recovery; two-replica fault and throttle checks; engine microbenchmark; all-page Chrome viewport traversal; local provider fixtures; isolated Compose; backup fingerprints; read-only alarms; owner activation and maintenance guides. Evidence and untested scope in CURRENT-STATUS.md. No activation/merge/deploy.
