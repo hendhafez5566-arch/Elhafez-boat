@@ -75,6 +75,25 @@ jobs:
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data
         run: bash scripts/ci-backup-restore.sh
+      - name: Production-style Docker build and packaged web HTTP smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --tag elhafez-boat:ci .
+          docker run --rm --entrypoint sh elhafez-boat:ci -c 'test ! -f /app/.env && test -f /app/.build/apps/api/src/server.js && test -f /app/apps/web/public/app.js'
+          name="elhafez_ci_web_${GITHUB_RUN_ID}"
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name "$name" --publish 127.0.0.1:3015:3000 --env WEB_PORT=3000 --env API_INTERNAL_ORIGIN=http://127.0.0.1:4000 --entrypoint node elhafez-boat:ci apps/web/server.mjs
+          ready=0
+          for i in {1..35}; do
+            if curl --fail --silent http://127.0.0.1:3015/ > /tmp/elhafez-container-home.html; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          grep -q 'Elhafez Boat' /tmp/elhafez-container-home.html
+          curl --fail --silent --show-error http://127.0.0.1:3015/flow-builder.js >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:3015/widget.js >/dev/null
+          echo 'PASS Docker image builds, excludes root .env, and serves real web UI/widget assets'
       - name: Upload non-sensitive browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
