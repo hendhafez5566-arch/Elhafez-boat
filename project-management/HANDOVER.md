@@ -1,48 +1,28 @@
-# Handover — 2026-10-18 continuation
+# HANDOVER — advanced continuation 2026-10-18
 
-Repo hendhafez5566-arch/Elhafez-boat; branch feat/stage0-foundation; PR #1 stays draft/unmerged. This session verified remote starting HEAD d31c20e31ce6d92cf86829d14ef65574b01d0b2c and continued its identical local tree. GitHub upload uses Git-data connector, with remote tree equality checked against local content; direct shell push has no credentials. Never force over an unexpected head.
+Continue `hendhafez5566-arch/Elhafez-boat`, branch `feat/stage0-foundation`, draft PR #1. Never merge/deploy or revive ERP/booking services. Verify actual remote HEAD, not an older summary. This delivery started at da1c6a3 and pushed source a4be882 plus identity correction 9a338d6; links/evidence in CURRENT-STATUS.md.
 
-## Read first
-AGENTS.md, docs/00-SCOPE-CHATBOT-ONLY.md, CURRENT-STATUS.md, REMAINING.md and docs/17-LEGACY-RETIREMENT.md. Product is for all companies, not reservations or ERP. Final comprehensive acceptance remains one separate last stage.
+## Runtime and source map
 
-## Current execution architecture
-- flow-engine/service: DELAY, dynamic paginated catalog snapshots, triggered entry, pinned revisions and optimistic draft save. Persist only catalog-generated runtime state: do not persist AI/webhook conversions as future answers/actions.
-- delay-scheduler: locks conversation then job/session, validates version/node, respects human ownership/opt-out/subscription/window. Delay chains upsert the same per-conversation job after completing the previous step. Worker task transactions are separate from Meta dispatch.
-- channels: neutral delivery boundary for WhatsApp outbox and durable website message payloads. Final handoff acknowledgements explicitly permit delivery after ownership changes.
-- website/public-tenant: hashed visitor sessions and opaque routing, exact origin authorization on every call, receipt dedupe, send budget/rate controls, shared bot runtime and unified staff inbox. Managed website contacts have NULL phone, never fabricated numbers.
-- media: bounded DB bytea uploads, signatures/MIME, public bearer URLs, deletion safeguard and managed-format validation. MEDIA_PUBLIC_ORIGIN must be configured for Meta to fetch them; no virus-scanning claim.
-- template-components/templates: validated supported provider components; remote approved metadata; stale refresh, variables/media/interactive replies. Unsupported carousel/auth/named forms remain rejected. Provider operation remains unverified.
-- campaigns: frozen consenting segment recipients and approved-template steps, cancellation, job state and bounded transient refresh retries. Worker checks consent/subscription/authorization and counts dispatch budget. No nonconsensual free-text campaign endpoint.
-- usage/workspace: daily limits, admin-set caps, operational jobs, notifications and per-message read marks. Outbox commits PROCESSING before outbound HTTP; abandoned claims become UNCERTAIN and must not auto-resend.
-- integrations/integration-secrets: public DNS checks plus pinned IPv4 HTTPS, exact allowlist, encrypted per-integration credentials and audited replacement/disable. Receivers must honor idempotency keys.
-- app/workspace-ui/extensions/widget: real modular RTL screens. Old fake/demo tourism workspace has been removed; flow preview is separately labelled. Forms and private data clear on logout/session changes.
-- services now contains security/transaction primitives only; team-directory replaces obsolete bot-config. Removed booking-choice/flows/contracts workspace, legacy UI and associated obsolete tests. Historical migrations/data remain intact. scripts/clean-build.mjs prevents old emitted JS shipping.
+- `subflows.ts`: tenant library immutable versions; compile pinned calls at publish, namespace IDs, alias field bindings, END returns, depth five/expanded graph 100. `flow-service.ts` stores source_definition for edit/rollback, compiled definition for session pinning; retain both. Existing snippet library/group metadata remains.
+- `connectors.ts` + `provider-http.ts`: Google OAuth/PKCE/refresh, HubSpot/Shopify code exchange, Shopify HMAC, Woo consumer keys, per-tenant encrypted credentials and mapping, stable contact/email IDs, bounded queued sync and SSRF-safe pinned provider transport. Google uses dedicated sheet column A for contact UUID; no arbitrary formulas. Ambiguous Sheets requests are quarantined; reconcile before retry. Runtime flow CONNECTOR never dispatches during preview.
+- `social.ts` + `channels.ts`: Messenger Page token, Instagram Login professional account, Telegram private bots. Raw Meta webhook HMAC checked before JSON; Telegram secret validated before mutation. Shared engine/leads/inbox and service/opt-out gates. Provider messages use supported formats; short opaque callback mapping. Commit PROCESSING before HTTP; unknown outcomes become UNCERTAIN, do not auto-resend. Accounts may reconnect only within the company already owning the routing entry.
+- `privacy.ts` + `media-scan.ts`: owner-only policy/export/anonymization; hourly opt-in old closed-contact cleanup, no unapproved historical bulk deletion. In-flight/uncertain delivery prevents erasure. clamd Unix-socket INSTREAM; uploads stay PENDING/private until CLEAN, malware QUARANTINED. Historical media also requires rescan. Public CLEAN media links are bearer capabilities for provider fetch.
+- `rate-limit.ts`, `access-keys.ts`, `workspace.ts`, worker: PostgreSQL atomic shared counters, narrow route/method scopes, hashed identity/IP, trusted gateway only; health and queue views, periodic expired bucket/OAuth cleanup. API/worker errors log codes rather than provider/customer bodies. Staff notifications continue DB-backed polling, not browser push.
+- `advanced-ui.js` plus current app/builder/workspace modules: real authenticated connectors/channels/privacy settings, library editor mode, OAuth/rotation, resource selection, queue display. No seeded customer data.
+
+## Setup
+
+Apply migrations **0001–0024** with the migration role; grant new tenant tables and opaque routing/rate/OAuth tables to a non-owner/non-BYPASSRLS runtime role. Preserve existing encryption master keys. Configure .env.example values including shared RATE_LIMIT_SECRET, trusted gateway IPs, APP_PUBLIC_ORIGIN and optional provider apps/approved hosts/ClamAV socket. All exact callback/webhook URLs, account types, permissions and operational caveats are in docs/19-ADVANCED-RUNTIME.md.
+
+Run npm ci → npm run build → npm run db:migrate → provision owner with documented bootstrap env → start dev:api, dev:web, dev:worker in separate processes. Dashboard http://127.0.0.1:3000; login with provisioned company slug/email/password. No default/shared credentials. See docs/11-LOCAL-SETUP.md.
 
 ## Evidence and next action
-Clean npm ci (21 packages), build/TypeScript, 12 JS syntax checks, DOM reference/ID safeguards, static HTTP serving for nine assets and diff checks passed. No local comprehensive unit/DB/browser/provider/performance/restore acceptance. CI on 7fc36262f120560582d86c9614ded23e71fd3aa1 passed 28/28 unit tests, migrations 0001–0022 and PostgreSQL catalog-isolation/RLS gate (run 39072771700). Follow-up startup scripts use compiled JS; latest-head CI must be read separately. Newly added tests include core regression and the PostgreSQL RLS gate now includes all new tenant runtime tables.
 
-Apply migration 0022 after previous migrations, configure grants/environment, then use docs/11-LOCAL-SETUP.md. Remaining native connectors/advanced formats/retention and final acceptance are explicitly open. No commercial readiness percentage, no merge or deployment.
+Local build/syntax/DOM/HTTP/diff safeguards passed. Development CI a4be882 push run 39100381266 and PR run 39100384190 SUCCESS: 55/55 tests, migrations 0001–0024, real PostgreSQL RLS/isolation/privacy/rate gate. Read VERIFICATION-ADVANCED-2026-10-18.md for latest-head CI. Do not equate CI with final acceptance.
 
-Implementation commit: https://github.com/hendhafez5566-arch/Elhafez-boat/commit/7fc36262f120560582d86c9614ded23e71fd3aa1
-CI evidence: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700
-See VERIFICATION-2026-10-18.md for exact limits of those checks.
+**Still open source:** Meta Commerce product-card and catalog-template variants. Existing approved media carousel is preserved, with generic-catalog image selection, not Commerce catalog capability. No actual Google/CRM/store/social/Meta/ClamAV live operation has been verified. Historical data/backups/remote deletion and old unattributed generic webhook payloads need separate privacy handling. No screenshot/browser/mobile/load/restore evidence. Formal comprehensive acceptance remains the final separate campaign after scope closure/agreement.
 
+GitHub pushes use Git-data connector because shell git has no write credential; compare constructed tree to local committed tree and update ref with expected SHA, never force over an unexpected head. Local git commit IDs may differ from connector commit IDs while trees match. Final public evidence must use remote commit IDs.
 
-## Continuation 2026-10-18: reusable sections, canvas groups, approved Meta carousel
-
-- Branch `feat/stage0-foundation`, PR #1 remains DRAFT/UNMERGED.
-- New `apps/api/src/flow-reuse.ts` and `packages/database/migrations/0023_reusable_flow_sections.sql`. Library is strict linear copied fragments only, max 100 per tenant, max 20 steps/entry, per-tenant RLS/FORCE and audited RBAC.
-- `apps/api/src/flow-engine.ts` now validates optional `groups` metadata; `apps/web/public/flow-canvas.js`, `flow-builder.js`, `flow-builder.css` implement Shift-selection/grouping and reusable-fragment saving/inserting via real API.
-- `apps/api/src/template-components.ts`, `templates.ts`, `apps/web/public/workspace-ui.js`, `style.css` support only Meta-approved MARKETING IMAGE/VIDEO CAROUSEL with 2–10 fixed approved cards, card-specific HTTPS/media/body/button values. Existing consent/queue/Meta provider approval remain required; unsupported variants rejected.
-- Added `tests/flow-reuse.test.mjs` (7), `tests/template-carousel.test.mjs` (8), updated PostgreSQL `tests/db-integration.mjs`.
-- Development CI run [39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) SUCCESS: **43/43**, migration **0023** applied, RLS/FORCE snippet and catalog isolation. Latest documentation commit unverified separately; check HEAD and CI before next action.
-- Read `docs/18-FLOW-REUSE-AND-CAROUSEL.md` for exact limitations, especially **copies rather than linked subflows** and **NO real Meta carousel delivery proof**.
-- Next source opportunities: true linked subflows, dedicated connector adapters for Sheets/CRM/ecommerce (OAuth/credentials required), other Meta template shapes if explicitly supported, retention/security controls. Keep owner request: one formal comprehensive final acceptance after feature build, no ERP/reservation expansion.
-
-
-## 2026-10-18 — advanced runtime continuation from da1c6a3
-Implemented source: native Sheets/HubSpot/WooCommerce/Shopify connectors and owner UI, OAuth/refresh/encryption, contact-sync queues and CONNECTOR node; immutable pinned linked SUBFLOW compilation/field bindings/return and Canvas library editing; Messenger/Instagram/Telegram receive/send adapters with unified inbox, signed/secret webhooks, dedupe and uncertain-send quarantine; owner privacy/retention/export/anonymization; fail-closed ClamAV upload gating; PostgreSQL distributed limits, granular API-key routes, worker health/queue UI. Migration **0024** is required.
-
-Build/TypeScript, changed JS syntax and static HTTP dashboard/assets passed locally. No live provider/scanner, browser/mobile, load/fault/restore or formal final acceptance was run. Development CI result must be attached after push.
-
-**Not all seven areas are closed:** Meta Commerce product-card/catalog-template variants remain unsupported. Existing approved image/video carousel was preserved and gains a published generic-catalog image picker. External accounts, OAuth apps/permissions, Meta review, HTTPS and ClamAV still require configuration and activation evidence. Legacy un-attributed webhook payloads, historical data and backups need a separate erasure process. Read `docs/19-ADVANCED-RUNTIME.md` for exact behavior and constraints; no commercial readiness claim.
+Latest source correction **9a338d6** also passed [push CI 39100475500](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39100475500) and [PR CI 39100478270](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39100478270): **55/55**, migration 0024 and PostgreSQL gate. Logs inspected directly. This is not the formal final acceptance campaign.
