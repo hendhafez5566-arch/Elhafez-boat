@@ -20,6 +20,25 @@ const goals={
 export const guidedSectors=Object.freeze(sectors);
 export const guidedGoals=Object.freeze(goals);
 
+
+/** Plain-language shortcut, deterministic/offline: suggestions, never an LLM claim. */
+export function inferQuickSetup(description=''){
+ const text=String(description).trim().toLowerCase().replace(/[أإآ]/g,'ا').replace(/ى/g,'ي');
+ if(text.length<8)throw new Error('اكتب وصفًا بسيطًا في سطر واحد على الأقل');
+ const matches=[
+  ['tourism',/سياح|سفر|رحل|عمره|حج|فندق|تأشير/],
+  ['clinic',/عياد|دكتور|طب|كشف|مريض/],
+  ['restaurant',/مطعم|كافيه|اكل|منيو|وجبات/],
+  ['realestate',/عقار|شقق|شقه|ايجار|وحدات/],
+  ['education',/كورسات|دروس|تعليم|مدرس|تدريب/],
+  ['shop',/متجر|محل|منتج|ملابس|تجاره|سوق/]
+ ];
+ const industry=matches.find(([_,matcher])=>matcher.test(text))?.[0]||'general';
+ const goal=/موظف|دعم|خدمه عملاء|استفسار|سؤال|مشكل/.test(text)?'support':
+  /عرض|برامج|منتجات|كتالوج|منيو|عروض|اسعار/.test(text)?'catalog':'leads';
+ return {industry,goal,source:'KEYWORD_SUGGESTION'};
+}
+
 export function buildGuidedFlow(options={}){
  const industry=Object.hasOwn(sectors,options.industry)?options.industry:'general';
  const goal=Object.hasOwn(goals,options.goal)?options.goal:'leads';
@@ -75,7 +94,7 @@ const action=(text,handler,cls='secondary')=>{
  * Existing drafts/published flows cannot be overwritten without explicit confirmation.
  */
 export function mountGuidedWizard({host,onGenerate,onNotice,isEditingSubflow}){
- const state={step:0,industry:'general',goal:'leads',businessName:'',botName:'',category:'',collectPhone:true};
+ const state={step:0,industry:'general',goal:'leads',businessName:'',botName:'',category:'',collectPhone:true,description:''};
  const root=make('section','boat-guide');
  root.setAttribute('aria-label','معالج إنشاء البوت');
  const hero=make('div','boat-guide-hero');
@@ -97,6 +116,21 @@ export function mountGuidedWizard({host,onGenerate,onNotice,isEditingSubflow}){
   }
   if(state.step===0){
    body.append(make('h4','','إيه المهمة الأساسية اللي تحب البوت يعملها؟'));
+   const quick=make('div','boat-guide-quick');
+   quick.append(make('strong','','مش عارف تبدأ منين؟ احكي عن البوت اللي محتاجه'));
+   const description=make('textarea');description.rows=2;description.maxLength=600;
+   description.placeholder='مثال: أنا شركة سياحة وعايز بوت يعرض برامج العمرة ويجمع بيانات العملاء ويحوّلهم لموظف';
+   description.value=state.description;description.oninput=()=>{state.description=description.value};
+   quick.append(description,action('اقترح نشاط وهدف البوت من الوصف',()=>{
+    try{
+     const suggestion=inferQuickSetup(state.description);
+     state.industry=suggestion.industry;state.goal=suggestion.goal;
+     onNotice('اقترحنا إعدادًا اعتمادًا على كلمات وصفك. راجعه وعدله قبل المتابعة.');
+     render();
+    }catch(error){onNotice(error.message,'error')}
+   },'secondary'));
+   quick.append(make('p','boat-guide-hint','الاقتراح محلي وبسيط؛ مش محتاج ربط ذكاء اصطناعي ومش بيكتب معلومات من عنده.'));
+   body.append(quick);
    const options=make('div','boat-guide-goals');
    for(const [key,info] of Object.entries(goals)){
     const control=make('button','boat-guide-goal'+(state.goal===key?' selected':''));
