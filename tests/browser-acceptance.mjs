@@ -64,6 +64,23 @@ try{
  await sleep(250);await screenshot('flow-builder-canvas-mobile.png');
  const bodyWidth=await evaluate('document.documentElement.scrollWidth');
  assert.ok(Number.isFinite(bodyWidth)&&bodyWidth<3000,'Mobile flow canvas overflows document excessively');
+ // Visit every owner page at desktop/tablet/mobile widths; no connect/send/publish actions.
+ const pages=await evaluate("[...document.querySelectorAll('[data-page]')].map(n=>n.dataset.page)");
+ const pageEvidence=[];
+ for(const [device,width,height] of [['desktop',1366,900],['tablet',820,1180],['mobile',390,844]]){
+  await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:device!=='desktop'});
+  for(const page of pages){
+   await evaluate(`document.querySelector('[data-page="${page}"]').click()`);
+   await until(`Boolean(document.getElementById(${JSON.stringify(page)})&&!document.getElementById(${JSON.stringify(page)}).hidden)`,'page '+page);
+   await sleep(450);
+   const evidence=await evaluate(`(()=>{const p=document.getElementById(${JSON.stringify(page)});return {buttons:p.querySelectorAll('button').length,forms:p.querySelectorAll('form').length,unnamedButtons:[...p.querySelectorAll('button')].filter(b=>!b.textContent.trim()&&!b.getAttribute('aria-label')).length}})()`);
+   assert.equal(evidence.unnamedButtons,0,'Buttons must have accessible names: '+page);
+   await evaluate('window.scrollTo(0,0)');await screenshot(page+'-'+device+'.png');pageEvidence.push({page,device,...evidence});
+  }
+ }
+ await writeFile('acceptance-evidence/browser-pages.json',JSON.stringify(pageEvidence,null,2));
+ assert.equal(network.some(n=>n.status>=500),false,'UI must not encounter server errors');
+ console.log('PASS '+pageEvidence.length+' owner page/viewport visits with named buttons (screen loading only; not all actions/forms)');
  await evaluate("document.getElementById('logout').click()");
  await until("Boolean(document.getElementById('login')&&!document.getElementById('login').hidden)",'logout/login screen');
  assert.equal(await evaluate("document.getElementById('app').hidden"),true);

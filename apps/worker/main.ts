@@ -1,3 +1,4 @@
+import {deliveryDisposition,sendWhatsApp} from './delivery.js';
 import {verifyCommerceRefs,type CommerceRef} from '../api/src/commerce.js';
 import {processConnector} from '../api/src/connectors.js';
 import {processMediaScan} from '../api/src/media-scan.js';
@@ -14,10 +15,12 @@ const require=createRequire(import.meta.url);
 const {Pool}=require('pg') as {Pool:new (o:{connectionString:string;max:number})=>{
  query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>;
  connect():Promise<{query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>;release():void}>;
+ on(event:string,listener:(error:{code?:string})=>void):void;
  end():Promise<void>;
 }};
 if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL missing');
 const pool=new Pool({connectionString:process.env.DATABASE_URL,max:4});
+pool.on('error',error=>console.error('Worker database connection lost',{code:error.code||'DB_CONNECTION_LOST'}));
 let running=true;let maintainedAt=0;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function decrypt(ciphertext:string):string {
@@ -33,15 +36,7 @@ async function dispatch(job:Record<string,unknown>,account:Record<string,unknown
  const token=decrypt(String(account.access_token_encrypted));
  const payload=job.payload as Record<string,unknown>;
  // All customer-facing traffic originates from stored internal payloads, not arbitrary URLs.
- const response=await fetch(`https://graph.facebook.com/${graphVersion()}/${account.phone_number_id}/messages`,{
-  method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
-  body:JSON.stringify({...payload,messaging_product:'whatsapp',to:job.recipient_phone}),signal:AbortSignal.timeout(15000)
- });
- if(!response.ok){const error=new Error('Meta message API '+response.status);(error as Error&{status?:number}).status=response.status;throw error;}
- const json=await response.json() as {messages?:Array<{id?:string}>};
- const providerId=json.messages?.[0]?.id;
- if(!providerId||providerId.length>256)throw new Error('Meta response lacked message id');
- return {providerId};
+ return sendWhatsApp(graphVersion(),String(account.phone_number_id),token,{...payload,messaging_product:'whatsapp',to:job.recipient_phone});
 }
 async function processTenant(tenantId:string):Promise<boolean>{
  const tx=await pool.connect();let began=false;
@@ -94,10 +89,9 @@ async function processTenant(tenantId:string):Promise<boolean>{
   // an ambiguous request: the recovery sweep marks orphaned claims UNCERTAIN.
   await tx.query("UPDATE whatsapp_outbox SET status='PROCESSING',locked_at=now(),attempt_count=attempt_count+1 WHERE tenant_id=$1 AND id=$2",[tenantId,job.id]);
   await tx.query('COMMIT');began=false;
-  let providerId:string|undefined,permanent=false,unknown=false,lastError='';
+  let providerId:string|undefined,disposition:'UNCERTAIN'|'PENDING'|'FAILED'='UNCERTAIN',lastError='';
   try{providerId=(await dispatch(job,job)).providerId;}
-  catch(error){const status=(error as {status?:number}).status;permanent=typeof status==='number'&&status>=400&&status<500&&status!==429;
-    unknown=status===undefined;lastError=error instanceof Error?error.message.slice(0,180):'Meta send failed';}
+  catch(error){disposition=deliveryDisposition(error);lastError=disposition==='UNCERTAIN'?'Delivery outcome unknown; reconcile before resend':disposition==='PENDING'?'Provider rate limited':'Provider rejected message';}
   await tx.query('BEGIN');began=true;await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);
   if(providerId){
     await tx.query(`UPDATE whatsapp_outbox SET status='SENT',dispatched_at=now(),provider_message_id=$3,locked_at=NULL
@@ -109,7 +103,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
     await tx.query(`UPDATE conversations SET last_message_at=now() WHERE tenant_id=$1 AND id=$2`,[tenantId,job.conversation_id]);
   }else{
     const count=Number(job.attempt_count)+1;
-    const status=unknown?'UNCERTAIN':permanent||count>=8?'FAILED':'PENDING';
+    const status=disposition==='UNCERTAIN'?'UNCERTAIN':disposition==='FAILED'||count>=8?'FAILED':'PENDING';
     const delay=Math.min(3600,Math.pow(2,count)*20);
     await tx.query(`UPDATE whatsapp_outbox SET status=$3,attempt_count=$4,next_attempt_at=now()+($5::integer*interval '1 second'),last_error=$6
      WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,status,count,delay,lastError]);
@@ -118,7 +112,7 @@ async function processTenant(tenantId:string):Promise<boolean>{
  }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
 }
 async function tenantTask(tenantId:string,task:(db:import('../api/src/services.js').SqlClient,id:string)=>Promise<unknown>,activeOnly=true){
- const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);if(active.rowCount||!activeOnly)await task(tx,tenantId);await tx.query('INSERT INTO chatbot_worker_health(tenant_id,last_seen_at,last_error_code) VALUES($1,now(),NULL) ON CONFLICT(tenant_id) DO UPDATE SET last_seen_at=now()',[tenantId]);await tx.query('COMMIT')}catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}finally{tx.release()}
+ const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);if(active.rowCount||!activeOnly)await task(tx,tenantId);await tx.query('INSERT INTO chatbot_worker_health(tenant_id,last_seen_at,last_error_code) VALUES($1,now(),NULL) ON CONFLICT(tenant_id) DO UPDATE SET last_seen_at=now(),last_error_code=NULL',[tenantId]);await tx.query('COMMIT')}catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}finally{tx.release()}
 }
 async function run(){
  console.log('WhatsApp outbox worker started');

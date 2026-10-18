@@ -35,9 +35,10 @@ import { listContacts, addContact, setContactStatus, listContactNotes, addContac
 import { teamMembers } from './team-directory.js';
 const require=createRequire(import.meta.url);
 // pg is a runtime dependency loaded after npm install; query access is abstracted for unit tests.
-const { Pool } = require('pg') as { Pool: new (options: { connectionString: string; max: number }) => SqlPool & SqlClient & { end(): Promise<void> } };
+const { Pool } = require('pg') as { Pool: new (options: { connectionString: string; max: number }) => SqlPool & SqlClient & { on(event:string,listener:(error:{code?:string})=>void):void; end(): Promise<void> } };
 if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL is required');
 const pool=new Pool({connectionString:process.env.DATABASE_URL,max:10});
+pool.on('error',error=>console.error('API database connection lost',{code:error.code||'DB_CONNECTION_LOST'}));
 const port=Number(process.env.PORT??4000);
 const json=(res:ServerResponse,status:number,data:unknown)=>{res.writeHead(status,{'content-type':'application/json; charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff'});res.end(JSON.stringify(data));};
 async function body(req:IncomingMessage,maxBytes=65536):Promise<unknown>{

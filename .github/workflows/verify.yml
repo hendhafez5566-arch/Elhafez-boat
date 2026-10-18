@@ -26,8 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run check
+      - run: node tests/flow-load.mjs
       - run: npm run db:migrate
       - run: CI_DB_INTEGRATION=1 node tests/db-integration.mjs
 
@@ -99,6 +100,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: elhafez-browser-acceptance
-          path: acceptance-evidence/*.png
+          path: |
+            acceptance-evidence/*.png
+            acceptance-evidence/http-load.json
+            acceptance-evidence/browser-pages.json
           if-no-files-found: ignore
           retention-days: 7

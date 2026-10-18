@@ -175,6 +175,42 @@ try{
  assert.equal(afterResume.messages.filter(m=>String(m.body).includes('بعد الانتظار')).length,1,'Delayed reply must not be duplicated');
  console.log('PASS real delayed conversation continuation from PostgreSQL worker, exactly once');
 
+ // Two API replicas and competing workers against the same limited-role database.
+ const replica=launch('api-replica',process.execPath,['.build/apps/api/src/server.js'],{...env,PORT:'4001'});
+ for(let i=0;i<50;i++){try{if((await fetch('http://127.0.0.1:4001/health')).ok)break}catch{}await sleep(200)}
+ const replicaRead=()=>fetch('http://127.0.0.1:4001/api/v1/catalog',{headers:{authorization:'Bearer '+one}});
+ assert.equal((await replicaRead()).status,200);
+ const secondWorker=launch('worker-2',process.execPath,['.build/apps/worker/main.js'],{...env,META_GRAPH_VERSION:'v24.0'});
+ const crashVisitor=await expectCode('/api/v1/widget/start',{method:'POST',headers:{origin:base},body:{widgetKey:widgetConfig.widgetKey,name:'Crash recovery visitor'}},201);
+ // Kill the first worker; committed delay state must remain exactly-once with a competitor alive.
+ worker.kill('SIGKILL');await once(worker,'exit');
+ apiProcess.kill('SIGKILL');await once(apiProcess,'exit');
+ apiProcess=launch('api-restarted',process.execPath,['.build/apps/api/src/server.js'],env);
+ for(let i=0;i<60;i++){try{if((await request('/health')).status===200)break}catch{}await sleep(200)}
+ assert.equal((await request('/api/v1/auth/me',{token:one})).status,200,'Durable login survives API crash');
+ // Drop idle runtime DB connections, simulating a connection interruption without deleting data.
+ await sleep(300);
+ await db.query('SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename=$1 AND state=\'idle\'',[role]);
+ await sleep(500);
+ assert.equal(apiProcess.exitCode,null,'Idle DB disconnect must not crash API');
+ assert.equal(secondWorker.exitCode,null,'Idle DB disconnect must not crash worker');
+ assert.equal((await replicaRead()).status,200,'Replica reconnects after DB connection termination');
+ let crashReplies;for(let i=0;i<60;i++){crashReplies=await expectCode('/api/v1/widget/messages',{token:crashVisitor.token,headers:{origin:base}},200);if(crashReplies.messages.some(m=>String(m.body).includes('بعد الانتظار')))break;await sleep(250)}
+ assert.equal(crashReplies.messages.filter(m=>String(m.body).includes('بعد الانتظار')).length,1,'Competing worker must resume pending delay after peer crash');
+ const recovered=await expectCode('/api/v1/widget/messages',waitingOpts,200);
+ assert.equal(recovered.messages.filter(m=>String(m.body).includes('بعد الانتظار')).length,1);
+ console.log('PASS API SIGKILL/restart, competing worker survival, idle PostgreSQL disconnect/reconnect, durable session and completed delay preserved');
+ const latency=[];let next=0;const loadStarted=performance.now();
+ await Promise.all(Array.from({length:40},async()=>{while(next<400){const i=next++;const t=performance.now();const response=i%2?await replicaRead():await fetch('http://127.0.0.1:4000/api/v1/catalog',{headers:{authorization:'Bearer '+one}});await response.arrayBuffer();assert.equal(response.status,200);latency.push(performance.now()-t)}}));
+ latency.sort((a,b)=>a-b);const loadMs=performance.now()-loadStarted;
+ const load={requests:400,concurrency:40,apiInstances:2,workers:2,elapsedMs:loadMs,requestsPerSecond:400000/loadMs,p50Ms:latency[200],p95Ms:latency[380],p99Ms:latency[396],scope:'authenticated catalog reads only; not full workload capacity'};
+ const fs=await import('node:fs/promises');await fs.mkdir('acceptance-evidence',{recursive:true});await fs.writeFile('acceptance-evidence/http-load.json',JSON.stringify(load,null,2));console.log('PASS HTTP load '+JSON.stringify(load));
+ // A shared identity must enforce a single budget across independent DB clients.
+ const {distributedLimit}=await import('../.build/apps/api/src/rate-limit.js');
+ process.env.RATE_LIMIT_SECRET=env.RATE_LIMIT_SECRET;
+ const budgetClients=await Promise.all(Array.from({length:2},async()=>{const c=new pg.Client({connectionString:runtimeUrl.toString()});await c.connect();return c}));
+ try{const outcomes=await Promise.allSettled(Array.from({length:40},(_,i)=>distributedLimit(budgetClients[i%2],'acceptance-'+suffix,20,3600)));assert.equal(outcomes.filter(r=>r.status==='fulfilled').length,20);assert.ok(outcomes.filter(r=>r.status==='rejected').every(r=>r.reason.status===429))}finally{await Promise.all(budgetClients.map(c=>c.end()))}
+ console.log('PASS distributed throttle: 40 attempts, exactly 20 accepted / 20 HTTP 429 outcomes');
  const started=performance.now();
  const batch=await Promise.all(Array.from({length:40},()=>request('/api/v1/catalog',{token:one})));
  const elapsed=performance.now()-started;
