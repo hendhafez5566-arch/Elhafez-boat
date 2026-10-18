@@ -1,3 +1,9 @@
+# Verified pilot source — 2026-10-18
+
+Source 1999822571eabb3c64f55c38250a76b5d0fe3b8a passed both jobs of CI 39122580115; logs inspected. 96/96 plus real PostgreSQL/API/worker/Chromium/ClamAV/restore/Docker/Compose. New WhatsApp reconnect/identity/route diagnostics passed with loopback Meta fixtures. 78 actual Chromium PNGs at https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39122580115/artifacts/12135101946 . Full evidence/limits: root PILOT-ACCEPTANCE-REPORT.md. Public staging, actual Meta/phone onboarding and all live WhatsApp cases remain BLOCKED pending owner approval/resources. All-button/accessibility coverage remains incomplete. No merge/production deploy/live-provider access.
+
+---
+
 # Pilot readiness continuation — 2026-10-18
 
 Authoritative report: `PILOT-ACCEPTANCE-REPORT.md` at repository root; owner steps: `docs/24-WHATSAPP-PILOT.md`.
