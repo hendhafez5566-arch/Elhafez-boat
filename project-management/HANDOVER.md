@@ -1,3 +1,9 @@
+# Visual bot studio refresh — 2026-10-18
+
+On existing branch `feat/stage0-foundation`, draft PR #1, source commits `68495dc`, `9237158`, `0d00532`, and browser/test documentation `d466cc6`. Flow Builder now uses RTL 3-zone component palette / drag-drop canvas / live visual-only message inspector with BUTTONS/LIST previews and a preserved engine preview. Advanced subflows and reusable snippets remain available in a disclosure. Existing flow definitions, API, storage, business behavior, tenant security, WhatsApp, Meta setup and provider sends were not modified. Mobile layout is responsive. Chromium suite was expanded to check palette, buttons/list samples, and synthetic drag/drop; inspect final CI for PASS. Full UX/accessibility testing and platform-wide redesign are still NOT TESTED / NOT DONE. No deploy, merge, Railway or Meta account action. Details in `docs/28-CHATBOT-VISUAL-STUDIO.md`.
+
+---
+
 # Verified WhatsApp self-service — 2026-10-18
 
 Executable source f82fda33efff23bbb6318208e4d88371bf574356 passed both jobs of CI 39126328249; logs inspected: 99/99, 28 migrations/RLS, real API/DB Coexistence + Cloud/registration, Chromium self-service selection/cancel/desktop/mobile, signed customer/buttons/list/CRM/handoff/echo/history/delayed-account events, restore/ClamAV/Docker/two-replica Compose and local owner bootstrap/login. See root WHATSAPP-COEXISTENCE-SELF-SERVICE-ACCEPTANCE.md for exact scope and initial failures resolved without weakening protection.

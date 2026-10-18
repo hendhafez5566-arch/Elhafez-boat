@@ -1,3 +1,9 @@
+# Visual bot studio refresh — 2026-10-18
+
+On existing branch `feat/stage0-foundation`, draft PR #1, source commits `68495dc`, `9237158`, `0d00532`, and browser/test documentation `d466cc6`. Flow Builder now uses RTL 3-zone component palette / drag-drop canvas / live visual-only message inspector with BUTTONS/LIST previews and a preserved engine preview. Advanced subflows and reusable snippets remain available in a disclosure. Existing flow definitions, API, storage, business behavior, tenant security, WhatsApp, Meta setup and provider sends were not modified. Mobile layout is responsive. Chromium suite was expanded to check palette, buttons/list samples, and synthetic drag/drop; inspect final CI for PASS. Full UX/accessibility testing and platform-wide redesign are still NOT TESTED / NOT DONE. No deploy, merge, Railway or Meta account action. Details in `docs/28-CHATBOT-VISUAL-STUDIO.md`.
+
+---
+
 # Feature expansion — 2026-10-18 (source delivered; CI acceptance pending)
 
 Branch `feat/stage0-foundation` / draft PR #1. Source changes: [reports 3cea98b](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/3cea98b7fdfa1f400f77cb35af0bcc2d25520da9), [AI 5ee7fad](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/5ee7fadbc154f0d24e25c4c1978d8da29964b13d), [CRM 03d1829](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/03d18292d3f5c4853b5d07097c242b91ad118300), [Meta comment automation eaeaff9](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/eaeaff90c49769a48bddf5cde65f71e673287d34).
