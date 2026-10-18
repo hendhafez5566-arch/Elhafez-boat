@@ -137,6 +137,23 @@ try{
  const home=await request('/');assert.equal(home.status,200);assert.match(home.data,/Elhafez Boat/);
  const widget=await request('/widget.js');assert.equal(widget.status,200);assert.match(widget.data,/widget/i);
  const pageAuth={slug:slugA,email:`${slugA}@example.invalid`,password:pass};
+ // Publish a new version with a real short delay. Earlier customer sessions remain pinned.
+ const flowRevision=await expectCode('/api/v1/flows',{token:one},200);
+ const delayedFlow={name:'Delayed support flow',startId:'start',nodes:[
+  {id:'start',type:'START',next:'greeting'},
+  {id:'greeting',type:'TEXT',text:'رسالة قبل الانتظار',next:'pause'},
+  {id:'pause',type:'DELAY',seconds:1,next:'followup'},
+  {id:'followup',type:'TEXT',text:'رسالة بعد الانتظار',next:'end'},
+  {id:'end',type:'END',text:'انتهت المحادثة'}]};
+ await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{
+   ...delayedFlow,expectedRevision:Number(flowRevision.draft.draftRevision||0)}},200);
+ await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
+ const waitingVisitor=await expectCode('/api/v1/widget/start',{method:'POST',headers:{origin:base},body:{
+   widgetKey:widgetConfig.widgetKey,name:'زائر تأخير تجريبي'}},201);
+ const waitingOpts={token:waitingVisitor.token,headers:{origin:base}};
+ const beforeResume=await expectCode('/api/v1/widget/messages',waitingOpts,200);
+ assert.ok(beforeResume.messages.some(m=>String(m.body).includes('قبل الانتظار')));
+ assert.equal(beforeResume.messages.some(m=>String(m.body).includes('بعد الانتظار')),false);
  const worker=launch('worker',process.execPath,['.build/apps/worker/main.js'],{...env,META_GRAPH_VERSION:'v24.0'});
  let healthy=false;
  for(let i=0;i<35;i++){
@@ -147,6 +164,17 @@ try{
  }
  assert.ok(healthy,'Worker did not process both tenants using restricted runtime role');
  console.log('PASS background worker heartbeat for both scoped tenant queues');
+ let resumed=false;
+ for(let i=0;i<40;i++){
+   const messages=await expectCode('/api/v1/widget/messages',waitingOpts,200);
+   if(messages.messages.some(m=>String(m.body).includes('بعد الانتظار'))){resumed=true;break}
+   await sleep(300);
+ }
+ assert.ok(resumed,'Delayed website reply was not resumed by background worker');
+ const afterResume=await expectCode('/api/v1/widget/messages',waitingOpts,200);
+ assert.equal(afterResume.messages.filter(m=>String(m.body).includes('بعد الانتظار')).length,1,'Delayed reply must not be duplicated');
+ console.log('PASS real delayed conversation continuation from PostgreSQL worker, exactly once');
+
  const started=performance.now();
  const batch=await Promise.all(Array.from({length:40},()=>request('/api/v1/catalog',{token:one})));
  const elapsed=performance.now()-started;
