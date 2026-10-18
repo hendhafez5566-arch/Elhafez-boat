@@ -1,3 +1,10 @@
+## 2026-10-18 — Premium RTL SaaS visual rebuild (source, pending final acceptance)
+
+- Replaced canvas card renderer with visual messages, choices, zoom/pan/auto-layout, highlighted paths and contextual output ports.
+- Added searchable step insertion preserving target routes, collapsible palette, fullscreen canvas, inspector drawer with advanced developer options, and simulator dialog reusing existing preview engine.
+- Refactored global design tokens, RTL layout and shared component baseline; introduced inline SVG navigation and matching platform owner styling.
+- Added real Chromium interactions/screenshots for premium studio controls; old business/tenant/provider behavior retained. See docs/29-PREMIUM-UI-REBUILD.md for exact limitations.
+
 # Visual bot studio refresh — 2026-10-18
 
 On existing branch `feat/stage0-foundation`, draft PR #1, source commits `68495dc`, `9237158`, `0d00532`, and browser/test documentation `d466cc6`. Flow Builder now uses RTL 3-zone component palette / drag-drop canvas / live visual-only message inspector with BUTTONS/LIST previews and a preserved engine preview. Advanced subflows and reusable snippets remain available in a disclosure. Existing flow definitions, API, storage, business behavior, tenant security, WhatsApp, Meta setup and provider sends were not modified. Mobile layout is responsive. Chromium suite was expanded to check palette, buttons/list samples, and synthetic drag/drop; inspect final CI for PASS. Full UX/accessibility testing and platform-wide redesign are still NOT TESTED / NOT DONE. No deploy, merge, Railway or Meta account action. Details in `docs/28-CHATBOT-VISUAL-STUDIO.md`.

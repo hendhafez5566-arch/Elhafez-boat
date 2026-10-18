@@ -1,3 +1,10 @@
+## 2026-10-18 — Premium RTL SaaS visual rebuild (source, pending final acceptance)
+
+- Replaced canvas card renderer with visual messages, choices, zoom/pan/auto-layout, highlighted paths and contextual output ports.
+- Added searchable step insertion preserving target routes, collapsible palette, fullscreen canvas, inspector drawer with advanced developer options, and simulator dialog reusing existing preview engine.
+- Refactored global design tokens, RTL layout and shared component baseline; introduced inline SVG navigation and matching platform owner styling.
+- Added real Chromium interactions/screenshots for premium studio controls; old business/tenant/provider behavior retained. See docs/29-PREMIUM-UI-REBUILD.md for exact limitations.
+
 # 2026-10-18 — Permanent WhatsApp company self-service
 
 Embedded Signup with owner/browser/tenant-bound one-use grant, encrypted phone choice, WABA/phone/app/scope validation, subscription checks; Arabic Cloud/Coexistence UI; consent-gated sync/registration; app echo/history/contact/account lifecycle and no-history service-window extension; migration 0028 RLS; real API/DB/browser fixture acceptance; local no-hosting profile. Flags remain off without official Meta setup/approval. No external accounts connected or costs created.

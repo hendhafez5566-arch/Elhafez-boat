@@ -1,3 +1,9 @@
+## Premium UI/UX source work — 2026-10-18
+
+Significant frontend source redesign on existing draft PR #1; source HEAD 09f6f125 when browser extensions were committed. Canvas/cards, contextual (+), on-demand inspector and simulator, unified RTL shell, owner page styling, SVG navigation, and expanded Chromium evidence scripts are implemented. Existing engine/API/tenant/Meta unchanged. **Final full Chromium CI, screenshots and full cross-page UX closure remain verification-dependent; do not mark all six premium tasks complete.** See docs/29-PREMIUM-UI-REBUILD.md. No merge, production deploy, paid dependencies, provider account or Railway modification.
+
+---
+
 # Visual bot studio refresh — 2026-10-18
 
 On existing branch `feat/stage0-foundation`, draft PR #1, source commits `68495dc`, `9237158`, `0d00532`, and browser/test documentation `d466cc6`. Flow Builder now uses RTL 3-zone component palette / drag-drop canvas / live visual-only message inspector with BUTTONS/LIST previews and a preserved engine preview. Advanced subflows and reusable snippets remain available in a disclosure. Existing flow definitions, API, storage, business behavior, tenant security, WhatsApp, Meta setup and provider sends were not modified. Mobile layout is responsive. Chromium suite was expanded to check palette, buttons/list samples, and synthetic drag/drop; inspect final CI for PASS. Full UX/accessibility testing and platform-wide redesign are still NOT TESTED / NOT DONE. No deploy, merge, Railway or Meta account action. Details in `docs/28-CHATBOT-VISUAL-STUDIO.md`.

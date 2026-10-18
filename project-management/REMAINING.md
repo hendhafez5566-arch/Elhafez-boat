@@ -1,3 +1,13 @@
+## Open acceptance items after Premium UI/UX work — 2026-10-18
+
+1. Inspect both jobs on the final documentation HEAD and review real Chromium PNG artifact; if a new UI check fails, repair from source.
+2. Re-check each advanced section, nested dialog, loading/error/empty state, keyboard/screenreader and physical mobile usability. A new shared UI shell is not proof every subpage is comprehensively redesigned.
+3. Visually evaluate message-card collision after manual drag and improve non-overlap constraints; add real edge-drag connection if needed (existing click-to-connect still works).
+4. Produce matched before/after screenshots from comparable persisted fixture states rather than representing different states as an accurate comparison.
+5. Real Meta/WhatsApp Coexistence live approval/account/number/delivery remains separately blocked and outside this UI task.
+
+---
+
 # Visual bot studio refresh — 2026-10-18
 
 On existing branch `feat/stage0-foundation`, draft PR #1, source commits `68495dc`, `9237158`, `0d00532`, and browser/test documentation `d466cc6`. Flow Builder now uses RTL 3-zone component palette / drag-drop canvas / live visual-only message inspector with BUTTONS/LIST previews and a preserved engine preview. Advanced subflows and reusable snippets remain available in a disclosure. Existing flow definitions, API, storage, business behavior, tenant security, WhatsApp, Meta setup and provider sends were not modified. Mobile layout is responsive. Chromium suite was expanded to check palette, buttons/list samples, and synthetic drag/drop; inspect final CI for PASS. Full UX/accessibility testing and platform-wide redesign are still NOT TESTED / NOT DONE. No deploy, merge, Railway or Meta account action. Details in `docs/28-CHATBOT-VISUAL-STUDIO.md`.
