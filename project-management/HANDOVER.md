@@ -1,3 +1,9 @@
+## 2026-10-18 — Vessel visual workspace (structural redesign)
+
+Implemented new narrow icon rail, searchable categorized navigation drawer, transformed company dashboard/real metrics/onboarding, re-composed Inbox and full-width bot Canvas with contextual palette. Actual DOM controls and endpoints preserved; no database, provider, Meta, Railway, production merge/deploy or paid dependency. Evidence: [docs/31-VESSEL-WORKSPACE.md](../docs/31-VESSEL-WORKSPACE.md). Final browser screenshot acceptance must be checked on the final HEAD. Full platform-wide nested-page redesign and live WhatsApp activation are NOT claimed complete.
+
+---
+
 ## 2026-10-18 — Premium UI/UX continuation acceptance
 
 **Source HEAD:** `ea1e0e5699cd2e3e47e0b6b141e50ca2eef3859f` (Draft PR #1, unmerged/unpublished). Current source CI run [39139907714](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39139907714) had BOTH jobs SUCCESS. Full matrix, gaps, and no-cost/no-provider scope: [docs/30-PREMIUM-UI-CLOSURE.md](../docs/30-PREMIUM-UI-CLOSURE.md).

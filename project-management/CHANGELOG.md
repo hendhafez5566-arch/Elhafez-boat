@@ -1,3 +1,9 @@
+## 2026-10-18 — Vessel visual workspace (structural redesign)
+
+Implemented new narrow icon rail, searchable categorized navigation drawer, transformed company dashboard/real metrics/onboarding, re-composed Inbox and full-width bot Canvas with contextual palette. Actual DOM controls and endpoints preserved; no database, provider, Meta, Railway, production merge/deploy or paid dependency. Evidence: [docs/31-VESSEL-WORKSPACE.md](../docs/31-VESSEL-WORKSPACE.md). Final browser screenshot acceptance must be checked on the final HEAD. Full platform-wide nested-page redesign and live WhatsApp activation are NOT claimed complete.
+
+---
+
 ## 2026-10-18 — Premium UI completion pass (verified source ea1e0e56)
 
 - Canvas now uses measured collision-safe pointer positioning, topology aware auto layout, real branch-port connection controls and focus/immersive view.
