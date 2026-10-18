@@ -81,6 +81,7 @@ try{
  await until("document.querySelectorAll('.canvas-node').length>"+beforeInsert,'contextual step insertion');
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),beforeInsert+1,'Contextual insertion adds exactly one node');
  await until("Boolean(document.querySelector('.builder-inspector:not([hidden]) textarea'))",'contextual inspector');
+ const newMessage='رسالة جديدة من تجربة المتصفح — لا ترسل إلى عملاء حقيقيين';
  await evaluate(`(()=>{const t=document.querySelector('.builder-inspector textarea');t.value=${JSON.stringify(newMessage)};t.dispatchEvent(new Event('input',{bubbles:true})})()`);
  assert.ok((await evaluate("document.querySelector('.canvas-node.selected .canvas-message-text')?.textContent||''")).includes('رسالة جديدة'),'Live canvas message must reflect inspector edits');
  await screenshot('premium-new-message-inspector-desktop.png');
