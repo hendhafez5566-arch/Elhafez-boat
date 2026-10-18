@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomBytes} from 'node:crypto';
-import {verifyWhatsAppAccount,connectWhatsApp,diagnoseWhatsApp} from '../.build/apps/api/src/whatsapp.js';
+import {verifyWhatsAppAccount,connectWhatsApp,diagnoseWhatsApp,disconnectWhatsApp} from '../.build/apps/api/src/whatsapp.js';
 const actor={tenantId:'11111111-1111-4111-8111-111111111111',userId:'22222222-2222-4222-8222-222222222222',role:'OWNER'};
 const id='33333333-3333-4333-8333-333333333333';
 test('WhatsApp onboarding validates WABA ownership, rejects redirects/malformed provider data, and safely reconnects',async()=>{
@@ -23,6 +23,8 @@ test('WhatsApp onboarding validates WABA ownership, rejects redirects/malformed 
   const insert=sql.find(x=>x.q.includes('INSERT INTO whatsapp_accounts'));
   assert.match(insert.q,/whatsapp_accounts.tenant_id=EXCLUDED.tenant_id/);assert.match(insert.q,/status='CONNECTED'/);assert.ok(!insert.p[3].includes(token));
   await assert.rejects(diagnoseWhatsApp(db,{...actor,role:'AGENT'},id),e=>e.status===403);
+  await disconnectWhatsApp({query:async(q)=>{sql.push({q});return {rowCount:1,rows:[{phone_number_id:'123456'}]}}},actor,id);
+  assert.ok(sql.some(x=>x.q.includes("status='FAILED'")&&x.q.includes("status='PENDING'")));
   const disabled=await diagnoseWhatsApp({query:async()=>({rows:[{status:'DISABLED'}]})},actor,id);assert.equal(disabled.verified,false);
  }finally{globalThis.fetch=old;if(version===undefined)delete process.env.META_GRAPH_VERSION;else process.env.META_GRAPH_VERSION=version;if(key===undefined)delete process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY;else process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY=key}
 });

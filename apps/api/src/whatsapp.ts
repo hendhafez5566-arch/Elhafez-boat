@@ -114,6 +114,10 @@ export async function disconnectWhatsApp(db:SqlClient,actor:Actor,accountId:stri
  allow(actor,['OWNER']);if(!isUuid(accountId))throw new HttpFailure(400,'Invalid WhatsApp account ID');
  const r=await db.query(`UPDATE whatsapp_accounts SET status='DISABLED' WHERE tenant_id=$1 AND id=$2 AND status='CONNECTED' RETURNING phone_number_id`,[actor.tenantId,accountId]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Connected account not found');
+ // Do not release pre-disconnect pending messages on a later reconnection.
+ // In-flight/UNCERTAIN jobs retain evidence and must never be blindly retried.
+ await db.query(`UPDATE whatsapp_outbox SET status='FAILED',last_error='Account disconnected before dispatch'
+  WHERE tenant_id=$1 AND account_id=$2 AND status='PENDING'`,[actor.tenantId,accountId]);
  await db.query(`DELETE FROM whatsapp_routes WHERE tenant_id=$1 AND phone_number_id=$2`,[actor.tenantId,r.rows[0].phone_number_id]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_DISCONNECTED','whatsapp',$3)`,[actor.tenantId,actor.userId,accountId]);return {disconnected:true};
 }
