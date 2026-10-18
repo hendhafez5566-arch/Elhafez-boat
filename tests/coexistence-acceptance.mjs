@@ -19,11 +19,18 @@ export async function coexistenceAcceptance({db,a,b,base,env}){
  const payload=id=>({attemptId:id,code:'fixture-code-coexist',wabaId:'876543210'});
  await call('/whatsapp/signup/complete',a.token,payload(cancelled.data.attemptId),cancelled.cookie,409);
  const expired=await start();await db.query("UPDATE whatsapp_onboarding_attempts SET expires_at=now()-interval '1 second' WHERE tenant_id=$1 AND id=$2",[a.tenant,expired.data.attemptId]);await call('/whatsapp/signup/complete',a.token,payload(expired.data.attemptId),expired.cookie,409);
+ const rejected=await start();await call('/whatsapp/signup/complete',a.token,{...payload(rejected.data.attemptId),code:'fixture-denied-code'},rejected.cookie,502);
  const bound=await start();await call('/whatsapp/signup/complete',b.token,payload(bound.data.attemptId),bound.cookie,409);await call('/whatsapp/signup/complete',a.token,payload(bound.data.attemptId),'a'.repeat(43),409);
  const result=await call('/whatsapp/signup/complete',a.token,payload(bound.data.attemptId),bound.cookie);const account=result.data.accountId;
  assert.ok(account);assert.equal(result.data.authorized,true);assert.equal(result.data.subscribed,true);assert.equal(result.data.receivingVerified,false);assert.equal(JSON.stringify(result.data).includes('access_token'),false);
  await call('/whatsapp/signup/complete',a.token,payload(bound.data.attemptId),bound.cookie,409);
  const conflict=await call('/whatsapp/signup/start',b.token,{mode:'COEXISTENCE'},undefined,201);const denied=await fetch(base+'/api/v1/whatsapp/signup/complete',{method:'POST',headers:{authorization:'Bearer '+b.token,origin,'content-type':'application/json',cookie:'eb_wa_signup='+conflict.cookie},body:JSON.stringify(payload(conflict.data.attemptId))});assert.ok(denied.status>=400);
+ const cloud=await call('/whatsapp/signup/start',b.token,{mode:'CLOUD'},undefined,201);
+ const cloudResult=await call('/whatsapp/signup/complete',b.token,{attemptId:cloud.data.attemptId,code:'fixture-cloud-code',wabaId:'2233445566'},cloud.cookie);assert.equal(cloudResult.data.mode,'CLOUD');
+ await call('/whatsapp/signup/accounts/'+cloudResult.data.accountId+'/operation',b.token,{operation:'register',pin:'123456'});
+ await call('/whatsapp/signup/accounts/'+cloudResult.data.accountId+'/operation',b.token,{operation:'register',pin:'123456'},undefined,409);
+ await call('/whatsapp/signup/accounts/'+account+'/operation',a.token,{operation:'register',pin:'123456'},undefined,400);
+ console.log('PASS COEXISTENCE new Cloud authorization/register once; Coexistence refuses register; denied provider authorization fails safely');
  const forged=await fetch(base+'/api/v1/whatsapp/signup/start',{method:'POST',headers:{authorization:'Bearer '+a.token,origin:'https://evil.example','content-type':'application/json'},body:JSON.stringify({mode:'CLOUD'})});assert.equal(forged.status,403);
  // Actual signed HTTP webhook, not direct parser calls. Never contacts Meta.
  async function webhook(field,value,time){const body=JSON.stringify({object:'whatsapp_business_account',entry:[{id:'876543210',time,changes:[{field,value:{messaging_product:'whatsapp',metadata:{phone_number_id:'777777777',display_phone_number:'15550783881'},...value}}]}]});const response=await fetch(base+'/api/v1/whatsapp/webhook',{method:'POST',headers:{'content-type':'application/json','x-hub-signature-256':'sha256='+createHmac('sha256',env.META_APP_SECRET).update(body).digest('hex')},body});assert.equal(response.status,200,await response.text())}

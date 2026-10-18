@@ -3,6 +3,7 @@
  */
 import assert from 'node:assert/strict';
 export async function browserCoexistence({ws,send,evaluate,until,screenshot,base}){
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
  let cookie='';const pending=new Set();
  const bridge=event=>{const e=JSON.parse(String(event.data));if(e.method!=='Fetch.requestPaused')return;
   const task=(async()=>{const p=e.params,u=new URL(p.request.url);const headers=new Headers(p.request.headers);headers.set('origin','https://pilot.fixture.test');
