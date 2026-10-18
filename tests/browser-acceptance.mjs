@@ -241,6 +241,25 @@ try{
  assert.ok(await evaluate("document.activeElement!==document.body"),'Keyboard Tab must reach an actionable control');
  console.log('PASS browser real catalog create/edit/publish/archive + stored XSS text safety; flow save/publish; privacy save; rejected integration host; keyboard Tab');
  if(process.env.CI_LOCAL_CLOSURE==='1'){const {browserCoexistence}=await import('./browser-coexistence.mjs');await browserCoexistence({ws,send,evaluate,until,screenshot,base});}
+  // Vessel continuation: real Chromium DOM and functional local catalog filtering.
+ await evaluate("document.querySelector('[data-page=leads]').click()");
+ await until("Boolean(document.querySelector('#leads .vessel-page-hero'))",'CRM vessel page');
+ assert.equal(await evaluate("Boolean(document.querySelector('#leads .vessel-page-symbol svg'))"),true,'Section mark should be SVG');
+ await screenshot('vessel-crm-detail-desktop.png');
+ await evaluate("document.querySelector('[data-page=catalog]').click()");
+ await until("Boolean(document.querySelector('#catalog .vessel-library-search'))",'Catalog search');
+ assert.equal(await evaluate("Boolean(document.querySelector('#catalog .vessel-catalog-editor #catalog-form'))"),true,'Existing catalog form preserved');
+ const originalCards=await evaluate("document.querySelectorAll('#catalog-items > .card').length");
+ await evaluate("(()=>{const q=document.querySelector('.vessel-library-search');q.value='__no_matching_items__';q.dispatchEvent(new Event('input',{bubbles:true}))})()");
+ assert.equal(await evaluate("document.querySelectorAll('#catalog-items > .card:not([hidden])').length"),0,'Catalog local filter');
+ await evaluate("(()=>{const q=document.querySelector('.vessel-library-search');q.value='';q.dispatchEvent(new Event('input',{bubbles:true}))})()");
+ assert.equal(await evaluate("document.querySelectorAll('#catalog-items > .card:not([hidden])').length"),originalCards,'Cleared catalog filter');
+ await screenshot('vessel-catalog-library-desktop.png');
+ await evaluate("document.querySelector('[data-page=analytics]').click()");
+ await until("Boolean(document.querySelector('#analytics .vessel-page-hero'))",'Analytics vessel page');
+ await screenshot('vessel-analytics-detail-desktop.png');
+ console.log('PASS Vessel cross-page UI: CRM, catalog filter/recovery and analytics');
+ 
  // Visit every owner page at desktop/tablet/mobile widths; no connect/send/publish actions.
  const pages=await evaluate("[...document.querySelectorAll('[data-page]')].map(n=>n.dataset.page)");
  const pageEvidence=[];
