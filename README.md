@@ -45,3 +45,12 @@ Read [implementation and limitations](docs/18-FLOW-REUSE-AND-CAROUSEL.md). Devel
 Advanced runtime source delivery, setup and explicit limits: [docs/19-ADVANCED-RUNTIME.md](docs/19-ADVANCED-RUNTIME.md). Includes migration 0024. Meta Commerce templates are implemented in the subsequent continuation below; live provider/scanner acceptance remains open.
 
 Meta Commerce templates and tenant mappings: [docs/20-META-COMMERCE.md](docs/20-META-COMMERCE.md). Apply migration 0025; provider activation remains unverified.
+
+
+## Latest CI runtime evidence — 2026-10-18
+
+**Source has advanced beyond some historical descriptions above:** native connectors, subflows, social adapters and Meta Commerce source exist on this draft branch. **25 migrations** are now required. See `docs/19-ADVANCED-RUNTIME.md` and `docs/20-META-COMMERCE.md` for account-specific setup; not all providers have live credentials.
+
+[GitHub run 39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303) **PASS**: 70/70 Node checks, PostgreSQL schema/RLS, two separate tenants running with an actual non-BYPASSRLS runtime role, catalog/FAQ, flow publish, Website Chat visitor → lead → employee handoff, duplicate/origin protection, worker DELAY continuation exactly once, Chrome desktop/mobile-viewport login & canvas, and genuine disposable `pg_dump`/`pg_restore`. Five actual screenshots are in the `elhafez-browser-acceptance` CI artifact.
+
+These are test-environment validations, **not proof of live Meta/Google/Shopify/provider connection, real ClamAV/AI model, production multi-replica load, or commercial readiness**. Full test scope and honest limitations: [acceptance evidence](project-management/ACCEPTANCE-EXECUTION-2026-10-18.md).
