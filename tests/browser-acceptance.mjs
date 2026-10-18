@@ -67,8 +67,19 @@ try{
  await evaluate("(()=>{const a=document.querySelector('.boat-guide-body input[maxlength=\"80\"]');a.value='شركة رواد السياحة التجريبية';a.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.boat-guide-actions .primary').click()})()");
  await until("Boolean(document.querySelector('.boat-guide-map li'))",'generated journey review');
  await screenshot('guided-bot-03-journey-desktop.png');
- await evaluate("document.querySelector('.boat-guide-hero button').click()");
- console.log('PASS browser guided creator: plain Arabic description, company data, publishable journey review; no external send');
+ await evaluate("document.querySelector('.boat-guide-actions .primary').click()");
+ await until("document.getElementById('builder-name').value.includes('شركة رواد السياحة التجريبية')",'actual editable draft created by guide');
+ assert.equal(await evaluate("document.getElementById('builder-unsaved').textContent"),'تعديلات غير محفوظة');
+ await screenshot('guided-bot-04-generated-draft-desktop.png');
+ // A business owner will often leave the builder to fill the catalog first.
+ // Switching sections must not erase the bot that was just generated.
+ await evaluate("document.querySelector('[data-page=catalog]').click()");
+ await until("!document.getElementById('catalog').hidden",'catalog after wizard');
+ await evaluate("document.querySelector('[data-page=flow-builder]').click()");
+ await until("!document.getElementById('flow-builder').hidden",'return to draft');
+ assert.equal(await evaluate("document.getElementById('builder-name').value.includes('شركة رواد السياحة التجريبية')"),true,'Unsaved generated bot must survive section navigation');
+ assert.equal(await evaluate("document.getElementById('builder-unsaved').textContent"),'تعديلات غير محفوظة');
+ console.log('PASS browser guide: actual flow generation plus unsaved draft preserved across catalog navigation; no external send');
 
  await evaluate("document.querySelector('.flow-canvas')?.scrollIntoView({block:'start'})");
  await sleep(200);await screenshot('flow-builder-canvas-desktop.png');
