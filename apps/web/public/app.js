@@ -28,8 +28,43 @@ const advancedLabel=document.createElement('summary');advancedLabel.textContent=
 const advancedButtons=document.createElement('div');advancedButtons.className='nav-advanced-buttons';
 for(const tab of [...nav.querySelectorAll('[data-page]')])if(!basics.has(tab.dataset.page))advancedButtons.append(tab);
 advancedNav.append(advancedButtons);nav.append(advancedNav);
+ // Lightweight inline SVG icon vocabulary shared by everyday and advanced destinations.
+ // Unlike font glyphs, these render consistently in Arabic RTL and require no icon CDN.
+ const navIcons={
+  overview:'M3 10.5 12 3l9 7.5V21h-6v-7H9v7H3z',
+  'flow-builder':'M5 5h6v5H5z M15 15h6v5h-6z M8 10v5h10',
+  'wa-inbox':'M4 5h16v12H9l-5 4z M7 9h10 M7 13h7',
+  leads:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M18 8h4 M20 6v4',
+  analytics:'M4 20V9 M10 20V4 M16 20v-9 M22 20V7',
+  catalog:'M4 4h7v7H4z M14 4h7v7h-7z M4 14h7v7H4z M14 14h7v7h-7z',
+  triggers:'M13 2 4 14h7l-1 8 10-13h-7z',
+  campaigns:'M4 11v4 M8 7v12 M12 10l9-5v14l-9-5H8 M8 19l2 3',
+  media:'M4 4h16v16H4z M7 16l4-4 3 3 3-5 3 5 M8 8h1',
+  website:'M3 4h18v16H3z M3 9h18 M8 9v11',
+  templates:'M4 5h16v15H4z M7 9h10 M7 13h8 M7 17h5',
+  settings:'M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18 M8 12a4 4 0 0 1 8 0 M12 16v2',
+  'ai-settings':'M12 3l2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2z',
+  integrations:'M3 8h7 M14 8h7 M10 8l-2-2 M10 8l-2 2 M14 16H3 M14 16l-2-2 M14 16l-2 2',
+  team:'M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2 M9 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8 M19 8v6 M16 11h6',
+  'wa-connect':'M4 4h16v12H9l-5 4z M8 9h8 M8 12h5',
+  connectors:'M5 6v5 M19 13v5 M3 11h6 M15 13h6 M9 9h6v6',
+  channels:'M3 3h8v8H3z M13 13h8v8h-8z M11 7h4 M15 7v6',
+  'comment-automation':'M4 4h16v12H8l-4 4z M8 9h9 M8 13h6',
+  privacy:'M12 3 4 7v6c0 5 4 8 8 9 4-1 8-4 8-9V7z M9 12l2 2 4-4',
+  usage:'M5 20V9 M11 20V4 M17 20v-8 M3 21h18'
+ };
+ for(const tab of nav.querySelectorAll('[data-page]')){
+  let holder=tab.querySelector('span');if(!holder){holder=document.createElement('span');tab.prepend(holder)}
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('width','20');svg.setAttribute('height','20');
+  svg.setAttribute('fill','none');svg.setAttribute('stroke','currentColor');svg.setAttribute('stroke-width','1.8');
+  svg.setAttribute('stroke-linecap','round');svg.setAttribute('stroke-linejoin','round');
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');path.setAttribute('d',navIcons[tab.dataset.page]||navIcons.settings);
+  svg.append(path);holder.replaceChildren(svg);holder.setAttribute('aria-hidden','true');
+ }
+
 const names=Object.fromEntries([...document.querySelectorAll('[data-page]')].map(n=>[n.dataset.page,n.textContent.trim()]));
-async function choose(page){if(!names[page])return;if(!basics.has(page))advancedNav.open=true;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
+async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();}if(!basics.has(page))advancedNav.open=true;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
 ctx.choose=choose;
 async function onboardingProgress(){
  const host=$('getting-started');host.replaceChildren();host.hidden=!canEdit();
