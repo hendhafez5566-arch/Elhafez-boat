@@ -23,6 +23,7 @@ const assets={
  '/flow-builder.css':['flow-builder.css','text/css; charset=utf-8'],
  '/vessel.css':['vessel.css','text/css; charset=utf-8'],
  '/vessel.js':['vessel.js','text/javascript; charset=utf-8'],
+ '/vessel-pages.js':['vessel-pages.js','text/javascript; charset=utf-8'],
  '/platform.html':['platform.html','text/html; charset=utf-8'],
  '/platform.js':['platform.js','text/javascript; charset=utf-8'],
  '/join.html':['join.html','text/html; charset=utf-8'],
