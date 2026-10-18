@@ -1,0 +1,24 @@
+# Prevent local secrets, customer exports, artifacts and git history entering the Docker build context.
+.git
+.github
+.gitignore
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.p12
+*.pfx
+*.key
+*.secret
+*.log
+node_modules
+**/node_modules
+.build
+coverage
+test-results
+playwright-report
+acceptance-evidence
+**/acceptance-evidence
+*.zip
+.DS_Store
