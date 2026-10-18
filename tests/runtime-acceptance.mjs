@@ -249,7 +249,7 @@ try{
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});
- await writeFile('acceptance-evidence/browser-account.json',JSON.stringify(pageAuth));
+ await writeFile('acceptance-evidence/browser-account.json',JSON.stringify({...pageAuth,widgetKey:widgetConfig.widgetKey}));
  console.log('PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox');
  console.log('PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role');
  // Keep API/web running for browser test, executed as child before cleanup.
