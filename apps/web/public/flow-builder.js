@@ -161,8 +161,8 @@ export function initFlowBuilder({state,api,notify,execute}){
  const palette=$('builder-nodes').closest('.builder-column');
  const properties=$('builder-editor').closest('.builder-column');
  const simulator=$('builder-preview').closest('.builder-column');
- workspace.classList.add('builder-studio');
- palette.classList.add('builder-palette');
+ workspace.classList.add('builder-studio','palette-collapsed');
+ palette.classList.add('builder-palette');palette.hidden=true;
  properties.classList.add('builder-properties');
  simulator.classList.add('builder-simulator');
  palette.querySelector('h3').textContent='مكتبة المكونات';
