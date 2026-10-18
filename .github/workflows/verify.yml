@@ -149,6 +149,18 @@ jobs:
           done
           test "$healthy" -eq 1
           echo 'PASS isolated Compose: 2 API / 2 workers with isolated backend network, loopback web, fixtures, persistent database and outage recovery without process restart'
+          export BOOTSTRAP_TENANT_SLUG=local-pilot
+          export BOOTSTRAP_TENANT_NAME='Local pilot'
+          export BOOTSTRAP_EMAIL=local-owner@example.invalid
+          export BOOTSTRAP_PASSWORD="$(openssl rand -hex 24)"
+          docker compose -p boat-acceptance -f deploy/compose.acceptance.yaml -f deploy/compose.local.yaml config --quiet
+          docker compose -p boat-acceptance -f deploy/compose.acceptance.yaml -f deploy/compose.local.yaml run --rm local-owner
+          node --input-type=module <<'LOCAL_PILOT'
+          import assert from 'node:assert/strict';
+          const r=await fetch('http://127.0.0.1:3016/api/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({tenantSlug:process.env.BOOTSTRAP_TENANT_SLUG,email:process.env.BOOTSTRAP_EMAIL,password:process.env.BOOTSTRAP_PASSWORD})});
+          const d=await r.json();assert.equal(r.status,200);assert.ok(d.token);
+          console.log('PASS local Compose overlay/bootstrap and actual disposable owner login; no credentials printed');
+          LOCAL_PILOT
       - name: Upload non-sensitive browser screenshots
         if: always()
         uses: actions/upload-artifact@v4
