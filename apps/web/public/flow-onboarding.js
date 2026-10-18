@@ -34,7 +34,8 @@ export function inferQuickSetup(description=''){
   ['shop',/متجر|محل|منتج|ملابس|تجاره|سوق/]
  ];
  const industry=matches.find(([_,matcher])=>matcher.test(text))?.[0]||'general';
- const goal=/موظف|دعم|خدمه عملاء|استفسار|سؤال|مشكل/.test(text)?'support':
+ const goal=/تسجل|تسجيل|اجمع|جمع|بيانات|مهتم|متابعه|ليد/.test(text)?'leads':
+  /موظف|دعم|خدمه عملاء|استفسار|سؤال|مشكل/.test(text)?'support':
   /عرض|برامج|منتجات|كتالوج|منيو|عروض|اسعار/.test(text)?'catalog':'leads';
  return {industry,goal,source:'KEYWORD_SUGGESTION'};
 }
