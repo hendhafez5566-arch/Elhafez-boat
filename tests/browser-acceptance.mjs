@@ -84,6 +84,26 @@ try{
  await evaluate("document.getElementById('logout').click()");
  await until("Boolean(document.getElementById('login')&&!document.getElementById('login').hidden)",'logout/login screen');
  assert.equal(await evaluate("document.getElementById('app').hidden"),true);
+ // Customer-facing Website Widget: load actual deployed widget.js and talk to the
+ // same PostgreSQL-backed flow engine; no provider accounts or mocked chat messages.
+ assert.match(account.widgetKey||'',/^[A-Za-z0-9_-]{32}$/,'Acceptance widget key required');
+ await send('Page.navigate',{url:base+'/join.html'});
+ await until("document.readyState==='complete'",'website host page');
+ const widgetBoot="(()=>{document.body.replaceChildren();const h=document.createElement('h1');h.textContent='موقع تجريبي — واجهة العميل';document.body.append(h);const p=document.createElement('p');p.textContent='محادثة Website Chat مع بوت منشور في قاعدة بيانات الاختبار';document.body.append(p);const s=document.createElement('script');s.src='/widget.js';s.dataset.key="+JSON.stringify(account.widgetKey)+";document.body.append(s);return true})()";
+ await evaluate(widgetBoot);
+ const hostExpr="[...document.querySelectorAll('body > div')].find(n=>n.shadowRoot?.querySelector('section'))";
+ await until("Boolean("+hostExpr+")",'real embedded widget script');
+ await evaluate("(()=>{const n="+hostExpr+";n.shadowRoot.querySelector('button').click();return true})()");
+ await until("("+hostExpr+")?.shadowRoot.querySelectorAll('.bubble').length>=2",'real published flow in visitor widget');
+ await screenshot('website-widget-customer-desktop.png');
+ await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
+ await sleep(220);await screenshot('website-widget-customer-mobile.png');
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
+ await evaluate("(()=>{const n="+hostExpr+";const b=[...n.shadowRoot.querySelectorAll('.choices button')].find(x=>x.textContent.trim()==='موظف');if(!b)throw new Error('Live flow employee action missing');b.click();return true})()");
+ await until("("+hostExpr+")?.shadowRoot.querySelector('.error')?.textContent.includes('المحادثة مع موظف الشركة')",'website staff handoff');
+ await screenshot('website-widget-staff-handoff-desktop.png');
+ assert.equal(network.some(n=>n.status>=500),false,'Customer widget must not encounter server 5xx');
+ console.log('PASS actual Website Widget desktop/mobile with published flow and customer-to-employee handoff; three extra Chromium PNGs');
  assert.deepEqual(exceptions,[],`Browser JavaScript exceptions: ${exceptions.join(', ')}`);
  console.log('PASS headless Chrome: RTL company login, real dashboard, flow canvas, mobile viewport, logout');
  console.log('PASS screenshots: dashboard, desktop/mobile flow builder and actual canvas views');
