@@ -170,9 +170,9 @@ try{
    await evaluate("(()=>{const p=document.querySelector('.builder-component-dialog');const t=[...p.querySelectorAll('.builder-picker-item')].find(b=>b.textContent.includes('رسالة نصية'));if(!t)throw Error('TEXT picker missing');t.click()})()");
  }
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Expected six connected branch steps');
- await evaluate("(()=>{const bar=document.querySelector('.builder-stage>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='تراجع');btn.click()})()");
+ await evaluate("(()=>{const bar=document.querySelector('.builder-stage-extras>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='تراجع');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+5,'Undo must remove last branch step');
- await evaluate("(()=>{const bar=document.querySelector('.builder-stage>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
+ await evaluate("(()=>{const bar=document.querySelector('.builder-stage-extras>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Redo must restore last branch step');
  await evaluate("(()=>{const btn=[...document.querySelectorAll('.builder-view-actions button')].find(b=>b.textContent==='ترتيب تلقائي');btn.click()})()");
  const overlaps=await evaluate("(()=>{const r=[...document.querySelectorAll('.canvas-node')].map(n=>({id:n.dataset.nodeId,b:n.getBoundingClientRect()}));let count=0;for(let i=0;i<r.length;i++)for(let j=0;j<i;j++){const a=r[i].b,b=r[j].b;if(a.left<b.right-3&&a.right>b.left+3&&a.top<b.bottom-3&&a.bottom>b.top+3)count++}return count})()");

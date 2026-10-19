@@ -24,7 +24,7 @@ export function initWorkspace(ctx){
   const search=el('input');search.placeholder='ابحث باسم العميل أو هاتفه أو الاحتياج';search.setAttribute('aria-label','بحث العملاء');
   const order=el('select');order.setAttribute('aria-label','ترتيب العملاء');
   for(const [value,title] of [['priority','الأعلى أولوية'],['recent','الأحدث'],['due','الأقرب متابعة']]){const o=el('option',title);o.value=value;order.append(o)}
-  host.append(filterBar(search,filter,order,$('leads-refresh')),summary);
+  host.append(filterBar(search,filter,order,button('تحديث',()=>leads(),'secondary')),summary);
   const results=el('div',undefined,'cards');host.append(results);
   async function showTasks(container,lead){
    container.replaceChildren();const tasks=await api('/leads/'+lead.id+'/tasks');
