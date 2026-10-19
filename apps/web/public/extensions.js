@@ -1,3 +1,4 @@
+import {installCampaignWizard} from './campaign-wizard.js';
 import {emptyState} from './ui-states.js';
 export function initExtensions(ctx){
  const {state,api,$,el,button,card,bind,notify,execute}=ctx;let widgetKey='',campaignTemplates=[],stepIndex=0;
@@ -29,31 +30,9 @@ export function initExtensions(ctx){
   const template=el('select');template.dataset.template='true';template.required=true;for(const t of campaignTemplates){const o=el('option',t.name+' • '+t.language);o.value=t.id;template.append(o)}const l=el('label','القالب المعتمد');l.append(template);const minutes=el('input');minutes.type='number';minutes.min='0';minutes.step='1440';minutes.value=offset;minutes.required=true;minutes.dataset.offset='true';const ml=el('label','الدقائق من بداية الحملة (1440 = يوم)');ml.append(minutes);const params=el('div');
   function render(){params.replaceChildren();const t=campaignTemplates.find(t=>t.id===template.value);if(!t)return;for(const p of t.components||[]){if(p.type==='BODY'||p.type==='HEADER'&&p.format==='TEXT'){const indexes=[...new Set([...String(p.text||'').matchAll(/{{(\d+)}}/g)].map(m=>Number(m[1])-1))].sort((a,b)=>a-b);for(const i of indexes){const label=el('label',(p.type==='BODY'?'قيمة الرسالة ':'قيمة الرأس ')+(i+1)),input=el('input');input.required=true;input.maxLength=1000;input.dataset.kind=p.type.toLowerCase();input.dataset.index=i;label.append(input);params.append(label)}}else if(p.type==='HEADER'&&['IMAGE','VIDEO','DOCUMENT'].includes(p.format)){const label=el('label','رابط رأس الوسائط HTTPS'),input=el('input');input.type='url';input.required=true;input.dataset.kind='mediaUrl';label.append(input);params.append(label)}else if(p.type==='BUTTONS')for(const [i,b] of p.buttons.entries()){if(b.type==='URL'&&b.url?.includes('{{')||b.type==='QUICK_REPLY'){const label=el('label','قيمة زر '+b.text+(b.type==='QUICK_REPLY'?' — اختياري':'')),input=el('input');input.required=b.type==='URL';input.maxLength=128;input.dataset.kind='buttons';input.dataset.index=i;label.append(input);params.append(label)}}}}
   const baseRender=render;const renderAll=()=>{baseRender();const t=campaignTemplates.find(t=>t.id===template.value);if(t)ctx.commerce.editor(params,t)};
-  template.onchange=renderAll;field.append(l,ml,params,button('حذف الخطوة',()=>field.remove(),'danger'));$('campaign-steps').append(field);renderAll();
+  template.onchange=renderAll;field.append(l,ml,params,button('حذف الخطوة',()=>{if($('campaign-steps').querySelectorAll('fieldset').length===1){notify('احتفظ برسالة واحدة على الأقل','error');return}field.remove()},'danger'));$('campaign-steps').append(field);renderAll();
  }
- function installCampaignAssistant(){
-  if($('campaign-quick-start'))return;
-  const helper=el('div',undefined,'campaign-quick-start');helper.id='campaign-quick-start';
-  helper.append(el('h3','حملتك في خطوة واحدة — جهّز مسودة فقط'),
-   el('p','اختار هدف المتابعة. هنملأ الاسم والجمهور وميعاد البداية؛ لازم تختار قالب Meta معتمد وتراجع موافقات العملاء بنفسك. لن نرسل أي شيء تلقائيًا.'));
-  const presets=[
-   ['متابعة العملاء المهتمين','interested','متابعة العملاء المهتمين'],
-   ['تذكير بطلب المساعدة','interested','متابعة طلبات خدمة العملاء'],
-   ['إعلان جديد للموافقين فقط','','إعلان خدمات جديدة']
-  ];
-  for(const [title,tag,name] of presets){
-   helper.append(button(title,()=>{
-    const form=$('campaign-form');
-    if(form.elements.name.value.trim()&&!confirm('استبدال بيانات نموذج الحملة غير المحفوظة؟'))return;
-    form.elements.name.value=name;form.elements.tag.value=tag;form.elements.field.value='';form.elements.value.value='';
-    const time=new Date(Date.now()+86400000);time.setMinutes(time.getMinutes()-time.getTimezoneOffset());
-    form.elements.startAt.value=time.toISOString().slice(0,16);
-    notify('اتجهزت المسودة في النموذج. اختار القالب المعتمد، احفظ، وبعد المراجعة قرر بدء الحملة بنفسك.');
-   },'secondary'));
-  }
-  $('campaign-form').prepend(helper);
- }
- async function campaigns(){installCampaignAssistant();const host=$('campaign-list');host.replaceChildren();const [rows,t]=await Promise.all([api('/campaigns'),api('/whatsapp/templates')]);campaignTemplates=t;await ctx.commerce.load();if(!$('campaign-steps').children.length)addStep(0);if(!rows.length)host.append(el('p','لا توجد حملات. أضف قالبًا معتمدًا وموافقات العملاء قبل إنشاء الحملة.'));for(const r of rows){const c=card(r.name,({DRAFT:'مسودة',ACTIVE:'نشطة',CANCELLED:'ملغاة',COMPLETED:'مكتملة'}[r.status]||r.status)+' • إجمالي الخطوات للعملاء: '+r.total+' • أرسلت: '+r.sent+' • تخطيت: '+r.skipped+' • فشل: '+r.failed);c.dataset.campaignId=r.id;if(r.status==='DRAFT')c.append(button('مراجعة الجمهور والرسائل',async()=>{
+ async function campaigns(){installCampaignWizard({form:$('campaign-form'),el,button,templates:()=>campaignTemplates});const host=$('campaign-list');host.replaceChildren();const [rows,t]=await Promise.all([api('/campaigns'),api('/whatsapp/templates')]);campaignTemplates=t;await ctx.commerce.load();if(!$('campaign-steps').children.length)addStep(0);if(!rows.length)host.append(el('p','لا توجد حملات. أضف قالبًا معتمدًا وموافقات العملاء قبل إنشاء الحملة.'));for(const r of rows){const c=card(r.name,({DRAFT:'مسودة',ACTIVE:'نشطة',CANCELLED:'ملغاة',COMPLETED:'مكتملة'}[r.status]||r.status)+' • إجمالي الخطوات للعملاء: '+r.total+' • أرسلت: '+r.sent+' • تخطيت: '+r.skipped+' • فشل: '+r.failed);c.dataset.campaignId=r.id;if(r.status==='DRAFT')c.append(button('مراجعة الجمهور والرسائل',async()=>{
  const data=await api('/campaigns/'+r.id+'/review'),review=el('section',undefined,'campaign-review');review.append(el('h3','مراجعة قبل الإرسال'),el('p','هذه المراجعة لا تضع أي رسالة في الطابور.'),el('p',data.audience.matched+' عميل مطابق • '+data.audience.eligible+' موافق ومتاح للتواصل'),el('p','مستبعدون: '+data.audience.optedOut+' أوقفوا التواصل • '+data.audience.noConsent+' دون موافقة • '+data.audience.missingPhone+' دون هاتف'));
  for(const item of data.content){review.append(el('h4',item.name+' — '+item.language),el('p','بعد '+item.offsetMinutes+' دقيقة من البداية'));for(const part of item.components||[])if(part.text)review.append(el('p',part.text));}
  for(const warning of data.warnings)review.append(el('p',warning,'notice error'));
@@ -85,5 +64,5 @@ export function initExtensions(ctx){
       }
     };
     statusSelect.onchange=draw;draw();$('runtime-jobs').append(block)}}
- return {load:page=>({triggers,website,media,campaigns,integrations,usage,'ai-settings':ai}[page])(),reset(){widgetKey='';campaignTemplates=[];$('key-created').textContent='';$('widget-code').value='';$('campaign-steps').replaceChildren();$('integration-form').reset()}};
+ return {load:page=>({triggers,website,media,campaigns,integrations,usage,'ai-settings':ai}[page])(),reset(){widgetKey='';campaignTemplates=[];$('campaign-form').reset();$('key-created').textContent='';$('widget-code').value='';$('campaign-steps').replaceChildren();$('integration-form').reset()}};
 }

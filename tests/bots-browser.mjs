@@ -155,6 +155,23 @@ try{
  const noviceSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);const menu=noviceSaved.draft.definition.nodes.find(n=>n.id==='menu'),reply=noviceSaved.draft.definition.nodes.find(n=>n.id===menu.choices[0].next);assert.equal(reply.text,'رد خاص لاختيار المعلومات');assert.equal(reply.next,'information');assert.equal(menu.choices[0].id,'info');
  await screenshot('continuation-simple-editor-1366.png');await click('عرض المخطط المرئي','.builder-view-actions button');assert.ok(await evaluate("!document.querySelector('.builder-studio').classList.contains('builder-linear-mode')"));await screenshot('continuation-canvas-1366.png');await click('عرض مبسط بالخطوات','.builder-view-actions button');
  for(const [width,height] of [[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await screenshot('continuation-simple-editor-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'novice editor overflow '+width)}
+ // Configure advanced branch types in the same independent draft, without fetching media.
+ await evaluate("[...document.querySelectorAll('[data-step-id=menu] .builder-step-branch button')].find(b=>b.textContent==='إضافة خطوة هنا').click()");await click('شرط','.builder-picker-item');
+ await evaluate("(()=>{const labels=[...document.querySelectorAll('#builder-editor label')];const field=labels.find(l=>l.textContent.startsWith('قارن إجابة العميل عن')).querySelector('select');field.value='customer_name';field.dispatchEvent(new Event('change'));const ops=labels.find(l=>l.textContent.startsWith('المقارنة')).querySelector('select');ops.value='exists';ops.dispatchEvent(new Event('change'))})()");
+ assert.ok(await evaluate("[...document.querySelectorAll('#builder-editor label')].find(l=>l.textContent.startsWith('الإجابة المطلوبة')).hidden"),'exists condition does not ask for a comparison value');
+ for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await screenshot('wizard-condition-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'condition inspector overflow '+width)}
+ await evaluate("document.querySelector('.builder-properties > button').click()");
+ for(const [kind,title,url] of [['MEDIA','صورة / فيديو / ملف','https://example.invalid/local-image.png'],['LINK','رابط خارجي','https://example.invalid/local-information']]){
+  await evaluate("[...document.querySelectorAll('[data-step-id=menu] .builder-step-branch button')].find(b=>b.textContent==='إضافة خطوة هنا').click()");await click(title,'.builder-picker-item');
+  await evaluate(`(()=>{const input=[...document.querySelectorAll('#builder-editor label')].find(l=>l.textContent.startsWith('رابط HTTPS')).querySelector('input');input.value=${JSON.stringify(url)};input.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+  await evaluate("document.querySelector('.builder-properties > button').click()");
+ }
+ await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'advanced branch save');
+ const advancedSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);
+ assert.ok(advancedSaved.draft.definition.nodes.some(n=>n.type==='CONDITION'&&n.field==='customer_name'&&n.operator==='exists'));
+ assert.ok(advancedSaved.draft.definition.nodes.some(n=>n.type==='MEDIA'&&n.url==='https://example.invalid/local-image.png'));
+ assert.ok(advancedSaved.draft.definition.nodes.some(n=>n.type==='LINK'&&n.url==='https://example.invalid/local-information'));
+ console.log('PASS real condition/media/link branch insertion and saved typed fields, no provider/media requests');
  await evaluate("document.querySelector('[data-page=bots]').click()");await click('مكتبة القوالب');await until("!document.querySelector('.template-gallery').hidden",'template gallery');
  await evaluate("(()=>{const s=document.querySelector('.template-gallery input');s.value='بيانات';s.dispatchEvent(new Event('input',{bubbles:true}))})()");assert.equal(await evaluate("document.querySelectorAll('.template-gallery .template-card').length"),1);await screenshot('continuation-template-gallery-320.png');
  // Internal note and inbox context are exercised only on synthetic website conversations.
@@ -168,11 +185,39 @@ try{
  await until(`document.querySelector('#inbox-list .thread.active')?.dataset.conversationId!==${JSON.stringify(selectedConversation)}`,'switch conversation without sending');
  await click('العودة للمحادثات');await evaluate(`document.querySelector('[data-conversation-id="${selectedConversation}"]').click()`);await until("document.getElementById('reply-form').elements.body.value==='مسودة داخل المتصفح لم تُرسل'",'unsent reply retained for correct contact');
  await screenshot('continuation-inbox-note-320.png');await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});await evaluate('window.scrollTo(0,0)');await screenshot('continuation-inbox-context-1366.png');
+ const localThreads=await evaluate("fetch('/api/v1/whatsapp/inbox').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})");assert.equal(localThreads.find(t=>t.id===selectedConversation).channel,'WEBSITE','manual reply must only touch disposable website conversation');
+ const dashboardLead=localThreads.find(t=>t.id===selectedConversation).lead_id;assert.ok(dashboardLead);
+ await evaluate(`fetch('/api/v1/leads/${dashboardLead}/stage',{method:'PATCH',headers:{'content-type':'application/json','x-boat-csrf':'1'},body:JSON.stringify({stage:'READY_FOR_AGENT'})}).then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);
+ await evaluate("document.querySelector('[data-page=overview]').click()");await until(`Boolean(document.querySelector('#dashboard-ready [data-conversation-id="${selectedConversation}"]'))`,'dashboard specific ready conversation');
+ for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('wizard-dashboard-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'dashboard overflow '+width)}
+ await evaluate(`document.querySelector('#dashboard-ready [data-conversation-id="${selectedConversation}"]').click()`);await until(`!document.getElementById('wa-inbox').hidden&&document.querySelector('#inbox-list .thread.active')?.dataset.conversationId==='${selectedConversation}'`,'dashboard exact thread navigation');
+ await evaluate("document.getElementById('thread-assign').click()");await until("document.getElementById('thread-take').textContent==='تسليم للبوت'",'assign website conversation');
+ await evaluate("(()=>{const f=document.getElementById('reply-form');f.elements.body.value='رد موظف في محادثة الموقع المحلية';f.requestSubmit()})()");await until("document.getElementById('thread-messages').textContent.includes('رد موظف في محادثة الموقع المحلية')",'website staff reply visible');
+ await evaluate("document.getElementById('thread-take').click()");await until("document.getElementById('thread-take').textContent==='استلام'",'release to bot');assert.ok(await evaluate("document.querySelector('#reply-form button.primary').disabled"));
+ await evaluate("document.getElementById('thread-take').click()");await until("!document.querySelector('#reply-form button.primary').disabled",'take over again');
+ await evaluate("document.getElementById('thread-close').click()");await until("document.querySelector('#reply-form button.primary').disabled",'close disables manual reply');
+ for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('wizard-inbox-closed-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'manual inbox overflow '+width)}
+ console.log('PASS browser website assignment, manual reply, release, take over and close without external transport');
  await evaluate("document.querySelector('[data-page=channels]').click()");await until("Boolean(document.querySelector('.channel-directory'))",'channel readiness directory');await screenshot('continuation-channel-directory-1366.png');
  assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'channel directory overflow');
  console.log('PASS novice wizard/back/review/no-write, searchable gallery, same-definition simple/canvas branch editing, mobile steps, retained internal inbox note, contact context and truthful channel directory');
 
  await evaluate("document.querySelector('[data-page=campaigns]').click()");await until("Boolean([...document.querySelectorAll('#campaign-list [data-campaign-id]')].find(c=>c.textContent.includes('حملة مراجعة محلية دون إرسال')))",'local campaign draft');
+ // Author a real new draft through all four steps; navigating backwards retains answers.
+ await evaluate("document.getElementById('campaign-form').elements.name.value='حملة المعالج المحلية'");
+ await click('التالي','.campaign-wizard-actions button');
+ await evaluate("document.getElementById('campaign-form').elements.tag.value='interested'");
+ await click('التالي','.campaign-wizard-actions button');
+ await click('السابق','.campaign-wizard-actions button');
+ assert.equal(await evaluate("document.getElementById('campaign-form').elements.tag.value"),'interested');
+ await click('التالي','.campaign-wizard-actions button');await click('التالي','.campaign-wizard-actions button');
+ await evaluate("(()=>{const d=new Date(Date.now()+86400000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());document.getElementById('campaign-form').elements.startAt.value=d.toISOString().slice(0,16)})()");
+ assert.ok(await evaluate("document.querySelector('.campaign-draft-summary').textContent.includes('قالب اختبار محلي')"),'review shows actual approved template content');
+ for(const [width,height] of [[1366,900],[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('wizard-campaign-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'wizard overflow '+width)}
+ await evaluate("document.getElementById('campaign-form').requestSubmit()");
+ await until("[...document.querySelectorAll('#campaign-list [data-campaign-id]')].some(c=>c.textContent.includes('حملة المعالج المحلية'))",'wizard saved real draft');
+ assert.ok(await evaluate("document.querySelector('.campaign-wizard-panel:not([hidden])').textContent.includes('واتساب')"),'wizard reset after save');
+ console.log('PASS campaign wizard actual draft save, back preservation, real template review and desktop/mobile');
  const campaignId=await evaluate("[...document.querySelectorAll('#campaign-list [data-campaign-id]')].find(c=>c.textContent.includes('حملة مراجعة محلية دون إرسال')).dataset.campaignId");
  await evaluate(`document.querySelector('[data-campaign-id="${campaignId}"] button').click()`);await until(`Boolean(document.querySelector('[data-campaign-id="${campaignId}"] .campaign-review'))`,'campaign audience review');
  const reviewProof=await evaluate(`fetch('/api/v1/campaigns/${campaignId}/review').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);assert.equal(reviewProof.queuedByReview,0);
@@ -181,6 +226,10 @@ try{
  await evaluate("document.querySelector('[data-page=leads]').click()");await until("Boolean(document.querySelector('.crm-lead-card input[type=checkbox]'))",'CRM bulk selection');
  await evaluate("document.querySelector('.crm-lead-card input[type=checkbox]').click()");await click('تطبيق على المحددين','.crm-bulk-toolbar button');await until("document.getElementById('notice').textContent.includes('تم تحديث العملاء المحددين')",'bulk CRM update');await screenshot('continuation-crm-bulk-320.png');
  console.log('PASS real campaign audience/content review without launch and role-scoped CRM bulk interaction on mobile');
+ await evaluate("document.querySelector('[data-page=analytics]').click()");await until("Boolean(document.querySelector('#bot-insights select'))",'analytics loaded');
+ for(const days of [7,90]){await evaluate(`(()=>{const s=document.querySelector('#bot-insights select');s.value='${days}';s.dispatchEvent(new Event('change'))})()`);await until("document.getElementById('bot-insights').getAttribute('aria-busy')==='false'",'analytics period loaded');assert.equal(await evaluate("document.querySelectorAll('.vessel-activity-day').length"),days)}
+ for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('wizard-analytics-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'analytics overflow '+width)}
+ console.log('PASS analytics actual period requests and zero-filled UTC daily series');
  assert.deepEqual(exceptions,[]);
  console.log('PASS new Chromium bot journey: create independent Start, contextual message, Arabic template/three buttons, save, publish, cookie reload, same bot and definition; 1366/768/390/320 actual before/after screenshots and overflow checks');
 }catch(error){console.error('BOT BROWSER FAILURE',error);await screenshot('rebuild-failure.png').catch(()=>{});throw error}

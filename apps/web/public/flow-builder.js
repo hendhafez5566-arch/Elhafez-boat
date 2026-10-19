@@ -366,13 +366,14 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    });host.append(label('نوع الخطوة',typeSelect));
    if(node.type==='MEDIA'||node.type==='LINK')host.append(label('رابط HTTPS',control(node.url,v=>{node.url=v})));
    if(node.type==='MEDIA'){
-    const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',k);o.value=k;kind.append(o)}kind.value=node.mediaKind;kind.onchange=()=>{node.mediaKind=kind.value;markDirty()};host.append(label('نوع الوسائط',kind),label('التعليق',control(node.caption||'',v=>{node.caption=v})));
+    const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',({image:'صورة',video:'فيديو',audio:'صوت',document:'مستند'})[k]);o.value=k;kind.append(o)}kind.value=node.mediaKind;kind.onchange=()=>{node.mediaKind=kind.value;markDirty()};host.append(label('نوع الوسائط',kind),label('التعليق',control(node.caption||'',v=>{node.caption=v})));
    }
 
    if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true)));
    if('field'in node){
     const fields=el('select'),common={customer_name:'اسم العميل',customer_phone:'رقم الهاتف',customer_email:'البريد الإلكتروني',customer_city:'المدينة',customer_need:'احتياج العميل'};
     for(const [key,title] of Object.entries(common)){const option=el('option',title);option.value=key;fields.append(option)}
+    for(const source of flow.nodes.filter(n=>(n.type==='INPUT'||n.type==='QUESTION')&&n.field&&!common[n.field])){common[source.field]='إجابة: '+String(source.text||source.field).slice(0,55);const option=el('option',common[source.field]);option.value=source.field;fields.append(option)}
     if(!common[node.field]){const option=el('option','حقل مخصص محفوظ');option.value=node.field;fields.append(option)}
     fields.value=node.field;fields.onchange=()=>{node.field=fields.value;markDirty();renderBlocks();canvas.draw()};
     host.append(label(node.type==='CONDITION'?'قارن إجابة العميل عن':'ما البيانات التي تجمعها؟',fields));
@@ -381,8 +382,9 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if(node.type==='TAG')host.append(label('التصنيف',control(node.tag,value=>{node.tag=value})));
    if(node.type==='CONDITION'){
      const ops=el('select');for(const [key,text] of [['equals','يساوي'],['contains','يحتوي على'],['exists','تم ملء الحقل']]){const o=el('option',text);o.value=key;ops.append(o)}ops.value=node.operator;
-     ops.onchange=()=>{node.operator=ops.value;markDirty()};host.append(label('المقارنة',ops));
-     host.append(label('القيمة',control(node.value||'',value=>{node.value=value})));
+     const comparisonValue=label('الإجابة المطلوبة',control(node.value||'',value=>{node.value=value}));comparisonValue.hidden=node.operator==='exists';
+     ops.onchange=()=>{node.operator=ops.value;comparisonValue.hidden=node.operator==='exists';markDirty()};host.append(label('المقارنة',ops),comparisonValue);
+     host.append(el('p','اختر سؤالًا سابقًا؛ العميل ينتقل لمسار الإجابة المطابقة أو للمسار الآخر.','muted'));
      host.append(label('لو الشرط صحيح',target(node.yes,value=>{node.yes=value})));
      host.append(label('لو الشرط غلط',target(node.no,value=>{node.no=value})));
    }

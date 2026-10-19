@@ -168,7 +168,20 @@ async function onboardingProgress(){
  }
  host.append(grid);
 }
-async function dashboard(){const host=$('dashboard-metrics');host.replaceChildren();$('dashboard-ready').replaceChildren();const [s,notes]=await Promise.all([api('/leads/summary'),api('/notifications')]);for(const [label,value] of [['الاستفسارات المؤهلة',s.total],['جاهزون لموظف',s.ready],['تم التواصل',s.contacted],['مهتمون',s.interested]]){const c=el('article',undefined,'metric');c.append(el('span',label),el('strong',value));host.append(c)}const ready=notes.filter(x=>x.stage==='READY_FOR_AGENT');if(!ready.length)$('dashboard-ready').append(el('p','لا يوجد عملاء ينتظرون التحويل حاليًا.'));for(const n of ready.slice(0,8))$('dashboard-ready').append(button(n.customer_name+' • '+n.channel,()=>choose('wa-inbox')));await onboardingProgress()}
+async function dashboard(){
+ const host=$('dashboard-metrics'),readyHost=$('dashboard-ready');host.setAttribute('aria-busy','true');
+ let s,notes;
+ try{[s,notes]=await Promise.all([api('/leads/summary'),api('/notifications')])}
+ catch{readyHost.querySelector('.dashboard-load-error')?.remove();const error=el('div',undefined,'dashboard-load-error');error.setAttribute('role','alert');error.append(el('p','تعذر تحديث الرئيسية. الأرقام الظاهرة من آخر تحديث ناجح.'),button('إعادة المحاولة',()=>execute(dashboard),'secondary'));readyHost.append(error);host.setAttribute('aria-busy','false');return}
+ host.replaceChildren();readyHost.replaceChildren();host.setAttribute('aria-busy','false');
+ for(const [label,value] of [['الاستفسارات المؤهلة',s.total],['جاهزون لموظف',s.ready],['تم التواصل',s.contacted],['مهتمون',s.interested]]){const c=el('article',undefined,'metric');c.append(el('span',label),el('strong',new Intl.NumberFormat('ar-EG').format(value)));host.append(c)}
+ const ready=notes.filter(x=>x.stage==='READY_FOR_AGENT');
+ if(!ready.length)readyHost.append(el('p','لا يوجد عملاء ينتظرون التحويل حاليًا.'));
+ const channels={WEBSITE:'شات الموقع',WHATSAPP:'واتساب',MESSENGER:'ماسنجر',INSTAGRAM:'إنستجرام',TELEGRAM:'تيليجرام'};
+ for(const n of ready.slice(0,8)){const action=button(n.customer_name+' • '+(channels[n.channel]||n.channel),async()=>{await choose('wa-inbox');await workspace.openConversation(n.id)},'secondary');action.dataset.conversationId=n.id;readyHost.append(action)}
+ readyHost.append(button('كل المحادثات',()=>choose('wa-inbox'),'secondary'),button('متابعة العملاء',()=>choose('leads'),'secondary'));
+ await onboardingProgress();
+}
 async function catalog(){
  const host=$('catalog-items');host.replaceChildren();
  const rows=await api('/catalog');

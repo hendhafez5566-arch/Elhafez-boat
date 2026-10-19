@@ -13,17 +13,17 @@ export function initInsights({api,$,el}){
   const host=$('bot-insights'),revision=++loadRevision;
   host.setAttribute('aria-busy','true');
   const loading=el('p','جارٍ تحديث التحليلات…','insights-loading');
-  host.append(loading);
+  host.querySelector('.insights-loading')?.remove();host.append(loading);
   let data;
   try{data=await api('/analytics/overview?days='+periodDays)}
-  catch{if(revision===loadRevision){loading.textContent='تعذر التحديث. احتفظنا بالبيانات السابقة؛ غيّر الفترة للمحاولة مجددًا.';host.setAttribute('aria-busy','false')}return}
+  catch{if(revision===loadRevision){loading.textContent='تعذر تحديث التحليلات. البيانات الظاهرة من آخر تحديث ناجح. ';const retry=el('button','إعادة المحاولة');retry.type='button';retry.onclick=()=>void load();loading.append(retry);loading.setAttribute('role','alert');host.setAttribute('aria-busy','false')}return}
   if(revision!==loadRevision)return;
   host.replaceChildren();host.setAttribute('aria-busy','false');
   const period=el('select');period.setAttribute('aria-label','فترة التحليلات');
   for(const days of [7,30,90]){const option=el('option','آخر '+days+' يوم');option.value=String(days);period.append(option)}
   period.value=String(periodDays);period.onchange=()=>{periodDays=Number(period.value);void load()};
   host.append(period);
-  const note=el('p','كل الأرقام عن الفترة المختارة للشركة. تسجيل الاهتمام ليس مبيعات أو حجوزات.','muted');
+  const note=el('p','المحادثات والعملاء والحملات أُنشئت خلال الفترة المختارة. مهام المتابعة تعرض الوضع الحالي لكل الفترات. تسجيل الاهتمام ليس مبيعات أو حجوزات.','muted');
   host.append(note);
   const metrics=el('div',undefined,'metrics');
   metric(metrics,'المحادثات الواردة',data.conversations);
@@ -38,7 +38,7 @@ export function initInsights({api,$,el}){
   const full=Math.max(1,...data.channels.map(x=>Number(x.total)));
   if(!data.channels.length)channels.append(el('p','لسه مفيش محادثات خلال الفترة دي.','muted'));
   for(const row of data.channels){
-   const line=el('div',undefined,'insight-row');line.append(el('span',row.channel+' — '+number(row.total)));
+   const line=el('div',undefined,'insight-row');line.append(el('span',({WEBSITE:'شات الموقع',WHATSAPP:'واتساب',MESSENGER:'ماسنجر',INSTAGRAM:'إنستجرام',TELEGRAM:'تيليجرام'}[row.channel]||row.channel)+' — '+number(row.total)));
    const rail=el('div',undefined,'insight-rail'),fill=el('div',undefined,'insight-fill');fill.style.width=Math.round(Number(row.total)*100/full)+'%';rail.append(fill);line.append(rail);channels.append(line);
   }
   const funnel=el('section',undefined,'panel');funnel.append(el('h3','رحلة العميل'));
@@ -50,8 +50,8 @@ export function initInsights({api,$,el}){
   const activity=el('section',undefined,'panel');activity.append(el('h3','المحادثات والعملاء المهتمون يوميًا'));
   const incoming=new Map((data.daily||[]).map(x=>[x.day,Number(x.conversations)]));
   const captured=new Map((data.leadDaily||[]).map(x=>[x.day,Number(x.leads)]));
-  const dates=[...new Set([...incoming.keys(),...captured.keys()])].sort();
-  if(!dates.length)activity.append(el('p','لا يوجد نشاط في الفترة المحددة.','muted'));
+  const today=new Date();const dates=Array.from({length:periodDays},(_,i)=>{const date=new Date(today);date.setUTCDate(date.getUTCDate()-periodDays+1+i);return date.toISOString().slice(0,10)});
+  if(!incoming.size&&!captured.size)activity.append(el('p','لا يوجد نشاط في الفترة المحددة.','muted'));
   const chart=el('div',undefined,'vessel-activity-series'),peak=Math.max(1,...dates.flatMap(day=>[incoming.get(day)||0,captured.get(day)||0]));
   for(const day of dates){
    const row=el('div',undefined,'vessel-activity-day'),bars=el('div',undefined,'vessel-activity-bars');

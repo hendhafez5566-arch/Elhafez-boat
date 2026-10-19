@@ -10,6 +10,7 @@ const assets={
  '/widget.js':['widget.js','text/javascript; charset=utf-8'],
  '/commerce-ui.js':['commerce-ui.js','text/javascript; charset=utf-8'],
  '/advanced-ui.js':['advanced-ui.js','text/javascript; charset=utf-8'],
+ '/campaign-wizard.js':['campaign-wizard.js','text/javascript; charset=utf-8'],
  '/extensions.js':['extensions.js','text/javascript; charset=utf-8'],
  '/app.js':['app.js','text/javascript; charset=utf-8'],
  '/style.css':['style.css','text/css; charset=utf-8'],

@@ -16,12 +16,18 @@ const require=createRequire(import.meta.url);
 const {Pool}=require('pg') as {Pool:new (o:{connectionString:string;max:number})=>{
  query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>;
  connect():Promise<{query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>;release():void}>;
- on(event:string,listener:(error:{code?:string})=>void):void;
+ on(event:'error',listener:(error:{code?:string})=>void):void;
+ on(event:'connect',listener:(client:{on(event:'error',listener:(error:{code?:string})=>void):void})=>void):void;
  end():Promise<void>;
 }};
 if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL missing');
 const pool=new Pool({connectionString:process.env.DATABASE_URL,max:4});
 pool.on('error',error=>console.error('Worker database connection lost',{code:error.code||'DB_CONNECTION_LOST'}));
+// A checked-out connection can be terminated between queries (including a committed
+// transaction awaiting provider work). Pool errors only cover idle pool clients.
+// Observe client errors as well; failed queries still reject and the normal transaction
+// handlers roll back, while pg removes the non-queryable connection on release.
+pool.on('connect',client=>client.on('error',error=>console.error('Worker client connection lost',{code:error.code||'DB_CONNECTION_LOST'})));
 let running=true;let maintainedAt=0;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function decrypt(ciphertext:string):string {
