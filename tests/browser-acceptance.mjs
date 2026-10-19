@@ -280,7 +280,19 @@ try{
    await evaluate('window.scrollTo(0,0)');await screenshot(page+'-'+device+'.png');pageEvidence.push({page,device,...evidence});
   }
  }
- await writeFile('acceptance-evidence/browser-pages.json',JSON.stringify(pageEvidence,null,2));
+ // Extra compact-phone acceptance: a 320px viewport is distinct from a phone mockup.
+ await send('Emulation.setDeviceMetricsOverride',{width:320,height:700,deviceScaleFactor:1,mobile:true});
+ for(const page of ['overview','catalog','leads','templates','privacy']){
+   await evaluate(`document.querySelector('[data-page="${page}"]').click()`);
+   await until(`Boolean(document.getElementById(${JSON.stringify(page)})&&!document.getElementById(${JSON.stringify(page)}).hidden)`,'320px '+page);
+   await sleep(260);
+   const dimensions=await evaluate("({width:innerWidth,documentWidth:document.documentElement.scrollWidth})");
+   assert.ok(dimensions.documentWidth<=dimensions.width+4,'320px horizontal document overflow on '+page+': '+JSON.stringify(dimensions));
+   await evaluate('window.scrollTo(0,0)');
+   await screenshot(page+'-320px.png');
+ }
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
+  await writeFile('acceptance-evidence/browser-pages.json',JSON.stringify(pageEvidence,null,2));
  assert.equal(network.some(n=>n.status>=500),false,'UI must not encounter server errors');
  console.log('PASS '+pageEvidence.length+' owner page/viewport visits with named buttons (screen loading only; not all actions/forms)');
  // Security and UX: browser refresh restores a still-valid session, without stored bearer secrets.
