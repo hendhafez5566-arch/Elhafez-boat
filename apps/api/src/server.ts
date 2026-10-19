@@ -84,7 +84,7 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/auth/login'){
       await throttle(req);
       const session=await login(pool,await body(req));
-       res.setHeader('set-cookie',sessionCookie(session.token,{secure:process.env.NODE_ENV==='production'}));
+       res.setHeader('set-cookie',sessionCookie(session.token,{secure:process.env.NODE_ENV!=='development'&&process.env.CI_RUNTIME_ACCEPTANCE!=='1'}));
        return json(res,200,session);
     }
     // Public Meta webhook: signature validation precedes JSON parsing or database writes.
@@ -134,7 +134,7 @@ const server=createServer(async(req,res)=>{
         throw new HttpFailure(403,'Company subscription inactive or expired; only read-only access is available');
     }
     if(req.method==='GET'&&pathname==='/api/v1/auth/me')return json(res,200,actor);
-    if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,auth);res.setHeader('set-cookie',sessionCookie('',{secure:process.env.NODE_ENV==='production',clear:true}));return json(res,200,{ok:true});}
+    if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,auth);res.setHeader('set-cookie',sessionCookie('',{secure:process.env.NODE_ENV!=='development'&&process.env.CI_RUNTIME_ACCEPTANCE!=='1',clear:true}));return json(res,200,{ok:true});}
     if(/^\/api\/v1\/(programs|bookings|departures|offers|bot)(\/|$)/.test(pathname))return json(res,410,{error:'Legacy tourism endpoints retired. Use /catalog and /flows.'});
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
