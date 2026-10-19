@@ -307,6 +307,19 @@ export function initFlowBuilder({state,api,notify,execute}){
      const pos=flow.nodes.indexOf(node);const next=flow.nodes.find(n=>n.id==='end')?.id||flow.startId;
      const generic={id:node.id,text:'اكتب محتوى الرسالة هنا',next};
      const kind=typeSelect.value;
+     if(kind===node.type)return;
+     if(['BUTTONS','LIST'].includes(node.type)&&['BUTTONS','LIST'].includes(kind)){
+       const capacity=kind==='BUTTONS'?3:10;
+       if(node.choices.length>capacity&&!window.confirm('الأزرار تدعم 3 اختيارات فقط. سيتم حذف الزائد بعد التأكيد. هل تريد المتابعة؟')){
+         typeSelect.value=node.type;return;
+       }
+       flow.nodes[pos]={...node,type:kind,choices:node.choices.slice(0,capacity)};
+       markDirty();renderAll();return;
+     }
+     const hasContent=Boolean(node.text||node.choices?.length||node.field||node.tag||node.url);
+     if(hasContent&&!window.confirm('تغيير نوع الخطوة سيعيد إعداد حقولها وقد يحذف المحتوى والوصلات غير المتوافقة. يمكنك التراجع. هل تريد المتابعة؟')){
+       typeSelect.value=node.type;return;
+     }
      flow.nodes[pos]=kind==='START'?{id:node.id,type:'START',next}
        :kind==='CONDITION'?{id:node.id,type:'CONDITION',field:'interest',operator:'equals',value:'yes',yes:next,no:next}
        :kind==='BUTTONS'||kind==='LIST'?{id:node.id,type:kind,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]}
