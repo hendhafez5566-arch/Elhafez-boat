@@ -398,3 +398,40 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #app.vessel-nav-expanded .vessel-menu-empty{color:#fff;border-color:#6e7390}
  #app.vessel-nav-expanded .vessel-top{padding-inline:24px}
 }
+
+/* Mobile studio: place the canvas inside the first screen, without removing actions. */
+@media(max-width:760px){
+ #app #flow-builder{display:flex;flex-direction:column;gap:8px}
+ #flow-builder>.section-heading{order:0;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 0!important;margin:0!important}
+ #flow-builder>.section-heading h2{font-size:16px!important}
+ #flow-builder>.section-heading .builder-status{display:flex;gap:5px;flex-wrap:wrap}
+ #flow-builder>.section-heading .builder-status span{padding:5px 7px;font-size:11px!important;min-height:0}
+ #flow-builder>.builder-toolbar{order:1;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px!important;padding:8px!important;margin:0!important}
+ #flow-builder>.builder-toolbar>label{grid-column:1/-1;max-width:none;min-width:0;display:grid;gap:4px;font-size:12px!important}
+ #flow-builder>.builder-toolbar #builder-name{height:41px;min-height:41px}
+ #flow-builder>.builder-toolbar #builder-save{grid-column:1;grid-row:auto}
+ #flow-builder>.builder-toolbar #builder-publish{grid-column:2;grid-row:auto}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure{grid-column:1/-1;min-width:0;margin:0;padding:7px 10px}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure summary{min-height:27px}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure label{width:100%;min-width:0}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure button{width:100%}
+ #flow-builder>.builder-toolbar>button:first-child{display:none}
+ #flow-builder>.builder-guide-disclosure{order:2;margin:0}
+ #flow-builder>.builder-guide-disclosure>summary{padding:7px 2px}
+ #flow-builder>.builder-layout{order:3;min-width:0}
+ #flow-builder .builder-stage-head{padding:7px 9px!important;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+ #flow-builder .builder-stage-head h3{font-size:15px!important}
+ #flow-builder .builder-view-actions{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;min-height:43px;max-height:none;scrollbar-width:thin;gap:5px}
+ #flow-builder .builder-view-actions button{white-space:nowrap;flex:0 0 auto;min-height:36px!important}
+ #flow-builder .builder-stage .flow-canvas{min-height:470px;height:clamp(470px,65dvh,730px)}
+ #flow-builder .builder-stage>.builder-toolbar{overflow-x:auto;flex-wrap:nowrap;max-width:100%}
+ #flow-builder .builder-stage>.builder-toolbar button{white-space:nowrap;flex:0 0 auto}
+ #flow-builder .builder-stage-head .builder-view-advanced{margin:0}
+ #flow-builder .builder-stage-head .builder-view-advanced summary{font-size:12px}
+}
+@media(max-width:390px){
+ #app .vessel-top h1{font-size:16px!important}
+ #app .vessel-top{padding-inline:8px}
+ #flow-builder>.builder-toolbar button{font-size:12px}
+ #flow-builder>.section-heading .builder-status span{font-size:10.5px!important}
+}

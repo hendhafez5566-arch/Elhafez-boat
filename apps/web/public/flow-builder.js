@@ -648,7 +648,7 @@ export function initFlowBuilder({state,api,notify,execute}){
    if(conflictDialog.showModal)conflictDialog.showModal();else conflictDialog.setAttribute('open','');
  }
  const backupButton=button('تنزيل نسخة احتياطية',backupLocal);
- primaryBar.append(backupButton);
+ presetOptions.append(backupButton);
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
    if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
