@@ -435,3 +435,19 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #flow-builder>.builder-toolbar button{font-size:12px}
  #flow-builder>.section-heading .builder-status span{font-size:10.5px!important}
 }
+
+/* Source-level composition: a single compact canvas toolbar, full advanced tools on request. */
+#flow-builder .builder-stage-extras{background:#fafaff;border-top:1px solid #e8e9f1;border-bottom:1px solid #e8e9f1;padding:5px 11px}
+#flow-builder .builder-stage-extras>summary{padding:7px 4px;font-size:13px;font-weight:750;color:#514796;cursor:pointer}
+#flow-builder .builder-stage-extras>.builder-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 0 2px}
+#flow-builder .builder-stage-extras>.builder-toolbar button{min-height:35px;font-size:12px;padding:7px 10px}
+#flow-builder .builder-guide-disclosure>.builder-preset-disclosure{margin:7px 0 12px;max-width:480px}
+#flow-builder .builder-view-advanced .builder-conflict-actions button{min-height:38px}
+@media(max-width:760px){
+ #flow-builder>.section-heading h2{display:none}
+ #flow-builder>.section-heading{min-height:30px}
+ #flow-builder .builder-stage-extras{padding:4px 9px}
+ #flow-builder .builder-stage-extras>summary{padding:4px}
+ #flow-builder .builder-stage-extras>.builder-toolbar{overflow-x:auto;flex-wrap:nowrap}
+ #flow-builder .builder-stage-extras>.builder-toolbar>*{flex:none}
+}

@@ -203,7 +203,9 @@ export function initFlowBuilder({state,api,notify,execute}){
  },'secondary');
  actions.prepend(simpleMode);
  stageHead.append(actions,advancedView);
- stagePanel.append(stageHead,tools,canvasHost);
+ const stageExtras=el('details',undefined,'builder-stage-extras');
+ stageExtras.append(el('summary','أدوات المسار المتقدمة'),tools);
+ stagePanel.append(stageHead,stageExtras,canvasHost);
  canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');
  canvasHost.addEventListener('dragover',e=>{
   if(e.dataTransfer&&Array.from(e.dataTransfer.types).includes('application/x-boat-block')){e.preventDefault();e.dataTransfer.dropEffect='copy'}
@@ -579,9 +581,8 @@ export function initFlowBuilder({state,api,notify,execute}){
  const primaryBar=$('builder-industry').closest('.builder-toolbar');
  const presetOptions=el('details',undefined,'builder-preset-disclosure');
  presetOptions.append(el('summary','القوالب الجاهزة (اختياري)'),$('builder-industry').closest('label'),$('builder-load-preset'));
- primaryBar.append(presetOptions);
  const guideDisclosure=el('details',undefined,'builder-guide-disclosure');
- guideDisclosure.append(el('summary','إنشاء بوت جديد خطوة بخطوة'),guideHost);
+ guideDisclosure.append(el('summary','إنشاء بوت جديد خطوة بخطوة'),presetOptions,guideHost);
  primaryBar.after(guideDisclosure);
  const guideLaunch=button('إنشاء بوت جديد بالمعالج',()=>{guideDisclosure.open=true;guide.open();guideHost.scrollIntoView({block:'start',behavior:'smooth'})},'secondary');
  primaryBar.prepend(guideLaunch);
@@ -648,7 +649,7 @@ export function initFlowBuilder({state,api,notify,execute}){
    if(conflictDialog.showModal)conflictDialog.showModal();else conflictDialog.setAttribute('open','');
  }
  const backupButton=button('تنزيل نسخة احتياطية',backupLocal);
- presetOptions.append(backupButton);
+ advancedButtons.append(backupButton);
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
    if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
