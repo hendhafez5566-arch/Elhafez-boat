@@ -13,3 +13,12 @@ test('service template collects name and phone through stable button IDs then ha
  r=advanceFlow(f,r.state,{kind:'TEXT',value:'not-a-phone'});assert.equal(r.state.at,'phone');
  r=advanceFlow(f,r.state,{kind:'TEXT',value:'01000000000'});assert.equal(r.handoff,true);assert.equal(r.state.answers.customer_name,'عميل تجريبي');assert.equal(r.state.answers.customer_phone,'01000000000');
 });
+
+test('setup preview and creation share validated greeting and optional phone capture',async()=>{
+ const {prepareBotTemplate}=await import('../.build/apps/api/src/bot-templates.js');
+ const {definition}=prepareBotTemplate({name:'مساعد المتجر',templateId:'service',setup:{businessName:'متجر تجريبي',greeting:'مرحبًا بك في متجرنا',collectPhone:false}});
+ assert.equal(definition.nodes.find(n=>n.id==='welcome').text,'مرحبًا بك في متجرنا');assert.equal(definition.nodes.some(n=>n.id==='phone'),false);validateFlow(definition);
+ let r=advanceFlow(definition,initialFlowState());r=advanceFlow(definition,r.state,{kind:'CHOICE',value:'flow:menu:contact'});r=advanceFlow(definition,r.state,{kind:'TEXT',value:'عميل'});assert.equal(r.handoff,true);
+ assert.throws(()=>prepareBotTemplate({name:'بوت',setup:{collectPhone:'false'}}),/phone/);
+ assert.throws(()=>prepareBotTemplate({name:'بوت',setup:{greeting:' '.repeat(20)}}),/Greeting/);
+});

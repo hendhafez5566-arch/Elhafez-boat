@@ -265,7 +265,9 @@ try{
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});
- await writeFile('acceptance-evidence/browser-account.json',JSON.stringify({...pageAuth,widgetKey:widgetConfig.widgetKey,roles:process.env.CI_LOCAL_CLOSURE==='1'?JSON.parse(await readFile('acceptance-evidence/browser-roles-private.json','utf8')):[]}));
+ // Separate fixture actors for load, broad UI and novice UI preserve the real per-user limiter.
+ async function browserAccount(label){const email=label+'-'+suffix+'@example.invalid';const user=(await db.query('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id',[email,hash])).rows[0].id;await db.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')",[ids[0].tenantId,user]);return {...pageAuth,email,widgetKey:widgetConfig.widgetKey,roles:process.env.CI_LOCAL_CLOSURE==='1'?JSON.parse(await readFile('acceptance-evidence/browser-roles-private.json','utf8')):[]}}
+ await writeFile('acceptance-evidence/browser-account.json',JSON.stringify(await browserAccount('broad-ui')));
  console.log('PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox');
  console.log('PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role');
  // Keep API/web running for browser test, executed as child before cleanup.
@@ -274,8 +276,16 @@ try{
  const [code]=await once(browser,'exit');
  assert.equal(code,0,'Chromium/browser acceptance failed');
  }
- const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/browser-account.json'},stdio:'inherit'});
+ // Unroutable, synthetic campaign fixture: review only, never launch or real provider auth.
+ const reviewAccount=(await db.query(`INSERT INTO whatsapp_accounts(tenant_id,phone_number_id,waba_id,access_token_encrypted,connected_by) VALUES($1,$2,'9999911111','DISPOSABLE-NOT-A-PROVIDER-CREDENTIAL',$3) RETURNING id`,[ids[0].tenantId,BigInt('0x'+randomBytes(8).toString('hex')).toString(),ids[0].userId])).rows[0].id;
+ const reviewTemplate=(await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'review_fixture','ar','MARKETING',$3::jsonb) RETURNING id`,[ids[0].tenantId,reviewAccount,JSON.stringify([{type:'BODY',text:'قالب اختبار محلي — لا يُرسل'}])])).rows[0].id;
+ const reviewCampaign=(await db.query(`INSERT INTO chatbot_campaigns(tenant_id,name,segment,steps,start_at,created_by) VALUES($1,'حملة مراجعة محلية دون إرسال','{}',$2::jsonb,now()+interval '1 day',$3) RETURNING id`,[ids[0].tenantId,JSON.stringify([{templateId:reviewTemplate,offsetMinutes:0}]),ids[0].userId])).rows[0].id;
+ await writeFile('acceptance-evidence/bot-browser-account.json',JSON.stringify(await browserAccount('novice-ui')));
+ const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
  const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
+ console.log('PASS campaign browser review queued zero jobs and zero outbound messages');
  const logout=await expectCode('/api/v1/auth/logout',{method:'POST',token:one},200);
  assert.ok(logout);
  await expectCode('/api/v1/auth/me',{token:one},401);

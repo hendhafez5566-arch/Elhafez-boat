@@ -1,4 +1,4 @@
-import {botTemplates,botTemplate} from './bot-templates.js';
+import {prepareBotTemplate,botTemplates,botTemplate} from './bot-templates.js';
 import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
 import {botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
@@ -12,7 +12,7 @@ import {listConnectors,saveConnector,beginConnectorOAuth,finishConnectorOAuth,co
 import {listSocialAccounts,connectSocial,disableSocial,receiveTelegram,receiveMetaSocial} from './social.js';
 import {listCommentRules,saveCommentRule,listCommentCandidates,decideComment,receiveMetaComments} from './comment-automation.js';
 import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
-import {listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
+import {reviewCampaign,listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
 import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages} from './website.js';
 import {listMedia,uploadMedia,deleteMedia,publicMedia} from './media.js';
@@ -27,7 +27,7 @@ import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import {analyticsOverview} from './analytics.js';
-import { leadProfile,leadPage,listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
+import { bulkLeadStage,leadProfile,leadPage,listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, updateKnowledgeDraft, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, diagnoseWhatsApp, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
@@ -142,6 +142,7 @@ const server=createServer(async(req,res)=>{
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
     const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    if(pathname==='/api/v1/bots/templates/preview'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,prepareBotTemplate(await body(req)));}
     if(pathname==='/api/v1/bots/templates'&&req.method==='GET')return json(res,200,botTemplates.map(t=>({...t,definition:botTemplate(t.id,t.name)})));
     if(pathname==='/api/v1/bots'&&req.method==='GET')return json(res,200,await run(tx=>listBots(tx,actor)));
     if(pathname==='/api/v1/bots'&&req.method==='POST')return json(res,201,await runBody((tx,input)=>createBot(tx,actor,input)));
@@ -224,6 +225,8 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&pathname==='/api/v1/runtime/jobs')return json(res,200,await run(tx=>runtimeJobs(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/campaigns')return json(res,200,await run(tx=>listCampaigns(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/campaigns')return json(res,201,await runBody((tx,input)=>createCampaign(tx,actor,input)));
+    const campaignReview=/^\/api\/v1\/campaigns\/([^/]+)\/review$/.exec(pathname);
+    if(campaignReview&&req.method==='GET')return json(res,200,await run(tx=>reviewCampaign(tx,actor,campaignReview[1])));
     const campaignAction=/^\/api\/v1\/campaigns\/([^/]+)\/(launch|cancel)$/.exec(pathname);
     if(req.method==='POST'&&campaignAction)return json(res,200,await run<unknown>(tx=>campaignAction[2]==='launch'?launchCampaign(tx,actor,campaignAction[1]):cancelCampaign(tx,actor,campaignAction[1])));
     if(req.method==='GET'&&pathname==='/api/v1/usage')return json(res,200,await run(tx=>usageSummary(tx,actor)));
@@ -288,8 +291,9 @@ const server=createServer(async(req,res)=>{
      if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/analytics/overview'){const days=new URL(req.url||'/','http://local').searchParams.get('days')||'30';if(!['7','30','90'].includes(days))throw new HttpFailure(400,'Invalid reporting period');return json(res,200,await run(tx=>analyticsOverview(tx,actor,Number(days))));}
+    if(req.method==='POST'&&pathname==='/api/v1/leads/bulk-stage')return json(res,200,await runBody((tx,input)=>bulkLeadStage(tx,actor,input)));
     const leadDetail=/^\/api\/v1\/leads\/([^/]+)\/profile$/.exec(pathname);
-    if(leadDetail&&req.method==='GET')return json(res,200,await run(tx=>leadProfile(tx,actor,leadDetail[1])));
+    if(leadDetail&&req.method==='GET')return json(res,200,await run(tx=>leadProfile(tx,actor,leadDetail[1],Number(new URL(req.url||'/','http://local').searchParams.get('conversationPage')||1))));
     const leadAssignment=/^\/api\/v1\/leads\/([^/]+)\/assign$/.exec(pathname);
      if(req.method==='PATCH'&&leadAssignment)return json(res,200,await runBody((tx,input)=>assignLead(tx,actor,leadAssignment[1],input)));
      const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);

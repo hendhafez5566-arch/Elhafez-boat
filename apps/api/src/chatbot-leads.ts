@@ -138,8 +138,8 @@ export async function leadPage(db:SqlClient,actor:Actor,input:URLSearchParams){
 }
 
 /** One contact profile linked to the selected lead and its real conversation. */
-export async function leadProfile(db:SqlClient,actor:Actor,id:string){
- allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid lead');
+export async function leadProfile(db:SqlClient,actor:Actor,id:string,conversationPage=1){
+ allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);if(!Number.isInteger(conversationPage)||conversationPage<1||conversationPage>100000)throw new HttpFailure(400,'Invalid conversation page');if(!isUuid(id))throw new HttpFailure(400,'Invalid lead');
  const r=await db.query(`SELECT l.id,l.stage,l.custom_fields,l.created_at,l.updated_at,l.conversation_id,
  c.id AS contact_id,c.full_name,c.phone,c.do_not_contact,v.channel,v.status,v.assigned_user_id,s.bot_id,b.name AS bot_name
  FROM chatbot_leads l JOIN contacts c ON c.tenant_id=l.tenant_id AND c.id=l.contact_id
@@ -151,5 +151,22 @@ export async function leadProfile(db:SqlClient,actor:Actor,id:string){
  const profile=r.rows[0];
  const messages=await db.query(`SELECT id,kind,body,created_at FROM (SELECT id,kind,body,created_at FROM conversation_messages
  WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC,id DESC LIMIT 30) recent ORDER BY created_at,id`,[actor.tenantId,profile.conversation_id]);
- return {...profile,messages:messages.rows};
+ const count=await db.query('SELECT count(*)::int AS total FROM conversations WHERE tenant_id=$1 AND contact_id=$2',[actor.tenantId,profile.contact_id]);
+ const total=Number(count.rows[0].total),pages=Math.max(1,Math.ceil(total/20)),page=Math.min(conversationPage,pages);
+ const conversations=await db.query(`SELECT v.id,v.channel,v.status,v.assigned_user_id,v.last_message_at,
+  m.body AS last_message,m.created_at AS last_activity_at FROM conversations v LEFT JOIN LATERAL
+  (SELECT body,created_at FROM conversation_messages WHERE tenant_id=v.tenant_id AND conversation_id=v.id AND kind IN ('INBOUND','OUTBOUND','INTERNAL_NOTE') ORDER BY created_at DESC,id DESC LIMIT 1) m ON true
+  WHERE v.tenant_id=$1 AND v.contact_id=$2 ORDER BY v.last_message_at DESC NULLS LAST,v.id LIMIT 20 OFFSET $3`,[actor.tenantId,profile.contact_id,(page-1)*20]);
+ return {...profile,messages:messages.rows,conversations:conversations.rows,conversationPage:page,conversationPages:pages,conversationTotal:total};
+}
+
+/** All-or-nothing company CRM batch. No outbound operations or consent changes. */
+export async function bulkLeadStage(db:SqlClient,actor:Actor,input:unknown){
+ allow(actor,['OWNER','MANAGER','AGENT']);const d=input as {ids?:unknown;stage?:unknown};
+ if(!d||!Array.isArray(d.ids)||d.ids.length<1||d.ids.length>50||!d.ids.every(isUuid)||new Set(d.ids).size!==d.ids.length)throw new HttpFailure(400,'Select 1–50 unique leads');
+ if(!['READY_FOR_AGENT','CONTACTED','CLOSED'].includes(String(d.stage)))throw new HttpFailure(400,'Invalid lead stage');
+ const rows=await db.query('SELECT id FROM chatbot_leads WHERE tenant_id=$1 AND id=ANY($2::uuid[]) ORDER BY id FOR UPDATE',[actor.tenantId,d.ids]);
+ if(rows.rows.length!==d.ids.length)throw new HttpFailure(404,'One or more leads unavailable in company');
+ for(const id of d.ids)await updateLeadStage(db,actor,id,{stage:d.stage});
+ return {updated:d.ids.length,stage:d.stage};
 }

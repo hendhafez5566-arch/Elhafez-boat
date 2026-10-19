@@ -197,14 +197,15 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   advancedButtons.append(button('إعادة العرض',()=>canvas.reset()),button('الخطوة المختارة',()=>canvas.focus(selected)));
   advancedView.append(advancedButtons);
   actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
- const simpleMode=button('عرض مبسط بالخطوات',()=>{
-   const linear=workspace.classList.toggle('builder-linear-mode');
-   palette.hidden=!linear;workspace.classList.toggle('palette-collapsed',!linear);
-   paletteToggle.disabled=linear;
+ function setEditorMode(linear){
+   workspace.classList.toggle('builder-linear-mode',linear);palette.hidden=!linear;workspace.classList.toggle('palette-collapsed',!linear);paletteToggle.disabled=linear;
    simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
-   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open');palette.scrollIntoView({block:'start'})}
-   else{canvas.draw();canvas.focus(selected)}
- },'secondary');
+   if(state.botId)sessionStorage.setItem('eb-editor-mode:'+state.tenantId+':'+state.botId,linear?'simple':'canvas');
+   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open')}
+   else{canvas.draw();requestAnimationFrame(()=>canvas.fit())}
+ }
+ const simpleMode=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
+ simpleMode.classList.add('builder-mode-switch');
  actions.prepend(simpleMode);
  stageHead.append(actions,advancedView);
  const stageExtras=el('details',undefined,'builder-stage-extras');
@@ -294,7 +295,17 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      let desc='';if('text'in node)desc=String(node.text);if(node.type==='CONDITION')desc='شرط على: '+node.field;
      if(node.type==='TAG')desc='تصنيف: '+node.tag;
      card.append(el('p',desc.slice(0,90)||'بداية المسار'));
-     card.onclick=()=>{selected=node.id;selectedNodes=new Set([selected]);renderBlocks();renderEditor();canvas.highlight(selected);showInspector()};host.append(card);
+     card.onclick=()=>{selected=node.id;selectedNodes=new Set([selected]);renderBlocks();renderEditor();canvas.highlight(selected);showInspector()};
+     const row=el('article',undefined,'builder-step-row');row.dataset.stepId=node.id;row.append(card);
+     const outputs=el('div',undefined,'builder-step-outputs');
+     for(const output of graphOutputs(node)){
+      const dest=nodeById(output.to),caption=(node.type==='BUTTONS'||node.type==='LIST'?'لما العميل يضغط «'+output.label+'»':node.type==='CONDITION'?'إذا كانت الإجابة '+output.label:'بعد هذه الخطوة');
+      const branch=el('div',undefined,'builder-step-branch');branch.append(el('span',caption));
+      if(dest)branch.append(button((types[dest.type]||'خطوة')+' — '+String(dest.text||'بداية المحادثة').slice(0,45),()=>{selected=dest.id;renderBlocks();renderEditor();showInspector()}));
+      branch.append(button('إضافة خطوة هنا',()=>openInsert({nodeId:node.id,key:output.key})));outputs.append(branch);
+     }
+     if(!graphOutputs(node).length)outputs.append(el('small',node.type==='HANDOFF'?'يكمل الموظف المحادثة من صندوق الوارد.':'تنتهي المحادثة هنا.'));
+     row.append(outputs);host.append(row);
    }
  }
  function renderEditor(){
@@ -396,7 +407,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
        advancedChoice.append(label('معرّف الاختيار',control(choice.id,value=>{choice.id=value})));
        if(node.type==='LIST'){const description=control(choice.description||'',value=>{choice.description=value});description.maxLength=72;block.append(label('وصف قصير',description));}
        advancedChoice.append(label('عند الضغط ينتقل إلى',target(choice.next,value=>{choice.next=value})));
-       block.append(advancedChoice);
+       block.append(button('إضافة رد لهذا الاختيار',()=>openInsert({nodeId:node.id,key:'choice:'+i})),advancedChoice);
        const moveChoice=(offset)=>{
          const other=i+offset;if(other<0||other>=node.choices.length)return;
          [node.choices[i],node.choices[other]]=[node.choices[other],node.choices[i]];markDirty();renderAll();
@@ -465,11 +476,17 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  }
  function addNode(type,anchor=null){
    if(flow.nodes.length>=100){notify('وصلت للحد الأقصى 100 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
-   if(anchor&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
+   if(anchor&&nodeById(anchor.key.startsWith('choice:')?nodeById(anchor.nodeId)?.choices?.[Number(anchor.key.split(':')[1])]?.next:nodeById(anchor.nodeId)?.[anchor.key])&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
    const origin=anchor?nodeById(anchor.nodeId):null;
-   const oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.[Number(anchor.key.split(':')[1])]?.next:origin[anchor.key]):null;
+   let oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.[Number(anchor.key.split(':')[1])]?.next:origin[anchor.key]):null;
    let n=flow.nodes.length+1,id='step'+n;while(nodeById(id))id='step'+(++n);
-   let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id||flow.startId;
+   let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id;
+   if(!next&&!['END','HANDOFF'].includes(type)){
+    let endId='finish';while(nodeById(endId))endId+='x';
+    flow.nodes.push({id:endId,type:'END',text:'شكرًا لتواصلك معنا.'});next=endId;
+   }
+   next??=flow.startId;
+   if(origin&&!nodeById(oldTarget))oldTarget=['END','HANDOFF'].includes(type)?null:next;
    if(type==='BUTTONS'||type==='LIST')flow.nodes.push({id,type,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]});
    else if(type==='DELAY')flow.nodes.push({id,type,seconds:60,next});
    else if(type==='SUBFLOW')flow.nodes.push({id,type,subflowId:'',version:1,bindings:{},next});
@@ -485,11 +502,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    else if(type==='LINK')flow.nodes.push({id,type,text:'اعرف التفاصيل من الرابط',url:'https://example.com',next});
    else if(type==='HANDOFF'||type==='END')flow.nodes.push({id,type,text:type==='HANDOFF'?'هحوّل كلامك لموظف يساعدك.':'شكرًا لتواصلك معانا.'});
    else flow.nodes.push({id,type:'TEXT',text:'اكتب رسالة للعميل هنا',next});
-   if(origin&&oldTarget){
+   if(origin){
      const inserted=flow.nodes.at(-1);
      if(anchor.key.startsWith('choice:')){const choice=origin.choices?.[Number(anchor.key.split(':')[1])];if(choice)choice.next=id;}
      else origin[anchor.key]=id;
-     if('next'in inserted)inserted.next=oldTarget;
+     if('next'in inserted)inserted.next=oldTarget||next;
      if('yes'in inserted){inserted.yes=oldTarget;inserted.no=oldTarget;}
      if(Array.isArray(inserted.choices))for(const choice of inserted.choices)choice.next=oldTarget;
      const pos=flow.layout?.[origin.id]||{x:80,y:80};flow.layout??={};flow.layout[id]={x:Math.min(8700,pos.x+365),y:Math.min(9000,pos.y+315)};
@@ -587,7 +604,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
    const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
-   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();requestAnimationFrame(()=>canvas.fit());resetPreview();
+   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');

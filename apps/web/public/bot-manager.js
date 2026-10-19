@@ -1,5 +1,6 @@
+import {mountBotSetup} from './bot-setup.js';
 /** Independent bots backed by tenant-authorized endpoints. No provider connection is implied. */
-export function initBotManager({state,api,execute,notify,el,button,canEdit},openBuilder){
+export function initBotManager({state,api,execute,notify,el,button,canEdit},openBuilder,canStart=()=>true){
  const page=el('section',undefined,'page');page.id='bots';page.hidden=true;
  document.getElementById('flow-builder').before(page);
  const title=el('h2','بوتات شركتك'),intro=el('p','أنشئ مساعدًا مستقلًا لكل تجربة. موارد الشركة مشتركة، ومسودة كل بوت وإصداراته مستقلة.');
@@ -11,7 +12,13 @@ export function initBotManager({state,api,execute,notify,el,button,canEdit},open
  const submit=el('button','إنشاء بوت','primary');submit.type='submit';form.append(label,templateLabel,submit,preview);
  const search=el('input');search.type='search';search.placeholder='ابحث باسم البوت';search.setAttribute('aria-label','البحث في البوتات');
  const status=el('p');status.setAttribute('role','status');const list=el('div',undefined,'bot-grid');
- page.append(title,intro,form,search,status,list);let bots=[];
+ const setup=mountBotSetup({host:page,api,el,button,notify,openBuilder,canStart});
+ const create=button('إنشاء بوت خطوة بخطوة',()=>setup.start(),'primary');
+ const gallery=el('section',undefined,'template-gallery'),gallerySearch=el('input'),galleryList=el('div',undefined,'template-gallery-grid');gallerySearch.type='search';gallerySearch.placeholder='ابحث عن قالب مناسب';gallerySearch.setAttribute('aria-label','البحث في قوالب البوت');gallery.append(el('h3','اختر نقطة بداية'),gallerySearch,galleryList);
+ function renderGallery(){galleryList.replaceChildren();const q=gallerySearch.value.trim();for(const t of templates.filter(t=>(t.name+' '+t.description).includes(q))){const card=el('article',undefined,'card template-card');card.dataset.templateId=t.id;const preview=el('details');preview.append(el('summary','معاينة المحادثة'));for(const n of t.definition.nodes){if(n.text)preview.append(el('p',n.text));if(n.choices)preview.append(el('p',n.choices.map(c=>c.title).join(' / ')))}card.append(el('h4',t.name),el('p',t.description),preview);if(canEdit())card.append(button('استخدم هذا القالب',()=>setup.start(t.id),'primary'));galleryList.append(card)}if(!galleryList.children.length)galleryList.append(el('p','لا توجد قوالب مطابقة. جرّب كلمة أخرى.'));}
+ gallerySearch.oninput=renderGallery;
+ const quick=el('details',undefined,'bot-quick-create');quick.append(el('summary','إنشاء سريع من قالب جاهز'),form);
+ page.append(title,intro,create,gallery,quick,search,status,list);let bots=[];
  function render(){
   list.replaceChildren();const filtered=bots.filter(b=>b.name.includes(search.value.trim()));
   status.textContent=!bots.length?'لا توجد بوتات بعد. ابدأ باسم مناسب ثم أضف أول رسالة.':!filtered.length?'لا توجد نتائج مطابقة.':`${filtered.length} بوت — الإصدارات المنشورة لا تعني اتصال قناة حقيقية`;
@@ -71,7 +78,7 @@ export function initBotManager({state,api,execute,notify,el,button,canEdit},open
   }
  }
  search.oninput=render;
- form.onsubmit=e=>{e.preventDefault();execute(async()=>{submit.disabled=true;try{const bot=await api('/bots',{method:'POST',body:{name:name.value,templateId:template.value||'blank'}});name.value='';await openBuilder(bot);notify('تم إنشاء البوت كمسودة مستقلة. أضف رسالة ثم جرّب المحادثة.')}finally{submit.disabled=false}})};
- async function load(){form.hidden=!canEdit();status.textContent='جارٍ تحميل البوتات…';try{[bots,templates]=state.demo?[[],[]]:await Promise.all([api('/bots'),api('/bots/templates')]);const selected=template.value;template.replaceChildren();for(const t of templates){const option=el('option',t.name);option.value=t.id;template.append(option)}if(selected)template.value=selected;template.onchange();render()}catch(error){list.replaceChildren();status.textContent='تعذر تحميل البوتات. حاول مجددًا.';list.append(button('إعادة المحاولة',load));throw error}}
+ form.onsubmit=e=>{e.preventDefault();if(!canStart()){notify('احفظ تعديلات البوت الحالي أولًا.','error');return}execute(async()=>{submit.disabled=true;try{const bot=await api('/bots',{method:'POST',body:{name:name.value,templateId:template.value||'blank'}});name.value='';await openBuilder(bot);notify('تم إنشاء البوت كمسودة مستقلة. أضف رسالة ثم جرّب المحادثة.')}finally{submit.disabled=false}})};
+ async function load(){form.hidden=!canEdit();quick.hidden=!canEdit();create.hidden=!canEdit();status.textContent='جارٍ تحميل البوتات…';try{[bots,templates]=state.demo?[[],[]]:await Promise.all([api('/bots'),api('/bots/templates')]);const selected=template.value;template.replaceChildren();for(const t of templates){const option=el('option',t.name);option.value=t.id;template.append(option)}if(selected)template.value=selected;template.onchange();setup.setTemplates(templates);renderGallery();render()}catch(error){list.replaceChildren();status.textContent='تعذر تحميل البوتات. حاول مجددًا.';list.append(button('إعادة المحاولة',load));throw error}}
  return {load};
 }

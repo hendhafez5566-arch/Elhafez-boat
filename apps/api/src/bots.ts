@@ -1,6 +1,6 @@
 import {allow,HttpFailure,isUuid,type Actor,type SqlClient} from './services.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
-import {botTemplate,botTemplates} from './bot-templates.js';
+import {prepareBotTemplate} from './bot-templates.js';
 
 /** Resolve ownership before accessing a bot; legacy defaults retain their original storage. */
 export async function botScope(db:SqlClient,actor:Actor,id:string,write=false,allowArchived=false):Promise<string|undefined>{
@@ -22,13 +22,9 @@ export async function listBots(db:SqlClient,actor:Actor){
 }
 export async function createBot(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER','MANAGER']);
- const name=botName(input);
+ const {name,definition}=prepareBotTemplate(input);
  const r=await db.query('INSERT INTO chatbot_bots(tenant_id,name,created_by) VALUES($1,$2,$3) RETURNING id,name',[actor.tenantId,name,actor.userId]);
  const bot=r.rows[0];
- // A new bot starts with one Start node; nothing is published or connected implicitly.
- const templateId=(input as {templateId?:unknown}).templateId??'blank';
- if(!botTemplates.some(t=>t.id===templateId))throw new HttpFailure(400,'Unknown bot template');
- const definition=botTemplate(String(templateId),name.length<2?'بوت '+name:name);
  await db.query('INSERT INTO chatbot_bot_drafts(tenant_id,bot_id,definition,draft_revision,updated_by) VALUES($1,$2,$3::jsonb,1,$4)',[actor.tenantId,bot.id,JSON.stringify(definition),actor.userId]);
  return bot;
 }

@@ -43,7 +43,19 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
  }
  const jobs=await api('/connectors/jobs');const block=el('section');block.append(el('h3','نتائج المزامنة'));for(const j of jobs)block.append(card(j.id,j.status+' • محاولات '+j.attempts+' • '+(j.last_error||'')));host.append(block);
  }
- async function channelPage(){const host=$('social-accounts');host.replaceChildren();const rows=await api('/channels/accounts');if(!rows.length)emptyState(host,'لا توجد قنوات مرتبطة','الربط يحتاج بيانات وصلاحيات حساب الشركة.');for(const r of rows){const c=card(r.channel,r.external_id+' • '+(r.enabled?'مفعل في الإعدادات — اختبر الاستقبال والتسليم':'معطل'));if(state.role==='OWNER'&&r.enabled)c.append(button('تعطيل الحساب',async()=>{await api('/channels/accounts/'+r.id,{method:'DELETE'});await channelPage()},'danger'));host.append(c)}$('social-form').hidden=state.role!=='OWNER';}
+ async function channelPage(){
+ const host=$('social-accounts');host.replaceChildren(el('p','جارٍ قراءة حالة القنوات…'));
+ const [rows,whatsapp,widget,bots]=await Promise.all([api('/channels/accounts'),api('/whatsapp/signup/accounts'),api('/widget/settings'),api('/bots')]);host.replaceChildren();
+ const names={WEBSITE:'شات الموقع',WHATSAPP:'واتساب',MESSENGER:'ماسنجر',INSTAGRAM:'إنستجرام',TELEGRAM:'تيليجرام'};
+ const directory=el('div',undefined,'channel-directory');
+ const web=card('شات الموقع',widget.enabled?'مفعّل في إعدادات الشركة':'غير مفعّل');web.append(el('p','يحتاج موقعًا مسموحًا وتجربة استقبال فعلية.'),button('إعداد شات الموقع',()=>document.querySelector('[data-page=website]').click()));directory.append(web);
+ const wa=card('واتساب الرسمي',whatsapp.length?whatsapp.length+' حساب محفوظ':'لا يوجد رقم مربوط');
+ for(const a of whatsapp){const verified=a.status==='CONNECTED'&&a.authorization==='VERIFIED'&&a.subscriptionVerifiedAt&&(!a.expiresAt||new Date(a.expiresAt)>new Date());const route=bots.find(b=>b.routes?.some(r=>r.channel==='WHATSAPP'&&r.accountId===a.id));wa.append(el('p',(a.displayPhone||'حساب واتساب')+' — '+(verified?'اعتماد موثق محليًا':'يحتاج مراجعة الاعتماد')+(route?' • البوت: '+route.name:'')));}
+ wa.append(el('p','توثيق الإعدادات لا يثبت تسليم الرسائل. الربط الرسمي يحتاج موافقة مالك الحساب.'),button('دليل الربط الرسمي',()=>document.querySelector('[data-page=wa-connect]').click()));directory.append(wa);
+ for(const channel of ['MESSENGER','INSTAGRAM','TELEGRAM']){const accounts=rows.filter(r=>r.channel===channel),c=card(names[channel],accounts.length?accounts.length+' حساب محفوظ':'لم يُربط حساب');for(const account of accounts){c.append(el('p',account.enabled?'مفعّل في الإعدادات — الاستقبال الفعلي يحتاج اختبارًا':'معطل'));if(state.role==='OWNER'&&account.enabled)c.append(button('تعطيل الحساب',async()=>{if(!confirm('تعطيل الحساب وإيقاف استخدامه محليًا؟'))return;await api('/channels/accounts/'+account.id,{method:'DELETE'});await channelPage()},'danger'));}directory.append(c)}
+ host.append(directory);$('social-form').hidden=state.role!=='OWNER';
+ if(!$('social-form').closest('.channel-technical')){const advanced=el('details',undefined,'channel-technical');advanced.append(el('summary','إعداد حساب رسمي — للمسؤول التقني'));$('social-form').before(advanced);advanced.append(el('p','لا تدخل بيانات حساب حقيقي أو تبدأ الربط إلا بعد موافقة المالك.'),$('social-form'));}
+ }
  bind('social-form',async(d,f)=>{await api('/channels/accounts',{method:'POST',body:d});f.reset();await channelPage();notify('تم التحقق من اعتماد الحساب وحفظ الإعدادات؛ لم يُثبت اختبار محادثة حقيقية')});
  async function commentPage(){
   const rulesHost=$('comment-rule-editor'),candidatesHost=$('comment-candidates');rulesHost.replaceChildren();candidatesHost.replaceChildren();
