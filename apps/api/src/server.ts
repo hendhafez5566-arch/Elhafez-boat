@@ -1,3 +1,4 @@
+import {listBots,createBot,updateBot,botFlow} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
@@ -139,6 +140,16 @@ const server=createServer(async(req,res)=>{
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
     const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    if(pathname==='/api/v1/bots'&&req.method==='GET')return json(res,200,await run(tx=>listBots(tx,actor)));
+    if(pathname==='/api/v1/bots'&&req.method==='POST')return json(res,201,await runBody((tx,input)=>createBot(tx,actor,input)));
+    const botRoute=/^\/api\/v1\/bots\/([^/]+)(?:\/flows(?:\/(draft|publish|versions)(?:\/([0-9]+)\/rollback)?)?)?$/.exec(pathname);
+    if(botRoute){
+      const id=botRoute[1],op=botRoute[3]?'rollback:'+botRoute[3]:botRoute[2]||'get';
+      if(req.method==='PATCH'&&!pathname.includes('/flows'))return json(res,200,await runBody((tx,input)=>updateBot(tx,actor,id,input)));
+      if(req.method==='GET'&&pathname.includes('/flows')&&['get','versions'].includes(op))return json(res,200,await run(tx=>botFlow(tx,actor,id,op)));
+      if(req.method==='PUT'&&op==='draft')return json(res,200,await runBody((tx,input)=>botFlow(tx,actor,id,op,input)));
+      if(req.method==='POST'&&(op==='publish'||op.startsWith('rollback:')))return json(res,200,await run(tx=>botFlow(tx,actor,id,op)));
+    }
     if(req.method==='GET'&&pathname==='/api/v1/flows/subflows')return json(res,200,await run(tx=>listSubflows(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/flows/subflows')return json(res,201,await runBody((tx,input)=>saveSubflow(tx,actor,input)));
     if(req.method==='GET'&&pathname==='/api/v1/privacy/settings')return json(res,200,await run(tx=>privacySettings(tx,actor)));

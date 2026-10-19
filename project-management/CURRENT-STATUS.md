@@ -1,3 +1,7 @@
+## 2026-10-19 — Independent bot rebuild, batch A (in progress)
+
+Implementation branch: `feat/codex-product-rebuild-2026-10-19`, based on instructions SHA `b02a3132751ed0b6acbbc5f1a928b83b04dcb572` (target observed `ada4db6764c8ee8665764663b3a47351cf807637`). Added migration 0029, tenant/bot storage, legacy snapshot preserving original live tables, bot CRUD and scoped draft/publish/version API reusing existing validation. `npm ci --cache /tmp/elhafez-npm-cache --ignore-scripts --no-audit --no-fund` and `npm run typecheck` passed. This is NOT completed acceptance: database migration, browser, channel routing and S01–S22 remain open. GitHub API returns Forbidden; PR/CI not verified. No merge/deploy/provider activation. Next: disposable PostgreSQL verification and bot manager/browser integration. Migration rollback is application rollback to untouched legacy tables; retain additive bot tables, never delete customer data.
+
 ## Second 2026-10-19 UX implementation pass on draft PR #3
 Changes across dashboard, flow builder, catalog, privacy, CRM, templates, usage, and secure dashboard session. Auth restored through HttpOnly cookies/CSRF. Conflict handling exports local draft and offers safe server reload. Real 320px screenshots and no-horizontal-overflow checks added. Green full Verify runs exist for d08085ae; verify current HEAD separately. See docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md. Unmerged; no Railway deployment or Meta provider actions.
 
