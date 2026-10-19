@@ -1,0 +1,7 @@
+The current company-wide flow cannot represent independent bots. This draft adds tenant/bot storage, safe legacy backfill, independent draft/publication/history, explicit channel routing and pinned sessions. The bot manager now creates/selects/renames/archives/restores bots, offers Arabic templates and scoped triggers, and opens a dedicated canvas workspace. CRM adds PostgreSQL pagination/search, linked contact profiles and per-bot session metrics.
+
+Legacy flows, conversations, provider accounts, credentials and shared company resources remain in place. Migrations 0029–0032 are additive. Release rollback creates an immutable new revision; application downgrade requires the documented session handoff procedure.
+
+Validation: 117 unit tests, PostgreSQL non-owner/RLS and multi-bot/concurrency/backfill/routing tests, real Chromium create/save/reload/data-capture/handoff/management journeys, desktop/tablet/mobile screenshots, and a disposable 92-table backup/restore comparison. Final executable SHA and exact remaining S01–S22 gaps are recorded in docs/product-rebuild/EXECUTION-LEDGER.md. Earlier passing runs do not certify every screen or provider integration.
+
+This remains a DRAFT: full 22-screen redesign/acceptance is incomplete. No merge to main or feat/stage0-foundation, Railway deployment, provider authentication or real messages are authorized. See docs/product-rebuild/DATA-MIGRATION-AND-RECOVERY.md and the execution ledger before review.

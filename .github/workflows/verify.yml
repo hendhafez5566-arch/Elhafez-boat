@@ -59,6 +59,8 @@ jobs:
       CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Before screenshots archive the exact handoff ancestor.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
