@@ -192,8 +192,8 @@ export function initFlowBuilder({state,api,notify,execute}){
   const advancedButtons=el('div',undefined,'actions');
   advancedButtons.append(button('إعادة العرض',()=>canvas.reset()),button('الخطوة المختارة',()=>canvas.focus(selected)));
   advancedView.append(advancedButtons);
-  actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),advancedView,focusToggle);
- stageHead.append(actions);
+  actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
+ stageHead.append(actions,advancedView);
  stagePanel.append(stageHead,tools,canvasHost);
  canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');
  canvasHost.addEventListener('dragover',e=>{
