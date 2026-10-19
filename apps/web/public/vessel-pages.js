@@ -56,7 +56,7 @@ export function initVesselPages(){
   headerTitle.append(el('span','vessel-page-kicker','LIBRARY'),el('h3','','العناصر المسجلة'));
   const search=el('input','vessel-library-search');search.type='search';search.placeholder='بحث في العناصر المعروضة';
   search.setAttribute('aria-label','البحث في عناصر الكتالوج المعروضة');
-  const add=el('button','primary vessel-library-add','+ إضافة منتج أو خدمة');add.type='button';
+  const add=el('button','primary vessel-library-add','+ إضافة منتج أو خدمة');add.type='button';add.dataset.admin='true';
   const veil=el('button','vessel-editor-backdrop');veil.hidden=true;veil.type='button';
   veil.setAttribute('aria-label','إغلاق نموذج المنتج');document.body.append(veil);
   const closeEditor=()=>{formPanel.hidden=true;formPanel.classList.remove('is-open');veil.hidden=true;add.focus()};
@@ -91,7 +91,7 @@ export function initVesselPages(){
  const knowledge=$('settings'),faq=$('faq-form'),faqList=$('faq-list');
  if(knowledge&&faq&&faqList){
    faq.hidden=true;
-   const addFAQ=el('button','primary vessel-create-action','+ إضافة سؤال وإجابة');addFAQ.type='button';
+   const addFAQ=el('button','primary vessel-create-action','+ إضافة سؤال وإجابة');addFAQ.type='button';addFAQ.dataset.admin='true';
    const closeFAQ=el('button','secondary','إغلاق نموذج الإضافة');closeFAQ.type='button';
    closeFAQ.onclick=()=>{faq.hidden=true;addFAQ.focus()};faq.append(closeFAQ);
    addFAQ.onclick=()=>{faq.hidden=false;faq.querySelector('input')?.focus()};
@@ -99,7 +99,7 @@ export function initVesselPages(){
  }
  const campaign=$('campaign-form');
  if(campaign){
-   const section=el('details','campaign-create-disclosure');
+   const section=el('details','campaign-create-disclosure');section.dataset.admin='true';
    campaign.before(section);section.append(el('summary','','+ إنشاء حملة جديدة (مسودة فقط)'),campaign);
    $('campaign-list')?.setAttribute('aria-label','قائمة الحملات الحالية');
  }
