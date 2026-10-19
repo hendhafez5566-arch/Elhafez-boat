@@ -370,3 +370,31 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #app #lead-list .boat-filterbar{display:grid;grid-template-columns:1fr}
  #app #lead-list .boat-filterbar select,#app #lead-list .boat-filterbar button{width:100%;max-width:none}
 }
+
+/* Persistent collapsible navigation on desktop: all 21 destinations stay discoverable. */
+.vessel-brand-name{display:none}
+@media(min-width:1024px){
+ #app.vessel-app.vessel-nav-expanded{grid-template-columns:240px minmax(0,1fr)}
+ #app.vessel-nav-expanded .sidebar.vessel-rail{width:240px;padding:15px 12px;align-items:stretch;gap:8px}
+ #app.vessel-nav-expanded .vessel-brand{flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;text-align:right}
+ #app.vessel-nav-expanded .vessel-monogram{width:36px;height:36px;border-radius:10px;font-size:18px;box-shadow:none}
+ #app.vessel-nav-expanded .vessel-logotype{display:none}
+ #app.vessel-nav-expanded .vessel-brand-name{display:block;color:#fff;font-size:15px;white-space:nowrap}
+ #app.vessel-nav-expanded .vessel-menu-button{height:38px;width:100%;margin:0;text-align:right;font-size:20px}
+ #app.vessel-nav-expanded .vessel-rail nav{display:none}
+ #app.vessel-nav-expanded .vessel-drawer{position:static;inset:auto;box-shadow:none;z-index:auto;border:0;background:transparent;color:#edf0ff;width:100%;height:auto;min-height:0;max-height:none;flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 0;scrollbar-width:thin}
+ #app.vessel-nav-expanded .vessel-drawer-heading{margin:0 0 12px;padding:5px 4px}
+ #app.vessel-nav-expanded .vessel-drawer-identity{display:none}
+ #app.vessel-nav-expanded .vessel-drawer .vessel-close{background:#ffffff1b;color:#fff;font-size:16px;padding:6px 10px}
+ #app.vessel-nav-expanded .vessel-search{background:#282d50;border-color:#363c62;color:white;min-height:42px;margin:0 0 15px;font-size:13px}
+ #app.vessel-nav-expanded .vessel-search::placeholder{color:#c9c9e5}
+ #app.vessel-nav-expanded .vessel-menu-groups{gap:12px}
+ #app.vessel-nav-expanded .vessel-menu-section h3{color:#aaafd0;font-size:12px;padding:6px 10px}
+ #app.vessel-nav-expanded .vessel-menu-section>.nav,#app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link{color:#d7dcf3;min-height:43px;font-size:14px;padding:9px 8px;background:transparent;border:0}
+ #app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link>span,#app.vessel-nav-expanded .vessel-menu-section>.nav>span{color:#a7abeb}
+ #app.vessel-nav-expanded .vessel-menu-section>.nav:hover,#app.vessel-nav-expanded .vessel-menu-section>.nav.active,#app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link:hover,#app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link.active{background:#6055d3;color:#fff}
+ #app.vessel-nav-expanded .vessel-drawer-footer{margin-top:12px;padding-top:10px;border-color:#353956}
+ #app.vessel-nav-expanded .vessel-drawer-footer #logout{width:100%;background:#ffffff18;color:#f4f4ff;border-color:#ffffff30}
+ #app.vessel-nav-expanded .vessel-menu-empty{color:#fff;border-color:#6e7390}
+ #app.vessel-nav-expanded .vessel-top{padding-inline:24px}
+}

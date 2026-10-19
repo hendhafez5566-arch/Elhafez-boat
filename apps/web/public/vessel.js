@@ -3,7 +3,7 @@ export function initVesselWorkspace(){
  const $=id=>document.getElementById(id),make=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text!==undefined)e.textContent=text;return e};
  const app=$('app'),rail=app.querySelector('.sidebar'),nav=rail.querySelector('nav'),top=app.querySelector('.topbar');
  app.classList.add('vessel-app');rail.classList.add('vessel-rail');top.classList.add('vessel-top');
- const brand=rail.querySelector('.brand');brand.replaceChildren(make('span','vessel-monogram','B.'),make('small','vessel-logotype','BOAT'));brand.classList.add('vessel-brand');
+ const brand=rail.querySelector('.brand');brand.replaceChildren(make('span','vessel-monogram','B.'),make('small','vessel-logotype','BOAT'));brand.classList.add('vessel-brand');brand.append(make('strong','vessel-brand-name','Elhafez Boat'));
  const all=[...nav.querySelectorAll('button[data-page]')],byId=new Map(all.map(b=>[b.dataset.page,b]));
  const legacy=nav.querySelector('.nav-advanced');if(legacy)legacy.style.display='none';
  const quick=['overview','wa-inbox','flow-builder','leads','catalog'];
@@ -25,7 +25,7 @@ export function initVesselWorkspace(){
  empty.append(make('p','', 'ملقيناش قسم بالاسم ده. جرّب كلمة تانية.' ));
  const clear=make('button','secondary','مسح البحث');clear.type='button';clear.onclick=()=>{search.value='';filter();search.focus()};empty.append(clear);
  const foot=make('div','vessel-drawer-footer');foot.append($('logout'));
- drawer.append(heading,search,groups,empty,foot);app.insertBefore(drawer,app.querySelector('.main-shell'));
+ drawer.append(heading,search,groups,empty,foot);rail.append(drawer);
  const backdrop=make('button','vessel-backdrop');backdrop.type='button';backdrop.hidden=true;backdrop.setAttribute('aria-label','إغلاق القائمة');app.insertBefore(backdrop,app.querySelector('.main-shell'));
  const header=make('div','vessel-page-heading');header.append(make('span','vessel-eyebrow','ELHAFEZ / WORKSPACE'),$('page-title'));
  const actions=make('div','vessel-header-actions');const tenant=$('company-name');tenant.classList.add('vessel-tenant');
@@ -39,11 +39,35 @@ export function initVesselWorkspace(){
    }group.style.display=count?'':'none'}
   empty.hidden=total>0;
  };
- const open=()=>{drawer.hidden=false;backdrop.hidden=false;trigger.setAttribute('aria-expanded','true');search.focus()};
- const hide=()=>{drawer.hidden=true;backdrop.hidden=true;trigger.setAttribute('aria-expanded','false');search.value='';filter()};
- trigger.onclick=()=>drawer.hidden?open():hide();command.onclick=open;close.onclick=hide;backdrop.onclick=hide;search.oninput=filter;
+ const desktopNav=window.matchMedia('(min-width:1024px)');
+ let desktopCollapsed=false;
+ const syncNav=()=>{
+   const expanded=desktopNav.matches&&!desktopCollapsed;
+   app.classList.toggle('vessel-nav-expanded',expanded);
+   drawer.hidden=!expanded;
+   backdrop.hidden=true;
+   trigger.setAttribute('aria-expanded',String(expanded));
+   trigger.setAttribute('aria-label',expanded?'طي القائمة الجانبية':'فتح قائمة الأقسام');
+ };
+ const open=()=>{
+   if(desktopNav.matches){desktopCollapsed=false;syncNav();search.focus();return}
+   drawer.hidden=false;backdrop.hidden=false;trigger.setAttribute('aria-expanded','true');search.focus();
+ };
+ const hide=()=>{
+   if(desktopNav.matches){search.value='';filter();backdrop.hidden=true;return}
+   drawer.hidden=true;backdrop.hidden=true;trigger.setAttribute('aria-expanded','false');search.value='';filter();
+ };
+ trigger.onclick=()=>{
+   if(desktopNav.matches){desktopCollapsed=!desktopCollapsed;syncNav()}
+   else drawer.hidden?open():hide();
+ };
+ command.onclick=open;
+ close.onclick=()=>{if(desktopNav.matches){desktopCollapsed=true;syncNav()}else hide()};
+ backdrop.onclick=hide;search.oninput=filter;
+ desktopNav.addEventListener?.('change',()=>{if(!desktopNav.matches)desktopCollapsed=false;syncNav()});
+ syncNav();
  for(const b of all)b.addEventListener('click',hide);
- document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden){hide();trigger.focus()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'&&!app.hidden){e.preventDefault();open()}});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!drawer.hidden){if(desktopNav.matches){search.blur()}else{hide();trigger.focus()}}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'&&!app.hidden){e.preventDefault();open()}});
  // Recompose the home screen into an editorial story without replacing live metric widgets.
  const home=$('overview'),oldHero=home.querySelector('.section-heading'),metric=$('dashboard-metrics'),start=$('getting-started'),grid=home.querySelector('.grid');
  const art=make('div','vessel-journey');art.setAttribute('aria-label','مثال توضيحي لمسار محادثة');art.setAttribute('role','img');
