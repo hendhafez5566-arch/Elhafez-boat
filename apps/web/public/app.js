@@ -149,9 +149,9 @@ document.addEventListener('boat-open-bots',()=>choose('bots'));
 async function onboardingProgress(){
  const host=$('getting-started');host.replaceChildren();host.hidden=!canEdit();
  if(!canEdit())return;
- const [flowConfig,items,widget]=await Promise.all([api('/flows'),api('/catalog'),api('/widget/settings')]);
+ const [bots,items,widget]=await Promise.all([api('/bots'),api('/catalog'),api('/widget/settings')]);
  const steps=[
-  {name:'صمّم بوتك الأول في 3 خطوات',ready:Boolean(flowConfig.published),page:'flow-builder',action:'ابدأ تصميم البوت'},
+  {name:'أنشئ بوتك الأول وانشر إصدارًا صالحًا',ready:bots.some(b=>b.publishedVersion),page:'bots',action:'إدارة البوتات'},
   {name:'أضف ونشّر منتجات أو خدمات شركتك',ready:items.some(item=>item.status==='PUBLISHED'),page:'catalog',action:'افتح الكتالوج'},
   {name:'جهّز شات موقعك (اختياري)',ready:Boolean(widget.enabled),page:'website',action:'شات الموقع'}
  ];
