@@ -2,7 +2,7 @@
 export function initBotManager({state,api,execute,notify,el,button,canEdit},openBuilder){
  const page=el('section',undefined,'page');page.id='bots';page.hidden=true;
  document.getElementById('flow-builder').before(page);
- const title=el('h2','إدارة البوتات'),intro=el('p','أنشئ مساعدًا مستقلًا لكل تجربة. موارد الشركة مشتركة، ومسودة كل بوت وإصداراته مستقلة.');
+ const title=el('h2','بوتات شركتك'),intro=el('p','أنشئ مساعدًا مستقلًا لكل تجربة. موارد الشركة مشتركة، ومسودة كل بوت وإصداراته مستقلة.');
  const form=el('form',undefined,'bot-create-form');
  const label=el('label','اسم البوت'),name=el('input');name.name='name';name.required=true;name.maxLength=100;name.placeholder='مثال: مساعد خدمة العملاء';label.append(name);
  const template=el('select');template.name='templateId';const templateLabel=el('label','كيف تحب تبدأ؟');templateLabel.append(template);
@@ -17,22 +17,33 @@ export function initBotManager({state,api,execute,notify,el,button,canEdit},open
   status.textContent=!bots.length?'لا توجد بوتات بعد. ابدأ باسم مناسب ثم أضف أول رسالة.':!filtered.length?'لا توجد نتائج مطابقة.':`${filtered.length} بوت — الإصدارات المنشورة لا تعني اتصال قناة حقيقية`;
   for(const bot of filtered){
    const card=el('article',undefined,'card bot-card');card.dataset.botId=bot.id;
-   card.append(el('h3',bot.name),el('p',bot.archivedAt?'مؤرشف':bot.publishedVersion?'إصدار منشور '+bot.publishedVersion:'مسودة'),el('p',bot.legacyDefault?'البوت الأساسي — يحافظ على القنوات والسجل السابق':'مستقل — لم يُربط بقناة بعد'));
+   card.append(el('h3',bot.name),el('p',bot.archivedAt?'مؤرشف':bot.publishedVersion?'إصدار منشور '+bot.publishedVersion:'مسودة'),el('p',bot.routes?.length?'قنوات موجّهة: '+bot.routes.map(r=>r.channel).join('، '):bot.legacyDefault?'البوت الأساسي — يحافظ على القنوات والسجل السابق':'مستقل — لم يُربط بقناة بعد'));
+   if(bot.updatedAt)card.append(el('small','آخر تعديل: '+new Date(bot.updatedAt).toLocaleString('ar-EG')));
+   if(canEdit())card.append(el('p','أنشئ بواسطة: '+(bot.createdBy?(state.team?.find(m=>m.id===bot.createdBy)?.email||'عضو في الشركة'):'ترحيل البوت الأساسي')));
    const actions=el('div',undefined,'bot-card-actions');
    actions.append(button(canEdit()&&!bot.archivedAt?'فتح الأتمتة':'عرض المحادثة',async()=>{await openBuilder(bot)}));
+   actions.append(button('النشاط وجمع البيانات',async()=>{
+    const data=await api('/bots/'+bot.id+'/insights'),panel=el('section',undefined,'bot-insights');
+    panel.append(el('h4','نشاط هذا البوت'),el('p',`${data.sessions} جلسة محفوظة • ${data.humanSessions} لدى الموظفين • ${data.capturedSessions} تحتوي إجابات`),el('p','هذه إحصاءات الجلسات المحفوظة، وليست عدد أشخاص فريدين أو إثبات تسليم رسائل.'));
+    if(data.lastActivityAt)panel.append(el('p','آخر نشاط: '+new Date(data.lastActivityAt).toLocaleString('ar-EG')));
+    for(const f of data.fields)panel.append(el('p',f.field+' — '+f.sessions+' جلسة'));
+    if(!data.fields.length)panel.append(el('p','لم تُجمع إجابات من عملاء بعد. تجربة المحادثة لا تنشئ بيانات عملاء.'));
+    panel.append(button('إغلاق',()=>panel.remove()));card.querySelector('.bot-insights')?.remove();card.append(panel);
+   }));
+   if(canEdit()&&bot.archivedAt)actions.append(button('استعادة البوت',async()=>{await api('/bots/'+bot.id,{method:'PATCH',body:{archive:false}});await load();notify('تمت استعادة البوت دون تغيير المسودة أو الإصدارات')}));
    if(canEdit()&&!bot.archivedAt){
     actions.append(button('توجيه القنوات',async()=>{
      const routes=await api('/bots/'+bot.id+'/routes');
      const panel=el('section',undefined,'bot-routing');panel.append(el('h4','قنوات هذا البوت'),el('p','التوجيه للمحادثات الجديدة فقط؛ الجلسات السابقة تظل على بوتها. لا يتم تسجيل الدخول إلى أي مزود.'));
-     for(const route of routes){const row=el('div');row.append(el('span',route.channel),button('إزالة التوجيه',async()=>{if(!confirm('إزالة التوجيه للمحادثات الجديدة؟'))return;await api('/bots/'+bot.id+'/routes',{method:'DELETE',body:route});panel.remove();notify('تمت إزالة التوجيه؛ الجلسات الحالية محفوظة')}));panel.append(row)}
+     for(const route of routes){const row=el('div');row.append(el('span',route.channel),button('إزالة التوجيه',async()=>{if(!confirm('إزالة التوجيه للمحادثات الجديدة؟'))return;await api('/bots/'+bot.id+'/routes',{method:'DELETE',body:route});panel.remove();await load();notify('تمت إزالة التوجيه؛ الجلسات الحالية محفوظة')}));panel.append(row)}
      if(!routes.length)panel.append(el('p','لا توجد قنوات موجهة لهذا البوت.'));
      const select=el('select');select.setAttribute('aria-label','القناة المتاحة للتوجيه');
      const widget=await api('/widget/settings');
      const accounts=await api('/whatsapp/signup/accounts');
      const social=await api('/channels/accounts');
-     const available=[...(widget.enabled?[{channel:'WEBSITE',accountId:null,label:'شات الموقع المفعّل'}]:[]),...accounts.filter(a=>a.status==='CONNECTED').map(a=>({channel:'WHATSAPP',accountId:a.id,label:'واتساب — '+(a.displayPhone||a.id)})),...social.filter(a=>a.enabled).map(a=>({channel:a.channel,accountId:a.id,label:a.channel}))];
+     const available=[...(widget.enabled?[{channel:'WEBSITE',accountId:null,label:'شات الموقع المفعّل'}]:[]),...accounts.filter(a=>a.status==='CONNECTED'&&a.authorization==='VERIFIED'&&a.subscriptionVerifiedAt&&(!a.expiresAt||new Date(a.expiresAt).getTime()>Date.now())).map(a=>({channel:'WHATSAPP',accountId:a.id,label:'واتساب — '+(a.displayPhone||a.id)})),...social.filter(a=>a.enabled).map(a=>({channel:a.channel,accountId:a.id,label:a.channel}))];
      for(const [i,a] of available.entries()){const option=el('option',a.label);option.value=String(i);select.append(option)}
-     if(available.length)panel.append(select,button('توجيه إلى هذا البوت',async()=>{await api('/bots/'+bot.id+'/routes',{method:'POST',body:available[Number(select.value)]});panel.remove();notify('تم حفظ توجيه القناة للمحادثات الجديدة')}));
+     if(available.length)panel.append(select,button('توجيه إلى هذا البوت',async()=>{await api('/bots/'+bot.id+'/routes',{method:'POST',body:available[Number(select.value)]});panel.remove();await load();notify('تم حفظ توجيه القناة للمحادثات الجديدة')}));
      else panel.append(el('p','فعّل شات الموقع أو أضف حسابًا رسميًا من القنوات أولًا. لا يوجد اتصال وهمي.'));
      panel.append(button('إغلاق',()=>panel.remove()));card.querySelector('.bot-routing')?.remove();card.append(panel);
     }));
@@ -41,12 +52,15 @@ export function initBotManager({state,api,execute,notify,el,button,canEdit},open
      const panel=el('section',undefined,'bot-triggers');panel.append(el('h4','لما العميل يكتب…'));
      for(const t of triggers)panel.append(el('p',t.kind==='FIRST_MESSAGE'?'أول رسالة':t.phrase),button('حذف القاعدة',async()=>{await api('/bots/'+bot.id+'/triggers/'+t.id,{method:'DELETE'});panel.remove();notify('تم حذف قاعدة التشغيل')}));
      if(cfg.published){
-      const form=el('form'),phrase=el('input'),target=el('select');phrase.required=true;phrase.maxLength=80;
+      const form=el('form'),phrase=el('input'),target=el('select'),kind=el('select'),match=el('select');phrase.required=true;phrase.maxLength=80;
+      for(const [value,text] of [['KEYWORD','عندما يكتب العميل كلمة'],['FIRST_MESSAGE','عند أول رسالة في المحادثة']]){const o=el('option',text);o.value=value;kind.append(o)}
+      for(const [value,text] of [['EXACT','نفس الكلمة بالضبط'],['CONTAINS','الرسالة تحتوي على الكلمة']]){const o=el('option',text);o.value=value;match.append(o)}
+      kind.onchange=()=>{phrase.required=kind.value==='KEYWORD';phraseLabel.hidden=kind.value==='FIRST_MESSAGE';match.hidden=kind.value==='FIRST_MESSAGE'};kind.setAttribute('aria-label','متى تبدأ المحادثة');match.setAttribute('aria-label','طريقة مطابقة الكلمة');
       const phraseLabel=el('label','الكلمة التي يكتبها العميل');phraseLabel.append(phrase);
       const targetLabel=el('label','ابدأ من');targetLabel.append(target);
       for(const n of cfg.published.definition.nodes){const option=el('option',n.text?.slice(0,60)||(n.type==='START'?'بداية المحادثة':n.id));option.value=n.id;target.append(option)}
-      const save=el('button','حفظ قاعدة التشغيل','primary');save.type='submit';form.append(phraseLabel,targetLabel,save);
-      form.onsubmit=e=>{e.preventDefault();execute(async()=>{save.disabled=true;try{await api('/bots/'+bot.id+'/triggers',{method:'POST',body:{kind:'KEYWORD',phrase:phrase.value,matchMode:'EXACT',targetNode:target.value,priority:0}});panel.remove();notify('تم حفظ القاعدة لهذا البوت فقط')}finally{save.disabled=false}})};panel.append(form);
+      const save=el('button','حفظ قاعدة التشغيل','primary');save.type='submit';form.append(kind,phraseLabel,match,targetLabel,save);
+      form.onsubmit=e=>{e.preventDefault();execute(async()=>{save.disabled=true;try{await api('/bots/'+bot.id+'/triggers',{method:'POST',body:{kind:kind.value,phrase:kind.value==='FIRST_MESSAGE'?'':phrase.value,matchMode:match.value,targetNode:target.value,priority:0}});panel.remove();notify('تم حفظ القاعدة لهذا البوت فقط')}finally{save.disabled=false}})};panel.append(form);
      }else panel.append(el('p','انشر مسودة صالحة أولًا لتحديد نقطة بدء ثابتة.'));
      panel.append(button('إغلاق',()=>panel.remove()));card.querySelector('.bot-triggers')?.remove();card.append(panel);
     }));

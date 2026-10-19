@@ -1,5 +1,11 @@
 -- Additive bot workspace. Legacy tables remain authoritative for old consumers.
 BEGIN;
+-- FORCE RLS on legacy tables must not silently hide tenants from the backfill.
+DO $$ BEGIN
+ IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname=current_user AND (rolsuper OR rolbypassrls)) THEN
+  RAISE EXCEPTION 'Bot backfill requires an authorized privileged migration role with BYPASSRLS; never use the application runtime role';
+ END IF;
+END $$;
 CREATE TABLE chatbot_bots (
  tenant_id uuid NOT NULL REFERENCES tenants(id), id uuid NOT NULL DEFAULT gen_random_uuid(),
  name text NOT NULL CHECK(length(btrim(name)) BETWEEN 1 AND 100),

@@ -451,3 +451,41 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #flow-builder .builder-stage-extras>.builder-toolbar{overflow-x:auto;flex-wrap:nowrap}
  #flow-builder .builder-stage-extras>.builder-toolbar>*{flex:none}
 }
+
+/* Independent-bot editing is a task workspace with a persistent save bar and docked inspector. */
+.bot-studio-back{display:none!important}
+body.bot-studio #app.vessel-app{display:block!important}
+body.bot-studio .sidebar,body.bot-studio .topbar,body.bot-studio .vessel-backdrop{display:none!important}
+body.bot-studio .content{padding:12px;max-width:none;width:100%}
+body.bot-studio #flow-builder>.section-heading,body.bot-studio #flow-builder>h2{display:none}
+body.bot-studio #flow-builder>.builder-toolbar{position:sticky;top:0;z-index:20;display:flex;gap:8px;margin:0 0 10px;padding:10px;align-items:center}
+body.bot-studio .bot-studio-back{display:inline-flex!important}
+body.bot-studio #flow-builder .builder-stage-head{padding:10px;gap:6px}
+body.bot-studio #flow-builder .builder-stage-head>h3,body.bot-studio #flow-builder .builder-stage-head>p{display:none}
+body.bot-studio #flow-builder .flow-canvas{height:calc(100dvh - 220px);min-height:380px}
+body.bot-studio #flow-builder .builder-studio.inspector-open{grid-template-columns:minmax(0,1fr) 350px;align-items:stretch}
+body.bot-studio #flow-builder .builder-studio.inspector-open .builder-stage{grid-column:1;grid-row:1}
+body.bot-studio #flow-builder .builder-studio.inspector-open .builder-palette{display:none!important}
+body.bot-studio #flow-builder .builder-inspector{position:sticky;inset:auto;top:90px;grid-column:2;grid-row:1;width:auto;max-height:calc(100dvh - 110px);box-shadow:none;border:1px solid var(--line);border-radius:16px}
+body.bot-studio #flow-builder .builder-view-actions{flex-wrap:wrap;max-height:none}
+@media(max-width:800px){
+ body.bot-studio .content{padding:8px}
+ body.bot-studio #flow-builder>.builder-toolbar{position:static;flex-wrap:wrap}
+ body.bot-studio #flow-builder>.builder-toolbar label{flex:1 1 100%;min-width:0}
+ body.bot-studio #flow-builder .builder-studio.inspector-open{display:block}
+ body.bot-studio #flow-builder .builder-inspector{position:fixed;inset:0;z-index:90;max-height:100dvh;width:100%;border-radius:0}
+ body.bot-studio #flow-builder .flow-canvas{height:calc(100dvh - 270px);min-height:350px}
+}
+
+@media(min-width:801px){
+ body.bot-studio .main-shell,body.bot-studio .content{height:100dvh;min-height:0;padding:0!important;margin:0!important}
+ body.bot-studio #flow-builder{height:100dvh;box-sizing:border-box;padding:12px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
+ body.bot-studio #flow-builder>.builder-toolbar{margin:0;flex:none}
+ body.bot-studio #flow-builder>.builder-guide-disclosure{margin:0;flex:none}
+ body.bot-studio #flow-builder>.builder-studio{flex:1;min-height:0;height:0}
+ body.bot-studio #flow-builder .builder-stage{height:100%;display:flex;flex-direction:column;min-height:0}
+ body.bot-studio #flow-builder .builder-stage-head,body.bot-studio #flow-builder .builder-stage-extras{flex:none}
+ body.bot-studio #flow-builder .builder-stage .flow-canvas{flex:1;height:auto!important;min-height:200px!important}
+ body.bot-studio #flow-builder .builder-inspector{height:100%;max-height:100%;top:0}
+ body.bot-studio #flow-builder>.builder-status{flex:none;margin:0}
+}

@@ -28,13 +28,13 @@ export async function bindBotRoute(db:SqlClient,actor:Actor,id:string,input:unkn
  let account:unknown=null;
  if(d.channel!=='WEBSITE'){
   if(!isUuid(d.accountId))throw new HttpFailure(400,'Select a connected account');account=d.accountId;
-  const r=d.channel==='WHATSAPP'?await db.query("SELECT id FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2 AND status='CONNECTED'",[actor.tenantId,account]):await db.query("SELECT id FROM chatbot_social_accounts WHERE tenant_id=$1 AND id=$2 AND channel=$3 AND enabled=true",[actor.tenantId,account,d.channel]);
+  const r=d.channel==='WHATSAPP'?await db.query("SELECT id FROM whatsapp_accounts WHERE tenant_id=$1 AND id=$2 AND status='CONNECTED' AND authorization_status='VERIFIED' AND subscription_verified_at IS NOT NULL AND (token_expires_at IS NULL OR token_expires_at>now())",[actor.tenantId,account]):await db.query("SELECT id FROM chatbot_social_accounts WHERE tenant_id=$1 AND id=$2 AND channel=$3 AND enabled=true",[actor.tenantId,account,d.channel]);
   if(!r.rowCount)throw new HttpFailure(409,'Channel account unavailable');
  }else{const r=await db.query('SELECT 1 FROM chatbot_widget_settings WHERE tenant_id=$1 AND enabled=true',[actor.tenantId]);if(!r.rowCount)throw new HttpFailure(409,'Enable website chat before routing');}
  const exists=await db.query('SELECT bot_id FROM chatbot_bot_routes WHERE tenant_id=$1 AND channel=$2 AND account_id IS NOT DISTINCT FROM $3::uuid',[actor.tenantId,d.channel,account]);
  if(exists.rowCount&&exists.rows[0].bot_id!==id)throw new HttpFailure(409,'Channel already routes to another bot');
  await db.query('INSERT INTO chatbot_bot_routes(tenant_id,bot_id,channel,account_id) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING',[actor.tenantId,id,d.channel,account]);
- return {connected:true,channel:d.channel};
+ return {routed:true,channel:d.channel};
 }
 
 export async function unbindBotRoute(db:SqlClient,actor:Actor,id:string,input:unknown){

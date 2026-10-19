@@ -13,12 +13,12 @@ const profile=await mkdtemp(join(tmpdir(),'boat-chromium-'));
 const child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage',
  '--no-first-run','--no-default-browser-check','--disable-background-networking',
  '--remote-debugging-port=0','--user-data-dir='+profile,'about:blank'],{stdio:'ignore'});
-let baselineServer,baselineDir;
+let baselineServer,baselineDir;const dialogReplies=[];
 let ws;let commandId=0;const pending=new Map(),exceptions=[],network=[],consoleErrors=[];
 async function waitForPort(){for(let i=0;i<120;i++){if(child.exitCode!==null)throw new Error('Chrome exited before launching');try{
  const info=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).trim().split('\n');return Number(info[0]);
  }catch{}await sleep(150)}throw new Error('Chrome DevTools port unavailable')}
-async function evaluate(expression){const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text);return result.result.value}
+async function evaluate(expression){const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.exception?.description||result.exceptionDetails.text);return result.result.value}
 function send(method,params={}){const id=++commandId;return new Promise((resolve,reject)=>{
  const timeout=setTimeout(()=>{pending.delete(id);reject(new Error('Chrome CDP timeout: '+method))},12000);
  pending.set(id,{resolve:result=>{clearTimeout(timeout);resolve(result)},reject:error=>{clearTimeout(timeout);reject(error)}});
@@ -31,15 +31,16 @@ async function until(predicate,name){
  const details=await evaluate("JSON.stringify({title:document.getElementById('page-title')?.textContent,botsHidden:document.getElementById('bots')?.hidden,bots:document.getElementById('bots')?.textContent,nav:[...document.querySelectorAll('[data-page=bots]')].map(b=>({text:b.textContent,html:b.outerHTML}))})");
  throw new Error(details+' Browser UI timed out waiting for '+name+'; state='+state+'; exceptions='+JSON.stringify(exceptions.slice(-8))+'; network='+JSON.stringify(network.slice(-15))+'; console='+JSON.stringify(consoleErrors.slice(-8)));
 }
+async function pageLoaded(action){const loaded=new Promise(resolve=>{const handler=event=>{if(JSON.parse(String(event.data)).method==='Page.loadEventFired'){ws.removeEventListener('message',handler);resolve()}};ws.addEventListener('message',handler)});await action();await loaded}
 async function screenshot(filename){const r=await send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});await writeFile('acceptance-evidence/'+filename,Buffer.from(r.data,'base64'))}
 
 try{
  const port=await waitForPort();const target=(await (await fetch('http://127.0.0.1:'+port+'/json/list')).json()).find(p=>p.type==='page');
  ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true})});
- ws.addEventListener('message',event=>{const v=JSON.parse(String(event.data));if(v.id){const p=pending.get(v.id);pending.delete(v.id);if(p)v.error?p.reject(Error(v.error.message)):p.resolve(v.result)}else if(v.method==='Page.javascriptDialogOpening')void send('Page.handleJavaScriptDialog',{accept:true});else if(v.method==='Runtime.exceptionThrown')exceptions.push(v.params.exceptionDetails.text)});
+ ws.addEventListener('message',event=>{const v=JSON.parse(String(event.data));if(v.id){const p=pending.get(v.id);pending.delete(v.id);if(p)v.error?p.reject(Error(v.error.message)):p.resolve(v.result)}else if(v.method==='Page.javascriptDialogOpening')void send('Page.handleJavaScriptDialog',{accept:true,...(dialogReplies.length?{promptText:dialogReplies.shift()}:{})});else if(v.method==='Runtime.exceptionThrown')exceptions.push(v.params.exceptionDetails.text)});
  await send('Page.enable');await send('Runtime.enable');await mkdir('acceptance-evidence',{recursive:true});
  async function login(origin){
-  await send('Page.navigate',{url:origin+'/'});await until("Boolean(document.getElementById('login-form')?.onsubmit)",'login ready');
+  await pageLoaded(()=>send('Page.navigate',{url:origin+'/'}));await until("Boolean(document.getElementById('login-form')?.onsubmit)",'login ready');
   const restored=await evaluate("fetch('/api/v1/auth/me').then(r=>r.ok)");
   if(!restored)await evaluate(`(()=>{const p=${JSON.stringify(account)},f=document.getElementById('login-form');f.elements.tenantSlug.value=p.slug;f.elements.email.value=p.email;f.elements.password.value=p.password;f.requestSubmit()})()`);
   await until("!document.getElementById('app').hidden",'logged in');
@@ -72,8 +73,9 @@ try{
  const bots=await evaluate("fetch('/api/v1/bots').then(r=>r.json())");const bot=bots.find(b=>b.name===botName);assert.ok(bot);
  const cfg=await evaluate(`fetch('/api/v1/bots/${bot.id}/flows').then(r=>r.json())`);assert.equal(cfg.draft.definition.nodes.find(n=>n.type==='BUTTONS').choices.length,3);
  await evaluate("document.getElementById('builder-publish').click()");await until("document.getElementById('notice').textContent.includes('تم نشر')",'bot publish');
- await send('Page.reload');await until("!document.getElementById('app').hidden",'session restored');await evaluate("document.querySelector('[data-page=bots]').click()");await until(`Boolean(document.querySelector('[data-bot-id="${bot.id}"]'))`,'saved bot card');
+ await pageLoaded(()=>send('Page.reload'));await until("document.body.dataset.authReady==='true' && !document.getElementById('app').hidden",'session restored');await evaluate("document.querySelector('[data-page=bots]').click()");await until(`Boolean(document.querySelector('[data-bot-id="${bot.id}"]'))`,'saved bot card');
  await evaluate(`document.querySelector('[data-bot-id="${bot.id}"] button').click()`);await until("document.getElementById('page-title').textContent.includes('مساعد المتصفح') && document.querySelectorAll('.canvas-node').length>=6",'bot definition reloaded');
+ assert.equal(await evaluate('location.hash'),'#bot/'+bot.id,'Refresh preserves the selected bot context');
  const again=await evaluate(`fetch('/api/v1/bots/${bot.id}/flows').then(r=>r.json())`);assert.deepEqual(again.draft.definition,cfg.draft.definition);assert.equal(again.published.version,1);
  for(const [width,height] of [[1366,900],[768,1024],[390,844],[320,700]]){
   await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await sleep(200);await screenshot('rebuild-after-builder-'+width+'.png');
@@ -81,6 +83,49 @@ try{
   await evaluate("document.querySelector('[data-page=bots]').click()");await until("!document.getElementById('bots').hidden",'manager viewport');await screenshot('rebuild-after-manager-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'manager overflow at '+width);
   await evaluate(`document.querySelector('[data-bot-id="${bot.id}"] button').click()`);await until("!document.getElementById('flow-builder').hidden",'builder viewport');
  }
+
+ // A second bot uses the real data-capture template; preview must not create real leads.
+ await evaluate("document.querySelector('[data-page=bots]').click()");await until("!document.getElementById('bots').hidden",'manager for second bot');
+ const secondName='مساعد جمع البيانات '+Date.now();
+ await evaluate(`(()=>{const f=document.querySelector('.bot-create-form');f.elements.name.value=${JSON.stringify(secondName)};f.elements.templateId.value='service';f.requestSubmit()})()`);
+ await until("document.querySelectorAll('.canvas-node[data-node-id=phone]').length===1 && document.getElementById('page-title').textContent.includes('جمع البيانات')",'second bot template');
+ const countBefore=await evaluate("fetch('/api/v1/leads/summary').then(r=>r.json()).then(d=>d.total)");
+ await click('تجربة المحادثة','.builder-view-actions button');await until("Boolean(document.querySelector('.builder-preview-dialog[open]'))",'second bot simulator');
+ await until("[...document.querySelectorAll('#builder-preview-options button')].some(b=>b.textContent==='اترك بياناتك')",'template preview choices');
+ await click('اترك بياناتك','#builder-preview-options button');await until("Boolean(document.querySelector('#builder-preview-options form input'))",'name question');
+ await evaluate("(()=>{const f=document.querySelector('#builder-preview-options form');f.querySelector('input').value='عميل تجريبي';f.requestSubmit()})()");
+ await until("Boolean(document.querySelector('#builder-preview-options input[type=tel]'))",'phone question');
+ await evaluate("(()=>{const f=document.querySelector('#builder-preview-options form');f.querySelector('input').value='01000000000';f.requestSubmit()})()");
+ await until("document.getElementById('builder-preview').textContent.includes('وصل طلبك إلى فريق العمل')",'preview human handoff');
+ await screenshot('rebuild-after-data-capture-handoff-320.png');
+ const countAfter=await evaluate("fetch('/api/v1/leads/summary').then(r=>r.json()).then(d=>d.total)");assert.equal(countAfter,countBefore,'Preview does not create actual customer leads');
+ const firstAgain=await evaluate(`fetch('/api/v1/bots/${bot.id}/flows').then(r=>r.json())`);assert.deepEqual(firstAgain.draft.definition,cfg.draft.definition,'Second bot cannot overwrite first bot');
+ await evaluate("document.querySelector('.builder-preview-dialog').close()");
+ await send('Emulation.setDeviceMetricsOverride',{width:683,height:450,deviceScaleFactor:2,mobile:false});await screenshot('rebuild-after-builder-200-percent.png');
+ assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'200% desktop equivalent overflow');
+ console.log('PASS second bot: service template, three buttons, name+phone capture, real server preview/human handoff, no real lead writes, first bot unchanged and 200% viewport equivalent');
+
+ await evaluate("document.querySelector('[data-page=leads]').click()");await until("Boolean(document.querySelector('.crm-lead-card'))",'actual contact directory');
+ await click('ملف العميل','.crm-lead-card button');await until("Boolean(document.querySelector('.crm-profile'))",'contact profile');await screenshot('rebuild-after-contact-profile-200-percent.png');
+ const profileName=await evaluate("document.querySelector('.crm-profile h3').textContent");
+ await click('افتح المحادثة','.crm-lead-card button');await until(`document.getElementById('thread-title').textContent.includes(${JSON.stringify(profileName)})`,'matching contact conversation');
+ assert.ok(await evaluate("document.getElementById('thread-messages').children.length>0"),'real conversation history');
+ console.log('PASS browser directory -> contact profile -> exact linked inbox conversation with real retained history');
+
+ await evaluate("document.querySelector('[data-page=bots]').click()");await until(`Boolean(document.querySelector('[data-bot-id="${bot.id}"]'))`,'bot management actions');
+ async function cardClick(text){await evaluate(`(()=>{const b=[...document.querySelectorAll('[data-bot-id="${bot.id}"] button')].find(b=>b.textContent===${JSON.stringify(text)});if(!b)throw Error('Missing bot action');b.click()})()`)}
+ const renamed='مساعد الدعم المستقل';dialogReplies.push(renamed);await cardClick('تغيير الاسم');await until(`document.querySelector('[data-bot-id="${bot.id}"] h3')?.textContent===${JSON.stringify(renamed)}`,'bot renamed');
+ await cardClick('كلمات بدء المحادثة');await until(`Boolean(document.querySelector('[data-bot-id="${bot.id}"] .bot-triggers form'))`,'bot keyword form');
+ await evaluate(`(()=>{const f=document.querySelector('[data-bot-id="${bot.id}"] .bot-triggers form');f.querySelector('input').value='اختبار المتصفح';f.querySelectorAll('select')[2].value='menu';f.requestSubmit()})()`);
+ await until(`!document.querySelector('[data-bot-id="${bot.id}"] .bot-triggers')`,'keyword saved');assert.equal((await evaluate(`fetch('/api/v1/bots/${bot.id}/triggers').then(r=>r.json())`)).length,1);
+ await cardClick('توجيه القنوات');await until(`Boolean(document.querySelector('[data-bot-id="${bot.id}"] .bot-routing select'))`,'available local channel');
+ await cardClick('توجيه إلى هذا البوت');await until(`!document.querySelector('[data-bot-id="${bot.id}"] .bot-routing')`,'website route saved');assert.equal((await evaluate(`fetch('/api/v1/bots/${bot.id}/routes').then(r=>r.json())`))[0].channel,'WEBSITE');
+ await cardClick('توجيه القنوات');await until(`Boolean(document.querySelector('[data-bot-id="${bot.id}"] .bot-routing'))`,'saved route panel');await cardClick('إزالة التوجيه');await until(`!document.querySelector('[data-bot-id="${bot.id}"] .bot-routing')`,'route removed');
+ await cardClick('أرشفة');await until(`Boolean([...document.querySelectorAll('[data-bot-id="${bot.id}"] button')].find(b=>b.textContent==='استعادة البوت'))`,'archived bot');
+ await cardClick('استعادة البوت');await until(`Boolean([...document.querySelectorAll('[data-bot-id="${bot.id}"] button')].find(b=>b.textContent==='أرشفة'))`,'restored bot');
+ assert.deepEqual((await evaluate(`fetch('/api/v1/bots/${bot.id}/flows').then(r=>r.json())`)).draft.definition,cfg.draft.definition);
+ console.log('PASS bot manager browser: rename, scoped keyword, local website route/unroute, archive/restore with original definition preserved');
  assert.deepEqual(exceptions,[]);
  console.log('PASS new Chromium bot journey: create independent Start, contextual message, Arabic template/three buttons, save, publish, cookie reload, same bot and definition; 1366/768/390/320 actual before/after screenshots and overflow checks');
-}finally{ws?.close();child.kill('SIGTERM');baselineServer?.kill('SIGTERM');await rm(profile,{recursive:true,force:true});if(baselineDir)await rm(baselineDir,{recursive:true,force:true})}
+}catch(error){console.error('BOT BROWSER FAILURE',error);await screenshot('rebuild-failure.png').catch(()=>{});throw error}
+finally{ws?.close();child.kill('SIGTERM');baselineServer?.kill('SIGTERM');await Promise.race([once(child,'exit').catch(()=>{}),sleep(1600)]);if(child.exitCode===null)child.kill('SIGKILL');await rm(profile,{recursive:true,force:true,maxRetries:5,retryDelay:150});if(baselineDir)await rm(baselineDir,{recursive:true,force:true,maxRetries:5,retryDelay:150})}

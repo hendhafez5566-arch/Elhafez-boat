@@ -3,17 +3,19 @@ import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFl
 import {botTemplate,botTemplates} from './bot-templates.js';
 
 /** Resolve ownership before accessing a bot; legacy defaults retain their original storage. */
-export async function botScope(db:SqlClient,actor:Actor,id:string,write=false):Promise<string|undefined>{
+export async function botScope(db:SqlClient,actor:Actor,id:string,write=false,allowArchived=false):Promise<string|undefined>{
  allow(actor,write?['OWNER','MANAGER']:['OWNER','MANAGER','AGENT','VIEWER']);
  if(!isUuid(id))throw new HttpFailure(400,'Invalid bot');
- const found=await db.query('SELECT legacy_default,archived_at FROM chatbot_bots WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,id]);
+ if(write)await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
+ const found=await db.query(`SELECT legacy_default,archived_at FROM chatbot_bots WHERE tenant_id=$1 AND id=$2${write?' FOR UPDATE':''}`,[actor.tenantId,id]);
  if(!found.rowCount)throw new HttpFailure(404,'Bot not found');
- if(write&&found.rows[0].archived_at)throw new HttpFailure(409,'Archived bot is read only');
+ if(write&&!allowArchived&&found.rows[0].archived_at)throw new HttpFailure(409,'Archived bot is read only');
  return found.rows[0].legacy_default?undefined:id;
 }
 export async function listBots(db:SqlClient,actor:Actor){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
- return (await db.query(`SELECT b.id,b.name,b.legacy_default AS "legacyDefault",b.archived_at AS "archivedAt",b.updated_at AS "updatedAt",
+ return (await db.query(`SELECT b.id,b.name,b.created_by AS "createdBy",b.legacy_default AS "legacyDefault",b.archived_at AS "archivedAt",b.updated_at AS "updatedAt",
+ coalesce((SELECT jsonb_agg(jsonb_build_object('channel',r.channel,'accountId',r.account_id)) FROM chatbot_bot_routes r WHERE r.tenant_id=b.tenant_id AND r.bot_id=b.id),'[]'::jsonb) AS routes,
  CASE WHEN b.legacy_default THEN (SELECT max(version) FROM chatbot_flow_versions WHERE tenant_id=b.tenant_id)
  ELSE (SELECT max(version) FROM chatbot_bot_versions WHERE tenant_id=b.tenant_id AND bot_id=b.id) END AS "publishedVersion"
  FROM chatbot_bots b WHERE b.tenant_id=$1 ORDER BY b.created_at,b.id`,[actor.tenantId])).rows;
@@ -32,8 +34,9 @@ export async function createBot(db:SqlClient,actor:Actor,input:unknown){
 }
 function botName(input:unknown){const name=(input as {name?:unknown})?.name;if(typeof name!=='string'||!name.trim()||name.trim().length>100)throw new HttpFailure(400,'Bot name must contain 1–100 characters');return name.trim()}
 export async function updateBot(db:SqlClient,actor:Actor,id:string,input:unknown){
- await botScope(db,actor,id,true);
  const d=input as {name?:unknown;archive?:unknown};
+ await botScope(db,actor,id,true,d?.archive===false);
+ if(d?.archive===false){await db.query('UPDATE chatbot_bots SET archived_at=NULL,updated_at=now() WHERE tenant_id=$1 AND id=$2',[actor.tenantId,id]);return {restored:true};}
  if(d?.archive===true){
  const routes=await db.query('SELECT 1 FROM chatbot_bot_routes WHERE tenant_id=$1 AND bot_id=$2',[actor.tenantId,id]);if(routes.rowCount)throw new HttpFailure(409,'Remove channel routes before archiving');
  const r=await db.query('UPDATE chatbot_bots SET archived_at=now(),updated_at=now() WHERE tenant_id=$1 AND id=$2 AND legacy_default=false RETURNING id',[actor.tenantId,id]);
@@ -49,4 +52,19 @@ export async function botFlow(db:SqlClient,actor:Actor,id:string,operation:strin
  if(operation==='versions')return listFlowVersions(db,actor,scope);
  if(operation.startsWith('rollback:'))return rollbackFlow(db,actor,operation.slice(9),scope);
  throw new HttpFailure(404,'Unknown bot operation');
+}
+
+/** Metrics describe saved runtime sessions, not unique people or provider delivery. */
+export async function botInsights(db:SqlClient,actor:Actor,id:string){
+ const scope=await botScope(db,actor,id);
+ const r=await db.query(`SELECT count(*)::int AS sessions,
+ count(*) FILTER(WHERE c.status='HUMAN')::int AS "humanSessions",
+ count(*) FILTER(WHERE s.answers<>'{}'::jsonb)::int AS "capturedSessions",
+ max(s.updated_at) AS "lastActivityAt"
+ FROM chatbot_flow_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id
+ WHERE s.tenant_id=$1 AND ${scope?'s.bot_id=$2':'(s.bot_id=$2 OR s.bot_id IS NULL)'}`,[actor.tenantId,id]);
+ const fields=await db.query(`SELECT field,count(*)::int AS sessions FROM chatbot_flow_sessions s,
+ LATERAL jsonb_object_keys(s.answers) AS field
+ WHERE s.tenant_id=$1 AND ${scope?'s.bot_id=$2':'(s.bot_id=$2 OR s.bot_id IS NULL)'} GROUP BY field ORDER BY count(*) DESC,field LIMIT 50`,[actor.tenantId,id]);
+ return {...r.rows[0],fields:fields.rows,scope:'saved_sessions'};
 }

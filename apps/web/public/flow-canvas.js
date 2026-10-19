@@ -146,6 +146,11 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
       if(endX-startX>=100){
         const mid=startX+(endX-startX)/2+Math.min(20,count*10);
         data=`M${startX},${startY} C${mid},${startY} ${mid},${endY} ${endX},${endY}`;
+      }else if(to.y>from.y+origin.offsetHeight+15){
+        // Forward vertical edges use the gap below their card, rather than looping above Start.
+        const lane=(from.y+origin.offsetHeight+to.y)/2;
+        const right=startX+45+slot*14,left=endX-35-count*12;
+        data=`M${startX},${startY} C${right},${startY} ${right},${lane} ${right},${lane} L${left},${lane} C${left},${lane} ${left},${endY} ${endX},${endY}`;
       }else{
         const lane=Math.max(25,Math.min(from.y,to.y)-75-slot*15-count*18);
         const excursion=Math.max(startX+55,endX+65);
@@ -162,8 +167,9 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
     const f=getFlow(),points=Object.values(positionsFor(f));
     if(!points.length)return reset();
     const nodes=f.nodes,positions=positionsFor(f);
-    const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+nodeFootprint(n).width)),bottom=Math.max(...nodes.map(n=>positions[n.id].y+nodeFootprint(n).height));
-    const rect=host.getBoundingClientRect();zoom=Math.max(.3,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
+    const rendered=new Map([...stage.querySelectorAll('.canvas-node')].map(card=>[card.dataset.nodeId,card]));
+    const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+Math.max(rendered.get(n.id)?.offsetWidth||0,nodeFootprint(n).width))),bottom=Math.max(...nodes.map(n=>positions[n.id].y+Math.max(rendered.get(n.id)?.offsetHeight||0,nodeFootprint(n).height)));
+    const rect=host.getBoundingClientRect();zoom=Math.max(.12,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
     pan={x:(rect.width-(right-left)*zoom)/2-left*zoom,y:Math.max(25,(rect.height-(bottom-top)*zoom)/2-top*zoom)};transform();
   }
   function reset(){zoom=1;pan={x:36,y:36};transform()}

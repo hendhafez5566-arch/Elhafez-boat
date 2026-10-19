@@ -226,7 +226,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  inspector.append(properties);
  properties.prepend(button('إغلاق ×',()=>{inspector.hidden=true;workspace.classList.remove('inspector-open')}));
  inspector.hidden=true;
- function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open')}
+ function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open');if(state.botId)requestAnimationFrame(()=>canvas.focus(selected))}
  const simulatorDialog=el('dialog',undefined,'builder-preview-dialog');
  const simulatorHead=el('header',undefined,'builder-dialog-header');
  simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
@@ -274,7 +274,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  pickerSearch.oninput=paintPicker;
  const advanced=el('details',undefined,'builder-extras');
  advanced.append(el('summary','مكتبة الخطوات والمسارات المتقدمة'),linked,reuseHost);
- workspace.replaceChildren(palette,stagePanel,inspector,advanced);
+ workspace.replaceChildren(palette,stagePanel,inspector);stageExtras.append(advanced);
 
  const markDirty=()=>{dirty=true;checkpoint();renderStatus()};
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
@@ -359,7 +359,14 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
 
    if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true)));
-   if('field'in node)host.append(label('اسم الحقل المخصص (بالإنجليزية)',control(node.field,value=>{node.field=value})));
+   if('field'in node){
+    const fields=el('select'),common={customer_name:'اسم العميل',customer_phone:'رقم الهاتف',customer_email:'البريد الإلكتروني',customer_city:'المدينة',customer_need:'احتياج العميل'};
+    for(const [key,title] of Object.entries(common)){const option=el('option',title);option.value=key;fields.append(option)}
+    if(!common[node.field]){const option=el('option','حقل مخصص محفوظ');option.value=node.field;fields.append(option)}
+    fields.value=node.field;fields.onchange=()=>{node.field=fields.value;markDirty();renderBlocks();canvas.draw()};
+    host.append(label(node.type==='CONDITION'?'قارن إجابة العميل عن':'ما البيانات التي تجمعها؟',fields));
+    developerSettings.append(label('معرّف حقل مخصص (للمتقدمين)',control(node.field,value=>{node.field=value})));
+   }
    if(node.type==='TAG')host.append(label('التصنيف',control(node.tag,value=>{node.tag=value})));
    if(node.type==='CONDITION'){
      const ops=el('select');for(const [key,text] of [['equals','يساوي'],['contains','يحتوي على'],['exists','تم ملء الحقل']]){const o=el('option',text);o.value=key;ops.append(o)}ops.value=node.operator;
@@ -569,6 +576,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  }
  function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();if(flow.nodes.length===1){bubble('ابدأ من علامة + لإضافة أول رسالة، ثم جرّب المحادثة هنا.');return;}previewAdvance()}
  async function load(){
+   document.body.classList.toggle('bot-studio',Boolean(state.botId));
    // Navigating to the catalog or company dashboard must not silently discard
    // a just-generated bot or changes to a linked subflow. Explicit save is required.
    if(dirty){
@@ -583,6 +591,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');
+ const studioBack=button('← إدارة البوتات',()=>document.dispatchEvent(new Event('boat-open-bots')),'secondary');studioBack.classList.add('bot-studio-back');primaryBar.prepend(studioBack);
  const presetOptions=el('details',undefined,'builder-preset-disclosure');
  presetOptions.append(el('summary','القوالب الجاهزة (اختياري)'),$('builder-industry').closest('label'),$('builder-load-preset'));
  const guideDisclosure=el('details',undefined,'builder-guide-disclosure');

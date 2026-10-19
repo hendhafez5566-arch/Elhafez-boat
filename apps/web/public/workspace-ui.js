@@ -14,7 +14,7 @@ export function initWorkspace(ctx){
  $('reply-saved').onchange=()=>{$('reply-form').elements.body.value=$('reply-saved').value};$('reply-save').onclick=()=>execute(async()=>{const body=$('reply-form').elements.body.value.trim(),title=prompt('عنوان الرد المحفوظ');if(!body||!title)return;await api('/saved-replies',{method:'POST',body:{title,body}});await replies()});
  async function leads(){
   const host=$('lead-list');host.replaceChildren();
-  const rows=await api('/leads');
+  let response=await api('/leads/page'),rows=response.items;let pageNumber=1,requestId=0,searchTimer;
   if(!rows.length){emptyState(host,'لا يوجد عملاء مهتمون حتى الآن','ستظهر هنا المتابعات الجديدة بعد نشر البوت.');return}
   const filter=el('select');filter.setAttribute('aria-label','تصفية العملاء حسب مرحلة المتابعة');
   for(const [value,title] of [['ALL','كل المراحل'],['READY_FOR_AGENT','جاهزون للموظف'],['INTERESTED','مهتمون'],['CONTACTED','تم التواصل'],['CLOSED','مغلقون']]){
@@ -79,7 +79,16 @@ export function initWorkspace(ctx){
     const badge=el('div','أولوية متابعة: '+Number(l.priorityScore||0)+'/100'+(l.open_tasks?' • مهام مفتوحة: '+l.open_tasks:''),'crm-lead-score');
     c.append(badge);
     if(l.next_followup_at)c.append(el('p','المتابعة القادمة: '+new Date(l.next_followup_at).toLocaleString('ar-EG'),'muted'));
-    c.append(button('افتح المحادثات',()=>ctx.choose('wa-inbox'),'primary'));
+    c.append(button('افتح المحادثة',async()=>{await ctx.choose('wa-inbox');const related=threads.find(t=>t.id===l.conversation_id);if(related)await thread(related);else notify('المحادثة غير متاحة ضمن قائمة الوارد الحالية.','error')},'primary'));
+    c.append(button('ملف العميل',async()=>{
+     const profile=await api('/leads/'+l.id+'/profile'),panel=el('section',undefined,'crm-profile');
+     panel.append(el('h3',profile.full_name),el('p',profile.phone||'لا يوجد هاتف مسجل'),el('p',profile.do_not_contact?'العميل أوقف التواصل':'لم يوقف العميل التواصل'),el('p','القناة: '+profile.channel+(profile.bot_name?' • البوت: '+profile.bot_name:'')));
+     for(const [field,value] of Object.entries(profile.custom_fields||{}))panel.append(el('p',(friendly[field]||field)+': '+String(value)));
+     panel.append(el('h4','آخر نشاط في المحادثة'));
+     for(const m of profile.messages){const row=el('article',undefined,'bubble '+(m.kind==='INTERNAL_NOTE'?'internal':m.kind==='INBOUND'?'incoming':'outgoing'));row.append(el('small',m.kind==='INTERNAL_NOTE'?'ملاحظة داخلية':m.kind==='INBOUND'?'العميل':'الفريق / البوت'),el('p',m.body),el('small',new Date(m.created_at).toLocaleString('ar-EG')));panel.append(row)}
+     if(!profile.messages.length)panel.append(el('p','لا توجد رسائل محفوظة لهذه المحادثة.'));
+     panel.append(button('إغلاق الملف',()=>panel.remove()));c.querySelector('.crm-profile')?.remove();c.append(panel);
+    }));
     const more=el('details',undefined,'crm-lead-more');more.append(el('summary','إدارة العميل والمتابعة'));c.append(more);
     if(['OWNER','MANAGER'].includes(state.role)&&state.team?.length&&l.stage!=='CLOSED'){
      const staff=el('select');staff.setAttribute('aria-label','موظف المتابعة');
@@ -98,7 +107,12 @@ export function initWorkspace(ctx){
    }
    if(!results.children.length)emptyState(results,'لا توجد نتائج','جرّب تغيير الفلتر أو البحث.');
   }
-  filter.onchange=render;search.oninput=render;order.onchange=render;render();
+  const pagination=el('div',undefined,'crm-pagination'),pageLabel=el('span');pageLabel.setAttribute('role','status');
+  const previous=button('السابق',async()=>{pageNumber--;await fetchPage()}),next=button('التالي',async()=>{pageNumber++;await fetchPage()});
+  pagination.append(previous,pageLabel,next,button('مسح الفلاتر',async()=>{search.value='';filter.value='ALL';order.value='priority';pageNumber=1;await fetchPage()}));host.append(pagination);
+  function pageStatus(){previous.disabled=response.page<=1;next.disabled=response.page>=response.pages;pageLabel.textContent='صفحة '+response.page+' من '+response.pages+' — '+response.total+' عميل'}
+  async function fetchPage(){const request=++requestId;pageLabel.textContent='جارٍ التحميل…';try{const result=await api('/leads/page?'+new URLSearchParams({page:String(pageNumber),search:search.value.trim(),stage:filter.value,order:order.value}));if(request!==requestId)return;response=result;rows=result.items;pageNumber=result.page;render();pageStatus()}catch(error){if(request!==requestId)return;pageLabel.textContent='تعذر تحميل النتائج. استخدم تحديث للمحاولة.';throw error}}
+  filter.onchange=order.onchange=()=>{pageNumber=1;execute(fetchPage)};search.oninput=()=>{clearTimeout(searchTimer);searchTimer=setTimeout(()=>{pageNumber=1;execute(fetchPage)},250)};render();pageStatus();
  }
  $('leads-refresh').onclick=()=>execute(leads);
  async function connection(){const host=$('wa-connections');host.replaceChildren();const rows=await api('/whatsapp/connection');if(!rows.length)emptyState(host,'لا يوجد رقم متصل','يمكن لمالك الشركة إضافة اتصال عند الجاهزية.');for(const r of rows){const c=card(r.displayPhone||r.phoneNumberId,r.status==='CONNECTED'?'اعتماد محفوظ — يلزم فحص الاتصال':'مفصول محليًا');if(state.role==='OWNER'&&r.status==='CONNECTED')c.append(button('فحص الاتصال الآن',async()=>{const d=await api('/whatsapp/connection/'+r.id+'/diagnose',{method:'POST'});notify(d.verified?(d.subscribed?'تم التحقق من الرقم واشتراك التطبيق؛ وصول الرسائل يحتاج تجربة فعلية':d.appConfigured?'الرقم صحيح؛ اشتراك التطبيق غير مؤكد. راجع إعدادات Webhook في Meta':'الرقم صحيح؛ اضبط META_APP_ID على الخادم لفحص اشتراك التطبيق'):'الرقم مفصول')}),button('فصل الاتصال',async()=>{if(confirm('فصل الرقم محليًا وإيقاف استقبال وإرسال المنصة؟ هذا لا يحذف الرقم أو يلغي الاشتراك في Meta. يمكن إعادة ربطه بنفس الشركة. الرسائل المنتظرة ستُوقف؛ الرسالة الجاري إرسالها قد تصل ولا يمكن سحبها.')){await api('/whatsapp/connection/'+r.id,{method:'DELETE'});await connection()}},'danger'));host.append(c)}}

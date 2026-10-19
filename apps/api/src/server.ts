@@ -1,6 +1,6 @@
 import {botTemplates,botTemplate} from './bot-templates.js';
 import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
-import {listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
+import {botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
@@ -27,7 +27,7 @@ import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import {analyticsOverview} from './analytics.js';
-import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
+import { leadProfile,leadPage,listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, updateKnowledgeDraft, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, diagnoseWhatsApp, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
@@ -152,6 +152,8 @@ const server=createServer(async(req,res)=>{
       if(req.method==='POST'&&!botTrigger[2])return json(res,201,await runBody(async(tx,input)=>createTrigger(tx,actor,input,await botScope(tx,actor,id,true))));
       if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
     }
+    const botStats=/^\/api\/v1\/bots\/([^/]+)\/insights$/.exec(pathname);
+    if(botStats&&req.method==='GET')return json(res,200,await run(tx=>botInsights(tx,actor,botStats[1])));
     const botChannel=/^\/api\/v1\/bots\/([^/]+)\/routes$/.exec(pathname);
     if(botChannel&&req.method==='GET')return json(res,200,await run(tx=>getBotRoutes(tx,actor,botChannel[1])));
     if(botChannel&&req.method==='DELETE')return json(res,200,await runBody((tx,input)=>unbindBotRoute(tx,actor,botChannel[1],input)));
@@ -282,9 +284,12 @@ const server=createServer(async(req,res)=>{
     const rollback=/^\/api\/v1\/flows\/versions\/([0-9]+)\/rollback$/.exec(pathname);
     if(req.method==='POST'&&rollback)return json(res,200,await run(tx=>rollbackFlow(tx,actor,rollback[1])));
     if(req.method==='POST'&&pathname==='/api/v1/ai/agent/preview')return json(res,200,await runBody((tx,input)=>previewAgent(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/leads/page')return json(res,200,await run(tx=>leadPage(tx,actor,new URL(req.url||'/','http://local').searchParams)));
      if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/analytics/overview'){const days=new URL(req.url||'/','http://local').searchParams.get('days')||'30';if(!['7','30','90'].includes(days))throw new HttpFailure(400,'Invalid reporting period');return json(res,200,await run(tx=>analyticsOverview(tx,actor,Number(days))));}
+    const leadDetail=/^\/api\/v1\/leads\/([^/]+)\/profile$/.exec(pathname);
+    if(leadDetail&&req.method==='GET')return json(res,200,await run(tx=>leadProfile(tx,actor,leadDetail[1])));
     const leadAssignment=/^\/api\/v1\/leads\/([^/]+)\/assign$/.exec(pathname);
      if(req.method==='PATCH'&&leadAssignment)return json(res,200,await runBody((tx,input)=>assignLead(tx,actor,leadAssignment[1],input)));
      const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);
