@@ -70,7 +70,7 @@ export function initExtensions(ctx){
     const draw=()=>{
       list.replaceChildren();
       const subset=rows.filter(row=>kind!=='outbox'||statusSelect.value==='ALL'||row.status===statusSelect.value);
-      if(!subset.length)list.append(el('p','لا توجد سجلات مطابقة للفلتر.','muted'));
+      if(!subset.length&&rows.length)list.append(el('p','لا توجد سجلات مطابقة للفلتر.','muted'));
       for(const row of subset){
        const id=String(row.id||row.conversation_id||''),error=String(row.error||row.last_error||row.last_error_code||'');
        const when=row.due_at||row.next_attempt_at||row.last_seen_at;
