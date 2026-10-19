@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {updateKnowledgeDraft} from '../.build/apps/api/src/knowledge.js';
 
-const actor={tenantId:'tenant-A',userId:'user-A',role:'OWNER'};
+const actor={tenantId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',userId:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',role:'OWNER'};
 const id='12345678-1234-4123-8123-123456789012';
 test('draft FAQ update changes only selected tenant-scoped DRAFT and records an audit event',async()=>{
  const seen=[];
@@ -14,7 +14,7 @@ test('draft FAQ update changes only selected tenant-scoped DRAFT and records an 
  assert.equal(result.status,'DRAFT');
  assert.match(seen[0].sql,/status='DRAFT'/);
  assert.match(seen[0].sql,/tenant_id=\$1 AND id=\$2/);
- assert.equal(seen[0].args[0],'tenant-A');
+ assert.equal(seen[0].args[0],actor.tenantId);
  assert.match(seen[1].sql,/FAQ_DRAFT_UPDATED/);
 });
 test('published FAQ cannot be edited by draft endpoint',async()=>{
