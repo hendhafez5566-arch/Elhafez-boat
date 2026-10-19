@@ -255,3 +255,15 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #app .vessel-home .metrics{grid-template-columns:1fr}
  #app .vessel-library-header{display:flex;flex-direction:column;align-items:stretch}
 }
+
+/* Essential actions visible first; onboarding and presets remain expandable on demand. */
+#flow-builder .builder-guide-disclosure{margin-bottom:10px;background:#fff;border:1px solid #e6e5f2;border-radius:12px;padding:0 14px}
+#flow-builder .builder-guide-disclosure>summary{cursor:pointer;padding:11px 3px;font-weight:800;color:#3f348e;font-size:14px}
+#flow-builder .builder-guide-disclosure:not([open]){padding-block:0}
+#flow-builder .builder-preset-disclosure{flex:0 1 auto;min-width:180px;border:1px solid #e4e3f2;border-radius:10px;padding:8px 12px;background:#fafaff}
+#flow-builder .builder-preset-disclosure summary{cursor:pointer;color:#4b4778;font-weight:750;font-size:13px}
+#flow-builder .builder-preset-disclosure label{display:grid;min-width:200px;margin:10px 0}
+#flow-builder .builder-preset-disclosure button{margin-top:8px}
+#app #notification-list:not([hidden]){position:fixed;top:65px;left:clamp(12px,3vw,44px);right:auto;z-index:150;width:min(390px,calc(100vw - 24px));max-height:min(65dvh,540px);overflow-y:auto;overscroll-behavior:contain;padding:14px;border-radius:13px;box-shadow:0 16px 50px #1d214338}
+#app #notification-list button{width:100%;white-space:normal;text-align:right;margin-bottom:8px}
+#app .vessel-catalog-editor.is-open{direction:rtl}
