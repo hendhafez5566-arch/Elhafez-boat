@@ -1,4 +1,59 @@
-# Product rebuild execution ledger — 19 October 2026
+# PR #4 continuation — 19 October 2026
+
+Same implementation branch: `feat/codex-product-rebuild-2026-10-19`. The owner identifies the existing Draft PR as [#4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4); the historical statement below that no PR existed is superseded. Do not create a replacement PR. GitHub API still returns Forbidden in this runtime, so remote CI/PR metadata cannot be verified here. Changes are pushed to the same head branch only.
+
+Executable batch: `bd3042d` (novice creation, step/branch editing, contact work and safe campaign review), with final workspace/acceptance refinement `907144450e8490fcb11e32a7786cfb7f1a5ac49d`. Full core runtime/Chromium suite exited 0; final targeted runtime/Chromium rerun exited 0 after template-view separation and stronger mobile/first-insertion probes. `npm run check`: 118 passed, 0 failed, 0 skipped. PostgreSQL integration and new data/security cases passed. No real provider account or paid request, merge, Railway deploy or real customer message was used.
+
+## Delivered in this continuation
+
+- **S01/S03:** searchable gallery with real template previews; four-step novice dialog (goal, business/greeting, deferred channel, review). Back retains answers. Server preview and creation share validated template preparation. Review creates no bot; creation saves one independent draft and opens the beginner editor. Optional phone collection changes actual routing, not a visual toggle. Existing quick creation remains available.
+- **S05–S07:** beginner step cards show explicit choice destinations and contextual insertion; edit one branch without losing its stable action ID or former destination. Same flow switches between steps and canvas. First insertion into a blank Start now creates a valid terminal chain, tested through server validation. Branch reply shortcut added to inspector. Existing visual editing, undo/redo and publication pipeline remain.
+- **S10:** real contact panel in inbox, paginated contact context, Arabic message/channel/status labels, mobile conversation back navigation, inline internal notes and conversation-bound unsent reply/note drafts. Thread switching cannot transfer one customer's draft into another customer's reply box. Note API remains internal and role-checked.
+- **S11/S12:** explicit filter chips, current-page selection, bounded all-or-nothing bulk stage update (1–50 IDs, server role/tenant checks), and contact-wide paginated conversation history with actual last activity and links to the selected real thread. No bulk consent change or outbound action.
+- **S13:** review before campaign launch reports actual segment/consent/opt-out/phone counts and approved content/schedule. Review queues zero jobs and makes no provider request. Launch revalidates the review, including template values and disconnected/expired account state. No campaign was launched by acceptance.
+- **S17:** website/WhatsApp/social directory from actual saved configuration and bot routing. Readiness is described as local metadata; official connection controls remain separate and owner-restricted. Technical credential form is collapsed rather than being the first task presented.
+
+## Acceptance and CI diagnosis
+
+An initial extended UI run hit the real per-user 600/minute limiter after reusing the pressure-test actor (`max(hits)=601`). The test harness now provisions separate disposable actors for pressure, broad UI and novice UI; production limits are unchanged, and the 20-accepted/20-denied throttle check remains intact. Browser fetch assertions now preserve non-2xx HTTP status instead of treating error JSON as list data. This is a locally reproduced harness defect; it is not a claim about an unread remote CI run.
+
+New PostgreSQL checks prove company-wide contact-history pages, all-or-nothing bulk changes and viewer/foreign-company denial. Campaign review checks real consent/opt-out counts, cross-company/agent denial and unchanged campaign queue counts. Targeted Chromium covers wizard back/review/no-write, gallery search, simple/canvas branch preservation, mobile layouts, private note persistence, channel directory, campaign review without launch and bulk CRM action. The final expanded run additionally checks unsent-reply preservation across actual thread switches and server-validates first insertion.
+
+## Committed browser evidence
+
+All images below come from Chromium against isolated PostgreSQL fixtures. They contain no real provider/customer account data. The prior delivery's before images remain under `evidence/rebuild-before-*`; current continuation images illustrate the actual new workflows, not a new competitor mockup.
+
+- [Setup review, desktop](evidence/continuation-setup-review-1366.png) / [setup fields, 320px](evidence/continuation-setup-fields-320.png)
+- [Searchable gallery, 320px](evidence/continuation-template-gallery-320.png)
+- [Beginner steps, desktop](evidence/continuation-simple-editor-1366.png) / [390px](evidence/continuation-simple-editor-390.png) / [320px](evidence/continuation-simple-editor-320.png)
+- [Same flow in canvas](evidence/continuation-canvas-1366.png)
+- [Inbox context, desktop](evidence/continuation-inbox-context-1366.png) / [private note and retained draft, 320px](evidence/continuation-inbox-note-320.png)
+- [CRM bulk action, 320px](evidence/continuation-crm-bulk-320.png)
+- [Campaign no-send review, desktop](evidence/continuation-campaign-review-1366.png) / [320px](evidence/continuation-campaign-review-320.png)
+- [Channel-readiness directory](evidence/continuation-channel-directory-1366.png)
+
+Validation commands: `npm run check`; `CI_DB_INTEGRATION=1 node tests/db-integration.mjs`; `node tests/bots-db.mjs` with the named disposable migration database; `CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CHROME_BIN=/usr/bin/chromium node tests/runtime-acceptance.mjs`. Full run exercised existing API/worker recovery, throttle, catalog/role/graph/browser checks and both UI suites. Targeted rerun used `CI_BOT_BROWSER_ONLY=1` and retained the real API/worker/database checks, skipping only the already-passed broad UI script. No production rate-limit configuration changed.
+
+## Status changes and remaining work
+
+| ID | Current status | What changed / remaining limitation |
+|---|---|---|
+| S01 | PARTIAL | Per-bot business/channel-deferred setup is implemented; full new-company registration/onboarding remains separate. |
+| S03 | DONE+TESTED (local scope) | Search/preview/use-template-to-independent-draft implemented and exercised; three supported templates, no fabricated provider behavior. |
+| S05 | PARTIAL | Real beginner branch editing now tested; independent novice acceptance of dense conditions and very long workflows remains open. |
+| S06/S07 | PARTIAL | Context insertion/first-message integrity improved; not every MEDIA/CONDITION/advanced inspector or dense gesture is independently certified. |
+| S10 | PARTIAL | Three-pane/mobile context, notes and reply-draft isolation implemented; full nested manual-send/takeover/assignment browser matrix remains open. |
+| S11 | DONE+TESTED (local scope) | PostgreSQL paging/search plus visible chips and permission-safe atomic bulk stages. |
+| S12 | DONE+TESTED (local scope) | Paginated contact-wide conversation history, real fields/activity and exact thread linkage. Message history retains the existing bounded API; this is not an unlimited export. |
+| S13 | PARTIAL | Real no-send review and launch gate implemented; full channel/audience/content/schedule creation wizard and every template shape remain open. |
+| S17 | PARTIAL | Actual channel directory implemented; live account/provider acceptance is prohibited without separate consent. |
+| S22 | PARTIAL | New 320/390 novice/gallery/inbox/campaign checks; native 200% browser zoom, physical devices and full screen-reader review still unverified. |
+
+Other S01–S22 entries below retain their previous status. None was marked complete merely because its page loaded. Remaining priorities: full company onboarding; dense/accessible beginner and advanced editing; manual inbox action matrix; complete campaign creation wizard; remaining media/analytics/integrations/team/owner UX cases. S16 live AI/provider activation remains blocked by the owner's restriction, not simulated as complete.
+
+---
+
+# Historical delivery snapshot before this continuation — 19 October 2026
 
 **Delivery remains PARTIAL.** This is executable implementation, not completion of all S01–S22 or commercial acceptance. No merge, Railway deployment, real provider authentication, paid AI request or real customer message was performed.
 
