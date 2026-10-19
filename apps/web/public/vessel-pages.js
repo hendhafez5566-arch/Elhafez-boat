@@ -63,6 +63,9 @@ export function initVesselPages(){
   const openEditor=()=>{formPanel.hidden=false;formPanel.classList.add('is-open');veil.hidden=false;formPanel.querySelector('input[name="title"]')?.focus()};
   add.onclick=()=>{formPanel.querySelector('#catalog-new')?.click();openEditor()};
   veil.onclick=closeEditor;
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!formPanel.hidden)closeEditor()});
+  document.addEventListener('click',event=>{if(!formPanel.hidden&&event.target.closest('[data-page],[data-goto]'))closeEditor()});
+  new MutationObserver(()=>{if(catalog.hidden&&!formPanel.hidden)closeEditor()}).observe(catalog,{attributes:true,attributeFilter:['hidden']});
   const close=el('button','secondary vessel-editor-close','إغلاق ×');close.type='button';close.onclick=closeEditor;
   formPanel.prepend(close);formPanel.hidden=true;
   listPanel.addEventListener('click',event=>{if(event.target.closest('button')?.textContent?.trim()==='تعديل')openEditor()});
