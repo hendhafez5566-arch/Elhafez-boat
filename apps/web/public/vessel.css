@@ -301,3 +301,18 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #app .vessel-hero-copy{min-height:0!important}
  #app .campaign-create-disclosure{padding:10px 12px}
 }
+
+/* Optional basic step-by-step editor, inspired by professional flow-builder patterns. */
+#flow-builder .builder-linear-mode{grid-template-columns:1fr!important;display:grid!important;gap:12px}
+#flow-builder .builder-linear-mode .builder-palette{display:block!important;position:relative!important;grid-column:1!important;grid-row:1!important;inset:auto;width:100%!important;max-height:none!important;overflow:visible!important;z-index:1;padding:16px;box-shadow:none}
+#flow-builder .builder-linear-mode .builder-quick{grid-template-columns:repeat(4,minmax(0,1fr))}
+#flow-builder .builder-linear-mode .builder-stage{grid-column:1!important;grid-row:2!important}
+#flow-builder .builder-linear-mode .flow-canvas{display:none!important}
+#flow-builder .builder-linear-mode #builder-nodes{max-height:none;overflow:visible;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+#flow-builder .builder-linear-mode #builder-nodes .builder-node{margin:0;min-height:86px}
+#flow-builder .builder-linear-mode .builder-stage-head{border-bottom:0}
+#flow-builder .builder-linear-mode .builder-stage>.builder-toolbar{display:none}
+@media(max-width:720px){
+ #flow-builder .builder-linear-mode .builder-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #flow-builder .builder-linear-mode #builder-nodes{grid-template-columns:1fr}
+}
