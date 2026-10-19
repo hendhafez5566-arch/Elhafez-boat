@@ -2,7 +2,11 @@ import {createCanvas} from './flow-canvas.js';
 import {graphOutputs} from './flow-geometry.js';
 import {mountGuidedWizard} from './flow-onboarding.js';
 /** Company-specific visual block editor, no industry assumptions or customer data. */
-export function initFlowBuilder({state,api,notify,execute}){
+export function initFlowBuilder({state,api:baseApi,notify,execute}){
+ const api=(path,options)=>{
+  const scoped=state.botId&&(/^\/flows(?:\/(draft|publish|versions)(?:\/.*)?)?$/.test(path));
+  return baseApi(scoped?'/bots/'+encodeURIComponent(state.botId)+path:path,options);
+ };
  const $=id=>document.getElementById(id);
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
@@ -563,7 +567,7 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    bubble('اتصال دائري في خطوات تلقائية — راجع تصميم المسار');
  }
- function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
+ function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();if(flow.nodes.length===1){bubble('ابدأ من علامة + لإضافة أول رسالة، ثم جرّب المحادثة هنا.');return;}previewAdvance()}
  async function load(){
    // Navigating to the catalog or company dashboard must not silently discard
    // a just-generated bot or changes to a linked subflow. Explicit save is required.
@@ -574,8 +578,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
-   const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
-   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();resetPreview();
+   const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
+   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();requestAnimationFrame(()=>canvas.fit());resetPreview();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');
@@ -665,8 +669,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    if(state.demo){notify('المعاينة لا تنشر على واتساب','error');return}
    if(mainSnapshot){notify('ارجع للمسار الرئيسي لنشره؛ المسارات الفرعية تُحفظ بإصدارات مستقلة','error');return;}
    if(dirty){notify('احفظ المسودة الأول قبل النشر','error');return}
-   if(!confirm('نشر الإصدار الحالي لعملاء الشركة على واتساب؟'))return;
-   published=await api('/flows/publish',{method:'POST'});renderStatus();notify('تم نشر إصدار المحادثة. واتساب الحقيقي يحتاج رقم Meta متصل.');
+   if(!confirm(state.botId?'نشر إصدار مستقل لهذا البوت؟ ربط القنوات يحتاج إعدادًا منفصلًا.':'نشر الإصدار الحالي للبوت الأساسي؟'))return;
+   published=await api('/flows/publish',{method:'POST'});renderStatus();notify('تم نشر إصدار البوت. لا يعني ذلك ربط قناة أو إرسال رسالة حقيقية.');
  });
  $('builder-preview-reset').onclick=resetPreview;
  $('builder-export').onclick=()=>{

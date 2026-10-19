@@ -269,9 +269,13 @@ try{
  console.log('PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox');
  console.log('PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role');
  // Keep API/web running for browser test, executed as child before cleanup.
+ if(process.env.CI_BOT_BROWSER_ONLY!=='1'){
  const browser=spawn(process.execPath,['tests/browser-acceptance.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/browser-account.json'},stdio:'inherit'});
  const [code]=await once(browser,'exit');
  assert.equal(code,0,'Chromium/browser acceptance failed');
+ }
+ const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/browser-account.json'},stdio:'inherit'});
+ const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
  const logout=await expectCode('/api/v1/auth/logout',{method:'POST',token:one},200);
  assert.ok(logout);
  await expectCode('/api/v1/auth/me',{token:one},401);

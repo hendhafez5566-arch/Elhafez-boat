@@ -10,7 +10,7 @@ CREATE TABLE chatbot_bots (
 CREATE UNIQUE INDEX chatbot_one_legacy_bot ON chatbot_bots(tenant_id) WHERE legacy_default;
 CREATE TABLE chatbot_bot_drafts (
  tenant_id uuid NOT NULL, bot_id uuid NOT NULL, definition jsonb NOT NULL,
- draft_revision integer NOT NULL CHECK(draft_revision>0), updated_by uuid, updated_at timestamptz NOT NULL DEFAULT now(),
+ draft_revision integer NOT NULL DEFAULT 1 CHECK(draft_revision>0), updated_by uuid, updated_at timestamptz NOT NULL DEFAULT now(),
  PRIMARY KEY(tenant_id,bot_id), FOREIGN KEY(tenant_id,bot_id) REFERENCES chatbot_bots(tenant_id,id),
  FOREIGN KEY(tenant_id,updated_by) REFERENCES memberships(tenant_id,user_id)
 );
@@ -22,8 +22,8 @@ CREATE TABLE chatbot_bot_versions (
  FOREIGN KEY(tenant_id,published_by) REFERENCES memberships(tenant_id,user_id)
 );
 -- Snapshot every historical definition and revision without altering originals or republishing.
-INSERT INTO chatbot_bots(tenant_id,name,legacy_default)
- SELECT tenant_id,'البوت الأساسي',true FROM (
+INSERT INTO chatbot_bots(tenant_id,id,name,legacy_default)
+ SELECT tenant_id,tenant_id,'البوت الأساسي',true FROM (
  SELECT tenant_id FROM chatbot_flow_drafts UNION SELECT tenant_id FROM chatbot_flow_versions
  ) tenants_with_flows ON CONFLICT DO NOTHING;
 INSERT INTO chatbot_bot_drafts SELECT d.tenant_id,b.id,d.definition,d.draft_revision,d.updated_by,d.updated_at
@@ -34,7 +34,7 @@ DO $$ DECLARE tab text; BEGIN
  FOREACH tab IN ARRAY ARRAY['chatbot_bots','chatbot_bot_drafts','chatbot_bot_versions'] LOOP
  EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY',tab);
  EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY',tab);
- EXECUTE format('CREATE POLICY tenant_scope ON %I USING (tenant_id=nullif(current_setting(''app.tenant_id'',true),)::uuid) WITH CHECK (tenant_id=nullif(current_setting(app.tenant_id,true),)::uuid)',tab);
+ EXECUTE format($policy$CREATE POLICY tenant_scope ON %I USING (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid) WITH CHECK (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid)$policy$,tab);
  END LOOP;
 END $$;
 COMMIT;

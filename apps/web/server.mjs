@@ -4,6 +4,7 @@ const port=Number(process.env.WEB_PORT??3000);
 const api=new URL(process.env.API_INTERNAL_ORIGIN??'http://127.0.0.1:4000');
 if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an internal http URL behind trusted network boundaries');
 const assets={
+ '/bot-manager.js':['bot-manager.js','text/javascript; charset=utf-8'],
  '/':['index.html','text/html; charset=utf-8'],
  '/widget.js':['widget.js','text/javascript; charset=utf-8'],
  '/commerce-ui.js':['commerce-ui.js','text/javascript; charset=utf-8'],

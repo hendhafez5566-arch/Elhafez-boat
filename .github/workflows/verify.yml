@@ -31,6 +31,8 @@ jobs:
       - run: node tests/flow-load.mjs
       - run: npm run db:migrate
       - run: CI_DB_INTEGRATION=1 node tests/db-integration.mjs
+      - name: Independent bots, legacy backfill and channel isolation
+        run: node tests/bots-db.mjs
 
   acceptance-runtime:
     name: Disposable PostgreSQL and headless browser acceptance

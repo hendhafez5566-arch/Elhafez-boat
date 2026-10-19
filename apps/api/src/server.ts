@@ -1,4 +1,6 @@
-import {listBots,createBot,updateBot,botFlow} from './bots.js';
+import {botTemplates,botTemplate} from './bot-templates.js';
+import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
+import {listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
@@ -140,8 +142,20 @@ const server=createServer(async(req,res)=>{
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
     const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    if(pathname==='/api/v1/bots/templates'&&req.method==='GET')return json(res,200,botTemplates.map(t=>({...t,definition:botTemplate(t.id,t.name)})));
     if(pathname==='/api/v1/bots'&&req.method==='GET')return json(res,200,await run(tx=>listBots(tx,actor)));
     if(pathname==='/api/v1/bots'&&req.method==='POST')return json(res,201,await runBody((tx,input)=>createBot(tx,actor,input)));
+    const botTrigger=/^\/api\/v1\/bots\/([^/]+)\/triggers(?:\/([^/]+))?$/.exec(pathname);
+    if(botTrigger){
+      const id=botTrigger[1];
+      if(req.method==='GET'&&!botTrigger[2])return json(res,200,await run(async tx=>listTriggers(tx,actor,await botScope(tx,actor,id))));
+      if(req.method==='POST'&&!botTrigger[2])return json(res,201,await runBody(async(tx,input)=>createTrigger(tx,actor,input,await botScope(tx,actor,id,true))));
+      if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
+    }
+    const botChannel=/^\/api\/v1\/bots\/([^/]+)\/routes$/.exec(pathname);
+    if(botChannel&&req.method==='GET')return json(res,200,await run(tx=>getBotRoutes(tx,actor,botChannel[1])));
+    if(botChannel&&req.method==='DELETE')return json(res,200,await runBody((tx,input)=>unbindBotRoute(tx,actor,botChannel[1],input)));
+    if(botChannel&&req.method==='POST')return json(res,200,await runBody((tx,input)=>bindBotRoute(tx,actor,botChannel[1],input)));
     const botRoute=/^\/api\/v1\/bots\/([^/]+)(?:\/flows(?:\/(draft|publish|versions)(?:\/([0-9]+)\/rollback)?)?)?$/.exec(pathname);
     if(botRoute){
       const id=botRoute[1],op=botRoute[3]?'rollback:'+botRoute[3]:botRoute[2]||'get';

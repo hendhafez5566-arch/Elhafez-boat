@@ -1,3 +1,4 @@
+import {initBotManager} from './bot-manager.js';
 import {initWhatsAppSignup} from './whatsapp-signup.js';
 import {initCommerce} from './commerce-ui.js';
 import {initAdvanced} from './advanced-ui.js';
@@ -50,6 +51,9 @@ document.addEventListener('invalid',event=>{
 ctx.commerce=initCommerce(ctx);
 const whatsappSignup=initWhatsAppSignup(ctx);
 const advanced=initAdvanced(ctx),workspace=initWorkspace(ctx),extensions=initExtensions(ctx),builder=initFlowBuilder(ctx),insights=initInsights(ctx);
+
+const bots=initBotManager(ctx,async bot=>{if(builder.hasUnsavedChanges()){notify('احفظ تعديلات البوت الحالي قبل فتح بوت آخر.','error');return;}state.botId=bot.id;state.botName=bot.name;await choose('flow-builder')});
+const botsNav=button('إدارة البوتات',()=>choose('bots'),'nav');botsNav.dataset.page='bots';document.querySelector('.sidebar nav').prepend(botsNav);
  // Keep everyday catalog fields visible, move optional channels/metadata to a disclosure.
  // All original input elements remain inside the SAME form for FormData and validation.
  const catalogForm=$('catalog-form');
@@ -89,7 +93,7 @@ if(mediaFile){
 // First-time company owners see the 9 everyday destinations; advanced settings remain
 // one disclosure away. This only reorganizes navigation, not API permissions.
 const nav=document.querySelector('.sidebar nav');
-const basics=new Set(['overview','flow-builder','wa-inbox','leads','catalog','analytics','website','settings','team']);
+const basics=new Set(['bots','overview','flow-builder','wa-inbox','leads','catalog','analytics','website','settings','team']);
 const advancedNav=document.createElement('details');advancedNav.className='nav-advanced';
 const advancedLabel=document.createElement('summary');advancedLabel.textContent='أدوات متقدمة وإعدادات';advancedNav.append(advancedLabel);
 const advancedButtons=document.createElement('div');advancedButtons.className='nav-advanced-buttons';
@@ -139,7 +143,7 @@ advancedNav.append(advancedButtons);nav.append(advancedNav);
  }
 
 const names=Object.fromEntries([...document.querySelectorAll('[data-page]')].map(n=>[n.dataset.page,n.textContent.trim()]));
-async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();const focus=document.querySelector('.builder-view-actions button:last-child');if(focus)focus.textContent='ملء الشاشة';}if(!basics.has(page)&&!mobileNavQuery.matches)advancedNav.open=true;else advancedNav.open=false;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;const alerts=$('notification-list');if(alerts){alerts.hidden=true;$('notifications').setAttribute('aria-expanded','false')}$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
+async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();const focus=document.querySelector('.builder-view-actions button:last-child');if(focus)focus.textContent='ملء الشاشة';}if(!basics.has(page)&&!mobileNavQuery.matches)advancedNav.open=true;else advancedNav.open=false;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;const alerts=$('notification-list');if(alerts){alerts.hidden=true;$('notifications').setAttribute('aria-expanded','false')}$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='bots')await bots.load();else if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
 ctx.choose=choose;
 async function onboardingProgress(){
  const host=$('getting-started');host.replaceChildren();host.hidden=!canEdit();
@@ -235,8 +239,8 @@ const closeNotifications=()=>{notificationPanel.hidden=true;$('notifications').s
 $('notifications').onclick=()=>{const open=notificationPanel.hidden;notificationPanel.hidden=!open;$('notifications').setAttribute('aria-expanded',String(open));if(open)execute(refreshNotifications)};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!notificationPanel.hidden){closeNotifications();$('notifications').focus()}});
 document.addEventListener('click',event=>{if(!notificationPanel.hidden&&!notificationPanel.contains(event.target)&&!$('notifications').contains(event.target))closeNotifications()});
-bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'POST',body:d});state.token=session.token;state.role=session.role;const me=await api('/auth/me');state.userId=me.userId;state.tenantId=me.tenantId;$('company-name').textContent=d.tenantSlug;sessionStorage.setItem('eb-tenant-label',d.tenantSlug);f.reset();state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());$('login').hidden=true;$('app').hidden=false;await choose('overview');await refreshNotifications()});
-$('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;await api('/auth/logout',{method:'POST'}).catch(()=>{});sessionStorage.removeItem('eb-tenant-label');state.token='';state.userId='';state.tenantId='';state.contacts=[];state.templateCatalog=[];state.team=[];ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
+bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'POST',body:d});state.token=session.token;state.role=session.role;const me=await api('/auth/me');state.userId=me.userId;state.tenantId=me.tenantId;$('company-name').textContent=d.tenantSlug;sessionStorage.setItem('eb-tenant-label',d.tenantSlug);f.reset();state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());await choose('overview');await refreshNotifications();document.body.dataset.authReady='true';$('login').hidden=true;$('app').hidden=false});
+$('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;await api('/auth/logout',{method:'POST'}).catch(()=>{});sessionStorage.removeItem('eb-tenant-label');state.token='';state.userId='';state.tenantId='';state.botId=null;state.botName='';delete document.body.dataset.authReady;state.contacts=[];state.templateCatalog=[];state.team=[];ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
 document.querySelectorAll('[data-page]').forEach(n=>n.onclick=()=>choose(n.dataset.page));document.querySelectorAll('[data-goto]').forEach(n=>n.onclick=()=>choose(n.dataset.goto));
 initVesselWorkspace();
 initVesselPages();
@@ -249,8 +253,8 @@ void (async()=>{
     $('company-name').textContent=sessionStorage.getItem('eb-tenant-label')||'مساحة شركتك';
     state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];
     document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());
+    await choose('overview');await refreshNotifications();document.body.dataset.authReady='true';
     $('login').hidden=true;$('app').hidden=false;
-    await choose('overview');await refreshNotifications();
   }catch{
     if(state.token==='cookie-session'){state.token='';$('app').hidden=true;$('login').hidden=false}
   }
