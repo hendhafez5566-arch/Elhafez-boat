@@ -1,6 +1,6 @@
 /** Clear owner/staff analytics; figures come from real tenant-scoped API only. */
 export function initInsights({api,$,el}){
- let periodDays=30;
+ let periodDays=30,loadRevision=0;
  const clear=()=>{const host=$('bot-insights');if(host)host.replaceChildren()};
  const number=value=>new Intl.NumberFormat('ar-EG').format(Number(value)||0);
  function metric(host,title,value,note,unit=''){
@@ -10,12 +10,19 @@ export function initInsights({api,$,el}){
   host.append(card);
  }
  async function load(){
-  const host=$('bot-insights');host.replaceChildren();
+  const host=$('bot-insights'),revision=++loadRevision;
+  host.setAttribute('aria-busy','true');
+  host.querySelector('.insights-loading')?.remove();
+  host.prepend(el('p','جارٍ تحديث التحليلات…','insights-loading'));
+  let data;
+  try{data=await api('/analytics/overview?days='+periodDays)}
+  catch{if(revision===loadRevision){host.querySelector('.insights-loading')?.replaceChildren(document.createTextNode('تعذر التحديث. احتفظنا بالبيانات السابقة؛ غيّر الفترة للمحاولة مجددًا.'));host.setAttribute('aria-busy','false')}return}
+  if(revision!==loadRevision)return;
+  host.replaceChildren();host.setAttribute('aria-busy','false');
   const period=el('select');period.setAttribute('aria-label','فترة التحليلات');
   for(const days of [7,30,90]){const option=el('option','آخر '+days+' يوم');option.value=String(days);period.append(option)}
   period.value=String(periodDays);period.onchange=()=>{periodDays=Number(period.value);void load()};
   host.append(period);
-  const data=await api('/analytics/overview?days='+periodDays);
   const note=el('p','كل الأرقام عن الفترة المختارة للشركة. تسجيل الاهتمام ليس مبيعات أو حجوزات.','muted');
   host.append(note);
   const metrics=el('div',undefined,'metrics');

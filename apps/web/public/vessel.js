@@ -16,19 +16,29 @@ export function initVesselWorkspace(){
  heading.append(identity,close);
  const search=make('input','vessel-search');search.type='search';search.placeholder='ابحث عن قسم أو أداة';search.setAttribute('aria-label','البحث في أقسام المنصة');
  const groups=make('div','vessel-menu-groups');
- const categories=[['التقارير والأتمتة',['analytics','campaigns','triggers']],['المحتوى والمساعد',['media','templates','settings','ai-settings']],['القنوات والتكاملات',['website','wa-connect','channels','integrations','connectors','comment-automation']],['الإدارة',['team','privacy','usage']]];
+ const categories=[['مساحة العمل',quick],['التقارير والأتمتة',['analytics','campaigns','triggers']],['المحتوى والمساعد',['media','templates','settings','ai-settings']],['القنوات والتكاملات',['website','wa-connect','channels','integrations','connectors','comment-automation']],['الإدارة',['team','privacy','usage']]];
  const grouped=new Set(quick);
- for(const [name,ids] of categories){const section=make('section','vessel-menu-section');section.append(make('h3','',name));for(const id of ids){grouped.add(id);const b=byId.get(id);if(b){b.classList.add('vessel-menu-link');section.append(b)}}groups.append(section)}
+ for(const [name,ids] of categories){const section=make('section','vessel-menu-section');section.append(make('h3','',name));for(const id of ids){grouped.add(id);const b=byId.get(id);if(b){if(quick.includes(id)){const link=make('button','vessel-menu-link',b.textContent.trim());link.type='button';link.dataset.page=id;link.onclick=()=>{b.click();hide()};section.append(link)}else{b.classList.add('vessel-menu-link');section.append(b)}}}groups.append(section)}
  const remaining=all.filter(b=>!grouped.has(b.dataset.page));
  if(remaining.length){const other=make('section','vessel-menu-section');other.append(make('h3','','المزيد'),...remaining);groups.append(other)}
+ const empty=make('div','vessel-menu-empty');empty.setAttribute('role','status');empty.hidden=true;
+ empty.append(make('p','', 'ملقيناش قسم بالاسم ده. جرّب كلمة تانية.' ));
+ const clear=make('button','secondary','مسح البحث');clear.type='button';clear.onclick=()=>{search.value='';filter();search.focus()};empty.append(clear);
  const foot=make('div','vessel-drawer-footer');foot.append($('logout'));
- drawer.append(heading,search,groups,foot);app.insertBefore(drawer,app.querySelector('.main-shell'));
+ drawer.append(heading,search,groups,empty,foot);app.insertBefore(drawer,app.querySelector('.main-shell'));
  const backdrop=make('button','vessel-backdrop');backdrop.type='button';backdrop.hidden=true;backdrop.setAttribute('aria-label','إغلاق القائمة');app.insertBefore(backdrop,app.querySelector('.main-shell'));
  const header=make('div','vessel-page-heading');header.append(make('span','vessel-eyebrow','ELHAFEZ / WORKSPACE'),$('page-title'));
  const actions=make('div','vessel-header-actions');const tenant=$('company-name');tenant.classList.add('vessel-tenant');
  const command=make('button','vessel-command','⌕  بحث');command.type='button';command.setAttribute('aria-label','بحث عن أداة في المنصة');
  actions.append(tenant,command,$('notifications'));top.replaceChildren(header,actions);
- const filter=()=>{const q=search.value.trim().toLocaleLowerCase('ar');for(const group of groups.children){let count=0;for(const b of group.querySelectorAll('button[data-page]')){const matches=!q||b.textContent.toLocaleLowerCase('ar').includes(q);b.style.display=matches?'':'none';if(matches&&!b.hidden)count++}group.style.display=count?'':'none'}};
+ const aliases={'wa-inbox':'واتساب شات محادثات chat inbox','flow-builder':'بوت chatbot مصمم مسارات bot','leads':'crm العملاء العملاء المهتمون','catalog':'منتجات خدمات','overview':'الرئيسية home','wa-connect':'واتساب اتصال ربط'};
+ const filter=()=>{const q=search.value.trim().toLocaleLowerCase('ar');let total=0;
+  for(const group of groups.children){let count=0;for(const b of group.querySelectorAll('button[data-page]')){
+    const haystack=(b.textContent+' '+(aliases[b.dataset.page]||'')).toLocaleLowerCase('ar');
+    const matches=!q||haystack.includes(q);b.style.display=matches?'':'none';if(matches&&!b.hidden){count++;total++}
+   }group.style.display=count?'':'none'}
+  empty.hidden=total>0;
+ };
  const open=()=>{drawer.hidden=false;backdrop.hidden=false;trigger.setAttribute('aria-expanded','true');search.focus()};
  const hide=()=>{drawer.hidden=true;backdrop.hidden=true;trigger.setAttribute('aria-expanded','false');search.value='';filter()};
  trigger.onclick=()=>drawer.hidden?open():hide();command.onclick=open;close.onclick=hide;backdrop.onclick=hide;search.oninput=filter;

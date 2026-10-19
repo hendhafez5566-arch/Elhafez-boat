@@ -183,3 +183,15 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
 @media(max-width:1220px){#app .vessel-catalog-layout{grid-template-columns:1fr}#app .vessel-catalog-editor,#app .vessel-catalog-library{grid-column:1}#app .vessel-page-leads #lead-list>.cards{grid-template-columns:1fr}#app .vessel-page-analytics #bot-insights>.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.vessel-page-hero{padding:19px;border-radius:18px;min-height:125px}.vessel-page-symbol{height:58px;flex-basis:58px;border-radius:16px}.vessel-page-symbol svg{width:28px;height:28px}#app .vessel-page-hero h2{font-size:23px}.vessel-activity-day{grid-template-columns:74px minmax(0,1fr) 65px;gap:6px}}
 @media(max-width:450px){.vessel-page-symbol{display:none}#app .vessel-page-analytics #bot-insights>.metrics{grid-template-columns:1fr}#app .vessel-library-search{width:100%}}
+
+/* UI audit: secondary content must stay readable across all 21 sections. */
+#app.vessel-app{--muted:#4c5874}
+#app.vessel-app .vessel-subpage .card p,#app.vessel-app .vessel-page-intro,#app.vessel-app .vessel-library-count{color:#505b77;font-size:14px;line-height:1.8}
+#app.vessel-app .vessel-thread-list .thread small,#app.vessel-app .vessel-chat-person small{color:#56627c;font-size:12px}
+#app.vessel-app .vessel-subpage :is(label,small,.muted),#app.vessel-app .vessel-library-count{font-size:13px}
+#app .vessel-menu-empty{padding:20px 15px;text-align:center;color:#4f5976;border:1px dashed #cbd0e3;border-radius:12px;margin:18px 0}
+#app .vessel-menu-empty p{margin:0 0 12px}
+#app .vessel-menu-empty button{margin:0}
+#app .insights-loading{padding:12px 16px;border:1px solid #c9c5f3;border-radius:12px;background:#f4f2ff;color:#3b3675;font-weight:750}
+#flow-builder .builder-preview-warning{padding:18px;font-weight:750;color:#94353f;background:#fff3f2;border:1px solid #f2c9ce;border-radius:12px}
+@media(max-width:800px){.notice{left:12px;right:12px;bottom:max(16px,env(safe-area-inset-bottom));width:auto;max-width:none;min-width:0}}
