@@ -11,7 +11,20 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
  if(state.role==='OWNER'){
  const form=makeForm();form.append(el('h3','ربط Google Sheets / HubSpot / المتاجر'));
  field(form,'اسم الربط','name','text','',true);const provider=select(form,'النظام','provider',[['GOOGLE_SHEETS','Google Sheets — OAuth'],['HUBSPOT','HubSpot — OAuth أو تطبيق خاص'],['WOOCOMMERCE','WooCommerce — REST API'],['SHOPIFY','Shopify — OAuth أو رمز تطبيق']]);
- field(form,'نطاق المتجر فقط — مطلوب للمتاجر','host');field(form,'رمز التطبيق — يُحفظ مشفرًا، أو اتركه فارغًا للـOAuth','access_token','password');field(form,'WooCommerce consumer key','consumer_key','password');field(form,'WooCommerce consumer secret','consumer_secret','password');
+ const hostInput=field(form,'نطاق المتجر فقط — مطلوب للمتاجر','host');
+  const tokenInput=field(form,'رمز التطبيق — أو اتركه فارغًا للـOAuth','access_token','password');
+  const wooKey=field(form,'WooCommerce consumer key','consumer_key','password');
+  const wooSecret=field(form,'WooCommerce consumer secret','consumer_secret','password');
+  const help=el('p','','muted');form.append(help);
+  const updateFields=()=>{
+    const store=['WOOCOMMERCE','SHOPIFY'].includes(provider.value),woo=provider.value==='WOOCOMMERCE';
+    for(const [input,visible] of [[hostInput,store],[tokenInput,!woo&&provider.value!=='GOOGLE_SHEETS'],[wooKey,woo],[wooSecret,woo]]){
+      input.closest('label').hidden=!visible;input.disabled=!visible;if(!visible)input.value='';
+    }
+    hostInput.required=store;
+    help.textContent=woo?'أدخل نطاق المتجر ومفاتيح WooCommerce. لا نعرضها بعد الحفظ.':provider.value==='GOOGLE_SHEETS'?'Google Sheets يتم ربطه عبر OAuth من بطاقة الموصل بعد إنشائه.':provider.value==='HUBSPOT'?'HubSpot: أنشئ الموصل ثم أكمل OAuth، أو أدخل رمز تطبيق خاص.':'Shopify: أدخل نطاق المتجر، وأكمل OAuth أو رمز التطبيق.';
+  };
+  provider.onchange=updateFields;updateFields();
  form.append(button('إضافة وربط',async()=>{if(!form.reportValidity())return;const d=Object.fromEntries(new FormData(form)),credentials=d.provider==='WOOCOMMERCE'?{consumer_key:d.consumer_key,consumer_secret:d.consumer_secret}:d.access_token?{access_token:d.access_token}:undefined;const result=await api('/connectors',{method:'POST',body:{name:d.name,provider:d.provider,config:{host:d.host||undefined},credentials}});form.reset();if(!credentials&&d.provider!=='WOOCOMMERCE')notify('تمت الإضافة؛ افتح زر OAuth للموصل لإكمال الربط');else notify('تم حفظ الاعتمادات؛ الإرسال الحقيقي يحتاج التحقق');await connectorPage()},'primary'));host.append(form);
  }
  for(const c of connectors){const pane=card(c.name,c.provider+' • '+(c.connected?'اعتمادات محفوظة — لا تثبت نجاح التسليم':'بانتظار الربط')+' • '+(c.enabled?'مفعل':'معطل'));pane.append(el('code',c.id));
@@ -37,7 +50,9 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
   rulesHost.append(el('h3','قواعد استقبال التعليقات'));
   const [accounts,rules,candidates]=await Promise.all([api('/channels/accounts'),api('/comments/rules'),api('/comments/candidates')]);
   const meta=accounts.filter(a=>['MESSENGER','INSTAGRAM'].includes(a.channel));
-  if(!meta.length)emptyState(rulesHost,'لا يوجد حساب مؤهل للتعليقات','أضف الحساب يدويًا قبل إنشاء قواعد التعليقات.');
+  if(!meta.length){emptyState(rulesHost,'لا يوجد حساب مؤهل للتعليقات','اربط صفحة Facebook أو Instagram أولًا، ثم ارجع لإنشاء القاعدة.');
+     rulesHost.append(button('الانتقال إلى إعداد القنوات',()=>document.querySelector('.sidebar [data-page="channels"]')?.click(),'secondary'));
+   }
   else{
    const form=makeForm();
    const account=select(form,'حساب Meta','accountId',meta.map(a=>[a.id,a.channel+' — '+a.external_id]));

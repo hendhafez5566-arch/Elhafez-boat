@@ -1,3 +1,14 @@
+## 2026-10-19 — Isolated UI/UX real-user audit remediation (DRAFT, not deployed)
+
+- Audit basis: Cloud Browser checked 21 screens, with 20 documented issues and 98 scenarios (51 Pass, 17 Fail, 30 Blocked); neither mobile testing nor live Meta acceptance was completed by audit.
+- Created branch `fix/ui-ux-audit-2026-10-19` and draft PR #2 against `feat/stage0-foundation` to isolate changes from the Railway-linked live branch.
+- Code changes: flow geometry, phone validation, simulator preflight/handoff, navigation search, alert position, Arabic forms, analytics loading, provider-aware connectors, editable FAQ drafts, log readability, simplified toolbar and UI text contrast.
+- Safety: no merge to the deploy branch, no Railway restart, no Meta authorization, no WhatsApp send, no existing tenant or customer data modified.
+- Verification: source build/unit checks and isolated browser/PostgreSQL CI must pass on PR HEAD. Independent mobile visual acceptance and original 20 screenshots' reproduction remain **open**; functional UI edits are NOT deemed production-ready on code tests alone.
+- Meta Coexistence self-service remains gated on official provider setup; session reload OBS-02 remains investigatory.
+
+See `docs/UI-AUDIT-FIX-2026-10-19.md` for issue-to-change mapping and acceptance gaps.
+
 ## 2026-10-18 — Premium UI completion pass (verified source ea1e0e56)
 
 - Canvas now uses measured collision-safe pointer positioning, topology aware auto layout, real branch-port connection controls and focus/immersive view.

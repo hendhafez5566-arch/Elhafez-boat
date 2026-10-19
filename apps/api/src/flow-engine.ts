@@ -30,6 +30,15 @@ export type FlowAdvance={state:FlowState;messages:FlowMessage[];handoff:boolean;
 const key=/^[a-z][a-z0-9_]{0,39}$/;
 const ident=/^[a-z][a-z0-9_-]{0,31}$/;
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
+export function normalizePhoneAnswer(value:string):string {
+ return value.trim().replace(/[٠-٩۰-۹]/g,ch=>{
+  const arabic='٠١٢٣٤٥٦٧٨٩'.indexOf(ch);return String(arabic>=0?arabic:'۰۱۲۳۴۵۶۷۸۹'.indexOf(ch));
+ });
+}
+export function isPhoneField(field:string):boolean{return /(^|_)phone$/.test(field)}
+export function validPhoneAnswer(field:string,value:string):boolean{
+ return !isPhoneField(field)||/^\+?[0-9]{8,15}$/.test(normalizePhoneAnswer(value));
+}
 function plain(v:unknown):v is Record<string,unknown>{return typeof v==='object'&&v!==null&&!Array.isArray(v)}
 function bounded(v:unknown,max:number,min=1):v is string{return typeof v==='string'&&v.trim().length>=min&&v.length<=max}
 function requireTrue(v:unknown,message:string):asserts v{if(!v)throw new Error(message)}
@@ -154,7 +163,11 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:{kind:'TE
    if(input?.kind!=='TEXT'||!bounded(input.value,500)){
     messages.push({type:'TEXT',text:current.text});return {state,messages,handoff,finished};
    }
-   answers[current.field]=input.value.trim();at=current.next;
+   if(!validPhoneAnswer(current.field,input.value)){
+     messages.push({type:'TEXT',text:'اكتب رقم هاتف صحيح من 8 إلى 15 رقمًا بدون حروف.'});
+     return {state,messages,handoff,finished};
+    }
+    answers[current.field]=isPhoneField(current.field)?normalizePhoneAnswer(input.value):input.value.trim();at=current.next;
   } else if(current.type==='END'||current.type==='HANDOFF'){
    at=flow.startId;
   }
