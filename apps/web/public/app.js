@@ -61,6 +61,21 @@ const advanced=initAdvanced(ctx),workspace=initWorkspace(ctx),extensions=initExt
  }
  catalogForm.insertBefore(advancedCatalog,catalogForm.querySelector('button.primary'));
 
+// Native media file upload stays bound to the same FormData and validation.
+const mediaFile=$('media-form')?.querySelector('input[type="file"]');
+if(mediaFile){
+  const fileButton=el('button','اختيار ملف من الجهاز','secondary');fileButton.type='button';fileButton.classList.add('media-file-button');
+  const fileName=el('span','لم يتم اختيار ملف','media-file-name');
+  fileButton.onclick=()=>mediaFile.click();
+  mediaFile.addEventListener('change',()=>{fileName.textContent=mediaFile.files?.[0]?.name||'لم يتم اختيار ملف'});
+  mediaFile.classList.add('media-accessible-input');
+  mediaFile.parentElement.append(fileButton,fileName);
+  const note=$('media-form').nextElementSibling;
+  if(note?.textContent?.includes('MEDIA_PUBLIC_ORIGIN')){
+    const details=el('details',undefined,'media-technical-details');
+    note.before(details);details.append(el('summary','تفاصيل فنية للمشغل'),note);
+  }
+}
 // First-time company owners see the 9 everyday destinations; advanced settings remain
 // one disclosure away. This only reorganizes navigation, not API permissions.
 const nav=document.querySelector('.sidebar nav');
@@ -153,7 +168,7 @@ async function knowledge(){const host=$('faq-list');host.replaceChildren();const
       c.append(edit);question.focus();
     }),button('اعتماد ونشر',async()=>{await api('/knowledge/'+r.id+'/publish',{method:'PATCH'});await knowledge()}));
    }host.append(c)}}
-bind('faq-form',async(d,f)=>{await api('/knowledge',{method:'POST',body:d});f.reset();await knowledge()});
+bind('faq-form',async(d,f)=>{await api('/knowledge',{method:'POST',body:d});f.reset();await knowledge();f.hidden=true});
 async function refreshNotifications(){if(!state.token)return;const notes=await api('/notifications');const visible=notes.filter(x=>Number(x.unread)>0||x.stage==='READY_FOR_AGENT');$('notification-count').textContent=visible.length;const host=$('notification-list');host.replaceChildren();if(!visible.length)host.append(el('p','لا توجد تنبيهات جديدة.'));for(const n of visible.slice(0,15))host.append(button(n.customer_name+' — '+(n.stage==='READY_FOR_AGENT'?'جاهز للتواصل':n.unread+' رسائل غير مقروءة'),()=>{host.hidden=true;return choose('wa-inbox')}))}
 const notificationPanel=$('notification-list');
 $('notifications').setAttribute('aria-expanded','false');
