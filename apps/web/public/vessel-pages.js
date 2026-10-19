@@ -87,6 +87,28 @@ export function initVesselPages(){
   };
   search.addEventListener('input',filter);new MutationObserver(filter).observe(list,{childList:true});filter();
  }
+ // List-first content management without replacing existing forms or API handlers.
+ const knowledge=$('settings'),faq=$('faq-form'),faqList=$('faq-list');
+ if(knowledge&&faq&&faqList){
+   faq.hidden=true;
+   const addFAQ=el('button','primary vessel-create-action','+ إضافة سؤال وإجابة');addFAQ.type='button';
+   const closeFAQ=el('button','secondary','إغلاق نموذج الإضافة');closeFAQ.type='button';
+   closeFAQ.onclick=()=>{faq.hidden=true;addFAQ.focus()};faq.append(closeFAQ);
+   addFAQ.onclick=()=>{faq.hidden=false;faq.querySelector('input')?.focus()};
+   knowledge.querySelector('.vessel-page-hero')?.append(addFAQ);
+ }
+ const campaign=$('campaign-form');
+ if(campaign){
+   const section=el('details','campaign-create-disclosure');
+   campaign.before(section);section.append(el('summary','','+ إنشاء حملة جديدة (مسودة فقط)'),campaign);
+   $('campaign-list')?.setAttribute('aria-label','قائمة الحملات الحالية');
+ }
+ const integrations=$('integration-form')?.closest('.grid');
+ if(integrations&&integrations.children.length>1){
+   const developerPanel=integrations.children[1],details=el('details','vessel-developer-tools');
+   details.append(el('summary','','أدوات المطور — مفاتيح API'),developerPanel);
+   integrations.append(details);
+ }
  for(const id of ['settings','team','templates','triggers','website','campaigns','ai-settings','integrations']){
   $(id)?.querySelector(':scope > .grid')?.classList.add('vessel-subpage-grid');
  }
