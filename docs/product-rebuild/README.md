@@ -18,3 +18,8 @@ Older PR #2/#3 addressed specific 15 functional QA and 26 visual observations, w
 
 ## Security/rights of references
 Repository is PUBLIC. Raw owner-provided BotSailor screenshots/video, private workspace screenshots/ZIP files, and embedded audited screenshots are intentionally not copied verbatim to GitHub because of visible account names/phone numbers and possible private data. A sanitized reduced-resolution layout sheet is included if upload succeeds; `EVIDENCE_INDEX.md` contains detailed observation/storyboard and official reference links. Ask the owner for original private source ZIP/video only if higher resolution is essential, and review through authorized private channels. Do not commit raw credentials, customer contacts or third-party logos into the shipping app.
+
+## Direct visual references
+
+- [Bot workspace layout diagram](diagrams/bot-workspace-IA.svg)
+- [Target flow-builder layout diagram](diagrams/builder-target-wireframe.svg)

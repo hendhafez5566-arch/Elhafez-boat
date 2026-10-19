@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720">
+<title>Source-informed target flow editor schematic, not a screenshot</title>
+<rect width="1280" height="720" rx="18" fill="#eef3f8"/>
+<rect x="12" y="11" width="1256" height="68" rx="12" fill="white" stroke="#dce1ed"/>
+<text x="34" y="54" font-size="24" font-weight="bold" font-family="Arial" fill="#302f57">Bot A / Greeting flow</text>
+<rect x="870" y="23" width="115" height="44" rx="9" fill="#eeeaff"/><text x="894" y="53" font-family="Arial" font-size="17" fill="#5743bc">Preview</text>
+<rect x="998" y="23" width="113" height="44" rx="9" fill="#eeeaff"/><text x="1015" y="53" font-family="Arial" font-size="17" fill="#5743bc">Save draft</text>
+<rect x="1124" y="23" width="122" height="44" rx="9" fill="#5545ce"/><text x="1140" y="53" font-family="Arial" font-size="17" fill="white">Publish</text>
+<rect x="12" y="92" width="230" height="614" rx="14" fill="white" stroke="#dce1ed"/>
+<text x="31" y="131" font-size="22" font-weight="bold" font-family="Arial" fill="#38375a">Add a step</text>
+<g font-size="20" font-family="Arial" fill="#4c5476"><text x="34" y="199">Message</text><text x="34" y="252">Buttons / list</text><text x="34" y="305">Ask a question</text><text x="34" y="358">Condition</text><text x="34" y="411">Media</text><text x="34" y="464">Hand off to staff</text><text x="34" y="559">More (advanced)</text></g>
+<rect x="257" y="92" width="640" height="614" rx="14" fill="#e9f2f8" stroke="#dce1ed"/>
+<rect x="444" y="145" width="260" height="94" rx="12" fill="#fff" stroke="#8277d2" stroke-width="2"/><text x="464" y="178" font-size="21" font-family="Arial" fill="#4232aa">Start bot flow</text><text x="464" y="216" font-size="16" font-family="Arial" fill="#69728f">On first message</text>
+<path d="M574 239 V309" stroke="#735cde" stroke-width="3"/><circle cx="574" cy="309" r="9" fill="#745dde"/>
+<rect x="422" y="325" width="310" height="157" rx="14" fill="#fff" stroke="#8277d2" stroke-width="2"/><text x="441" y="364" font-size="19" font-weight="bold" font-family="Arial" fill="#3b365e">Welcome message</text><text x="441" y="408" font-size="17" font-family="Arial" fill="#646c82">Hello! How can we help?</text><text x="444" y="452" font-size="17" font-family="Arial" fill="#604cce">[ Services ]   [ Agent ]</text>
+<path d="M505 482 V553 H441 M658 482 V553 H718" stroke="#735cde" stroke-width="3" fill="none"/>
+<rect x="382" y="554" width="152" height="73" rx="12" fill="white" stroke="#b5aedf"/><text x="405" y="597" font-size="17" font-family="Arial" fill="#5545ba">Add step (+)</text>
+<rect x="646" y="554" width="153" height="73" rx="12" fill="white" stroke="#b5aedf"/><text x="676" y="597" font-size="17" font-family="Arial" fill="#5545ba">Add step (+)</text>
+<rect x="911" y="92" width="357" height="614" rx="14" fill="white" stroke="#dce1ed"/>
+<text x="931" y="132" font-size="22" font-weight="bold" font-family="Arial" fill="#363756">Edit selected message</text>
+<text x="932" y="191" font-family="Arial" font-size="17" fill="#4e5476">Message text</text>
+<rect x="931" y="205" width="314" height="110" rx="9" fill="#f9faff" stroke="#dce1ed"/>
+<text x="948" y="243" font-family="Arial" font-size="16" fill="#667189">Hello! How can we help?</text>
+<text x="932" y="363" font-family="Arial" font-size="17" fill="#4e5476">Button 1</text><rect x="931" y="379" width="314" height="51" rx="9" fill="#fafbff" stroke="#dce1ed"/><text x="949" y="410" font-family="Arial" fill="#667189" font-size="17">Services</text>
+<text x="932" y="470" font-family="Arial" font-size="17" fill="#4e5476">Button 2</text><rect x="931" y="483" width="314" height="52" rx="9" fill="#fafbff" stroke="#dce1ed"/><text x="949" y="515" font-family="Arial" fill="#667189" font-size="17">Talk to employee</text>
+<rect x="931" y="636" width="314" height="45" rx="9" fill="#5f4dd9"/><text x="1037" y="665" font-family="Arial" font-size="17" fill="white">Done editing</text>
+<text x="22" y="718" font-size="13" font-family="Arial" fill="#576987">Original illustrative wireframe only; not actual BotSailor or Elhafez Boat screenshot. Arabic translation required in app.</text>
+</svg>

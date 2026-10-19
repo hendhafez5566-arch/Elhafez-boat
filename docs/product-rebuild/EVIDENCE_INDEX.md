@@ -25,3 +25,8 @@
 The repository is PUBLIC. Do NOT commit original screenshot archives, raw tenant session logs, visible phone numbers or customer data, huge embedded-data `VISUAL_UI_REVIEW.html`, private tokens or competitor branded assets to production CSS/JS. **A source screenshot illustrates a design but is NOT your product's UI, data, app capability or license to clone code.** If original full-resolution assets are needed, request owner to attach them in the Codex task UI if available, or use the ChatGPT Work handoff ZIP via a private authorized workflow. The complete original local package is `ELHAFEZ_BOAT_CHATGPT_WORK_COMPLETE_KIT.zip` and exists in the owner's ChatGPT artifacts, **not** at a public GitHub URL.
 
 Any visual sheet included on this branch is deliberately downscaled and redacted; layout comparison only, not evidence of API functionality.
+
+## Original diagrams in this repository
+
+- [Bot workspace information architecture](diagrams/bot-workspace-IA.svg) — original illustrative structure from the owner's screenshot observations; it is **not** an actual competitor screenshot.
+- [Full-canvas editor wireframe](diagrams/builder-target-wireframe.svg) — conceptual design of compact topbar + component sidebar + node canvas + contextual inspector; **not** a measured screenshot from Elhafez Boat.
