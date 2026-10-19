@@ -1,3 +1,33 @@
+# Usability batch after 741e6cb — locally verified, PR #4 remains PARTIAL
+
+Application commit `a3b6418`, final executable/test commit `8f0ad62`, same branch and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4). No migration, merge, Railway deployment, paid AI or real provider connection/send.
+
+- **S02 PARTIAL:** ready-customer actions now open the exact inbox thread rather than the general list; Arabic channel labels/numbers, real empty state and retry retaining prior metrics. Exact-thread navigation tested in Chromium. The full dashboard KPI/action/error-state specification remains open.
+- **S05–S07 PARTIAL:** condition fields discover answers collected by the current flow; `exists` hides the irrelevant comparison value while preserving it for other operators; Arabic media-kind choices. Actual UI inserts CONDITION/MEDIA/LINK into a branch and saves typed fields without fetching the media. Desktop/320px inspector screenshots. Dense cyclic gestures, long beginner journeys and full keyboard/screen-reader acceptance remain open.
+- **S10 PARTIAL:** website assignment, staff reply, release to bot, takeover and close now exercised through the browser with stored messages and reply-enabled-state assertions. Late handoff completion cannot reopen a previous thread after switching customers. This verifies disposable Website Chat only; real provider send/delivery acceptance and the complete concurrency/failure matrix remain open.
+- **S13 PARTIAL:** four-step creation (supported WhatsApp channel/name, audience, content, schedule/review) replaces the long form. Back retains values, each step validates, final review renders actual template text/values, save creates a real draft. At least one message is retained, logout clears tenant-specific authoring data, review/launch remain separate. Browser checks actual visible expanded form, saves a draft and verifies reset. All complex template/media/commerce shapes and deeper audience selection UX remain open; no launch performed.
+- **S14 PARTIAL:** UTC calendar-day boundaries now match report buckets and zero-filled 7/30/90-day charts; current follow-up tasks are explicitly distinguished from period-created records. Retry retains prior data, channel names are Arabic. PostgreSQL checks inclusive/exclusive first-day boundary, daily sum/KPI reconciliation, Asia/Tokyo session invariance and foreign-company isolation. Browser switches actual 7/90-day API reports. Comparative-period/KPI acceptance and remaining export/report UX remain open.
+- **S22 PARTIAL:** real 1366/390/320 campaign, 1366/320 dashboard/inspector/inbox/analytics PNGs, no horizontal overflow. Native 200% zoom, physical devices and full screen-reader acceptance remain open. Other ledger states are unchanged.
+
+## Verification and defect diagnosis
+
+`npm run check`: **118 pass, 0 fail, 0 skip**. `node tests/bots-db.mjs` against disposable PostgreSQL on 5433: PASS including new UTC boundary tests. `CI_DB_INTEGRATION=1 node tests/db-integration.mjs`: PASS. Full `CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CHROME_BIN=/usr/bin/chromium node tests/runtime-acceptance.mjs` on PostgreSQL 5432: exit 0, both browser suites, roles, 81 broad page/viewport visits, worker/API recovery, throttle and real local functional journeys. Final rerun on `8f0ad62` with `CI_BOT_BROWSER_ONLY=1`: exit 0; it skips only the already-passed broad UI child and repeats real database/API/worker and all new functional browser journeys. Campaign checks report zero queued jobs/outbound messages from review. Provider transport stays offline.
+
+A real recovery failure was reproduced: a checked-out PostgreSQL worker client could emit an unhandled error between queries and terminate the worker. Client-lifetime error listeners now complement pool idle-error handling; query rejection/rollback and pg connection retirement remain intact. Recovery passed in subsequent runs. A unit DOM fixture was extended with querySelector support for loading-state cleanup; assertions remain intact. Browser screenshot review caught an initially collapsed authoring panel; tests now require actual visible expanded form and allow paint before capture. No assertions/limits were weakened.
+
+## Actual evidence
+
+- Campaign [desktop](evidence/wizard-campaign-1366.png), [390px](evidence/wizard-campaign-390.png), [320px](evidence/wizard-campaign-320.png); previous actual list/form layout: [before desktop](evidence/continuation-campaign-review-1366.png), [before 320px](evidence/continuation-campaign-review-320.png).
+- Condition inspector [desktop](evidence/wizard-condition-1366.png) / [320px](evidence/wizard-condition-320.png).
+- Manual inbox after close [desktop](evidence/wizard-inbox-closed-1366.png) / [320px](evidence/wizard-inbox-closed-320.png).
+- Dashboard [desktop](evidence/wizard-dashboard-1366.png) / [320px](evidence/wizard-dashboard-320.png).
+- Analytics [desktop](evidence/wizard-analytics-1366.png) / [320px](evidence/wizard-analytics-320.png).
+- [Machine-readable results](evidence/usability-verification.json), [81 broad page visits](evidence/usability-browser-pages.json). Broad visits do not certify all screen actions. Screenshots contain synthetic fixtures only.
+
+Git fetch confirmed remote feature head was `741e6cb` before work. GitHub API returns Forbidden, so remote CI success cannot be asserted. Target branch remained `ada4db6764c8ee8665764663b3a47351cf807637`. Push only this feature branch. Do not create a second PR or merge/deploy.
+
+---
+
 # PR #4 continuation — 19 October 2026
 
 Same implementation branch: `feat/codex-product-rebuild-2026-10-19`. The owner identifies the existing Draft PR as [#4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4); the historical statement below that no PR existed is superseded. Do not create a replacement PR. GitHub API still returns Forbidden in this runtime, so remote CI/PR metadata cannot be verified here. Changes are pushed to the same head branch only.

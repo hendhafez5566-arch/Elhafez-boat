@@ -1,3 +1,7 @@
+## Latest Elhafez usability evidence — 19 October 2026
+
+Actual source a3b6418 / final test 8f0ad62. See [execution ledger](EXECUTION-LEDGER.md) for eleven desktop/mobile screenshots, actual functional journeys, source-to-screen mapping and remaining gaps; [verification](evidence/usability-verification.json). All are synthetic PostgreSQL fixtures, with no live provider action. Previous before images remain intact. 81 broad page visits are loading checks, not claims all 22 screens are complete.
+
 # Evidence index: actual user-supplied references and safe access
 
 ## User supplied in conversation, 19 October 2026
