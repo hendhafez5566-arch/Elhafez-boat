@@ -69,7 +69,7 @@ if(mediaFile){
   fileButton.onclick=()=>mediaFile.click();
   mediaFile.addEventListener('change',()=>{fileName.textContent=mediaFile.files?.[0]?.name||'لم يتم اختيار ملف'});
   mediaFile.classList.add('media-accessible-input');
-  mediaFile.parentElement.append(fileButton,fileName);
+  mediaFile.parentElement.after(fileButton,fileName);
   const note=$('media-form').nextElementSibling;
   if(note?.textContent?.includes('MEDIA_PUBLIC_ORIGIN')){
     const details=el('details',undefined,'media-technical-details');
