@@ -56,15 +56,31 @@ export function initVesselPages(){
   headerTitle.append(el('span','vessel-page-kicker','LIBRARY'),el('h3','','العناصر المسجلة'));
   const search=el('input','vessel-library-search');search.type='search';search.placeholder='بحث في العناصر المعروضة';
   search.setAttribute('aria-label','البحث في عناصر الكتالوج المعروضة');
-  header.append(headerTitle,search);
+  const add=el('button','primary vessel-library-add','+ إضافة منتج أو خدمة');add.type='button';
+  const veil=el('button','vessel-editor-backdrop');veil.hidden=true;veil.type='button';
+  veil.setAttribute('aria-label','إغلاق نموذج المنتج');document.body.append(veil);
+  const closeEditor=()=>{formPanel.hidden=true;formPanel.classList.remove('is-open');veil.hidden=true;add.focus()};
+  const openEditor=()=>{formPanel.hidden=false;formPanel.classList.add('is-open');veil.hidden=false;formPanel.querySelector('input[name="title"]')?.focus()};
+  add.onclick=()=>{formPanel.querySelector('#catalog-new')?.click();openEditor()};
+  veil.onclick=closeEditor;
+  const close=el('button','secondary vessel-editor-close','إغلاق ×');close.type='button';close.onclick=closeEditor;
+  formPanel.prepend(close);formPanel.hidden=true;
+  listPanel.addEventListener('click',event=>{if(event.target.closest('button')?.textContent?.trim()==='تعديل')openEditor()});
+  header.append(headerTitle,search,add);
   const count=el('p','vessel-library-count');count.setAttribute('aria-live','polite');
   listPanel.prepend(header,count);
   const list=$('catalog-items');
+  const noResults=el('div','vessel-catalog-empty');noResults.hidden=true;
+  noResults.append(el('p','','لا توجد عناصر تطابق البحث.'));
+  const reset=el('button','secondary','مسح البحث');reset.type='button';
+  reset.onclick=()=>{search.value='';filter();search.focus()};
+  noResults.append(reset);listPanel.append(noResults);
   const filter=()=>{
    const term=search.value.trim().toLocaleLowerCase('ar');let all=0,shown=0;
    for(const card of list.children){if(!card.classList.contains('card'))continue;all++;
     card.hidden=Boolean(term)&&!card.textContent.toLocaleLowerCase('ar').includes(term);if(!card.hidden)shown++}
-   count.textContent=all?'عرض '+shown+' من '+all+' عنصر مسجّل':'يمكنك إضافة أول عنصر من النموذج';
+   count.textContent=all?'عرض '+shown+' من '+all+' عنصر مسجّل':'لم تضف أي عناصر بعد';
+   noResults.hidden=!all||shown>0;
   };
   search.addEventListener('input',filter);new MutationObserver(filter).observe(list,{childList:true});filter();
  }
