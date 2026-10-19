@@ -51,7 +51,7 @@ export function initAdvanced({state,api,notify,$,el,button,card,bind,execute}){
   const [accounts,rules,candidates]=await Promise.all([api('/channels/accounts'),api('/comments/rules'),api('/comments/candidates')]);
   const meta=accounts.filter(a=>['MESSENGER','INSTAGRAM'].includes(a.channel));
   if(!meta.length){emptyState(rulesHost,'لا يوجد حساب مؤهل للتعليقات','اربط صفحة Facebook أو Instagram أولًا، ثم ارجع لإنشاء القاعدة.');
-     rulesHost.append(button('الانتقال إلى إعداد القنوات',()=>document.querySelector('.sidebar [data-page="channels"]')?.click(),'secondary'));
+     rulesHost.append(button('الانتقال إلى إعداد القنوات',()=>document.querySelector('.vessel-drawer [data-page="channels"]')?.click()||document.querySelector('.sidebar [data-page="channels"]')?.click(),'secondary'));
    }
   else{
    const form=makeForm();
