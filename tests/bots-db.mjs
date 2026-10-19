@@ -109,6 +109,7 @@ try{
  await assert.rejects(tx({...a,role:'VIEWER'},db=>bulkLeadStage(db,{...a,role:'VIEWER'},{ids:[firstPage.items[0].id],stage:'CLOSED'})),e=>e.status===403);
  await assert.rejects(tx(a,db=>bulkLeadStage(db,a,{ids:[firstPage.items[0].id,randomUUID()],stage:'CLOSED'})),e=>e.status===404);
  assert.equal((await tx(a,db=>leadProfile(db,a,firstPage.items[0].id))).stage,oldStage,'Rejected mixed batch must not partially update');
+ await assert.rejects(tx(b,db=>bulkLeadStage(db,b,{ids:firstPage.items.slice(0,2).map(x=>x.id),stage:'CLOSED'})),e=>e.status===404);
  assert.equal((await tx(a,db=>bulkLeadStage(db,a,{ids:firstPage.items.slice(0,2).map(x=>x.id),stage:'CONTACTED'}))).updated,2);
  console.log('PASS contact-wide timeline pagination and all-or-nothing role-scoped bulk CRM state updates');
  const template=(await admin.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'fixture_review','ar','MARKETING',$3::jsonb) RETURNING id`,[a.tenantId,account,JSON.stringify([{type:'BODY',text:'مراجعة تجريبية لا تُرسل'}])])).rows[0].id;

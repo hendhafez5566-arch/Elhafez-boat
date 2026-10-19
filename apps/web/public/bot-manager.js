@@ -18,7 +18,11 @@ export function initBotManager({state,api,execute,notify,el,button,canEdit},open
  function renderGallery(){galleryList.replaceChildren();const q=gallerySearch.value.trim();for(const t of templates.filter(t=>(t.name+' '+t.description).includes(q))){const card=el('article',undefined,'card template-card');card.dataset.templateId=t.id;const preview=el('details');preview.append(el('summary','معاينة المحادثة'));for(const n of t.definition.nodes){if(n.text)preview.append(el('p',n.text));if(n.choices)preview.append(el('p',n.choices.map(c=>c.title).join(' / ')))}card.append(el('h4',t.name),el('p',t.description),preview);if(canEdit())card.append(button('استخدم هذا القالب',()=>setup.start(t.id),'primary'));galleryList.append(card)}if(!galleryList.children.length)galleryList.append(el('p','لا توجد قوالب مطابقة. جرّب كلمة أخرى.'));}
  gallerySearch.oninput=renderGallery;
  const quick=el('details',undefined,'bot-quick-create');quick.append(el('summary','إنشاء سريع من قالب جاهز'),form);
- page.append(title,intro,create,gallery,quick,search,status,list);let bots=[];
+ const managePanel=el('section',undefined,'bot-management-list');managePanel.append(quick,search,status,list);
+ const views=el('nav',undefined,'bot-manager-views');views.setAttribute('aria-label','عرض البوتات أو مكتبة القوالب');
+ const manageView=button('بوتاتك',()=>showView(false)),galleryView=button('مكتبة القوالب',()=>showView(true));views.append(manageView,galleryView);
+ function showView(showGallery){gallery.hidden=!showGallery;managePanel.hidden=showGallery;manageView.setAttribute('aria-pressed',String(!showGallery));galleryView.setAttribute('aria-pressed',String(showGallery));}
+ page.append(title,intro,create,views,gallery,managePanel);showView(false);let bots=[];
  function render(){
   list.replaceChildren();const filtered=bots.filter(b=>b.name.includes(search.value.trim()));
   status.textContent=!bots.length?'لا توجد بوتات بعد. ابدأ باسم مناسب ثم أضف أول رسالة.':!filtered.length?'لا توجد نتائج مطابقة.':`${filtered.length} بوت — الإصدارات المنشورة لا تعني اتصال قناة حقيقية`;

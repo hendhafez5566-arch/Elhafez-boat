@@ -66,6 +66,12 @@ try{
  await click('رسالة نصية','.builder-picker-item');await until("document.querySelectorAll('.canvas-node').length===3",'first message inserted');
  await evaluate("(()=>{const t=document.querySelector('.builder-inspector textarea');t.value='أهلًا بك في تجربة البوت المستقل';t.dispatchEvent(new Event('input',{bubbles:true}))})()");
  await screenshot('rebuild-after-contextual-message-1366.png');
+ // Empty-bot insertion adds a real terminal step, rather than leaving a dangling edge.
+ await evaluate("document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'first message draft saved');
+ const initialBots=await evaluate("fetch('/api/v1/bots').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})"),initialBot=initialBots.find(b=>b.name===botName);
+ const firstMessage=await evaluate(`fetch('/api/v1/bots/${initialBot.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);
+ const firstDefinition=firstMessage.draft.definition,firstStart=firstDefinition.nodes.find(n=>n.type==='START'),firstText=firstDefinition.nodes.find(n=>n.id===firstStart.next);assert.equal(firstText.type,'TEXT');assert.equal(firstDefinition.nodes.find(n=>n.id===firstText.next).type,'END');
+ const validFirst=await evaluate(`fetch('/api/v1/flows/validate',{method:'POST',headers:{'content-type':'application/json','x-boat-csrf':'1'},body:JSON.stringify(${JSON.stringify(firstDefinition)})}).then(async r=>({status:r.status,data:await r.json()}))`);assert.equal(validFirst.status,200);assert.equal(validFirst.data.valid,true);
  // Exercise the real Arabic template and three stable button branches through existing controls.
  await evaluate("document.getElementById('builder-load-preset').click()");
  await until("Boolean(document.querySelector('.canvas-node[data-node-id=menu]'))",'three button template');
@@ -132,6 +138,8 @@ try{
  await click('إنشاء بوت خطوة بخطوة');await until("Boolean(document.querySelector('.bot-setup-dialog[open]'))",'novice setup dialog');await click('التالي','.bot-setup-form button');
  const noviceName='بوت المبتدئ '+Date.now();
  await evaluate(`(()=>{const f=document.querySelector('.bot-setup-form');for(const [key,value] of Object.entries({name:${JSON.stringify(noviceName)},businessName:'متجر تجريبي',greeting:'مرحبًا بك في تجربتنا الجديدة'})){const n=f.elements.namedItem(key);n.value=value;n.dispatchEvent(new Event('input',{bubbles:true}))}const phone=f.querySelector('input[type=checkbox]');phone.checked=false;phone.dispatchEvent(new Event('change',{bubbles:true}))})()`);
+ await send('Emulation.setDeviceMetricsOverride',{width:320,height:700,deviceScaleFactor:1,mobile:true});await screenshot('continuation-setup-fields-320.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'setup form mobile overflow');
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
  await click('التالي','.bot-setup-form button');await click('السابق','.bot-setup-form button');assert.equal(await evaluate("document.querySelector('.bot-setup-form').elements.businessName.value"),'متجر تجريبي');
  assert.equal(await evaluate("document.querySelector('.bot-setup-form input[type=checkbox]').checked"),false);
  await click('التالي','.bot-setup-form button');await click('التالي','.bot-setup-form button');await until("document.querySelector('.bot-setup-form').textContent.includes('مرحبًا بك في تجربتنا الجديدة')",'server-validated setup review');
@@ -147,7 +155,7 @@ try{
  const noviceSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);const menu=noviceSaved.draft.definition.nodes.find(n=>n.id==='menu'),reply=noviceSaved.draft.definition.nodes.find(n=>n.id===menu.choices[0].next);assert.equal(reply.text,'رد خاص لاختيار المعلومات');assert.equal(reply.next,'information');assert.equal(menu.choices[0].id,'info');
  await screenshot('continuation-simple-editor-1366.png');await click('عرض المخطط المرئي','.builder-view-actions button');assert.ok(await evaluate("!document.querySelector('.builder-studio').classList.contains('builder-linear-mode')"));await screenshot('continuation-canvas-1366.png');await click('عرض مبسط بالخطوات','.builder-view-actions button');
  for(const [width,height] of [[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await screenshot('continuation-simple-editor-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'novice editor overflow '+width)}
- await evaluate("document.querySelector('[data-page=bots]').click()");await until("Boolean(document.querySelector('.template-gallery input'))",'template gallery');
+ await evaluate("document.querySelector('[data-page=bots]').click()");await click('مكتبة القوالب');await until("!document.querySelector('.template-gallery').hidden",'template gallery');
  await evaluate("(()=>{const s=document.querySelector('.template-gallery input');s.value='بيانات';s.dispatchEvent(new Event('input',{bubbles:true}))})()");assert.equal(await evaluate("document.querySelectorAll('.template-gallery .template-card').length"),1);await screenshot('continuation-template-gallery-320.png');
  // Internal note and inbox context are exercised only on synthetic website conversations.
  await evaluate("document.querySelector('[data-page=leads]').click()");await until("Boolean(document.querySelector('.crm-lead-card'))",'CRM for note');await click('افتح المحادثة','.crm-lead-card button');await until("!document.getElementById('thread-tools').hidden",'inbox selected');
@@ -155,10 +163,11 @@ try{
  await click('ملاحظة داخلية');await evaluate("(()=>{const f=document.querySelector('.inbox-note-form');f.querySelector('textarea').value='ملاحظة فريق تجريبية لا تُرسل';f.requestSubmit()})()");await until("document.getElementById('thread-messages').textContent.includes('ملاحظة فريق تجريبية لا تُرسل')",'internal note retained');
 
  const selectedConversation=await evaluate("document.querySelector('#inbox-list .thread.active').dataset.conversationId");
- await evaluate("(()=>{const t=document.getElementById('reply-form').elements.body;t.value='مسودة داخل المتصفح لم تُرسل';t.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('#inbox-list .thread:not(.active)').click()})()");
+ await evaluate("(()=>{const t=document.getElementById('reply-form').elements.body;t.value='مسودة داخل المتصفح لم تُرسل';t.dispatchEvent(new Event('input',{bubbles:true}))})()");
+ await click('العودة للمحادثات');await evaluate("document.querySelector('#inbox-list .thread:not(.active)').click()");
  await until(`document.querySelector('#inbox-list .thread.active')?.dataset.conversationId!==${JSON.stringify(selectedConversation)}`,'switch conversation without sending');
- await evaluate(`document.querySelector('[data-conversation-id="${selectedConversation}"]').click()`);await until("document.getElementById('reply-form').elements.body.value==='مسودة داخل المتصفح لم تُرسل'",'unsent reply retained for correct contact');
- await screenshot('continuation-inbox-note-320.png');await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});await screenshot('continuation-inbox-context-1366.png');
+ await click('العودة للمحادثات');await evaluate(`document.querySelector('[data-conversation-id="${selectedConversation}"]').click()`);await until("document.getElementById('reply-form').elements.body.value==='مسودة داخل المتصفح لم تُرسل'",'unsent reply retained for correct contact');
+ await screenshot('continuation-inbox-note-320.png');await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});await evaluate('window.scrollTo(0,0)');await screenshot('continuation-inbox-context-1366.png');
  await evaluate("document.querySelector('[data-page=channels]').click()");await until("Boolean(document.querySelector('.channel-directory'))",'channel readiness directory');await screenshot('continuation-channel-directory-1366.png');
  assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'channel directory overflow');
  console.log('PASS novice wizard/back/review/no-write, searchable gallery, same-definition simple/canvas branch editing, mobile steps, retained internal inbox note, contact context and truthful channel directory');
