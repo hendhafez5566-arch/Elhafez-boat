@@ -1,3 +1,7 @@
+## 2026-10-19 — Deep audit UI delivery handover
+
+Branch `fix/deep-ux-product-rebuild-2026-10-19`; owner review before any integration into `feat/stage0-foundation`. Changed UI files: `vessel.js`, `vessel.css`, `vessel-pages.js`, `flow-builder.js`, `flow-builder.css`, `app.js`, `extensions.js`, `advanced-ui.js`. Full QA/VIS gap register: `docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md`. No production deploy. Verify final CI and independently reproduce both audit packs in a disposable tenant.
+
 ## 2026-10-19 — Isolated UI/UX real-user audit remediation (DRAFT, not deployed)
 
 - Audit basis: Cloud Browser checked 21 screens, with 20 documented issues and 98 scenarios (51 Pass, 17 Fail, 30 Blocked); neither mobile testing nor live Meta acceptance was completed by audit.

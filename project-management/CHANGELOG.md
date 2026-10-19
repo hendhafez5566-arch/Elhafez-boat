@@ -1,3 +1,7 @@
+## 2026-10-19 — Source-only deep UI/UX rebuild from two audit packs
+
+Professional workspace hierarchy and five-category navigation, compact dashboard/page titles, on-demand catalog/FAQ/campaign forms, protected BUTTONS/LIST conversions, basic builder mode, readable preview/inspector, notification dismissals, form/translation fixes and responsive CSS. Separate branch, no merge/production deploy. Detailed QA/VIS register `docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md`.
+
 ## 2026-10-19 — Isolated UI/UX real-user audit remediation (DRAFT, not deployed)
 
 - Audit basis: Cloud Browser checked 21 screens, with 20 documented issues and 98 scenarios (51 Pass, 17 Fail, 30 Blocked); neither mobile testing nor live Meta acceptance was completed by audit.
