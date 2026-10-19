@@ -219,10 +219,10 @@ try{
  await evaluate("(()=>{const f=document.getElementById('catalog-form');f.elements.description.value='Edited through browser';f.requestSubmit()})()");
  await until(`(${findCard})?.textContent.includes('Edited through browser')`,'catalog edit saved');
  await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='اعتماد ونشر').click()`);
- await until(`(${findCard})?.textContent.includes('PUBLISHED')`,'catalog published');
+ await until(`(${findCard})?.querySelector('.catalog-state')?.dataset.status==='PUBLISHED'`,'catalog published with real status');
  await screenshot('catalog-crud-published.png');
- await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='أرشفة').click()`);
- await until(`(${findCard})?.textContent.includes('ARCHIVED')`,'catalog archived');
+ await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='أرشفة العنصر').click()`);
+ await until(`(${findCard})?.querySelector('.catalog-state')?.dataset.status==='ARCHIVED'`,'catalog archived with real status');
  await evaluate("document.querySelector('[data-page=flow-builder]').click()");
  await until("Boolean(document.querySelector('.canvas-node'))",'editable canvas');
  await evaluate("(()=>{const input=document.getElementById('builder-name');input.value='Browser saved publication';input.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('builder-save').click()})()");
@@ -278,6 +278,12 @@ try{
  await writeFile('acceptance-evidence/browser-pages.json',JSON.stringify(pageEvidence,null,2));
  assert.equal(network.some(n=>n.status>=500),false,'UI must not encounter server errors');
  console.log('PASS '+pageEvidence.length+' owner page/viewport visits with named buttons (screen loading only; not all actions/forms)');
+ // Security and UX: browser refresh restores a still-valid session, without stored bearer secrets.
+ await send('Page.navigate',{url:base+'/'});
+ await until("Boolean(document.getElementById('app')&&!document.getElementById('app').hidden)",'session restored after reload');
+ assert.equal(await evaluate("document.getElementById('login').hidden"),true,'valid dashboard session persists after reload');
+ assert.equal(await evaluate("Boolean(localStorage.getItem('eb_session')||sessionStorage.getItem('eb_session'))"),false,'bearer credentials must not be persisted in web storage');
+ console.log('PASS browser session reload via server-managed cookie; no bearer token stored in browser storage');
  await evaluate("document.getElementById('logout').click()");
  await until("Boolean(document.getElementById('login')&&!document.getElementById('login').hidden)",'logout/login screen');
  assert.equal(await evaluate("document.getElementById('app').hidden"),true);
