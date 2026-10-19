@@ -109,6 +109,38 @@ export function initVesselPages(){
    details.append(el('summary','','أدوات المطور — مفاتيح API'),developerPanel);
    integrations.append(details);
  }
+ // Separate WhatsApp template registration, consent and send into deliberate tasks.
+ const templates=$('templates'),templateGrid=templates?.querySelector(':scope > .grid');
+ if(templateGrid&&templateGrid.children.length>=2){
+   const templatePanel=templateGrid.children[0],consentPanel=templateGrid.children[1];
+   const sendForm=$('template-send'),sendTitle=sendForm?.previousElementSibling;
+   const sendPanel=el('section','panel vessel-template-send-panel');
+   if(sendTitle)sendPanel.append(sendTitle);
+   if(sendForm)sendPanel.append(sendForm);
+   templateGrid.append(sendPanel);
+   templateGrid.classList.add('vessel-template-grid');
+   const tabs=el('div','vessel-tabs');tabs.setAttribute('role','tablist');
+   const panes=[templatePanel,consentPanel,sendPanel],labels=['القوالب المعتمدة','موافقات العملاء','إرسال قالب'];
+   const selectTab=index=>{
+     panes.forEach((pane,i)=>{pane.hidden=i!==index});
+     [...tabs.children].forEach((tab,i)=>{tab.setAttribute('aria-selected',String(i===index));tab.tabIndex=i===index?0:-1;tab.classList.toggle('active',i===index)});
+   };
+   labels.forEach((label,i)=>{const tab=el('button','vessel-tab',label);tab.type='button';tab.setAttribute('role','tab');tab.onclick=()=>selectTab(i);tabs.append(tab)});
+   templateGrid.before(tabs);selectTab(0);
+ }
+ // Operational usage and raw logs are different tasks; fetch behavior stays the same.
+ const usage=$('usage'),usageSummary=$('usage-summary'),runtimeJobs=$('runtime-jobs');
+ if(usage&&usageSummary&&runtimeJobs){
+   const tabs=el('div','vessel-tabs');tabs.setAttribute('role','tablist');
+   const contents=[usageSummary,runtimeJobs];
+   ['الاستهلاك والحدود','سجل التشغيل'].forEach((title,index)=>{
+     const b=el('button','vessel-tab',title);b.type='button';b.setAttribute('role','tab');
+     b.onclick=()=>{contents.forEach((section,i)=>section.hidden=i!==index);[...tabs.children].forEach((tab,i)=>{tab.classList.toggle('active',i===index);tab.setAttribute('aria-selected',String(i===index))})};
+     tabs.append(b);
+   });
+   runtimeJobs.hidden=true;tabs.firstChild.classList.add('active');tabs.firstChild.setAttribute('aria-selected','true');
+   tabs.lastChild.setAttribute('aria-selected','false');usageSummary.before(tabs);
+ }
  for(const id of ['settings','team','templates','triggers','website','campaigns','ai-settings','integrations']){
   $(id)?.querySelector(':scope > .grid')?.classList.add('vessel-subpage-grid');
  }

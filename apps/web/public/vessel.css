@@ -341,3 +341,32 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
 .builder-conflict-dialog::backdrop{background:#1013269e}
 .builder-conflict-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
 .builder-conflict-actions button{min-height:42px}
+
+/* UX audit closure: contextual tabs, separated privacy controls and compact wizard. */
+#app .vessel-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 15px;padding:7px;background:#f1f0f9;border:1px solid #e1e0ed;border-radius:13px}
+#app .vessel-tabs .vessel-tab{background:transparent;color:#4d5571;border:1px solid transparent;border-radius:10px;min-height:42px;padding:9px 15px;font-size:14px;font-weight:750}
+#app .vessel-tabs .vessel-tab.active,#app .vessel-tabs .vessel-tab[aria-selected="true"]{background:white;color:#493bab;border-color:#dcd8fb;box-shadow:0 4px 10px #34285e13}
+#app .vessel-template-grid{grid-template-columns:minmax(0,1fr)!important}
+#app .vessel-template-grid>.panel{max-width:900px;min-width:0;width:100%}
+#app .vessel-template-grid>.panel[hidden],#app #runtime-jobs[hidden],#app #usage-summary[hidden]{display:none!important}
+#app #privacy-tools{display:grid;gap:16px}
+#app .privacy-policy-panel,#app .privacy-customer-panel{background:#fff;border:1px solid #e1e5f0;border-radius:14px;padding:20px;max-width:900px}
+#app .privacy-policy-panel>h3,#app .privacy-customer-panel>h3{font-size:18px;margin:0 0 12px;color:#27304e}
+#app .privacy-customer-panel{border-inline-start:4px solid #ba4b57}
+#app .privacy-policy-panel form,#app .privacy-customer-panel form{display:grid;gap:10px}
+#app #lead-list .boat-filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+#app #lead-list .boat-filterbar input{flex:1 1 260px;min-width:0}
+#app #lead-list .boat-filterbar select{flex:0 1 190px;width:auto;max-width:100%}
+#app #lead-list .boat-filterbar button{min-height:44px;white-space:nowrap}
+#app .vessel-page-analytics #bot-insights>.metrics .metric{min-height:94px;padding:15px}
+#app .vessel-page-analytics #bot-insights>.metrics .metric strong{font-size:26px}
+#flow-builder .boat-guide-panel:not([hidden]){max-height:min(690px,calc(100dvh - 178px));overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column}
+#flow-builder .boat-guide-progress{position:sticky;top:0;z-index:3;background:white;padding-top:12px;padding-bottom:12px}
+#flow-builder .boat-guide-actions{position:sticky;bottom:0;z-index:3;background:white;padding:12px 5px;border-top:1px solid #e2e5f0}
+@media(max-width:760px){
+ #app .vessel-tabs{overflow-x:auto;flex-wrap:nowrap}
+ #app .vessel-tabs .vessel-tab{white-space:nowrap;padding:8px 11px}
+ #app .privacy-policy-panel,#app .privacy-customer-panel{padding:12px}
+ #app #lead-list .boat-filterbar{display:grid;grid-template-columns:1fr}
+ #app #lead-list .boat-filterbar select,#app #lead-list .boat-filterbar button{width:100%;max-width:none}
+}

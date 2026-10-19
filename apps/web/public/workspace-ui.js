@@ -24,7 +24,7 @@ export function initWorkspace(ctx){
   const search=el('input');search.placeholder='ابحث باسم العميل أو هاتفه أو الاحتياج';search.setAttribute('aria-label','بحث العملاء');
   const order=el('select');order.setAttribute('aria-label','ترتيب العملاء');
   for(const [value,title] of [['priority','الأعلى أولوية'],['recent','الأحدث'],['due','الأقرب متابعة']]){const o=el('option',title);o.value=value;order.append(o)}
-  host.append(summary,filterBar(search,filter,order));
+  host.append(filterBar(search,filter,order,$('leads-refresh')),summary);
   const results=el('div',undefined,'cards');host.append(results);
   async function showTasks(container,lead){
    container.replaceChildren();const tasks=await api('/leads/'+lead.id+'/tasks');
@@ -63,7 +63,11 @@ export function initWorkspace(ctx){
     order.value==='due'?(a.next_followup_at?new Date(a.next_followup_at).getTime():Infinity)-(b.next_followup_at?new Date(b.next_followup_at).getTime():Infinity):
     Number(b.priorityScore||0)-Number(a.priorityScore||0));
    for(const l of found){
-    const fields=Object.entries(l.custom_fields||{}).map(([k,v])=>k+': '+String(v)).join(' • ');
+    const friendly={customer_need:'الاحتياج',customer_name:'الاسم',customer_phone:'الهاتف',interest:'الاهتمام',customer_email:'البريد',customer_city:'المدينة'};
+    const fields=Object.entries(l.custom_fields||{}).map(([k,v])=>{
+      const title=friendly[k]||(k.startsWith('choice_')?'اختيار العميل':k.replace(/[_@-]/g,' '));
+      return title+': '+String(v);
+    }).join(' • ');
     const stageNames={READY_FOR_AGENT:'جاهز للموظف',INTERESTED:'مهتم',CONTACTED:'تم التواصل',CLOSED:'مغلق'};
     const c=el('article',undefined,'card crm-lead-card vessel-lead-card');
      const head=el('header',undefined,'vessel-lead-head');
