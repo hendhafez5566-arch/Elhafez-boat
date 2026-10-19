@@ -316,3 +316,9 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
  #flow-builder .builder-linear-mode .builder-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
  #flow-builder .builder-linear-mode #builder-nodes{grid-template-columns:1fr}
 }
+
+/* Enforce semantic hidden state over grid/flex presentation and role-aware controls. */
+#app[hidden],#app [hidden]{display:none!important}
+#app .vessel-page-ai-settings[hidden]{display:none!important}
+#app .vessel-menu-section>[hidden]{display:none!important}
+#app .vessel-rail [hidden]{display:none!important}
