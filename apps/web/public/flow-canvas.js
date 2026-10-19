@@ -12,7 +12,16 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
   const transform=()=>{stage.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`};
   const mk=(tag,text,klass)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(klass)n.className=klass;return n};
   const btn=(text,klass,action)=>{const b=mk('button',text,klass);b.type='button';b.onclick=action;return b};
-  const positionsFor=f=>{const missing=f.nodes.some(n=>!f.layout?.[n.id]);const proposed=missing?arrangeFlow(f):null;return Object.fromEntries(f.nodes.map(n=>[n.id,f.layout?.[n.id]||proposed[n.id]]))};
+  const positionsFor=f=>{
+    const proposed=arrangeFlow(f),placed=[],positions=Object.create(null);
+    for(const n of f.nodes){
+      const point=f.layout?.[n.id]||proposed[n.id];
+      // Recover visually from colliding older layouts without overwriting a user's saved draft.
+      const safe=placeWithoutOverlap(point,n,placed,56);
+      positions[n.id]=safe;placed.push({...safe,...nodeFootprint(n)});
+    }
+    return positions;
+  };
   function highlight(id){active=id;stage.querySelectorAll('.canvas-node').forEach(n=>n.classList.toggle('selected',n.dataset.nodeId===id));
     svg.querySelectorAll('.canvas-edge').forEach(n=>n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id));
   }
@@ -152,12 +161,13 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
   function fit(){
     const f=getFlow(),points=Object.values(positionsFor(f));
     if(!points.length)return reset();
-    const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...points.map(p=>p.x))+320,bottom=Math.max(...points.map(p=>p.y))+275;
+    const nodes=f.nodes,positions=positionsFor(f);
+    const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+nodeFootprint(n).width)),bottom=Math.max(...nodes.map(n=>positions[n.id].y+nodeFootprint(n).height));
     const rect=host.getBoundingClientRect();zoom=Math.max(.3,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
     pan={x:(rect.width-(right-left)*zoom)/2-left*zoom,y:Math.max(25,(rect.height-(bottom-top)*zoom)/2-top*zoom)};transform();
   }
   function reset(){zoom=1;pan={x:36,y:36};transform()}
-  function autoLayout(){const f=getFlow();f.layout=Object.assign(Object.create(null),arrangeFlow(f));changed();draw();fit()}
+  function autoLayout(){const f=getFlow();f.layout=Object.assign(Object.create(null),arrangeFlow(f));changed();draw();focus(f.startId)}
   host.addEventListener('wheel',e=>{e.preventDefault();const before=zoom;zoomTo(zoom*(e.deltaY>0?.9:1.1));const r=host.getBoundingClientRect();const x=e.clientX-r.left,y=e.clientY-r.top;pan={x:x-(x-pan.x)*zoom/before,y:y-(y-pan.y)*zoom/before};transform()},{passive:false});
   host.addEventListener('pointerdown',e=>{
     if(e.button!==0||!(e.target===host||e.target===stage||e.target===svg))return;

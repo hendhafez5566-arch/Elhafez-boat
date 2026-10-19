@@ -1,4 +1,5 @@
 import {createCanvas} from './flow-canvas.js';
+import {graphOutputs} from './flow-geometry.js';
 import {mountGuidedWizard} from './flow-onboarding.js';
 /** Company-specific visual block editor, no industry assumptions or customer data. */
 export function initFlowBuilder({state,api,notify,execute}){
@@ -214,7 +215,29 @@ export function initFlowBuilder({state,api,notify,execute}){
  phoneShell.append(phoneBar,simulator);
  simulatorDialog.append(simulatorHead,phoneShell);document.body.append(simulatorDialog);
  simulatorDialog.addEventListener('click',e=>{if(e.target===simulatorDialog)simulatorDialog.close()});
- function showSimulator(){if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');resetPreview()}
+ function previewProblems(){
+    const nodes=new Map(flow.nodes.map(n=>[n.id,n])),visited=new Set(),pending=[flow.startId],broken=[];
+    while(pending.length){
+      const id=pending.shift();if(visited.has(id))continue;
+      const node=nodes.get(id);if(!node){broken.push(id);continue}
+      visited.add(id);
+      for(const edge of graphOutputs(node)){if(!nodes.has(edge.to))broken.push(node.id);else pending.push(edge.to)}
+    }
+    return {broken:[...new Set(broken)],disconnected:flow.nodes.filter(n=>!visited.has(n.id)).map(n=>n.id)};
+  }
+  function showSimulator(){
+    if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');
+    const problems=previewProblems();
+    if(!problems.broken.length&&!problems.disconnected.length){resetPreview();return}
+    $('builder-preview').replaceChildren(el('p','المسار يحتاج إصلاحًا قبل التجربة. افتح الخطوة المبيّنة ووصلها بمسار المحادثة.','builder-preview-warning'));
+    const host=$('builder-preview-options');host.replaceChildren();
+    for(const id of [...problems.broken,...problems.disconnected].slice(0,12)){
+      const n=flow.nodes.find(x=>x.id===id);
+      host.append(button((problems.broken.includes(id)?'رابط غير صالح: ':'خطوة غير متصلة: ')+(n?.text||types[n?.type]||id).slice(0,65),()=>{
+        simulatorDialog.close();selected=id;renderAll();canvas.focus(id);
+      },'secondary'));
+    }
+  }
  const picker=el('dialog',undefined,'builder-component-dialog'),pickerHead=el('header',undefined,'builder-dialog-header');
  pickerHead.append(el('strong','أضف الخطوة التالية'),button('إغلاق ×',()=>picker.close()));
  const pickerSearch=el('input');pickerSearch.type='search';pickerSearch.placeholder='ابحث عن رسالة، زر، قائمة، شرط...';pickerSearch.setAttribute('aria-label','البحث عن المكونات');
@@ -437,6 +460,22 @@ export function initFlowBuilder({state,api,notify,execute}){
    const item=el('div',message,'builder-bubble '+side);$('builder-preview').append(item);
  }
  let previewBusy=false;
+  const isPhoneField=field=>/(^|_)phone$|^customer_phone$/.test(String(field||''));
+  const normalizePhone=value=>String(value||'').replace(/[٠-٩۰-۹]/g,ch=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(ch)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(ch):'۰۱۲۳۴۵۶۷۸۹'.indexOf(ch))).trim();
+  const phoneOk=value=>/^\+?[0-9]{8,15}$/.test(normalizePhone(value));
+  function previewEmployee(){
+    $('builder-preview-options').replaceChildren();bubble('تم تحويل المحادثة إلى موظف. هذه محاكاة فقط؛ لم تُرسل أي رسالة خارجية.');
+    $('builder-preview-options').append(button('بدء المحادثة من الأول',resetPreview,'secondary'));
+  }
+  function inputWithHandoff(form,field){
+    const input=form.querySelector('input');
+    if(isPhoneField(field)){
+      input.type='tel';input.inputMode='tel';input.placeholder='مثال: 01012345678 أو +201012345678';
+      input.addEventListener('input',()=>input.setCustomValidity(''));
+      form.addEventListener('submit',event=>{if(!phoneOk(input.value)){event.preventDefault();event.stopImmediatePropagation();input.setCustomValidity('اكتب رقم هاتف صحيح من 8 إلى 15 رقمًا بدون حروف');input.reportValidity()}},true);
+    }
+    $('builder-preview-options').append(button('التحدث مع موظف',previewEmployee,'secondary'));
+  }
  async function serverPreview(input){
   if(previewBusy)return;previewBusy=true;
   try{
@@ -452,7 +491,7 @@ export function initFlowBuilder({state,api,notify,execute}){
    if(r.waiting){bubble('انتظار '+r.waiting.seconds+' ثانية — معاينة فقط');$('builder-preview-options').append(button('استكمال التأخير في المعاينة',()=>{preview.at=r.waiting.next;execute(()=>serverPreview())},'secondary'))}
    const at=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);
    if(at?.type==='INPUT'||at?.type==='QUESTION'){
-    const form=el('form',undefined,'builder-preview-input'),inp=el('input'),send=el('button','إرسال','primary');inp.required=true;send.type='submit';form.append(inp,send);form.onsubmit=e=>{e.preventDefault();execute(()=>serverPreview(inp.value.trim()))};$('builder-preview-options').append(form);
+    const form=el('form',undefined,'builder-preview-input'),inp=el('input'),send=el('button','إرسال','primary');inp.required=true;send.type='submit';form.append(inp,send);form.onsubmit=e=>{e.preventDefault();execute(()=>serverPreview(isPhoneField(at.field)?normalizePhone(inp.value):inp.value.trim()))};$('builder-preview-options').append(form);inputWithHandoff(form,at.field);
    }
   }catch(e){notify(e.message,'error')}finally{previewBusy=false}
  }
@@ -464,7 +503,8 @@ export function initFlowBuilder({state,api,notify,execute}){
    const current=map.get(id);
    if(preview.at&&current?.type==='INPUT'){
      if(!input)return;
-     preview.answers[current.field]=input;bubble(input,'customer');id=current.next;
+     if(isPhoneField(current.field)&&!phoneOk(input)){bubble('اكتب رقم هاتف صحيح من 8 إلى 15 رقمًا بدون حروف');return}
+      preview.answers[current.field]=isPhoneField(current.field)?normalizePhone(input):input;bubble(input,'customer');id=current.next;
    }else if(preview.at&&(current?.type==='BUTTONS'||current?.type==='LIST')){
      if(!input)return;
      const choice=current.choices.find(x=>x.id===input);
@@ -484,7 +524,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      }
      if(node.type==='INPUT'){
        bubble(node.text);const form=el('form',undefined,'builder-preview-input');const inp=el('input');inp.required=true;inp.placeholder='رد العميل';
-       const send=button('إرسال',()=>{if(!inp.value.trim())return;previewAdvance(inp.value.trim())},'primary');form.onsubmit=e=>{e.preventDefault();send.click()};form.append(inp,send);$('builder-preview-options').append(form);preview.at=id;return;
+       const send=button('إرسال',()=>{if(!inp.value.trim())return;previewAdvance(inp.value.trim())},'primary');form.onsubmit=e=>{e.preventDefault();send.click()};form.append(inp,send);$('builder-preview-options').append(form);inputWithHandoff(form,node.field);preview.at=id;return;
      }
      if(node.type==='BUTTONS'||node.type==='LIST'){
        bubble(node.text);for(const c of node.choices)$('builder-preview-options').append(button(c.title,()=>previewAdvance(c.id),'builder-option'));

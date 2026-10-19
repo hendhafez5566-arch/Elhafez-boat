@@ -5,8 +5,9 @@ export const GAP=28;
 export function nodeFootprint(node={}){
  const options=Array.isArray(node.choices)?node.choices.length:0;
  const descriptions=Array.isArray(node.choices)?node.choices.filter(c=>c.description).length:0;
- const lines=Math.min(8,Math.ceil(String(node.text||'').length/36));
- return {width:NODE_WIDTH,height:Math.max(228,168+Math.max(1,lines)*20+options*47+descriptions*21)};
+ const lines=Math.min(15,Math.ceil(String(node.text||'').length/26));
+ // Reserve space for wrapping Arabic choices and real connector controls.
+ return {width:NODE_WIDTH,height:Math.max(260,205+Math.max(1,lines)*25+options*57+descriptions*25)};
 }
 export function collides(a,b,gap=GAP){
  return a.x < b.x+b.width+gap && a.x+a.width+gap > b.x &&
@@ -38,31 +39,32 @@ export function graphOutputs(node={}){
  return 'next'in node?[{key:'next',to:node.next,label:'التالي'}]:[];
 }
 export function arrangeFlow(flow){
- const byId=new Map(flow.nodes.map(n=>[n.id,n]));
- const depth=new Map([[flow.startId,0]]),queue=[flow.startId];
- // Breadth-first rank: shortest distance protects cycles from infinite traversal.
- for(let index=0;index<queue.length;index++){
-  const id=queue[index];for(const e of graphOutputs(byId.get(id)||{}))
-   if(byId.has(e.to)&&!depth.has(e.to)){depth.set(e.to,Math.min(22,depth.get(id)+1));queue.push(e.to)}
+ const byId=new Map(flow.nodes.map(node=>[node.id,node]));
+ const rank=new Map([[flow.startId,0]]),queue=[flow.startId];
+ // Arrange successive conversation stages vertically, so an extended flow stays readable.
+ for(let i=0;i<queue.length;i++){
+  const id=queue[i];
+  for(const edge of graphOutputs(byId.get(id)||{}))
+   if(byId.has(edge.to)&&!rank.has(edge.to)){
+    rank.set(edge.to,Math.min(22,rank.get(id)+1));queue.push(edge.to);
+   }
  }
- for(const n of flow.nodes)if(!depth.has(n.id))depth.set(n.id,Math.min(22,Math.max(0,...depth.values())+1));
- const layers=new Map();for(const n of flow.nodes){const k=depth.get(n.id);if(!layers.has(k))layers.set(k,[]);layers.get(k).push(n.id)}
- // Order each layer by upstream sibling position to reduce line crossings.
- const placed=new Map(),result={};
- for(const [layer,ids] of [...layers].sort((a,b)=>a[0]-b[0])){
-  ids.sort((a,b)=>{
-   const parentScore=id=>{const positions=[];
-    for(const parent of flow.nodes)if(graphOutputs(parent).some(e=>e.to===id)&&placed.has(parent.id))positions.push(placed.get(parent.id));
-    return positions.length?positions.reduce((x,y)=>x+y,0)/positions.length:1e6};
-   return parentScore(a)-parentScore(b)||flow.nodes.findIndex(n=>n.id===a)-flow.nodes.findIndex(n=>n.id===b);
-  });
-  ids.forEach((id,index)=>{
-   const node=byId.get(id),bucket=Math.floor(index/19),slot=index%19;
-   const x=Math.min(MAX_POSITION,64+layer*340+bucket*330),y=70+slot*455;
-   const occupied=Object.entries(result).map(([nid,p])=>({...p,...nodeFootprint(byId.get(nid))}));
-   const safe=placeWithoutOverlap({x,y},node,occupied);
-   result[id]=safe;placed.set(id,safe.y);
-  });
+ let orphanRank=Math.max(0,...rank.values())+1;
+ for(const node of flow.nodes)if(!rank.has(node.id))rank.set(node.id,orphanRank);
+ const layers=new Map();
+ for(const node of flow.nodes){const level=rank.get(node.id);if(!layers.has(level))layers.set(level,[]);layers.get(level).push(node)}
+ const result=Object.create(null),occupied=[];let y=70;
+ for(const [,nodes] of [...layers].sort((a,b)=>a[0]-b[0])){
+  // Maximum four cards per row. The tallest rendered footprint governs the row gap.
+  for(let index=0;index<nodes.length;index+=4){
+   const row=nodes.slice(index,index+4),height=Math.max(...row.map(node=>nodeFootprint(node).height));
+   for(let column=0;column<row.length;column++){
+    const node=row[column],suggested={x:64+column*(NODE_WIDTH+105),y:Math.min(MAX_POSITION,y)};
+    const position=placeWithoutOverlap(suggested,node,occupied,56);
+    result[node.id]=position;occupied.push({...position,...nodeFootprint(node)});
+   }
+   y+=height+112;
+  }
  }
  return result;
 }
