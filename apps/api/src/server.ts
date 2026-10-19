@@ -33,6 +33,7 @@ import { platformLogin, platformAuth, platformLogout, platformTenants, platformP
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
+import { sessionCookie, sessionBearer, requireCookieCsrf } from './session-cookie.js';
 import { HttpFailure, allow, withTenantTransaction, type SqlPool, type SqlClient } from './services.js';
 import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, getSummary } from './sales.js';
 import { teamMembers } from './team-directory.js';
@@ -82,7 +83,9 @@ const server=createServer(async(req,res)=>{
     }
     if(req.method==='POST'&&pathname==='/api/v1/auth/login'){
       await throttle(req);
-      return json(res,200,await login(pool,await body(req)));
+      const session=await login(pool,await body(req));
+       res.setHeader('set-cookie',sessionCookie(session.token,{secure:process.env.NODE_ENV==='production'}));
+       return json(res,200,session);
     }
     // Public Meta webhook: signature validation precedes JSON parsing or database writes.
     if(pathname==='/api/v1/whatsapp/webhook'&&req.method==='GET'){
@@ -115,8 +118,10 @@ const server=createServer(async(req,res)=>{
       if(req.method==='PATCH'&&sub)return json(res,200,await updateSubscription(platformOwnerId,sub[1],await body(req)));
       return json(res,404,{error:'Not found'});
     }
-    const actor=req.headers.authorization?.startsWith('Bearer ebk_')?await authenticateAccessKey(pool,req.headers.authorization,pathname,req.method||'GET'):await authenticate(pool,req.headers.authorization);
-    await distributedLimit(pool,'api:'+actor.tenantId+':'+actor.userId+':'+(req.headers.authorization?.startsWith('Bearer ebk_')?'key':'session'),600,60);
+    const auth=sessionBearer(req.headers.authorization,req.headers.cookie);
+     if(!req.headers.authorization)requireCookieCsrf(req.method||'GET',req.headers['x-boat-csrf'],Boolean(auth));
+     const actor=auth?.startsWith('Bearer ebk_')?await authenticateAccessKey(pool,auth,pathname,req.method||'GET'):await authenticate(pool,auth);
+    await distributedLimit(pool,'api:'+actor.tenantId+':'+actor.userId+':'+(auth?.startsWith('Bearer ebk_')?'key':'session'),600,60);
     // Block mutating requests for expired or suspended subscriptions (reads remain available for export/support).
     // This is a business entitlement check, separate from tenant RLS and staff-role authorization.
     if(req.method&& !['GET','HEAD','OPTIONS'].includes(req.method) && pathname!=='/api/v1/auth/logout'&&!/^\/api\/v1\/privacy\//.test(pathname)){
@@ -129,7 +134,7 @@ const server=createServer(async(req,res)=>{
         throw new HttpFailure(403,'Company subscription inactive or expired; only read-only access is available');
     }
     if(req.method==='GET'&&pathname==='/api/v1/auth/me')return json(res,200,actor);
-    if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,req.headers.authorization);return json(res,200,{ok:true});}
+    if(req.method==='POST'&&pathname==='/api/v1/auth/logout'){await logout(pool,auth);res.setHeader('set-cookie',sessionCookie('',{secure:process.env.NODE_ENV==='production',clear:true}));return json(res,200,{ok:true});}
     if(/^\/api\/v1\/(programs|bookings|departures|offers|bot)(\/|$)/.test(pathname))return json(res,410,{error:'Legacy tourism endpoints retired. Use /catalog and /flows.'});
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);

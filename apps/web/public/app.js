@@ -33,7 +33,7 @@ function notify(message,type='success'){
  close.onclick=()=>{n.hidden=true;n.replaceChildren()};n.append(close);
 }
 async function execute(fn){try{return await fn()}catch(e){notify(e.message||'تعذر إتمام العملية','error')}}
-async function api(path,{method='GET',body}={}){const token=state.token;const r=await fetch('/api/v1'+path,{method,headers:{...(token?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store'});const d=await r.json().catch(()=>({error:'تعذر قراءة رد الخادم'}));if(token!==state.token)throw new Error('انتهت الجلسة السابقة');if(!r.ok){const e=new Error(d.error||'تعذر الطلب');e.status=r.status;throw e}return d}
+async function api(path,{method='GET',body}={}){const token=state.token;const r=await fetch('/api/v1'+path,{method,headers:{...(/^[A-Za-z0-9_-]{43}$/.test(token)?{authorization:'Bearer '+token}:{}),...(body?{'content-type':'application/json'}:{}),'x-boat-csrf':'1'},body:body?JSON.stringify(body):undefined,cache:'no-store'});const d=await r.json().catch(()=>({error:'تعذر قراءة رد الخادم'}));if(token!==state.token)throw new Error('انتهت الجلسة السابقة');if(!r.ok){const e=new Error(d.error||'تعذر الطلب');e.status=r.status;throw e}return d}
 function button(text,action,klass='secondary'){const b=el('button',text,klass);b.type='button';b.onclick=()=>execute(action);return b}
 function card(title,text){const c=el('article',undefined,'card');c.append(el('strong',title));if(text)c.append(el('p',text));return c}
 function bind(id,action){$(id).onsubmit=e=>{e.preventDefault();const f=e.currentTarget,submit=f.querySelector('button.primary,button.secondary');if(submit)submit.disabled=true;execute(async()=>{try{await action(Object.fromEntries(new FormData(f)),f)}finally{if(submit)submit.disabled=false}})}}
@@ -176,9 +176,24 @@ const closeNotifications=()=>{notificationPanel.hidden=true;$('notifications').s
 $('notifications').onclick=()=>{const open=notificationPanel.hidden;notificationPanel.hidden=!open;$('notifications').setAttribute('aria-expanded',String(open));if(open)execute(refreshNotifications)};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!notificationPanel.hidden){closeNotifications();$('notifications').focus()}});
 document.addEventListener('click',event=>{if(!notificationPanel.hidden&&!notificationPanel.contains(event.target)&&!$('notifications').contains(event.target))closeNotifications()});
-bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'POST',body:d});state.token=session.token;state.role=session.role;const me=await api('/auth/me');state.userId=me.userId;state.tenantId=me.tenantId;$('company-name').textContent=d.tenantSlug;f.reset();state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());$('login').hidden=true;$('app').hidden=false;await choose('overview');await refreshNotifications()});
-$('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;if(state.token)await api('/auth/logout',{method:'POST'}).catch(()=>{});state.token='';state.userId='';state.tenantId='';state.contacts=[];state.templateCatalog=[];state.team=[];ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
+bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'POST',body:d});state.token=session.token;state.role=session.role;const me=await api('/auth/me');state.userId=me.userId;state.tenantId=me.tenantId;$('company-name').textContent=d.tenantSlug;sessionStorage.setItem('eb-tenant-label',d.tenantSlug);f.reset();state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());$('login').hidden=true;$('app').hidden=false;await choose('overview');await refreshNotifications()});
+$('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;await api('/auth/logout',{method:'POST'}).catch(()=>{});sessionStorage.removeItem('eb-tenant-label');state.token='';state.userId='';state.tenantId='';state.contacts=[];state.templateCatalog=[];state.team=[];ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
 document.querySelectorAll('[data-page]').forEach(n=>n.onclick=()=>choose(n.dataset.page));document.querySelectorAll('[data-goto]').forEach(n=>n.onclick=()=>choose(n.dataset.goto));
 initVesselWorkspace();
 initVesselPages();
+// Restore a valid same-origin server session without persisting bearer tokens in web storage.
+void (async()=>{
+  try{
+    const me=await api('/auth/me');
+    if(state.token)return;
+    state.token='cookie-session';state.role=me.role;state.userId=me.userId;state.tenantId=me.tenantId;
+    $('company-name').textContent=sessionStorage.getItem('eb-tenant-label')||'مساحة شركتك';
+    state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];
+    document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());
+    $('login').hidden=true;$('app').hidden=false;
+    await choose('overview');await refreshNotifications();
+  }catch{
+    if(state.token==='cookie-session'){state.token='';$('app').hidden=true;$('login').hidden=false}
+  }
+})();
 setInterval(()=>{if(state.token&&!document.hidden)refreshNotifications().catch(()=>{})},20000);
