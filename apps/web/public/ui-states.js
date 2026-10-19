@@ -10,7 +10,7 @@ export function emptyState(host,title,description=''){
  host.append(section);return section;
 }
 export function filterBar(...controls){
- const bar=document.createElement('div');bar.className='boat-filterbar';bar.setAttribute('role','group');bar.setAttribute('aria-label','أدوات البحث والتصفية');bar.append(...controls);return bar;
+ const bar=document.createElement('div');bar.className='boat-filterbar';bar.setAttribute('role','group');bar.setAttribute('aria-label','أدوات البحث والتصفية');bar.append(...controls.filter(Boolean));return bar;
 }
 export function statusChip(message,tone='neutral'){
  const chip=document.createElement('span');chip.className='boat-status boat-status-'+tone;chip.textContent=message;return chip;

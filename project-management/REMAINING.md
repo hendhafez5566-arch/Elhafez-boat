@@ -1,3 +1,20 @@
+## Remaining after second 2026-10-19 UI/UX implementation pass
+- Confirm CURRENT head passed BOTH GitHub Verify workflows including disposable Chromium/DB, review latest screenshots (not previous SHA).
+- Explicit owner consent for separate Railway staging plus cost isolation; no production auto-deploy.
+- Physical Android viewport/touch acceptance, contrast, screen reader and full user testing.
+- Tall flow fit-all, remaining technical strings on advanced integrations and semantic merge on concurrent drafts still limited.
+- Validate numeric/legacy currency presentation, permission matrix and role access on actual staging.
+- Official Meta authorization, templates, coexistence and real customer sends remain blocked until separate owner-approved provider setup.
+- Manychat/BotSailor parity is not established.
+
+## 2026-10-19 — Post-rebuild acceptance and unclosed audit items
+
+- Do not merge or deploy this isolated UX branch before review, CI and visual acceptance.
+- Open QA-01 auth reload, QA-14 price currency; partial QA-04 canvas fit, QA-05 safe conflict recovery, QA-09 technical labels.
+- Open visual VIS-05/12/14/18/22/23/24/26, plus independent mobile/desktop/screenshots for all source changes.
+- Verify role permissions, overlay/keyboard focus, catalog/FAQ save, startup wizard, long preview, navigation and actual bot draft preservation.
+- Meta self-service needs official approval and separately authorized real-provider testing. See `docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md`.
+
 ## 2026-10-19 — Open acceptance tasks after UI audit code changes
 
 1. Reproduce the 20 original audit issues on separate seed data and capture before/after images.

@@ -14,7 +14,11 @@ export function initExtensions(ctx){
   notify('معاينة محلية، بدون اتصال خارجي أو إرسال');
  });
  bind('ai-form',async d=>{await api('/ai/settings',{method:'PUT',body:{enabled:d.enabled==='true',instructions:d.instructions,monthlyLimit:Number(d.monthlyLimit)}});notify('تم حفظ إعدادات المساعد')});
- async function triggers(){const host=$('trigger-list');host.replaceChildren();const [rows,cfg]=await Promise.all([api('/triggers'),api('/flows')]);const select=$('trigger-target');select.replaceChildren();for(const n of cfg.published?.definition?.nodes||[]){const o=el('option',n.id+' • '+n.type);o.value=n.id;select.append(o)}if(!rows.length)emptyState(host,'لا توجد قواعد تشغيل','انشر مسارًا ثم أضف أول قاعدة.');for(const r of rows){const c=card(r.kind==='FIRST_MESSAGE'?'أول محادثة':r.phrase,r.match_mode+' → '+r.target_node);c.append(button('حذف القاعدة',async()=>{await api('/triggers/'+r.id,{method:'DELETE'});await triggers()},'danger'));host.append(c)}}
+ async function triggers(){const host=$('trigger-list');host.replaceChildren();const [rows,cfg]=await Promise.all([api('/triggers'),api('/flows')]);const select=$('trigger-target');select.replaceChildren();const names={START:'بداية',TEXT:'رسالة',BUTTONS:'أزرار',LIST:'قائمة',INPUT:'جمع بيانات',QUESTION:'سؤال',CONDITION:'شرط',HANDOFF:'موظف',CATALOG:'كتالوج',END:'نهاية'};for(const n of cfg.published?.definition?.nodes||[]){const o=el('option',(n.text||n.caption||names[n.type]||'خطوة').slice(0,40)+' — '+(names[n.type]||'خطوة'));o.value=n.id;select.append(o)}if(!rows.length)emptyState(host,'لا توجد قواعد تشغيل','انشر مسارًا ثم أضف أول قاعدة.');for(const r of rows){const c=card(r.kind==='FIRST_MESSAGE'?'أول محادثة':r.phrase,r.match_mode+' → '+r.target_node);c.append(button('حذف القاعدة',async()=>{await api('/triggers/'+r.id,{method:'DELETE'});await triggers()},'danger'));host.append(c)}}
+ const triggerForm=$('trigger-form'),eventType=triggerForm.elements.kind;
+ const phrase=triggerForm.elements.phrase,match=triggerForm.querySelector('[name="match_mode"],[name="matchMode"]');
+ const syncTrigger=()=>{const keyword=eventType.value==='KEYWORD';if(phrase){phrase.closest('label').hidden=!keyword;phrase.required=keyword;if(!keyword){phrase.value='';phrase.setCustomValidity('')}}if(match)match.closest('label').hidden=!keyword;notify('')};
+ eventType.addEventListener('change',syncTrigger);syncTrigger();
  bind('trigger-form',async(d,f)=>{if(d.kind==='KEYWORD'&&!String(d.phrase||'').trim()){f.elements.phrase.focus();throw new Error('اكتب الكلمة أو العبارة المطلوبة لتشغيل القاعدة')}await api('/triggers',{method:'POST',body:{...d,priority:Number(d.priority)}});f.reset();await triggers()});
  async function website(){const r=await api('/widget/settings'),f=$('widget-form');widgetKey=r.widgetKey;f.elements.enabled.value=String(r.enabled);f.elements.title.value=r.title;f.elements.origins.value=r.origins.join('\n');$('widget-code').value='<script src="'+location.origin+'/widget.js" data-key="'+widgetKey+'" defer></script>'}
  bind('widget-form',async d=>{await api('/widget/settings',{method:'PUT',body:{enabled:d.enabled==='true',title:d.title,origins:d.origins.split(/\r?\n/).map(s=>s.trim()).filter(Boolean)}});await website();notify('تم حفظ إعدادات شات الموقع')});$('widget-copy').onclick=()=>execute(async()=>{await navigator.clipboard.writeText($('widget-code').value);notify('تم نسخ كود الموقع')});
@@ -66,7 +70,7 @@ export function initExtensions(ctx){
     const draw=()=>{
       list.replaceChildren();
       const subset=rows.filter(row=>kind!=='outbox'||statusSelect.value==='ALL'||row.status===statusSelect.value);
-      if(!subset.length)list.append(el('p','لا توجد سجلات مطابقة للفلتر.','muted'));
+      if(!subset.length&&rows.length)list.append(el('p','لا توجد سجلات مطابقة للفلتر.','muted'));
       for(const row of subset){
        const id=String(row.id||row.conversation_id||''),error=String(row.error||row.last_error||row.last_error_code||'');
        const when=row.due_at||row.next_attempt_at||row.last_seen_at;

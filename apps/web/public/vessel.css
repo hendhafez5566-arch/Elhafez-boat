@@ -200,3 +200,254 @@ body{background:#f7f8fc;color:#272b49;font-family:system-ui,-apple-system,"Segoe
 #flow-builder .builder-view-advanced{display:inline-block;position:relative;border:1px solid #d9d8f0;border-radius:10px;padding:7px 12px}
 #flow-builder .builder-view-advanced summary{font-size:13px;font-weight:750;color:#3d3b77}
 #flow-builder .builder-view-advanced .actions{margin-top:12px}
+
+/* Deep audit 2026-10-19: prioritized workspace, readable Arabic and consistent navigation. */
+#app.vessel-app{--muted:#4b5572}
+#app .vessel-top{min-height:64px;padding-block:9px}
+#app.vessel-app .content{padding:clamp(14px,2vw,24px)}
+#app .vessel-rail nav .nav.vessel-rail-item{font-size:12px;line-height:1.35;font-weight:750;letter-spacing:0;min-height:72px}
+#app .vessel-menu-section>.nav,#app .vessel-menu-section>.vessel-menu-link{display:flex;align-items:center;justify-content:flex-start;gap:12px;min-height:44px;padding:10px 12px;font-size:14px;font-weight:700;text-align:right;width:100%;white-space:normal;border-radius:10px;color:#333b59;background:transparent}
+#app .vessel-menu-section>.vessel-menu-link>span{width:23px;display:grid;place-items:center;flex:none;color:#6054d2}
+#app .vessel-menu-section>.vessel-menu-link svg{width:20px;height:20px}
+#app .vessel-menu-section>.vessel-menu-link:hover,#app .vessel-menu-section>.vessel-menu-link.active{background:#efedff;color:#5143bc}
+#app .vessel-menu-section h3{font-size:12px;color:#5a6580;font-weight:800}
+#app .vessel-home{gap:16px}
+#app .vessel-metrics-heading{margin:0}
+#app .vessel-home .metric{min-height:95px;padding:15px 18px}
+#app .vessel-home .metric span{font-size:14px;color:#536079}
+#app .vessel-home .metric strong{font-size:26px}
+#app .vessel-hero{min-height:148px;max-height:190px;border-radius:18px;box-shadow:none;grid-template-columns:1fr}
+#app .vessel-hero-copy{padding:18px 24px}
+#app .vessel-hero-copy h2{font-size:22px;margin-bottom:4px}
+#app .vessel-hero-copy p{font-size:13px;line-height:1.5;margin:0 0 10px}
+#app .vessel-hero-copy .primary{padding:9px 14px}
+#app .vessel-journey{display:none}
+#app .vessel-page-hero{min-height:0!important;padding:14px 20px!important;margin-bottom:16px!important;border-radius:15px!important;box-shadow:none!important;background:#fff!important;border:1px solid #e6e8f2!important}
+#app .vessel-page-hero-text h2{font-size:23px!important;margin:0 0 4px!important;color:#252943}
+#app .vessel-page-intro{font-size:14px!important;margin:0!important}
+#app .vessel-page-kicker{display:none}
+#app .vessel-page-symbol{width:42px!important;height:42px!important;flex-basis:42px!important;border-radius:12px!important}
+#app .vessel-page-symbol svg{width:22px!important;height:22px!important}
+#app.vessel-app select{height:auto;min-height:46px;line-height:1.65;padding:9px 13px;font-size:14px;overflow:visible}
+#app.vessel-app input,#app.vessel-app textarea{font-size:14px;line-height:1.65}
+#app.vessel-app .vessel-subpage :is(label,small,.muted){line-height:1.65}
+#app .vessel-catalog-layout{grid-template-columns:minmax(0,1fr)!important}
+#app .vessel-catalog-library{grid-column:1!important;min-width:0}
+#app .vessel-library-header{gap:12px;flex-wrap:wrap}
+#app .vessel-library-add{min-height:42px;white-space:nowrap}
+#app .vessel-catalog-editor.is-open{position:fixed!important;inset:6dvh auto 6dvh 16px;z-index:161;display:block!important;overflow-y:auto;overscroll-behavior:contain;width:min(520px,calc(100vw - 32px));max-height:88dvh;padding:22px;box-shadow:0 18px 70px #12193855}
+#app .vessel-catalog-editor[hidden]{display:none!important}
+.vessel-editor-backdrop:not([hidden]){position:fixed;inset:0;z-index:160;border:0;background:#0c133977;border-radius:0}
+#app .vessel-editor-close{float:left}
+#app .vessel-catalog-editor form button.primary{min-height:44px}
+#app #catalog-items>.card{min-width:0}
+#app .vessel-catalog-empty{padding:18px;text-align:center;border:1px dashed #c5cbe3;border-radius:12px;color:#4c5573;background:#fafaff}
+#app .vessel-catalog-empty button{margin-top:8px}
+#app .vessel-inbox-grid{grid-template-columns:minmax(280px,340px) minmax(0,1fr)}
+@media(max-width:800px){
+ #app .vessel-hero{max-height:none}
+ #app .vessel-home .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app .vessel-page-hero{padding:12px 14px!important}
+ #app .vessel-catalog-editor.is-open{inset:2dvh 8px;width:calc(100vw - 16px);max-height:96dvh}
+}
+@media(max-width:390px){
+ #app .vessel-top{padding-inline:10px}
+ #app .vessel-home .metrics{grid-template-columns:1fr}
+ #app .vessel-library-header{display:flex;flex-direction:column;align-items:stretch}
+}
+
+/* Essential actions visible first; onboarding and presets remain expandable on demand. */
+#flow-builder .builder-guide-disclosure{margin-bottom:10px;background:#fff;border:1px solid #e6e5f2;border-radius:12px;padding:0 14px}
+#flow-builder .builder-guide-disclosure>summary{cursor:pointer;padding:11px 3px;font-weight:800;color:#3f348e;font-size:14px}
+#flow-builder .builder-guide-disclosure:not([open]){padding-block:0}
+#flow-builder .builder-preset-disclosure{flex:0 1 auto;min-width:180px;border:1px solid #e4e3f2;border-radius:10px;padding:8px 12px;background:#fafaff}
+#flow-builder .builder-preset-disclosure summary{cursor:pointer;color:#4b4778;font-weight:750;font-size:13px}
+#flow-builder .builder-preset-disclosure label{display:grid;min-width:200px;margin:10px 0}
+#flow-builder .builder-preset-disclosure button{margin-top:8px}
+#app #notification-list:not([hidden]){position:fixed;top:65px;left:clamp(12px,3vw,44px);right:auto;z-index:150;width:min(390px,calc(100vw - 24px));max-height:min(65dvh,540px);overflow-y:auto;overscroll-behavior:contain;padding:14px;border-radius:13px;box-shadow:0 16px 50px #1d214338}
+#app #notification-list button{width:100%;white-space:normal;text-align:right;margin-bottom:8px}
+#app .vessel-catalog-editor.is-open{direction:rtl}
+
+/* List-first content pages and smaller, task-specific forms. */
+#app .vessel-page-settings>.grid{display:grid;grid-template-columns:1fr;gap:16px}
+#app .vessel-page-settings #faq-list{order:0;min-width:0}
+#app .vessel-page-settings #faq-form{order:1;max-width:760px;width:100%;justify-self:center}
+#app .vessel-page-settings #faq-form[hidden]{display:none}
+#app .vessel-create-action{margin-inline-start:auto;min-height:42px;font-size:14px}
+#app .vessel-page-campaigns>.grid{grid-template-columns:minmax(0,1fr)}
+#app .vessel-page-campaigns #campaign-list{order:0;min-width:0}
+#app .campaign-create-disclosure{order:1;background:white;border:1px solid #e3e5f2;border-radius:14px;padding:12px 18px}
+#app .campaign-create-disclosure>summary{cursor:pointer;min-height:42px;display:flex;align-items:center;font-weight:800;color:#4739a4;font-size:15px}
+#app .campaign-create-disclosure #campaign-form{max-width:850px;margin:10px auto 0;width:100%;padding:16px;box-shadow:none}
+#app .vessel-page-integrations>.grid{grid-template-columns:minmax(0,1fr)!important}
+#app .vessel-page-integrations .panel{max-width:900px;width:100%;min-width:0}
+#app .vessel-developer-tools{border:1px solid #dddfee;border-radius:14px;padding:14px 18px;background:#fafaff}
+#app .vessel-developer-tools summary{cursor:pointer;font-size:15px;font-weight:800;color:#50439b}
+#app .vessel-developer-tools>.panel{margin-top:14px}
+#app .vessel-page-ai-settings{display:grid;grid-template-columns:minmax(290px,380px) minmax(0,1fr);gap:16px;align-items:start}
+#app .vessel-page-ai-settings>.vessel-page-hero{grid-column:1/-1;grid-row:1}
+#app .vessel-page-ai-settings #ai-form{grid-column:1;grid-row:2;min-width:0}
+#app .vessel-page-ai-settings>.panel{grid-column:2;grid-row:2;min-width:0}
+#app .media-accessible-input{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;border:0!important;overflow:hidden;clip-path:inset(50%)}
+#app .media-file-button{display:inline-flex;min-height:42px;align-items:center;margin:8px 0}
+#app .media-file-name{display:inline-block;padding:10px;font-size:14px;color:#465573;overflow-wrap:anywhere}
+#app .media-technical-details{border-top:1px solid #e0e5f0;margin-top:12px;padding:9px 0}
+#app .media-technical-details summary{cursor:pointer;color:#475678;font-size:13px}
+#app .vessel-page-channels form,#app .vessel-page-connectors form{max-width:760px}
+@media(max-width:800px){
+ #app .vessel-page-ai-settings{display:block}
+ #app .vessel-page-ai-settings>.panel,#app .vessel-page-ai-settings #ai-form{margin-bottom:14px}
+ #app .vessel-rail nav .nav.vessel-rail-item{font-size:10.5px!important;min-height:54px;width:61px;flex:0 0 61px}
+ #app .vessel-hero-copy{min-height:0!important}
+ #app .campaign-create-disclosure{padding:10px 12px}
+}
+
+/* Optional basic step-by-step editor, inspired by professional flow-builder patterns. */
+#flow-builder .builder-linear-mode{grid-template-columns:1fr!important;display:grid!important;gap:12px}
+#flow-builder .builder-linear-mode .builder-palette{display:block!important;position:relative!important;grid-column:1!important;grid-row:1!important;inset:auto;width:100%!important;max-height:none!important;overflow:visible!important;z-index:1;padding:16px;box-shadow:none}
+#flow-builder .builder-linear-mode .builder-quick{grid-template-columns:repeat(4,minmax(0,1fr))}
+#flow-builder .builder-linear-mode .builder-stage{grid-column:1!important;grid-row:2!important}
+#flow-builder .builder-linear-mode .flow-canvas{display:none!important}
+#flow-builder .builder-linear-mode #builder-nodes{max-height:none;overflow:visible;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px}
+#flow-builder .builder-linear-mode #builder-nodes .builder-node{margin:0;min-height:86px}
+#flow-builder .builder-linear-mode .builder-stage-head{border-bottom:0}
+#flow-builder .builder-linear-mode .builder-stage>.builder-toolbar{display:none}
+@media(max-width:720px){
+ #flow-builder .builder-linear-mode .builder-quick{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #flow-builder .builder-linear-mode #builder-nodes{grid-template-columns:1fr}
+}
+
+/* Enforce semantic hidden state over grid/flex presentation and role-aware controls. */
+#app[hidden],#app [hidden]{display:none!important}
+#app .vessel-page-ai-settings[hidden]{display:none!important}
+#app .vessel-menu-section>[hidden]{display:none!important}
+#app .vessel-rail [hidden]{display:none!important}
+
+/* Explicit catalog publication states; destructive actions never compete with edit. */
+#app .catalog-item-card{min-width:0}
+#app .catalog-item-header{display:flex;justify-content:flex-start;align-items:center;margin-bottom:9px}
+#app .catalog-state{display:inline-flex;padding:5px 11px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid #d8dbea;color:#59627b;background:#f4f5fb}
+#app .catalog-state[data-status="PUBLISHED"]{color:#09694d;background:#e5f7ee;border-color:#b9e8ce}
+#app .catalog-state[data-status="DRAFT"]{color:#8c5306;background:#fff1d8;border-color:#f4dbad}
+#app .catalog-state[data-status="ARCHIVED"]{color:#555d73;background:#eeeff3;border-color:#d4d7e0}
+#app .catalog-price{font-size:15px!important;font-weight:800;color:#293551!important}
+#app .catalog-category{font-size:13px;color:#596582}
+#app .catalog-item-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:14px}
+#app .catalog-item-extra{margin:0!important;padding:5px 10px!important;border:1px solid #e2e6f0;border-radius:10px}
+#app .catalog-item-extra summary{cursor:pointer;font-size:13px;font-weight:700}
+#app .catalog-item-extra button{margin-top:8px}
+#app #catalog-price-currency{margin-top:9px}
+.builder-conflict-dialog{direction:rtl;width:min(540px,95vw);max-height:85dvh;overflow-y:auto;padding:24px;border:1px solid #dfddee;border-radius:16px;box-shadow:0 20px 65px #17163250}
+.builder-conflict-dialog::backdrop{background:#1013269e}
+.builder-conflict-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.builder-conflict-actions button{min-height:42px}
+
+/* UX audit closure: contextual tabs, separated privacy controls and compact wizard. */
+#app .vessel-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 15px;padding:7px;background:#f1f0f9;border:1px solid #e1e0ed;border-radius:13px}
+#app .vessel-tabs .vessel-tab{background:transparent;color:#4d5571;border:1px solid transparent;border-radius:10px;min-height:42px;padding:9px 15px;font-size:14px;font-weight:750}
+#app .vessel-tabs .vessel-tab.active,#app .vessel-tabs .vessel-tab[aria-selected="true"]{background:white;color:#493bab;border-color:#dcd8fb;box-shadow:0 4px 10px #34285e13}
+#app .vessel-template-grid{grid-template-columns:minmax(0,1fr)!important}
+#app .vessel-template-grid>.panel{max-width:900px;min-width:0;width:100%}
+#app .vessel-template-grid>.panel[hidden],#app #runtime-jobs[hidden],#app #usage-summary[hidden]{display:none!important}
+#app #privacy-tools{display:grid;gap:16px}
+#app .privacy-policy-panel,#app .privacy-customer-panel{background:#fff;border:1px solid #e1e5f0;border-radius:14px;padding:20px;max-width:900px}
+#app .privacy-policy-panel>h3,#app .privacy-customer-panel>h3{font-size:18px;margin:0 0 12px;color:#27304e}
+#app .privacy-customer-panel{border-inline-start:4px solid #ba4b57}
+#app .privacy-policy-panel form,#app .privacy-customer-panel form{display:grid;gap:10px}
+#app #lead-list .boat-filterbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
+#app #lead-list .boat-filterbar input{flex:1 1 260px;min-width:0}
+#app #lead-list .boat-filterbar select{flex:0 1 190px;width:auto;max-width:100%}
+#app #lead-list .boat-filterbar button{min-height:44px;white-space:nowrap}
+#app .vessel-page-analytics #bot-insights>.metrics .metric{min-height:94px;padding:15px}
+#app .vessel-page-analytics #bot-insights>.metrics .metric strong{font-size:26px}
+#flow-builder .boat-guide-panel:not([hidden]){max-height:min(690px,calc(100dvh - 178px));overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column}
+#flow-builder .boat-guide-progress{position:sticky;top:0;z-index:3;background:white;padding-top:12px;padding-bottom:12px}
+#flow-builder .boat-guide-actions{position:sticky;bottom:0;z-index:3;background:white;padding:12px 5px;border-top:1px solid #e2e5f0}
+@media(max-width:760px){
+ #app .vessel-tabs{overflow-x:auto;flex-wrap:nowrap}
+ #app .vessel-tabs .vessel-tab{white-space:nowrap;padding:8px 11px}
+ #app .privacy-policy-panel,#app .privacy-customer-panel{padding:12px}
+ #app #lead-list .boat-filterbar{display:grid;grid-template-columns:1fr}
+ #app #lead-list .boat-filterbar select,#app #lead-list .boat-filterbar button{width:100%;max-width:none}
+}
+
+/* Persistent collapsible navigation on desktop: all 21 destinations stay discoverable. */
+.vessel-brand-name{display:none}
+@media(min-width:1024px){
+ #app.vessel-app.vessel-nav-expanded{grid-template-columns:240px minmax(0,1fr)}
+ #app.vessel-nav-expanded .sidebar.vessel-rail{width:240px;padding:15px 12px;align-items:stretch;gap:8px}
+ #app.vessel-nav-expanded .vessel-brand{flex-direction:row;justify-content:flex-start;align-items:center;gap:10px;text-align:right}
+ #app.vessel-nav-expanded .vessel-monogram{width:36px;height:36px;border-radius:10px;font-size:18px;box-shadow:none}
+ #app.vessel-nav-expanded .vessel-logotype{display:none}
+ #app.vessel-nav-expanded .vessel-brand-name{display:block;color:#fff;font-size:15px;white-space:nowrap}
+ #app.vessel-nav-expanded .vessel-menu-button{height:38px;width:100%;margin:0;text-align:right;font-size:20px}
+ #app.vessel-nav-expanded .vessel-rail nav{display:none}
+ #app.vessel-nav-expanded .vessel-drawer{position:static;inset:auto;box-shadow:none;z-index:auto;border:0;background:transparent;color:#edf0ff;width:100%;height:auto;min-height:0;max-height:none;flex:1;overflow-y:auto;overflow-x:hidden;padding:8px 0;scrollbar-width:thin}
+ #app.vessel-nav-expanded .vessel-drawer-heading{margin:0 0 12px;padding:5px 4px}
+ #app.vessel-nav-expanded .vessel-drawer-identity{display:none}
+ #app.vessel-nav-expanded .vessel-drawer .vessel-close{background:#ffffff1b;color:#fff;font-size:16px;padding:6px 10px}
+ #app.vessel-nav-expanded .vessel-search{background:#282d50;border-color:#363c62;color:white;min-height:42px;margin:0 0 15px;font-size:13px}
+ #app.vessel-nav-expanded .vessel-search::placeholder{color:#c9c9e5}
+ #app.vessel-nav-expanded .vessel-menu-groups{gap:12px}
+ #app.vessel-nav-expanded .vessel-menu-section h3{color:#aaafd0;font-size:12px;padding:6px 10px}
+ #app.vessel-nav-expanded .vessel-menu-section>.nav,#app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link{color:#d7dcf3;min-height:43px;font-size:14px;padding:9px 8px;background:transparent;border:0}
+ #app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link>span,#app.vessel-nav-expanded .vessel-menu-section>.nav>span{color:#a7abeb}
+ #app.vessel-nav-expanded .vessel-menu-section>.nav:hover,#app.vessel-nav-expanded .vessel-menu-section>.nav.active,#app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link:hover,#app.vessel-nav-expanded .vessel-menu-section>.vessel-menu-link.active{background:#6055d3;color:#fff}
+ #app.vessel-nav-expanded .vessel-drawer-footer{margin-top:12px;padding-top:10px;border-color:#353956}
+ #app.vessel-nav-expanded .vessel-drawer-footer #logout{width:100%;background:#ffffff18;color:#f4f4ff;border-color:#ffffff30}
+ #app.vessel-nav-expanded .vessel-menu-empty{color:#fff;border-color:#6e7390}
+ #app.vessel-nav-expanded .vessel-top{padding-inline:24px}
+}
+
+/* Mobile studio: place the canvas inside the first screen, without removing actions. */
+@media(max-width:760px){
+ #app #flow-builder{display:flex;flex-direction:column;gap:8px}
+ #flow-builder>.section-heading{order:0;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:3px 0!important;margin:0!important}
+ #flow-builder>.section-heading h2{font-size:16px!important}
+ #flow-builder>.section-heading .builder-status{display:flex;gap:5px;flex-wrap:wrap}
+ #flow-builder>.section-heading .builder-status span{padding:5px 7px;font-size:11px!important;min-height:0}
+ #flow-builder>.builder-toolbar{order:1;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px!important;padding:8px!important;margin:0!important}
+ #flow-builder>.builder-toolbar>label{grid-column:1/-1;max-width:none;min-width:0;display:grid;gap:4px;font-size:12px!important}
+ #flow-builder>.builder-toolbar #builder-name{height:41px;min-height:41px}
+ #flow-builder>.builder-toolbar #builder-save{grid-column:1;grid-row:auto}
+ #flow-builder>.builder-toolbar #builder-publish{grid-column:2;grid-row:auto}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure{grid-column:1/-1;min-width:0;margin:0;padding:7px 10px}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure summary{min-height:27px}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure label{width:100%;min-width:0}
+ #flow-builder>.builder-toolbar>.builder-preset-disclosure button{width:100%}
+ #flow-builder>.builder-toolbar>button:first-child{display:none}
+ #flow-builder>.builder-guide-disclosure{order:2;margin:0}
+ #flow-builder>.builder-guide-disclosure>summary{padding:7px 2px}
+ #flow-builder>.builder-layout{order:3;min-width:0}
+ #flow-builder .builder-stage-head{padding:7px 9px!important;display:flex;flex-direction:column;align-items:stretch;gap:6px}
+ #flow-builder .builder-stage-head h3{font-size:15px!important}
+ #flow-builder .builder-view-actions{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;min-height:43px;max-height:none;scrollbar-width:thin;gap:5px}
+ #flow-builder .builder-view-actions button{white-space:nowrap;flex:0 0 auto;min-height:36px!important}
+ #flow-builder .builder-stage .flow-canvas{min-height:470px;height:clamp(470px,65dvh,730px)}
+ #flow-builder .builder-stage>.builder-toolbar{overflow-x:auto;flex-wrap:nowrap;max-width:100%}
+ #flow-builder .builder-stage>.builder-toolbar button{white-space:nowrap;flex:0 0 auto}
+ #flow-builder .builder-stage-head .builder-view-advanced{margin:0}
+ #flow-builder .builder-stage-head .builder-view-advanced summary{font-size:12px}
+}
+@media(max-width:390px){
+ #app .vessel-top h1{font-size:16px!important}
+ #app .vessel-top{padding-inline:8px}
+ #flow-builder>.builder-toolbar button{font-size:12px}
+ #flow-builder>.section-heading .builder-status span{font-size:10.5px!important}
+}
+
+/* Source-level composition: a single compact canvas toolbar, full advanced tools on request. */
+#flow-builder .builder-stage-extras{background:#fafaff;border-top:1px solid #e8e9f1;border-bottom:1px solid #e8e9f1;padding:5px 11px}
+#flow-builder .builder-stage-extras>summary{padding:7px 4px;font-size:13px;font-weight:750;color:#514796;cursor:pointer}
+#flow-builder .builder-stage-extras>.builder-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:8px 0 2px}
+#flow-builder .builder-stage-extras>.builder-toolbar button{min-height:35px;font-size:12px;padding:7px 10px}
+#flow-builder .builder-guide-disclosure>.builder-preset-disclosure{margin:7px 0 12px;max-width:480px}
+#flow-builder .builder-view-advanced .builder-conflict-actions button{min-height:38px}
+@media(max-width:760px){
+ #flow-builder>.section-heading h2{display:none}
+ #flow-builder>.section-heading{min-height:30px}
+ #flow-builder .builder-stage-extras{padding:4px 9px}
+ #flow-builder .builder-stage-extras>summary{padding:4px}
+ #flow-builder .builder-stage-extras>.builder-toolbar{overflow-x:auto;flex-wrap:nowrap}
+ #flow-builder .builder-stage-extras>.builder-toolbar>*{flex:none}
+}

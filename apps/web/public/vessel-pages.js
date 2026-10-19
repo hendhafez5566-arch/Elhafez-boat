@@ -56,17 +56,90 @@ export function initVesselPages(){
   headerTitle.append(el('span','vessel-page-kicker','LIBRARY'),el('h3','','العناصر المسجلة'));
   const search=el('input','vessel-library-search');search.type='search';search.placeholder='بحث في العناصر المعروضة';
   search.setAttribute('aria-label','البحث في عناصر الكتالوج المعروضة');
-  header.append(headerTitle,search);
+  const add=el('button','primary vessel-library-add','+ إضافة منتج أو خدمة');add.type='button';add.dataset.admin='true';
+  const veil=el('button','vessel-editor-backdrop');veil.hidden=true;veil.type='button';
+  veil.setAttribute('aria-label','إغلاق نموذج المنتج');document.body.append(veil);
+  const closeEditor=()=>{formPanel.hidden=true;formPanel.classList.remove('is-open');veil.hidden=true;add.focus()};
+  const openEditor=()=>{formPanel.hidden=false;formPanel.classList.add('is-open');veil.hidden=false;formPanel.querySelector('input[name="title"]')?.focus()};
+  add.onclick=()=>{formPanel.querySelector('#catalog-new')?.click();openEditor()};
+  veil.onclick=closeEditor;
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!formPanel.hidden)closeEditor()});
+  document.addEventListener('click',event=>{if(!formPanel.hidden&&event.target.closest('[data-page],[data-goto]'))closeEditor()});
+  new MutationObserver(()=>{if(catalog.hidden&&!formPanel.hidden)closeEditor()}).observe(catalog,{attributes:true,attributeFilter:['hidden']});
+  const close=el('button','secondary vessel-editor-close','إغلاق ×');close.type='button';close.onclick=closeEditor;
+  formPanel.prepend(close);formPanel.hidden=true;
+  listPanel.addEventListener('click',event=>{if(event.target.closest('button')?.textContent?.trim()==='تعديل')openEditor()});
+  header.append(headerTitle,search,add);
   const count=el('p','vessel-library-count');count.setAttribute('aria-live','polite');
   listPanel.prepend(header,count);
   const list=$('catalog-items');
+  const noResults=el('div','vessel-catalog-empty');noResults.hidden=true;
+  noResults.append(el('p','','لا توجد عناصر تطابق البحث.'));
+  const reset=el('button','secondary','مسح البحث');reset.type='button';
+  reset.onclick=()=>{search.value='';filter();search.focus()};
+  noResults.append(reset);listPanel.append(noResults);
   const filter=()=>{
    const term=search.value.trim().toLocaleLowerCase('ar');let all=0,shown=0;
    for(const card of list.children){if(!card.classList.contains('card'))continue;all++;
     card.hidden=Boolean(term)&&!card.textContent.toLocaleLowerCase('ar').includes(term);if(!card.hidden)shown++}
-   count.textContent=all?'عرض '+shown+' من '+all+' عنصر مسجّل':'يمكنك إضافة أول عنصر من النموذج';
+   count.textContent=all?'عرض '+shown+' من '+all+' عنصر مسجّل':'لم تضف أي عناصر بعد';
+   noResults.hidden=!all||shown>0;
   };
   search.addEventListener('input',filter);new MutationObserver(filter).observe(list,{childList:true});filter();
+ }
+ // List-first content management without replacing existing forms or API handlers.
+ const knowledge=$('settings'),faq=$('faq-form'),faqList=$('faq-list');
+ if(knowledge&&faq&&faqList){
+   faq.hidden=true;
+   const addFAQ=el('button','primary vessel-create-action','+ إضافة سؤال وإجابة');addFAQ.type='button';addFAQ.dataset.admin='true';
+   const closeFAQ=el('button','secondary','إغلاق نموذج الإضافة');closeFAQ.type='button';
+   closeFAQ.onclick=()=>{faq.hidden=true;addFAQ.focus()};faq.append(closeFAQ);
+   addFAQ.onclick=()=>{faq.hidden=false;faq.querySelector('input')?.focus()};
+   knowledge.querySelector('.vessel-page-hero')?.append(addFAQ);
+ }
+ const campaign=$('campaign-form');
+ if(campaign){
+   const section=el('details','campaign-create-disclosure');section.dataset.admin='true';
+   campaign.before(section);section.append(el('summary','','+ إنشاء حملة جديدة (مسودة فقط)'),campaign);
+   $('campaign-list')?.setAttribute('aria-label','قائمة الحملات الحالية');
+ }
+ const integrations=$('integration-form')?.closest('.grid');
+ if(integrations&&integrations.children.length>1){
+   const developerPanel=integrations.children[1],details=el('details','vessel-developer-tools');
+   details.append(el('summary','','أدوات المطور — مفاتيح API'),developerPanel);
+   integrations.append(details);
+ }
+ // Separate WhatsApp template registration, consent and send into deliberate tasks.
+ const templates=$('templates'),templateGrid=templates?.querySelector(':scope > .grid');
+ if(templateGrid&&templateGrid.children.length>=2){
+   const templatePanel=templateGrid.children[0],consentPanel=templateGrid.children[1];
+   const sendForm=$('template-send'),sendTitle=sendForm?.previousElementSibling;
+   const sendPanel=el('section','panel vessel-template-send-panel');
+   if(sendTitle)sendPanel.append(sendTitle);
+   if(sendForm)sendPanel.append(sendForm);
+   templateGrid.append(sendPanel);
+   templateGrid.classList.add('vessel-template-grid');
+   const tabs=el('div','vessel-tabs');tabs.setAttribute('role','tablist');
+   const panes=[templatePanel,consentPanel,sendPanel],labels=['القوالب المعتمدة','موافقات العملاء','إرسال قالب'];
+   const selectTab=index=>{
+     panes.forEach((pane,i)=>{pane.hidden=i!==index});
+     [...tabs.children].forEach((tab,i)=>{tab.setAttribute('aria-selected',String(i===index));tab.tabIndex=i===index?0:-1;tab.classList.toggle('active',i===index)});
+   };
+   labels.forEach((label,i)=>{const tab=el('button','vessel-tab',label);tab.type='button';tab.setAttribute('role','tab');tab.onclick=()=>selectTab(i);tabs.append(tab)});
+   templateGrid.before(tabs);selectTab(0);
+ }
+ // Operational usage and raw logs are different tasks; fetch behavior stays the same.
+ const usage=$('usage'),usageSummary=$('usage-summary'),runtimeJobs=$('runtime-jobs');
+ if(usage&&usageSummary&&runtimeJobs){
+   const tabs=el('div','vessel-tabs');tabs.setAttribute('role','tablist');
+   const contents=[usageSummary,runtimeJobs];
+   ['الاستهلاك والحدود','سجل التشغيل'].forEach((title,index)=>{
+     const b=el('button','vessel-tab',title);b.type='button';b.setAttribute('role','tab');
+     b.onclick=()=>{contents.forEach((section,i)=>section.hidden=i!==index);[...tabs.children].forEach((tab,i)=>{tab.classList.toggle('active',i===index);tab.setAttribute('aria-selected',String(i===index))})};
+     tabs.append(b);
+   });
+   runtimeJobs.hidden=true;tabs.firstChild.classList.add('active');tabs.firstChild.setAttribute('aria-selected','true');
+   tabs.lastChild.setAttribute('aria-selected','false');usageSummary.before(tabs);
  }
  for(const id of ['settings','team','templates','triggers','website','campaigns','ai-settings','integrations']){
   $(id)?.querySelector(':scope > .grid')?.classList.add('vessel-subpage-grid');

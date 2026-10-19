@@ -53,8 +53,13 @@ try{
  // Vessel workspace acceptance: real nav buttons moved, drawer opens and search works.
  assert.equal(await evaluate("document.querySelectorAll('.vessel-rail .vessel-rail-item').length"),5,'Expected five focus destinations in narrow rail');
  assert.equal(await evaluate("Boolean(document.querySelector('.vessel-home .vessel-hero') && document.querySelector('.vessel-home-panels #dashboard-ready'))"),true,'Dashboard widgets survive layout composition');
+ // Wide desktops should show the complete grouped navigation by default.
+ assert.equal(await evaluate("document.querySelector('.vessel-drawer').hidden"),false,'Desktop navigation expanded by default');
+ assert.equal(await evaluate("document.getElementById('app').classList.contains('vessel-nav-expanded')"),true,'Desktop persistent navigation');
  await evaluate("document.querySelector('.vessel-menu-button').click()");
- assert.equal(await evaluate("document.querySelector('.vessel-drawer').hidden"),false,'Navigation drawer opens');
+ assert.equal(await evaluate("document.querySelector('.vessel-drawer').hidden"),true,'Desktop navigation collapses');
+ await evaluate("document.querySelector('.vessel-menu-button').click()");
+ assert.equal(await evaluate("document.querySelector('.vessel-drawer').hidden"),false,'Navigation reopens after collapse');
  await screenshot('vessel-navigation-open-desktop.png');
  const matching=await evaluate("(()=>{const s=document.querySelector('.vessel-search');s.value='الخصوصية';s.dispatchEvent(new Event('input',{bubbles:true}));return [...document.querySelectorAll('.vessel-menu-section button[data-page]')].filter(b=>b.style.display!=='none'&&!b.hidden).map(b=>b.dataset.page)})()");
  assert.deepEqual(matching,['privacy'],'Search should show only matching destination');
@@ -165,9 +170,9 @@ try{
    await evaluate("(()=>{const p=document.querySelector('.builder-component-dialog');const t=[...p.querySelectorAll('.builder-picker-item')].find(b=>b.textContent.includes('رسالة نصية'));if(!t)throw Error('TEXT picker missing');t.click()})()");
  }
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Expected six connected branch steps');
- await evaluate("(()=>{const bar=document.querySelector('.builder-stage>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='تراجع');btn.click()})()");
+ await evaluate("(()=>{const bar=document.querySelector('.builder-stage-extras>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='تراجع');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+5,'Undo must remove last branch step');
- await evaluate("(()=>{const bar=document.querySelector('.builder-stage>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
+ await evaluate("(()=>{const bar=document.querySelector('.builder-stage-extras>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Redo must restore last branch step');
  await evaluate("(()=>{const btn=[...document.querySelectorAll('.builder-view-actions button')].find(b=>b.textContent==='ترتيب تلقائي');btn.click()})()");
  const overlaps=await evaluate("(()=>{const r=[...document.querySelectorAll('.canvas-node')].map(n=>({id:n.dataset.nodeId,b:n.getBoundingClientRect()}));let count=0;for(let i=0;i<r.length;i++)for(let j=0;j<i;j++){const a=r[i].b,b=r[j].b;if(a.left<b.right-3&&a.right>b.left+3&&a.top<b.bottom-3&&a.bottom>b.top+3)count++}return count})()");
@@ -219,10 +224,10 @@ try{
  await evaluate("(()=>{const f=document.getElementById('catalog-form');f.elements.description.value='Edited through browser';f.requestSubmit()})()");
  await until(`(${findCard})?.textContent.includes('Edited through browser')`,'catalog edit saved');
  await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='اعتماد ونشر').click()`);
- await until(`(${findCard})?.textContent.includes('PUBLISHED')`,'catalog published');
+ await until(`(${findCard})?.querySelector('.catalog-state')?.dataset.status==='PUBLISHED'`,'catalog published with real status');
  await screenshot('catalog-crud-published.png');
- await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='أرشفة').click()`);
- await until(`(${findCard})?.textContent.includes('ARCHIVED')`,'catalog archived');
+ await evaluate(`[...(${findCard}).querySelectorAll('button')].find(b=>b.textContent==='أرشفة العنصر').click()`);
+ await until(`(${findCard})?.querySelector('.catalog-state')?.dataset.status==='ARCHIVED'`,'catalog archived with real status');
  await evaluate("document.querySelector('[data-page=flow-builder]').click()");
  await until("Boolean(document.querySelector('.canvas-node'))",'editable canvas');
  await evaluate("(()=>{const input=document.getElementById('builder-name');input.value='Browser saved publication';input.dispatchEvent(new Event('input',{bubbles:true}));document.getElementById('builder-save').click()})()");
@@ -275,9 +280,27 @@ try{
    await evaluate('window.scrollTo(0,0)');await screenshot(page+'-'+device+'.png');pageEvidence.push({page,device,...evidence});
   }
  }
- await writeFile('acceptance-evidence/browser-pages.json',JSON.stringify(pageEvidence,null,2));
+ // Extra compact-phone acceptance: a 320px viewport is distinct from a phone mockup.
+ await send('Emulation.setDeviceMetricsOverride',{width:320,height:700,deviceScaleFactor:1,mobile:true});
+ for(const page of ['overview','catalog','leads','templates','privacy']){
+   await evaluate(`document.querySelector('[data-page="${page}"]').click()`);
+   await until(`Boolean(document.getElementById(${JSON.stringify(page)})&&!document.getElementById(${JSON.stringify(page)}).hidden)`,'320px '+page);
+   await sleep(260);
+   const dimensions=await evaluate("({width:innerWidth,documentWidth:document.documentElement.scrollWidth})");
+   assert.ok(dimensions.documentWidth<=dimensions.width+4,'320px horizontal document overflow on '+page+': '+JSON.stringify(dimensions));
+   await evaluate('window.scrollTo(0,0)');
+   await screenshot(page+'-320px.png');
+ }
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
+  await writeFile('acceptance-evidence/browser-pages.json',JSON.stringify(pageEvidence,null,2));
  assert.equal(network.some(n=>n.status>=500),false,'UI must not encounter server errors');
  console.log('PASS '+pageEvidence.length+' owner page/viewport visits with named buttons (screen loading only; not all actions/forms)');
+ // Security and UX: browser refresh restores a still-valid session, without stored bearer secrets.
+ await send('Page.navigate',{url:base+'/'});
+ await until("Boolean(document.getElementById('app')&&!document.getElementById('app').hidden)",'session restored after reload');
+ assert.equal(await evaluate("document.getElementById('login').hidden"),true,'valid dashboard session persists after reload');
+ assert.equal(await evaluate("Boolean(localStorage.getItem('eb_session')||sessionStorage.getItem('eb_session'))"),false,'bearer credentials must not be persisted in web storage');
+ console.log('PASS browser session reload via server-managed cookie; no bearer token stored in browser storage');
  await evaluate("document.getElementById('logout').click()");
  await until("Boolean(document.getElementById('login')&&!document.getElementById('login').hidden)",'logout/login screen');
  assert.equal(await evaluate("document.getElementById('app').hidden"),true);

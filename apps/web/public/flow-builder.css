@@ -161,3 +161,41 @@
 .builder-choice-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .builder-choice-actions button{padding:7px 10px;font-size:11px!important}
 #flow-builder .canvas-output.connecting{background:#dff5ed;color:#0d796c;box-shadow:0 0 0 3px #0d998928}
+
+/* Deep-audit fixes: editor visibility, one preview viewport, readable canvas and a compact header. */
+#flow-builder>.section-heading{padding:6px 2px!important;margin:0 0 8px!important}
+#flow-builder>.section-heading h2{font-size:19px!important;margin:0!important}
+#flow-builder>.section-heading p{display:none}
+#flow-builder>.builder-toolbar{padding:9px 12px!important;margin:0 0 10px!important;gap:7px!important}
+#flow-builder>.builder-toolbar label{font-size:13px!important;min-width:150px}
+#flow-builder>.builder-toolbar button{min-height:40px!important}
+#flow-builder .builder-stage-head{padding:10px 14px!important;gap:8px}
+#flow-builder .builder-stage-head h3{font-size:16px;margin:0}
+#flow-builder .builder-stage-head p{display:none}
+#flow-builder .builder-stage .flow-canvas{min-height:620px;height:clamp(620px,calc(100dvh - 205px),980px)}
+#flow-builder .builder-stage>.builder-toolbar{padding:7px 12px}
+#flow-builder .builder-palette{max-height:calc(100dvh - 150px)}
+#flow-builder .builder-inspector{position:fixed;top:0;bottom:0;left:0;max-height:100dvh;overflow:hidden;display:flex;flex-direction:column;padding:12px}
+#flow-builder .builder-inspector>.builder-properties{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
+#flow-builder .builder-inspector .builder-properties>button:first-child{position:sticky;top:0;z-index:4;min-height:44px;background:#f3f0ff;color:#3b2d9a;font-weight:800}
+#flow-builder .builder-inspector .builder-properties>h3{flex:none;margin:8px 0}
+#flow-builder .builder-properties #builder-editor{min-height:0;max-height:none;overflow-y:auto;overscroll-behavior:contain;flex:1;padding:0 4px 22px}
+.builder-preview-dialog{display:flex;flex-direction:column;overflow:hidden;height:min(850px,90dvh);max-height:90dvh;padding:12px;width:min(470px,96vw)}
+.builder-preview-dialog:not([open]){display:none}
+.builder-preview-dialog .builder-dialog-header{position:relative;flex:none;margin:0 0 8px;padding:4px 3px 10px}
+.builder-preview-dialog .builder-phone-shell{display:flex;flex-direction:column;flex:1;min-height:0;width:min(392px,100%);overflow:hidden}
+.builder-preview-dialog .builder-phone-shell .builder-simulator{display:flex;flex-direction:column;flex:1;min-height:0;max-height:none;overflow:hidden}
+.builder-preview-dialog .builder-phone-shell .builder-preview-window{flex:1;min-height:110px;max-height:none;overflow:auto;overscroll-behavior:contain}
+.builder-preview-dialog #builder-preview-options{flex:none;max-height:min(25dvh,220px);overflow-y:auto}
+.builder-preview-dialog .builder-simulator>.builder-toolbar{flex:none;margin:6px 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.builder-preview-dialog .builder-simulator>.ops-note,.builder-preview-dialog .builder-simulator>.ops-muted{display:none}
+#flow-builder .builder-view-actions{gap:5px}
+#flow-builder .builder-view-actions button{min-height:36px;font-size:12px}
+@media(max-width:760px){
+ #flow-builder .builder-stage .flow-canvas{height:clamp(470px,65dvh,750px);min-height:470px}
+ #flow-builder .builder-view-actions{max-height:none;overflow:visible}
+ #flow-builder .builder-inspector{width:100vw}
+ .builder-preview-dialog{width:98vw;height:92dvh;max-height:92dvh}
+}
+
+#flow-builder .builder-inspector[hidden],#flow-builder .builder-palette[hidden]{display:none!important}
