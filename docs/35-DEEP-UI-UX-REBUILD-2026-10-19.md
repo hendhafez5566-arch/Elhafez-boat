@@ -1,3 +1,17 @@
+## Second implementation and browser-verification pass — 2026-10-19
+
+This update supersedes earlier OPEN labels for issues with later source fixes; it does not assert full release acceptance.
+QA-01: secure HttpOnly SameSite dashboard cookie, on-reload API-validated restoration and CSRF protection; browser test verified without storing bearer tokens.
+QA-05: safe 409 draft-conflict recovery, locally downloaded JSON, structural node diff and confirm-before-replacing; no automatic merge.
+QA-14: numeric catalog prices now require explicit currency; legacy numeric-only prices are labelled as missing currency, never guessed.
+VIS-05,12,14,18,22,23,24,26: desktop grouped/collapsible navigation, sticky wizard actions, Arabic catalog status/action hierarchy, compact analytics, split privacy policy/client tools, usage/logs tabs, CRM unified search/filters/refresh with human field names, and WhatsApp template/consent/send task tabs.
+Mobile Flow Builder: secondary toolbar moved behind advanced disclosure, presets moved to optional create-bot workflow, mobile header compacted; real 320px browser matrix and screenshots added.
+Real CI evidence: two Verify workflows at d08085ae2a9b1a4ff5c96c42dafe052149910cfa succeeded with disposable PostgreSQL and Chromium: https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39290842206 ; https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39290855574 . Follow-up source commits require their OWN latest-HEAD CI acceptance.
+Independent screenshot review of 320px CRM found a real stray literal null in filter controls; source corrected and filterBar now skips null controls.
+Open: physical Android handsets, live Meta/Coexistence and sending (explicit consent), full competitive feature parity, some advanced technical wording, tall-graph fit-all, full WCAG/accessibility measurement, Railway isolated staging live UI signoff.
+Do not merge PR #3, deploy Railway, change real company data, or touch providers merely because CI passes.
+
+---
 # Elhafez Boat — Deep UI/UX implementation and acceptance register
 Date: 2026-10-19
 

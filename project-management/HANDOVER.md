@@ -1,3 +1,6 @@
+## Handover — PR #3 second UX audit implementation pass
+Branch fix/deep-ux-product-rebuild-2026-10-19 targets feat/stage0-foundation. Includes new server session-cookie helper/test, protected flow-conflict dialog and catalog currency, desktop sidebar groups, 390/320 responsive studio, templates/privacy/usage tabs and real browser acceptance updates. Latest known green complete Chromium+PostgreSQL pair was d08085ae (39290842206 and 39290855574); subsequent HEAD must be checked. No deploy/merge. Details in docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md.
+
 ## 2026-10-19 — Deep audit UI delivery handover
 
 Branch `fix/deep-ux-product-rebuild-2026-10-19`; owner review before any integration into `feat/stage0-foundation`. Changed UI files: `vessel.js`, `vessel.css`, `vessel-pages.js`, `flow-builder.js`, `flow-builder.css`, `app.js`, `extensions.js`, `advanced-ui.js`. Full QA/VIS gap register: `docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md`. No production deploy. Verify final CI and independently reproduce both audit packs in a disposable tenant.

@@ -1,3 +1,12 @@
+## Remaining after second 2026-10-19 UI/UX implementation pass
+- Confirm CURRENT head passed BOTH GitHub Verify workflows including disposable Chromium/DB, review latest screenshots (not previous SHA).
+- Explicit owner consent for separate Railway staging plus cost isolation; no production auto-deploy.
+- Physical Android viewport/touch acceptance, contrast, screen reader and full user testing.
+- Tall flow fit-all, remaining technical strings on advanced integrations and semantic merge on concurrent drafts still limited.
+- Validate numeric/legacy currency presentation, permission matrix and role access on actual staging.
+- Official Meta authorization, templates, coexistence and real customer sends remain blocked until separate owner-approved provider setup.
+- Manychat/BotSailor parity is not established.
+
 ## 2026-10-19 — Post-rebuild acceptance and unclosed audit items
 
 - Do not merge or deploy this isolated UX branch before review, CI and visual acceptance.

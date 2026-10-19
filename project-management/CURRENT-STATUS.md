@@ -1,3 +1,6 @@
+## Second 2026-10-19 UX implementation pass on draft PR #3
+Changes across dashboard, flow builder, catalog, privacy, CRM, templates, usage, and secure dashboard session. Auth restored through HttpOnly cookies/CSRF. Conflict handling exports local draft and offers safe server reload. Real 320px screenshots and no-horizontal-overflow checks added. Green full Verify runs exist for d08085ae; verify current HEAD separately. See docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md. Unmerged; no Railway deployment or Meta provider actions.
+
 ## 2026-10-19 — Deep UX rebuild isolated (UNMERGED / NOT DEPLOYED)
 
 Work in `fix/deep-ux-product-rebuild-2026-10-19`, based on merged audit source 395697f. Two supplied independent audit packs cover 15 functional issues and 26 visual findings. Implemented real changes across navigation, canvas, catalog, forms, translations, notification lifecycle and simplified editor; see `docs/35-DEEP-UI-UX-REBUILD-2026-10-19.md`. Final browser/mobile acceptance remains OPEN; CI outcome must be checked against final SHA. No Railway or Meta actions.
