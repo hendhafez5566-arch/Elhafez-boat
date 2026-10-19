@@ -16,9 +16,9 @@ export function initVesselWorkspace(){
  heading.append(identity,close);
  const search=make('input','vessel-search');search.type='search';search.placeholder='ابحث عن قسم أو أداة';search.setAttribute('aria-label','البحث في أقسام المنصة');
  const groups=make('div','vessel-menu-groups');
- const categories=[['مساحة العمل',quick],['التقارير والأتمتة',['analytics','campaigns','triggers']],['المحتوى والمساعد',['media','templates','settings','ai-settings']],['القنوات والتكاملات',['website','wa-connect','channels','integrations','connectors','comment-automation']],['الإدارة',['team','privacy','usage']]];
+ const categories=[['العمل اليومي',['overview','wa-inbox','leads']],['البوت والأتمتة',['flow-builder','triggers','campaigns']],['المحتوى',['catalog','settings','media','templates','ai-settings']],['القنوات والتطبيقات',['website','wa-connect','channels','connectors','comment-automation','integrations']],['الإدارة والتقارير',['analytics','team','privacy','usage']]];
  const grouped=new Set(quick);
- for(const [name,ids] of categories){const section=make('section','vessel-menu-section');section.append(make('h3','',name));for(const id of ids){grouped.add(id);const b=byId.get(id);if(b){if(quick.includes(id)){const link=make('button','vessel-menu-link',b.textContent.trim());link.type='button';link.dataset.page=id;link.onclick=()=>{b.click();hide()};section.append(link)}else{b.classList.add('vessel-menu-link');section.append(b)}}}groups.append(section)}
+ for(const [name,ids] of categories){const section=make('section','vessel-menu-section');section.append(make('h3','',name));for(const id of ids){grouped.add(id);const b=byId.get(id);if(b){if(quick.includes(id)){const link=b.cloneNode(true);link.classList.remove('vessel-rail-item');link.classList.add('vessel-menu-link');link.removeAttribute('id');link.onclick=()=>{b.click();hide()};section.append(link)}else{b.classList.add('vessel-menu-link');section.append(b)}}}groups.append(section)}
  const remaining=all.filter(b=>!grouped.has(b.dataset.page));
  if(remaining.length){const other=make('section','vessel-menu-section');other.append(make('h3','','المزيد'),...remaining);groups.append(other)}
  const empty=make('div','vessel-menu-empty');empty.setAttribute('role','status');empty.hidden=true;
@@ -52,7 +52,7 @@ export function initVesselWorkspace(){
  const metricsHeading=make('div','vessel-metrics-heading');metricsHeading.append(make('small','','نظرة عامة'),make('h3','','نشاط شركتك في لمحة'));
  const panels=make('div','vessel-home-panels');start.classList.add('vessel-start');const overviewCards=[...grid.children];const ready=overviewCards[0];ready.classList.add('vessel-ready');panels.append(start,ready);
  const channels=overviewCards[1];channels.classList.add('vessel-channels');
- home.replaceChildren(hero,metricsHeading,metric,panels,channels);home.classList.add('vessel-home');
+ home.replaceChildren(metricsHeading,metric,panels,channels,hero);home.classList.add('vessel-home');
  // True two-pane inbox workspace, existing message and reply controls retained.
  const inbox=$('wa-inbox'),columns=inbox.querySelector('.inbox-layout');
  inbox.classList.add('vessel-inbox');columns.classList.add('vessel-inbox-grid');
