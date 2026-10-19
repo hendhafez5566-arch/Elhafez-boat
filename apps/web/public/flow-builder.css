@@ -198,4 +198,4 @@
  .builder-preview-dialog{width:98vw;height:92dvh;max-height:92dvh}
 }
 
-#flow-builder .builder-inspector[hidden],#flow-builder .builder-palette[hidden]:not(.builder-linear-mode .builder-palette){display:none!important}
+#flow-builder .builder-inspector[hidden],#flow-builder .builder-palette[hidden]{display:none!important}
