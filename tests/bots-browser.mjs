@@ -203,7 +203,8 @@ try{
  console.log('PASS novice wizard/back/review/no-write, searchable gallery, same-definition simple/canvas branch editing, mobile steps, retained internal inbox note, contact context and truthful channel directory');
 
  await evaluate("document.querySelector('[data-page=campaigns]').click()");await until("Boolean([...document.querySelectorAll('#campaign-list [data-campaign-id]')].find(c=>c.textContent.includes('حملة مراجعة محلية دون إرسال')))",'local campaign draft');
- // Author a real new draft through all four steps; navigating backwards retains answers.
+ // Author a real new draft through the visible creation disclosure and four steps.
+ await evaluate("document.querySelector('.campaign-create-disclosure > summary').click()");assert.ok(await evaluate("document.querySelector('.campaign-create-disclosure').open"),'campaign form actually visible');
  await evaluate("document.getElementById('campaign-form').elements.name.value='حملة المعالج المحلية'");
  await click('التالي','.campaign-wizard-actions button');
  await evaluate("document.getElementById('campaign-form').elements.tag.value='interested'");
@@ -213,7 +214,7 @@ try{
  await click('التالي','.campaign-wizard-actions button');await click('التالي','.campaign-wizard-actions button');
  await evaluate("(()=>{const d=new Date(Date.now()+86400000);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());document.getElementById('campaign-form').elements.startAt.value=d.toISOString().slice(0,16)})()");
  assert.ok(await evaluate("document.querySelector('.campaign-draft-summary').textContent.includes('قالب اختبار محلي')"),'review shows actual approved template content');
- for(const [width,height] of [[1366,900],[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('wizard-campaign-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'wizard overflow '+width)}
+ for(const [width,height] of [[1366,900],[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await evaluate("document.querySelector('.campaign-progress').scrollIntoView({block:'start'})");await sleep(250);assert.ok(await evaluate("document.getElementById('campaign-form').checkVisibility() && document.querySelector('.campaign-create-disclosure').open"),'visible wizard at screenshot');await screenshot('wizard-campaign-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'wizard overflow '+width)}
  await evaluate("document.getElementById('campaign-form').requestSubmit()");
  await until("[...document.querySelectorAll('#campaign-list [data-campaign-id]')].some(c=>c.textContent.includes('حملة المعالج المحلية'))",'wizard saved real draft');
  assert.ok(await evaluate("document.querySelector('.campaign-wizard-panel:not([hidden])').textContent.includes('واتساب')"),'wizard reset after save');
