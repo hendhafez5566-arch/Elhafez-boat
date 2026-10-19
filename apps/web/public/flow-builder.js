@@ -607,10 +607,58 @@ export function initFlowBuilder({state,api,notify,execute}){
  for(const [key,title] of Object.entries(types))if(key!=='START'&&![...$('builder-add-type').options].some(o=>o.value===key)){const o=el('option',title);o.value=key;$('builder-add-type').append(o)}
  $('builder-add').onclick=()=>addNode($('builder-add-type').value);
  $('builder-name').addEventListener('input',()=>{flow.name=$('builder-name').value;markDirty()});
+ // Preserve local edits whenever optimistic concurrency reports a newer server draft.
+ const backupLocal=()=>{
+   const blob=new Blob([JSON.stringify({exportedAt:new Date().toISOString(),draftRevision,definition:flow},null,2)],{type:'application/json'});
+   const url=URL.createObjectURL(blob),link=el('a');
+   link.href=url;link.download='elhafez-boat-my-draft-'+Date.now()+'.json';
+   document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2500);
+   notify('تم تنزيل نسخة احتياطية من التعديلات المحلية؛ لم يتم نشر أي شيء.');
+ };
+ const conflictDialog=el('dialog',undefined,'builder-conflict-dialog');
+ document.body.append(conflictDialog);
+ const closeConflict=()=>{if(conflictDialog.open)conflictDialog.close()};
+ const compareDrafts=(local,remote)=>{
+   const oldNodes=new Map((remote?.nodes||[]).map(n=>[n.id,n])),newNodes=new Map((local?.nodes||[]).map(n=>[n.id,n]));
+   const added=[...newNodes.keys()].filter(id=>!oldNodes.has(id));
+   const removed=[...oldNodes.keys()].filter(id=>!newNodes.has(id));
+   const changed=[...newNodes.keys()].filter(id=>oldNodes.has(id)&&JSON.stringify(newNodes.get(id))!==JSON.stringify(oldNodes.get(id)));
+   return {added,removed,changed};
+ };
+ async function showDraftConflict(){
+   conflictDialog.replaceChildren();
+   conflictDialog.append(el('h3','فيه مسودة أحدث على الخادم'),el('p','تعديلاتك المحلية ما زالت موجودة في المحرر. لن نكتب فوق النسخة الأحدث بدون موافقتك. نزّل نسخة من شغلك قبل اتخاذ أي قرار.'));
+   let current=null;
+   try{
+     current=await api('/flows');
+     const diff=compareDrafts(flow,current.draft.definition);
+     const text=['خطوات عندك ليست في الخادم: '+diff.added.length,'خطوات بالخادم ليست عندك: '+diff.removed.length,'خطوات مختلفة: '+diff.changed.length];
+     conflictDialog.append(el('p',text.join(' • ')),el('p','المراجعة دي مقارنة هيكلية فقط، وليست دمجًا آليًا.'));
+   }catch{conflictDialog.append(el('p','تعذرت قراءة أحدث نسخة؛ ما زالت تعديلاتك المحلية محفوظة داخل الصفحة.'))}
+   const actions=el('div',undefined,'builder-conflict-actions');
+   actions.append(button('تنزيل نسختي JSON',backupLocal,'primary'));
+   if(current)actions.append(button('تحميل نسخة الخادم بعد التأكيد',()=>{
+     if(!confirm('سيتم استبدال التعديلات المحلية داخل المحرر. هل نزّلت نسخة احتياطية وتوافق على المتابعة؟'))return;
+     const cfg=current;flow=deep(cfg.draft.definition);published=cfg.published;
+     draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;selectedNodes=new Set([selected]);
+     history=[deep(flow)];cursor=0;renderAll();resetPreview();closeConflict();notify('تم تحميل آخر مسودة من الخادم دون نشر.');
+   }));
+   actions.append(button('العودة لتعديلاتي',closeConflict));
+   conflictDialog.append(actions);
+   if(conflictDialog.showModal)conflictDialog.showModal();else conflictDialog.setAttribute('open','');
+ }
+ const backupButton=button('تنزيل نسخة احتياطية',backupLocal);
+ primaryBar.append(backupButton);
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
    if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
-   const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});draftRevision=r.draftRevision;flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
+   try{
+     const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});
+     draftRevision=r.draftRevision;flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
+   }catch(error){
+     if(error.status===409){await showDraftConflict();return}
+     throw error;
+   }
  });
  $('builder-publish').onclick=()=>execute(async()=>{
    if(state.demo){notify('المعاينة لا تنشر على واتساب','error');return}

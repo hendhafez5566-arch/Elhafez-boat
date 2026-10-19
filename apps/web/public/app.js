@@ -60,6 +60,16 @@ const advanced=initAdvanced(ctx),workspace=initWorkspace(ctx),extensions=initExt
   if(field)advancedCatalog.append(field);
  }
  catalogForm.insertBefore(advancedCatalog,catalogForm.querySelector('button.primary'));
+ const priceInput=catalogForm.elements.namedItem('priceText');
+ if(priceInput){
+   const currencySelect=el('select');
+   currencySelect.id='catalog-price-currency';
+   currencySelect.setAttribute('aria-label','عملة السعر المعلن عند كتابة أرقام فقط');
+   for(const [value,label] of [['','العملة (اختياري للنصوص)'],['جنيه مصري','جنيه مصري EGP'],['ريال سعودي','ريال سعودي SAR'],['دولار أمريكي','دولار أمريكي USD'],['يورو','يورو EUR']]){
+     const option=el('option',label);option.value=value;currencySelect.append(option);
+   }
+   priceInput.closest('label')?.append(currencySelect);
+ }
 
 // Native media file upload stays bound to the same FormData and validation.
 const mediaFile=$('media-form')?.querySelector('input[type="file"]');
@@ -154,8 +164,57 @@ async function onboardingProgress(){
  host.append(grid);
 }
 async function dashboard(){const host=$('dashboard-metrics');host.replaceChildren();$('dashboard-ready').replaceChildren();const [s,notes]=await Promise.all([api('/leads/summary'),api('/notifications')]);for(const [label,value] of [['الاستفسارات المؤهلة',s.total],['جاهزون لموظف',s.ready],['تم التواصل',s.contacted],['مهتمون',s.interested]]){const c=el('article',undefined,'metric');c.append(el('span',label),el('strong',value));host.append(c)}const ready=notes.filter(x=>x.stage==='READY_FOR_AGENT');if(!ready.length)$('dashboard-ready').append(el('p','لا يوجد عملاء ينتظرون التحويل حاليًا.'));for(const n of ready.slice(0,8))$('dashboard-ready').append(button(n.customer_name+' • '+n.channel,()=>choose('wa-inbox')));await onboardingProgress()}
-async function catalog(){const host=$('catalog-items');host.replaceChildren();$('catalog-form').hidden=!canEdit();const rows=await api('/catalog');if(!rows.length)host.append(el('p','الكتالوج فارغ. أضف معلومات شركتك المعتمدة.'));for(const item of rows){const c=card(item.title,[item.categoryLabel,item.description,item.priceText,item.status].filter(Boolean).join(' • '));if(canEdit()){c.append(button('تعديل',()=>{const f=$('catalog-form');for(const key of ['id','kind','title','categoryLabel','description','priceText','imageUrl','externalUrl'])f.elements.namedItem(key).value=item[key]||'';$('catalog-editor-title').textContent='تعديل — الحفظ يعيد العنصر لمسودة';f.scrollIntoView({block:'center'})}));if(item.status!=='PUBLISHED')c.append(button('اعتماد ونشر',async()=>{await api('/catalog/'+item.id+'/publish',{method:'POST'});await catalog()}));if(item.status!=='ARCHIVED')c.append(button('أرشفة',async()=>{await api('/catalog/'+item.id+'/archive',{method:'POST'});await catalog()},'danger'))}host.append(c)}}
-bind('catalog-form',async(d,f)=>{if(/(^|\s)-\s*[0-9٠-٩]/.test(d.priceText||'')){f.elements.priceText.focus();throw new Error('السعر لا يمكن أن يكون سالبًا. اكتب سعرًا صحيحًا أو «عند الطلب».')}const id=d.id;delete d.id;await api('/catalog'+(id?'/'+id:''),{method:id?'PUT':'POST',body:d});f.reset();$('catalog-editor-title').textContent='إضافة عنصر';await catalog();notify('تم حفظ مسودة العنصر')});$('catalog-new').onclick=()=>{$('catalog-form').reset();$('catalog-editor-title').textContent='إضافة عنصر'};
+async function catalog(){
+ const host=$('catalog-items');host.replaceChildren();
+ const rows=await api('/catalog');
+ const stateLabel={DRAFT:'مسودة',PUBLISHED:'منشور',ARCHIVED:'مؤرشف'};
+ if(!rows.length)host.append(el('p','الكتالوج فارغ. استخدم «إضافة منتج أو خدمة» لإنشاء أول عنصر.','vessel-catalog-blank'));
+ for(const item of rows){
+   const c=card(item.title);
+   c.classList.add('catalog-item-card');
+   const status=el('span',stateLabel[item.status]||'غير معروف','catalog-state');
+   status.dataset.status=item.status;
+   const header=el('div',undefined,'catalog-item-header');header.append(status);
+   c.append(header);
+   if(item.categoryLabel)c.append(el('small',item.categoryLabel,'catalog-category'));
+   if(item.description)c.append(el('p',item.description));
+   if(item.priceText){
+     const value=item.priceText.trim();
+     const numericOnly=/^[0-9٠-٩]+(?:[.,٬٫][0-9٠-٩]+)*$/.test(value);
+     c.append(el('p','السعر: '+value+(numericOnly?' — العملة غير محددة':''),'catalog-price'));
+   }
+   if(canEdit()){
+     const actions=el('div',undefined,'catalog-item-actions');
+     actions.append(button('تعديل',()=>{
+       const f=$('catalog-form');
+       for(const key of ['id','kind','title','categoryLabel','description','priceText','imageUrl','externalUrl'])
+         f.elements.namedItem(key).value=item[key]||'';
+       $('catalog-editor-title').textContent='تعديل — الحفظ يعيد العنصر لمسودة';
+       f.scrollIntoView({block:'center'});
+     }));
+     if(item.status!=='PUBLISHED'&&item.status!=='ARCHIVED')actions.append(button('اعتماد ونشر',async()=>{
+       if(!confirm('هل راجعت بيانات هذا العنصر وتريد نشره للعملاء؟'))return;
+       await api('/catalog/'+item.id+'/publish',{method:'POST'});await catalog();
+     },'primary'));
+     if(item.status!=='ARCHIVED'){
+       const extra=el('details',undefined,'catalog-item-extra');
+       const summary=el('summary','المزيد من الإجراءات');extra.append(summary,button('أرشفة العنصر',async()=>{
+         if(!confirm('أرشفة هذا العنصر وإيقاف ظهوره في الكتالوج المنشور؟'))return;
+         await api('/catalog/'+item.id+'/archive',{method:'POST'});await catalog();
+       },'danger'));
+       actions.append(extra);
+     }
+     c.append(actions);
+   }
+   host.append(c);
+ }
+}
+bind('catalog-form',async(d,f)=>{if(/(^|\s)-\s*[0-9٠-٩]/.test(d.priceText||'')){f.elements.priceText.focus();throw new Error('السعر لا يمكن أن يكون سالبًا. اكتب سعرًا صحيحًا أو «عند الطلب».')}const price=String(d.priceText||'').trim(),currency=$('catalog-price-currency')?.value||'';
+ if(/^[0-9٠-٩]+(?:[.,٬٫][0-9٠-٩]+)*$/.test(price)){
+   if(!currency){f.elements.priceText.focus();throw new Error('اكتب العملة مع السعر أو اخترها من قائمة العملات، أو استخدم «عند الطلب».')}
+   d.priceText=price+' '+currency;
+ }
+ const id=d.id;delete d.id;await api('/catalog'+(id?'/'+id:''),{method:id?'PUT':'POST',body:d});f.reset();$('catalog-editor-title').textContent='إضافة عنصر';await catalog();notify('تم حفظ مسودة العنصر')});$('catalog-new').onclick=()=>{$('catalog-form').reset();$('catalog-editor-title').textContent='إضافة عنصر'};
 async function knowledge(){const host=$('faq-list');host.replaceChildren();const rows=await api('/knowledge');if(!rows.length)host.append(el('p','لا توجد معلومات معتمدة بعد.'));for(const r of rows){const c=card(r.question,r.answer+' • '+r.status);if(r.status==='DRAFT'&&canEdit()){
     c.append(button('تعديل المسودة',()=>{
       host.querySelectorAll('.faq-inline-editor').forEach(editor=>editor.remove());$('faq-form').hidden=true;
