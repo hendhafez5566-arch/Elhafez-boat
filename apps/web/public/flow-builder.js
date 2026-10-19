@@ -193,6 +193,15 @@ export function initFlowBuilder({state,api,notify,execute}){
   advancedButtons.append(button('إعادة العرض',()=>canvas.reset()),button('الخطوة المختارة',()=>canvas.focus(selected)));
   advancedView.append(advancedButtons);
   actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
+ const simpleMode=button('عرض مبسط بالخطوات',()=>{
+   const linear=workspace.classList.toggle('builder-linear-mode');
+   palette.hidden=!linear;workspace.classList.toggle('palette-collapsed',!linear);
+   paletteToggle.disabled=linear;
+   simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
+   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open');palette.scrollIntoView({block:'start'})}
+   else{canvas.draw();canvas.focus(selected)}
+ },'secondary');
+ actions.prepend(simpleMode);
  stageHead.append(actions,advancedView);
  stagePanel.append(stageHead,tools,canvasHost);
  canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');
