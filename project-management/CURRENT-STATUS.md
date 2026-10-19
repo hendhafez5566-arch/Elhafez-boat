@@ -1,3 +1,14 @@
+## 2026-10-19 — Isolated UI/UX real-user audit remediation (DRAFT, not deployed)
+
+- Audit basis: Cloud Browser checked 21 screens, with 20 documented issues and 98 scenarios (51 Pass, 17 Fail, 30 Blocked); neither mobile testing nor live Meta acceptance was completed by audit.
+- Created branch `fix/ui-ux-audit-2026-10-19` and draft PR #2 against `feat/stage0-foundation` to isolate changes from the Railway-linked live branch.
+- Code changes: flow geometry, phone validation, simulator preflight/handoff, navigation search, alert position, Arabic forms, analytics loading, provider-aware connectors, editable FAQ drafts, log readability, simplified toolbar and UI text contrast.
+- Safety: no merge to the deploy branch, no Railway restart, no Meta authorization, no WhatsApp send, no existing tenant or customer data modified.
+- Verification: source build/unit checks and isolated browser/PostgreSQL CI must pass on PR HEAD. Independent mobile visual acceptance and original 20 screenshots' reproduction remain **open**; functional UI edits are NOT deemed production-ready on code tests alone.
+- Meta Coexistence self-service remains gated on official provider setup; session reload OBS-02 remains investigatory.
+
+See `docs/UI-AUDIT-FIX-2026-10-19.md` for issue-to-change mapping and acceptance gaps.
+
 ## 2026-10-18 — Manual Railway test-number pilot staged (NO deployment)
 
 Owner confirmed GitHub autodeploy disabled on new Railway project industrious-flow / Elhafez-boat service. Source scripts/railway-pilot.mjs and scripts/railway-pilot-setup.mjs provide a guarded all-in-one demo (web/API/worker) and first-run migrations/bootstrap for a fresh boat_pilot DB using a separate non-BYPASSRLS runtime role. Test scripts block AI provider configuration and non-pilot database targets. A second PostgreSQL service + 512MB volume, generated HTTPS test domain and isolated secret/DB connection variables are STAGED ONLY on Railway. No resources deployed, and old Railway/ERP projects unaffected.

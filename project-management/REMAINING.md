@@ -1,3 +1,14 @@
+## 2026-10-19 — Open acceptance tasks after UI audit code changes
+
+1. Reproduce the 20 original audit issues on separate seed data and capture before/after images.
+2. Run real mobile viewport checks at 320×568 and 390×844 and at least one real Android handset; verify flow card overlap and interactive ports.
+3. Verify draft-only FAQ edits via authenticated owner/staff/viewer requests and refresh; do not edit the published content.
+4. Verify browser-simulator handoff, phone validation, catalog negative price warning, connector type switching, search aliases, no-results and alert placement.
+5. Investigate OBS-02 session reset after reload; do not weaken auth based on one observation.
+6. Complete official Meta setup and real Coexistence registration only with explicit owner participation/consent; no token bypass.
+7. Assess accessibility contrast and screen reader keyboard flows; perform authorized provider send/delivery test separately.
+8. Gate merge to Railway-linked branch on green CI and independent visual sign-off.
+
 ## 2026-10-18 — Manual Railway test-number pilot staged (NO deployment)
 
 Owner confirmed GitHub autodeploy disabled on new Railway project industrious-flow / Elhafez-boat service. Source scripts/railway-pilot.mjs and scripts/railway-pilot-setup.mjs provide a guarded all-in-one demo (web/API/worker) and first-run migrations/bootstrap for a fresh boat_pilot DB using a separate non-BYPASSRLS runtime role. Test scripts block AI provider configuration and non-pilot database targets. A second PostgreSQL service + 512MB volume, generated HTTPS test domain and isolated secret/DB connection variables are STAGED ONLY on Railway. No resources deployed, and old Railway/ERP projects unaffected.
