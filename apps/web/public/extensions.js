@@ -5,8 +5,11 @@ export function initExtensions(ctx){
  bind('agent-preview-form',async d=>{
   const answer=await api('/ai/agent/preview',{method:'POST',body:{question:d.question}});
   const host=$('agent-preview-result');host.replaceChildren();
-  host.append(el('h4','الرد المقترح'),el('p',answer.message),el('p','المسار: '+answer.intent+' • المراجع: '+(answer.sourceIds.join('، ')||'لا يوجد')));
-  host.append(el('p','الخطوات المتاحة: '+answer.actions.join(' ← ')));
+  const intents={CLARIFY:'طلب توضيح',HANDOFF:'تحويل لموظف',ANSWER:'إجابة معتمدة',UNKNOWN:'غير محدد'};
+   const actions={ASK_CLARIFICATION:'اسأل العميل للتوضيح',HANDOFF:'سلّم المحادثة لموظف',ANSWER:'اعرض الإجابة المعتمدة'};
+   host.append(el('h4','الرد المقترح'),el('p',answer.message),el('p','المسار: '+(intents[answer.intent]||'يتطلب مراجعة')+' • المراجع: '+(answer.sourceIds.length?'متاحة للمشغل':'لا توجد')));
+  host.append(el('p','الخطوات المتاحة: '+answer.actions.map(a=>actions[a]||'إجراء متخصص').join(' ← ')));
+   const technical=el('details');technical.append(el('summary','التفاصيل التقنية للمشغل'),el('code',answer.intent+' • '+answer.actions.join(', ')));host.append(technical);
   if(answer.needsStaff)host.append(el('p','مطلوب تدخل موظف أو توضيح إضافي.'));
   notify('معاينة محلية، بدون اتصال خارجي أو إرسال');
  });
@@ -52,6 +55,26 @@ export function initExtensions(ctx){
  async function integrations(){const host=$('integration-list');host.replaceChildren();for(const r of await api('/integrations')){const c=card(r.name,r.url+' • '+(r.enabled?'مفعّل':'متوقف')+' • '+(r.authMode||'NONE'));c.append(el('p','معرّف عقدة Webhook: '+r.id));if(r.authMode!=='NONE')c.append(button('استبدال سر التكامل',async()=>{const secret=prompt('السر الجديد — لن يظهر بعد حفظه');if(!secret)return;await api('/integrations/'+r.id,{method:'PATCH',body:{enabled:r.enabled,secret}});notify('تم تشفير السر الجديد وحفظه')}));c.append(button(r.enabled?'إيقاف':'تفعيل',async()=>{await api('/integrations/'+r.id,{method:'PATCH',body:{enabled:!r.enabled}});await integrations()}));host.append(c)}$('key-form').hidden=state.role!=='OWNER';if(state.role==='OWNER')await keys()}
  async function keys(){const host=$('key-list');host.replaceChildren();for(const k of await api('/access-keys')){const c=card(k.name,k.scopes.join(' • ')+' • '+(k.revoked_at?'ملغى':'فعال حتى '+new Date(k.expires_at).toLocaleDateString('ar-EG')));if(!k.revoked_at)c.append(button('إلغاء المفتاح',async()=>{await api('/access-keys/'+k.id,{method:'DELETE'});await keys()},'danger'));host.append(c)}}
  bind('integration-form',async(d,f)=>{await api('/integrations',{method:'POST',body:d});f.reset();await integrations()});bind('key-form',async d=>{const r=await api('/access-keys',{method:'POST',body:{name:d.name,scopes:[d.scope]}});$('key-created').textContent=r.key;await keys();notify('المفتاح يظهر مرة واحدة؛ احفظه بأمان')});
- async function usage(){const host=$('usage-summary');host.replaceChildren();$('runtime-jobs').replaceChildren();const [u,jobs]=await Promise.all([api('/usage'),api('/runtime/jobs')]);for(const [label,value] of [['رسائل اليوم','المستخدم: '+u.inbound+' — الحد: '+u.daily_inbound],['قوالب اليوم','المستخدم: '+u.templates+' — الحد: '+u.daily_templates],['الوسائط MiB','المستخدم: '+(Number(u.stored_bytes)/1048576).toFixed(1)+' — الحد: '+(Number(u.media_bytes)/1048576).toFixed(1)]])host.append(card(label,value));for(const [kind,rows] of Object.entries(jobs)){const block=el('section');block.append(el('h3',{health:'نبض العامل',connectors:'مزامنة الموصلات',social:'رسائل القنوات',delays:'استكمال المحادثات',webhooks:'التكاملات',outbox:'رسائل واتساب'}[kind]));if(!rows.length)block.append(el('p','لا توجد سجلات.'));for(const row of rows)block.append(card(row.id||row.conversation_id,[row.status,row.error||row.last_error||row.last_error_code,new Date(row.due_at||row.next_attempt_at||row.last_seen_at).toLocaleString('ar-EG')].filter(Boolean).join(' • ')));$('runtime-jobs').append(block)}}
+ async function usage(){const host=$('usage-summary');host.replaceChildren();$('runtime-jobs').replaceChildren();const [u,jobs]=await Promise.all([api('/usage'),api('/runtime/jobs')]);for(const [label,value] of [['رسائل اليوم','المستخدم: '+u.inbound+' — الحد: '+u.daily_inbound],['قوالب اليوم','المستخدم: '+u.templates+' — الحد: '+u.daily_templates],['الوسائط MiB','المستخدم: '+(Number(u.stored_bytes)/1048576).toFixed(1)+' — الحد: '+(Number(u.media_bytes)/1048576).toFixed(1)]])host.append(card(label,value));for(const [kind,rows] of Object.entries(jobs)){const block=el('section');block.append(el('h3',{health:'نبض العامل',connectors:'مزامنة الموصلات',social:'رسائل القنوات',delays:'استكمال المحادثات',webhooks:'التكاملات',outbox:'رسائل واتساب'}[kind]));if(!rows.length)block.append(el('p','لا توجد سجلات.'));const statusName={PENDING:'قيد الانتظار',PROCESSING:'جارٍ الإرسال',SENT:'تم الإرسال',FAILED:'فشل الإرسال',UNCERTAIN:'مصير غير مؤكد — لا تكرر الإرسال',DONE:'مكتمل'};
+    const errorName={'Provider rejected message':'رفض مزود واتساب الإرسال — افحص رمز الربط والصلاحيات','Delivery outcome unknown; reconcile before resend':'نتيجة التسليم غير مؤكدة — راجع Meta قبل أي إعادة','Provider rate limited':'حد الإرسال لدى المزود؛ انتظر'};
+    const list=el('div');block.append(list);
+    const statusSelect=el('select');statusSelect.setAttribute('aria-label','تصفية حالة '+kind);
+    for(const [value,title] of [['ALL','كل الحالات'],['FAILED','فشل'],['PENDING','قيد الانتظار'],['UNCERTAIN','غير مؤكدة'],['SENT','تم الإرسال']]){
+     const option=el('option',title);option.value=value;statusSelect.append(option)
+    }
+    if(kind==='outbox')block.insertBefore(statusSelect,list);
+    const draw=()=>{
+      list.replaceChildren();
+      const subset=rows.filter(row=>kind!=='outbox'||statusSelect.value==='ALL'||row.status===statusSelect.value);
+      if(!subset.length)list.append(el('p','لا توجد سجلات مطابقة للفلتر.','muted'));
+      for(const row of subset){
+       const id=String(row.id||row.conversation_id||''),error=String(row.error||row.last_error||row.last_error_code||'');
+       const when=row.due_at||row.next_attempt_at||row.last_seen_at;
+       const display=card(kind==='outbox'?'رسالة واتساب':kind==='health'?'حالة العامل':'عملية مسجلة',
+        [statusName[row.status]||row.status,errorName[error]||error,when?new Date(when).toLocaleString('ar-EG'):null].filter(Boolean).join(' • '));
+       const details=el('details');details.append(el('summary','تفاصيل تقنية'),el('code',id));display.append(details);list.append(display);
+      }
+    };
+    statusSelect.onchange=draw;draw();$('runtime-jobs').append(block)}}
  return {load:page=>({triggers,website,media,campaigns,integrations,usage,'ai-settings':ai}[page])(),reset(){widgetKey='';campaignTemplates=[];$('key-created').textContent='';$('widget-code').value='';$('campaign-steps').replaceChildren();$('integration-form').reset()}};
 }

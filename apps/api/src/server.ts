@@ -26,7 +26,7 @@ import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFl
 import {analyticsOverview} from './analytics.js';
 import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
-import { listKnowledge, createKnowledge, publishKnowledge } from './knowledge.js';
+import { listKnowledge, createKnowledge, updateKnowledgeDraft, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, diagnoseWhatsApp, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
 import { createTeamInvite, listTeamInvitations, revokeTeamInvite, updateTeamRole, acceptTeamInvite } from './team.js';
 import { platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, platformUsageLimits, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
@@ -301,6 +301,8 @@ const server=createServer(async(req,res)=>{
     if(req.method==='PATCH'&&marketingConsent)return json(res,200,await runBody((tx,input)=>recordMarketingConsent(tx,actor,marketingConsent[1],input)));
     if(req.method==='GET'&&pathname==='/api/v1/knowledge')return json(res,200,await run(tx=>listKnowledge(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/knowledge')return json(res,201,await runBody((tx,input)=>createKnowledge(tx,actor,input)));
+     const kbDraft=/^\/api\/v1\/knowledge\/([^/]+)$/.exec(pathname);
+     if(req.method==='PUT'&&kbDraft)return json(res,200,await runBody((tx,input)=>updateKnowledgeDraft(tx,actor,kbDraft[1],input)));
     const kbPublish=/^\/api\/v1\/knowledge\/([^/]+)\/publish$/.exec(pathname);
     if(req.method==='PATCH'&&kbPublish)return json(res,200,await run(tx=>publishKnowledge(tx,actor,kbPublish[1])));
     if(req.method==='GET'&&pathname==='/api/v1/summary')return json(res,200,await run(tx=>getSummary(tx,actor)));

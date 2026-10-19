@@ -12,11 +12,11 @@ export function initInsights({api,$,el}){
  async function load(){
   const host=$('bot-insights'),revision=++loadRevision;
   host.setAttribute('aria-busy','true');
-  host.querySelector('.insights-loading')?.remove();
-  host.prepend(el('p','جارٍ تحديث التحليلات…','insights-loading'));
+  const loading=el('p','جارٍ تحديث التحليلات…','insights-loading');
+  host.append(loading);
   let data;
   try{data=await api('/analytics/overview?days='+periodDays)}
-  catch{if(revision===loadRevision){host.querySelector('.insights-loading')?.replaceChildren(document.createTextNode('تعذر التحديث. احتفظنا بالبيانات السابقة؛ غيّر الفترة للمحاولة مجددًا.'));host.setAttribute('aria-busy','false')}return}
+  catch{if(revision===loadRevision){loading.textContent='تعذر التحديث. احتفظنا بالبيانات السابقة؛ غيّر الفترة للمحاولة مجددًا.';host.setAttribute('aria-busy','false')}return}
   if(revision!==loadRevision)return;
   host.replaceChildren();host.setAttribute('aria-busy','false');
   const period=el('select');period.setAttribute('aria-label','فترة التحليلات');

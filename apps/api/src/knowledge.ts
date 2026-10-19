@@ -8,6 +8,18 @@ export async function createKnowledge(db:SqlClient,actor:Actor,input:unknown){al
  const r=await db.query(`INSERT INTO tenant_knowledge_articles(tenant_id,question,answer,created_by) VALUES($1,$2,$3,$4) RETURNING id,question,answer,status`,[actor.tenantId,question,answer,actor.userId]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FAQ_DRAFT_CREATED','faq',$3)`,[actor.tenantId,actor.userId,r.rows[0].id]);return r.rows[0];
 }
+export async function updateKnowledgeDraft(db:SqlClient,actor:Actor,id:string,input:unknown){
+ allow(actor,['OWNER','MANAGER']);
+ if(!isUuid(id))throw new HttpFailure(400,'Invalid FAQ id');
+ const d=obj(input),question=typeof d.question==='string'?d.question.trim():'',answer=typeof d.answer==='string'?d.answer.trim():'';
+ if(question.length<5||question.length>300||answer.length<5||answer.length>2000)throw new HttpFailure(400,'Invalid question or answer');
+ const r=await db.query(`UPDATE tenant_knowledge_articles SET question=$3,answer=$4,updated_at=now()
+ WHERE tenant_id=$1 AND id=$2 AND status='DRAFT' RETURNING id,question,answer,status`,
+ [actor.tenantId,id,question,answer]);
+ if(r.rowCount!==1)throw new HttpFailure(404,'Editable draft FAQ not found');
+ await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FAQ_DRAFT_UPDATED','faq',$3)",[actor.tenantId,actor.userId,id]);
+ return r.rows[0];
+}
 export async function publishKnowledge(db:SqlClient,actor:Actor,id:string){allow(actor,['OWNER','MANAGER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid FAQ id');
  const r=await db.query(`UPDATE tenant_knowledge_articles SET status='PUBLISHED',published_by=$3,updated_at=now() WHERE tenant_id=$1 AND id=$2 AND status IN ('DRAFT','PUBLISHED') RETURNING id,status`,[actor.tenantId,id,actor.userId]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Draft FAQ not found');await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FAQ_PUBLISHED','faq',$3)`,[actor.tenantId,actor.userId,id]);return r.rows[0];
