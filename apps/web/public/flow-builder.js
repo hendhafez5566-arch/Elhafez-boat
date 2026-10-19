@@ -567,7 +567,15 @@ export function initFlowBuilder({state,api,notify,execute}){
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();resetPreview();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
- $('builder-industry').closest('.builder-toolbar').before(guideHost);
+ const primaryBar=$('builder-industry').closest('.builder-toolbar');
+ const presetOptions=el('details',undefined,'builder-preset-disclosure');
+ presetOptions.append(el('summary','القوالب الجاهزة (اختياري)'),$('builder-industry').closest('label'),$('builder-load-preset'));
+ primaryBar.append(presetOptions);
+ const guideDisclosure=el('details',undefined,'builder-guide-disclosure');
+ guideDisclosure.append(el('summary','إنشاء بوت جديد خطوة بخطوة'),guideHost);
+ primaryBar.after(guideDisclosure);
+ const guideLaunch=button('إنشاء بوت جديد بالمعالج',()=>{guideDisclosure.open=true;guide.open();guideHost.scrollIntoView({block:'start',behavior:'smooth'})},'secondary');
+ primaryBar.prepend(guideLaunch);
  const guide=mountGuidedWizard({
    host:guideHost,
    isEditingSubflow:()=>Boolean(mainSnapshot),
@@ -579,7 +587,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      selected='menu';selectedNodes=new Set([selected]);
      history=[previous];cursor=0;dirty=false;
      markDirty();renderAll();resetPreview();
-     guideHost.scrollIntoView({block:'nearest',behavior:'smooth'});
+     guideDisclosure.open=false;workspace.scrollIntoView({block:'start',behavior:'smooth'});
      return true;
    }
  });
