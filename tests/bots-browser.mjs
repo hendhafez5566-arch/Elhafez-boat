@@ -58,6 +58,7 @@ try{
  for(const [width,height] of [[1366,900],[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await sleep(200);await screenshot('rebuild-before-builder-'+width+'.png')}
  await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list article'))",'original team UI baseline');
  for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await sleep(150);await screenshot('team-before-'+width+'.png')}
+ for(const page of ['overview','media','integrations','usage']){await evaluate(`document.querySelector('[data-page=${page}]').click()`);await until(`!document.getElementById('${page}').hidden`,'baseline '+page);await sleep(250);for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('closure-before-'+page+'-'+width+'.png')}}
  await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});await login(base);
  await evaluate("document.querySelector('[data-page=bots]').click()");await until("!document.getElementById('bots').hidden && !document.getElementById('bots').textContent.includes('جارٍ تحميل')",'bot manager');
  const botName='مساعد المتصفح '+Date.now();
