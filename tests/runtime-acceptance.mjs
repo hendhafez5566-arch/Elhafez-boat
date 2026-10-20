@@ -260,6 +260,8 @@ try{
   process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY=env.WHATSAPP_TOKEN_ENCRYPTION_KEY;process.env.INTEGRATION_SECRET_ENCRYPTION_KEY=env.INTEGRATION_SECRET_ENCRYPTION_KEY;process.env.META_GRAPH_VERSION='v24.0';
   // Keep two instrumented workers for mixed load; stop them before provider fixtures.
   const {localClosure}=await import('./local-closure.mjs');await localClosure({db,env,sim,launch,request,expectCode,apiProcesses:[apiProcess,replica]});
+  // Closure intentionally stops its crash/load workers; browser uploads still need the real scanner queue.
+  launch('browser-scan-worker',process.execPath,['.build/apps/worker/main.js'],env);
  }
  const browserFlow=await expectCode('/api/v1/flows',{token:one},200);await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{...def,expectedRevision:browserFlow.draft.draftRevision}},200);await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
  // Browser acceptance uses this **disposable** account only, never real credentials.

@@ -94,6 +94,8 @@ jobs:
           test -S /tmp/boat-clamd.sock || { cat /tmp/boat-clam-start.log; exit 1; }
           echo 'CLAMAV_SOCKET=/tmp/boat-clamd.sock' >> "$GITHUB_ENV"
           echo 'CI_LOCAL_CLOSURE=1' >> "$GITHUB_ENV"
+      - name: Atomic company setup, media safety, inbox concurrency and platform isolation
+        run: node tests/completion-db.mjs
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data
