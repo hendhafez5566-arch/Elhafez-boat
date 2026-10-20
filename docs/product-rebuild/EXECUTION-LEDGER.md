@@ -1,3 +1,70 @@
+# 20 October 2026 — Team and reports core acceptance closed locally
+
+Same branch `feat/codex-product-rebuild-2026-10-19` and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4). Team source `96a25b2`, reporting source `815c5e8`, full runtime/both-browser run on `09fb2e8`; final test/baseline refinement `311ace6` and Arabic ISO direction fix **`b50da9d`** passed the targeted real runtime/Chromium suite. Final evidence commit is reports/images only. No migration, merge, Railway deployment, real email, external invitation sharing, paid AI or live provider request.
+
+## Current S01–S22 status (supersedes historical tables below)
+
+DONE+TESTED means the stated **local core functional scope**, not commercial sign-off, external provider activation or complete accessibility approval. **8 DONE+TESTED, 13 PARTIAL, 1 BLOCKED_PROVIDER.**
+
+| ID | Current status | Verified scope / exact remaining boundary |
+|---|---|---|
+| S01 | PARTIAL | Per-bot wizard and invitation-to-login work; full new-company/business/channel onboarding remains open. |
+| S02 | PARTIAL | Real metrics/readiness/exact inbox links; complete dashboard UX and all zero/error/action acceptance remain open. |
+| S03 | DONE+TESTED | Searchable three-template gallery, server preview and independent draft creation; prior evidence retained. |
+| S04 | DONE+TESTED | Tenant-isolated bot CRUD/archive/restore and independent drafts/publications; no live provider claim. |
+| S05 | PARTIAL | Beginner branches, same-definition step/canvas editing and validated conflict/backup recovery; dense novice journeys remain open. |
+| S06 | PARTIAL | Context insertion/drag/zoom/undo, conservative three-way review; dense cycles/full keyboard acceptance remain open. |
+| S07 | PARTIAL | Typed inspector/limits/conditions/media/links exercised; all advanced variants and accessible long inspector cases remain open. |
+| S08 | DONE+TESTED | Real local draft interpreter/input/options/handoff, without real customer or provider messages. |
+| S09 | DONE+TESTED | Bot-scoped routing/triggers and pinned-session isolation locally; official external activation is separate. |
+| S10 | PARTIAL | Website manual reply/assignment/takeover/release/close/notes/draft isolation; full concurrency/failure/provider matrix remains open. |
+| S11 | DONE+TESTED | Real PostgreSQL paging/search/filter chips and atomic bounded bulk stages with tenant/role checks. |
+| S12 | DONE+TESTED | Contact-wide paginated conversation history and exact thread links; existing bounded message history, not unlimited export. |
+| S13 | PARTIAL | Four-step authoring and real consent/template review without launch; complex media/commerce template acceptance remains open. |
+| S14 | DONE+TESTED | Defined aggregate KPIs, real 7/30/90 UTC windows/previous comparison, zero days, actual CSV, empty/error/retry; excludes revenue/delivery attribution and BI/custom reports. |
+| S15 | PARTIAL | Catalog CRUD preserved; full media upload/scan workflow and local real-scanner acceptance remain open. |
+| S16 | BLOCKED_PROVIDER | Live/paid AI activation is not authorized; existing grounded local preview is not provider proof. |
+| S17 | PARTIAL | Real saved-state channel directory and guarded assignments; official live provider acceptance remains prohibited. |
+| S18 | PARTIAL | Existing secrets/SSRF guards preserved; full integration UX/failure matrix remains open. |
+| S19 | DONE+TESTED | Core owner/manager/agent/viewer boundaries, manual invitation lifecycle, expiry/reuse, roles/session invalidation and real browser errors/retry; no automatic email service claimed. |
+| S20 | PARTIAL | Existing company/plan/usage backend; complete usage UX remains open; no invented billing provider. |
+| S21 | PARTIAL | Real separate owner login/company/invite fixture paths; complete owner operations/log UX remains open. |
+| S22 | PARTIAL | Actual desktop/mobile flows/screenshots; native 200% zoom, physical devices, full screen-reader/WCAG/owner UX approval remain open. |
+
+## S19 — actual functional work and proof
+
+`team-ui.js` replaces the dense team handler with Arabic role explanations, expiration/status labels, role-aware controls and retained-data retry. Private links have copy/hide controls; no plaintext invitation token is stored or committed. Screenshots are taken only after hiding the link. Duplicate active invitations are rejected case-insensitively under the existing per-tenant lock; expired/cancelled links can be replaced without changing seat limits. Managers can invite/revoke agents/viewers but cannot invite managers, revoke owner/manager invitations, or change roles. Revocation is audited. Role changes invalidate prior sessions as before.
+
+The actual join form handles Arabic credential/expiry errors, removes the token fragment, hides the form after acceptance, and links to company-prefilled login. Company slug is returned only after successful token/email/password validation; there is no unauthenticated directory or new public preview. Existing account passwords are verified and retained.
+
+PostgreSQL tests exercise concurrent duplicate requests (one success), seat capacity, owner/manager/agent/viewer guards, cross-tenant denial, owner/manager invitation cancellation protection, expiry and renewal, cancelled/reused token rejection, new/existing-account acceptance and session invalidation. Chromium exercises create/hide, Arabic duplicate error, cancel, denied cancelled acceptance, actual join form, saved owner role changes, actual invited manager login and forbidden grant, plus a one-shot transport fault preserving old members and real retry recovery.
+
+## S14 — actual functional work and proof
+
+`analytics.ts` reads current and immediately preceding UTC calendar windows from PostgreSQL. `insights-ui.js` shows absolute changes for conversations/leads and percentage-point capture change, explicit UTC ranges, current task snapshots and current stages of period-created leads. Date fragments are isolated for RTL. Server dates anchor the zero-filled chart. CSV exports selected-period daily aggregate counts only, with Arabic UTF-8 BOM headers; no contacts or message text. Logout invalidates outstanding report loads.
+
+SQL tests prove both current and previous inclusive/exclusive boundaries, tenant isolation, daily/KPI reconciliation and session-timezone invariance. Unit tests cover leap-day zero rows, 90-day/year boundaries, aggregate-only export and formula-string exclusion. Chromium actually downloads the 90-day CSV and reconciles its sums to API counts; changes 7/90-day periods; checks a real empty company; and injects one transport failure then retries against the real API without discarding six prior metrics.
+
+## Executed checks and diagnoses
+
+- `npm run check`: **130 passed, 0 failed, 0 skipped**.
+- `MIGRATION_DATABASE_URL=…:5433/elhafez_ci node tests/bots-db.mjs`: PASS, including new team lifecycle and current/previous UTC boundaries plus existing bot/RLS/CRM/backfill cases.
+- Full `CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CHROME_BIN=/usr/bin/chromium MIGRATION_DATABASE_URL=…:5432/elhafez_ci node tests/runtime-acceptance.mjs`: exit 0 on the combined application source, both browser suites, API/worker recovery/throttle/roles, 81 broad page visits and actual new functional journeys. The 81 visits certify loading/named controls only.
+- Final rerun on `b50da9d` with `CI_BOT_BROWSER_ONLY=1`: exit 0, repeating real PostgreSQL/API/worker and extended browser journeys; only the already-passed broad browser child is skipped.
+- Harness seat saturation was solved with a separate disposable STARTER company, not larger production limits. Combined authentication exceeded the genuine 10/600-second login limit; existing owner-cookie reuse removed a redundant login without clearing counters or changing limits. A full run during JS asset-map expansion was invalidated and repeated with a fresh server. Role assertions now inspect the refreshed saved role paragraph, not merely option text.
+
+## Actual public-safe evidence
+
+- Team before: [1366](evidence/team-before-1366.png) / [320](evidence/team-before-320.png), reconstructed from original `b02a313` assets. These and after images use disposable fixtures, not identical member counts or a pixel-controlled numerical comparison.
+- Team after/error: [1366](evidence/team-invitations-1366.png) / [320](evidence/team-invitations-320.png); [retry retaining data](evidence/team-retry-320.png); [accepted join](evidence/team-accepted-320.png); [manager permissions](evidence/team-manager-permissions-320.png).
+- Reports before: [1366](evidence/wizard-analytics-1366.png) / [320](evidence/wizard-analytics-320.png), prior committed actual screenshots.
+- Reports after: [1366](evidence/comparison-report-1366.png) / [320](evidence/comparison-report-320.png); [actual empty company](evidence/comparison-empty-320.png).
+- [Machine-readable verification](evidence/team-report-verification.json). All addresses/data are synthetic. No private invitation link or password appears in images.
+
+Remaining execution priority: complete company onboarding; dense/accessible builder and unfinished graph recovery; inbox concurrency/failure cases; complex campaign templates; media/scanning; integration/channel/usage/owner UX; native zoom/physical-device/screen-reader acceptance. Live providers remain separately blocked by owner restriction. GitHub API still returns Forbidden, so remote CI success is unverified. Push only the existing PR #4 feature branch.
+
+---
+
 # 20 October 2026 — Builder collaboration/recovery batch
 
 Same implementation branch and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4), continuing `a781bab`. Tested executable commit: **`b592b7b2d12b178b1e093defc03501d581077540`**. Final evidence commit changes reports/images only. No schema migration, merge, Railway operation, paid AI or real provider connection/send.

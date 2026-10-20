@@ -1,3 +1,7 @@
+## 20 October 2026 — Team lifecycle and period reporting
+
+Final executable b50da9d. [Results](evidence/team-report-verification.json), [current S01–S22 table](EXECUTION-LEDGER.md), actual team [before](evidence/team-before-320.png)/[after](evidence/team-invitations-320.png), [join success](evidence/team-accepted-320.png), report [before](evidence/wizard-analytics-320.png)/[after](evidence/comparison-report-320.png)/[empty](evidence/comparison-empty-320.png). Desktop pairs and retry/role proof are linked from the ledger. Synthetic fixtures only; invitation links were hidden before capture. S14/S19 local core acceptance is closed; remaining screen/accessibility/provider limits are explicit.
+
 ## 20 October 2026 — Builder conflict recovery
 
 Source b592b7b; [verification](evidence/conflict-recovery-verification.json), [desktop comparison](evidence/conflict-review-1366.png), [mobile versions](evidence/conflict-review-320.png), [restored mobile draft](evidence/conflict-restored-draft-320.png). Actual synthetic fixtures, real PostgreSQL/Chromium, no provider operations. See EXECUTION-LEDGER.md for exact tested scope and remaining partial items.
