@@ -25,5 +25,5 @@ export function mountBotSetup({host,api,el,button,notify,openBuilder,canStart,wo
    else{step++;render()}
   }catch(error){errors.textContent=error.status===400?'راجع اسم البوت وبيانات النشاط ورسالة الترحيب.':error.status===403?'لا تسمح صلاحياتك أو حالة اشتراك الشركة بإنشاء بوت.':'تعذر إتمام الخطوة. احتفظنا بإجاباتك؛ حاول مجددًا بعد التأكد من الاتصال.'}finally{busy=false;const submit=actions.querySelector('[type=submit]');if(submit)submit.disabled=false;}
  };
- return {setTemplates(value){templates=value},start(templateId='service'){if(!canStart()){notify('احفظ تعديلات البوت الحالي قبل إنشاء بوت جديد.','error');return}draft={requestId:crypto.randomUUID(),templateId,name:'',businessName:'',greeting:'أهلًا وسهلًا! كيف نقدر نساعدك؟',collectPhone:true};step=0;review=null;render();dialog.showModal()}};
+ return {reset(){dialog.close();draft={};review=null;step=0;busy=false;body.replaceChildren();progress.replaceChildren();actions.replaceChildren();errors.textContent=''},setTemplates(value){templates=value},start(templateId='service'){if(!canStart()){notify('احفظ تعديلات البوت الحالي قبل إنشاء بوت جديد.','error');return}draft={requestId:crypto.randomUUID(),templateId,name:'',businessName:'',greeting:'أهلًا وسهلًا! كيف نقدر نساعدك؟',collectPhone:true};step=0;review=null;render();dialog.showModal()}};
 }
