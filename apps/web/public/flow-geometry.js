@@ -34,10 +34,14 @@ export function placeWithoutOverlap(point,node,existing=[],gap=GAP,measured=null
  return {x:base.x,y:base.y}; // Only reachable if all legal canvas coordinates are occupied.
 }
 export function graphOutputs(node={}){
- if(Array.isArray(node.choices))return node.choices.map((c,i)=>({key:'choice:'+c.id,to:c.next,label:c.title||'اختيار'}));
- if(node.type==='CONDITION'||node.type==='KEYWORD')return [{key:'yes',to:node.yes,label:'نعم'},{key:'no',to:node.no,label:'لا'}];
- return 'next'in node?[{key:'next',to:node.next,label:'التالي'}]:[];
+ const out=[];
+ if(Array.isArray(node.choices))out.push(...node.choices.filter(c=>c.action!=='URL').map(c=>({key:'choice:'+c.id,to:c.next,label:c.title||'اختيار'})));
+ else if(['CONDITION','KEYWORD','BUSINESS_HOURS'].includes(node.type))out.push({key:'yes',to:node.yes,label:node.type==='BUSINESS_HOURS'?'مفتوح':'نعم'},{key:'no',to:node.no,label:node.type==='BUSINESS_HOURS'?'مغلق':'لا'});
+ else if('next'in node)out.push({key:'next',to:node.next,label:'التالي'});
+ for(const [key,label] of [['invalidNext','بعد نفاد المحاولات'],['skipNext','تخطي'],['timeoutNext','انتهاء المهلة']])if(node.policy?.[key]!==undefined)out.push({key:'policy:'+key,to:node.policy[key],label});
+ if(node.errorNext!==undefined)out.push({key:'errorNext',to:node.errorNext,label:'عند الخطأ'});return out;
 }
+export function setGraphOutput(node,key,target){if(key.startsWith('choice:')){const c=node.choices?.find(c=>c.id===key.slice(7));if(c)c.next=target}else if(key.startsWith('policy:')){node.policy??={};node.policy[key.slice(7)]=target}else node[key]=target}
 export function arrangeFlow(flow){
  const byId=new Map(flow.nodes.map(node=>[node.id,node]));
  const rank=new Map([[flow.startId,0]]),queue=[flow.startId];

@@ -65,3 +65,11 @@ export async function botInsights(db:SqlClient,actor:Actor,id:string){
  WHERE s.tenant_id=$1 AND ${scope?'s.bot_id=$2':'(s.bot_id=$2 OR s.bot_id IS NULL)'} GROUP BY field ORDER BY count(*) DESC,field LIMIT 50`,[actor.tenantId,id]);
  return {...r.rows[0],fields:fields.rows,scope:'saved_sessions'};
 }
+
+/** Aggregates actual execution events, version-scoped and free of customer answers. */
+export async function flowStepInsights(db:SqlClient,actor:Actor,id:string,params:URLSearchParams){
+ const scope=await botScope(db,actor,id);const days=Number(params.get('days')||7),version=params.has('version')?Number(params.get('version')):null;
+ if(![7,30,90].includes(days)||version!==null&&(!Number.isInteger(version)||version<1))throw new HttpFailure(400,'Invalid analytics period or revision');
+ const r=await db.query(`SELECT node_id AS "nodeId",node_type AS "nodeType",version,outcome,count(*)::int AS events,count(DISTINCT conversation_id)::int AS sessions,round(avg(elapsed_ms),3)::float AS "averageMs" FROM chatbot_flow_step_events WHERE tenant_id=$1 AND (bot_id=$2 OR ($5::boolean AND bot_id IS NULL)) AND created_at>=now()-($3::int*interval '1 day') AND ($4::int IS NULL OR version=$4) GROUP BY node_id,node_type,version,outcome ORDER BY version DESC,node_id,outcome LIMIT 2000`,[actor.tenantId,id,days,version,scope===undefined]);
+ return {days,version,scope:'actual_transition_events',rows:r.rows,description:'Events count actual node entries and input resumes; sessions are distinct conversations per row. Outcomes are not delivery receipts.'};
+}

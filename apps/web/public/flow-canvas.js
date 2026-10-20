@@ -1,8 +1,8 @@
-import {nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH} from './flow-geometry.js';
+import {setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH} from './flow-geometry.js';
 /** Dependency-free, RTL-friendly flow canvas. Graph mutations stay in the existing draft editor. */
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
   const ns='http://www.w3.org/2000/svg';
-  const titles={SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
+  const titles={CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
   const edges=graphOutputs;
   let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,connectionGeneration=0,pendingFit=false;
   host.tabIndex=0;
@@ -29,7 +29,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   }
   map.onpointerdown=e=>{e.stopPropagation();const r=map.getBoundingClientRect(),b=mapBounds;const x=((e.clientX-r.left)*180/r.width-5)/b.scale+b.x,y=((e.clientY-r.top)*112/r.height-5)/b.scale+b.y;pan={x:host.clientWidth/2-x*zoom,y:host.clientHeight/2-y*zoom};transform()};
   const edgeTools=mk('div',undefined,'canvas-edge-tools');edgeTools.hidden=true;host.append(edgeTools);
-  const setDestination=(edge,value)=>{const n=getFlow().nodes.find(n=>n.id===edge.from);if(!n)return;if(edge.key.startsWith('choice:')){const c=n.choices?.find(c=>c.id===edge.key.slice(7));if(c)c.next=value}else n[edge.key]=value};
+  const setDestination=(edge,value)=>{const n=getFlow().nodes.find(n=>n.id===edge.from);if(n)setGraphOutput(n,edge.key,value)};
   const disconnect=()=>{if(!selectedEdge)return;setDestination(selectedEdge,'');selectedEdge=null;edgeTools.hidden=true;changed();draw()};
   function chooseEdge(edge){selectedEdge=edge;edgeTools.replaceChildren(mk('strong','وصلة محددة'),btn('تغيير الوجهة','',()=>{source={id:edge.from,key:edge.key};notify('اختر مدخل الوجهة الجديدة؛ Escape للإلغاء')}),btn('فصل الوصلة','danger',disconnect));edgeTools.hidden=false;svg.querySelectorAll('.canvas-edge').forEach(p=>p.classList.toggle('edge-selected',p.dataset.from===edge.from&&p.dataset.key===edge.key))}
   host.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select'))return;if(e.key==='Escape'){connectionGeneration++;source=null;selectedEdge=null;edgeTools.hidden=true;svg.querySelector('.canvas-ghost')?.remove()}if((e.key==='Delete'||e.key==='Backspace')&&selectedEdge){e.preventDefault();disconnect()}});
@@ -94,10 +94,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
         const from=f.nodes.find(x=>x.id===source?.id);
         if(!from){notify('اختار مخرج الخطوة أولًا','error');return}
         if(target===from.id){notify('لا يمكن توصيل الخطوة بنفسها','error');return}
-        if(source.key.startsWith('choice:')){
-          const choice=from.choices?.find(c=>c.id===source.key.slice(7));
-          if(!choice)return notify('تعذر تحديد الاختيار','error');choice.next=target;
-        }else from[source.key]=target;
+        setGraphOutput(from,source.key,target);
         source=null;selectedEdge=null;edgeTools.hidden=true;changed();draw();highlight(target);
       };
       const input=btn(source?'اضغط لتوصيل المسار':'مدخل','canvas-input',()=>connectTo(n.id));

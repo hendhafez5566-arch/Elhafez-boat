@@ -2,9 +2,10 @@ import {enqueueSocial} from './social.js';
 /** Channel adapter boundary. Payloads are generated internally, never accepted from visitors. */
 import {HttpFailure,type SqlClient} from './services.js';
 export function websitePayload(payload:Record<string,unknown>){
- const interactive=payload.interactive as {body?:{text?:string};action?:{buttons?:{reply:{id:string;title:string}}[];sections?:{rows:{id:string;title:string;description?:string}[]}[]}}|undefined;
+ const interactive=payload.interactive as {body?:{text?:string};action?:{parameters?:{display_text:string;url:string};buttons?:{reply?:{id:string;title:string};type?:string;url?:string;title?:string}[];sections?:{rows:{id:string;title:string;description?:string}[]}[]}}|undefined;
  if(payload.type==='text')return {type:'TEXT',text:(payload.text as {body:string}).body};
- if(payload.type==='interactive')return {type:'CHOICES',text:interactive?.body?.text||'',choices:interactive?.action?.buttons?.map(x=>x.reply)||interactive?.action?.sections?.flatMap(x=>x.rows)||[]};
+ if(payload.type==='interactive'&&interactive?.action?.parameters)return {type:'CHOICES',text:interactive.body?.text||'',choices:[{id:'',title:interactive.action.parameters.display_text,url:interactive.action.parameters.url}]};
+ if(payload.type==='interactive')return {type:'CHOICES',text:interactive?.body?.text||'',choices:interactive?.action?.buttons?.map(x=>x.reply||{id:'',title:x.title||'فتح الرابط',url:x.url})||interactive?.action?.sections?.flatMap(x=>x.rows)||[]};
  const media=payload[String(payload.type)] as {link?:string;caption?:string}|undefined;
  if(['image','video','audio','document'].includes(String(payload.type)))return {type:'MEDIA',kind:payload.type,url:media?.link,caption:media?.caption};
  throw new HttpFailure(400,'Unsupported website payload');

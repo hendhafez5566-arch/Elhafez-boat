@@ -1,0 +1,82 @@
+{
+  "date": "2026-10-20T13:37:22.824652+00:00",
+  "branch": "feat/premium-flow-builder-2026-10-20",
+  "baseHead": "a4ced99ee3bbf7e4f2dd8448c19bfb27887607ca",
+  "pr": 5,
+  "unit": {
+    "pass": 158,
+    "fail": 0,
+    "skip": 0
+  },
+  "postgresControlScenarios": 10,
+  "chromiumChecks": 28,
+  "chromium": "154.0.8037.57",
+  "statuses": {
+    "PASS": 5,
+    "PARTIAL": 31,
+    "BLOCKED_PROVIDER": [
+      "F24 external",
+      "F29 external",
+      "F30 external"
+    ]
+  },
+  "limits": [
+    "MOCK assistance and form sandbox only; no AI/Meta qualification",
+    "CSS 200%, not actual browser UI zoom",
+    "PostgreSQL 17 local; remote CI PostgreSQL 16 not yet verified",
+    "Full broad run plus follow-up API/novice/premium/HTTP run; final UUID validation covered by unit and targeted HTTP"
+  ],
+  "sourceSha256": {
+    ".github/workflows/verify.yml": "4195c2dccbacfd24a3150a0402123c2dd8c89937606a2f780042b21f0bd4f962",
+    "apps/api/src/bots.ts": "409079a710b6e9a6a99d202038695500d30ff864f68ccfdd0b5de593bae6aa95",
+    "apps/api/src/channels.ts": "8164f254a71682b2cde40d72a32c27b5da7b82d20dba1588be24da90cfb8af0f",
+    "apps/api/src/delay-scheduler.ts": "a920a2d72af87c189883873e55f4dfd38f706ab488c76a048832714ecb84f94b",
+    "apps/api/src/flow-assistance.ts": "d72e4b855ee1bfed1fb54008b18c3c3ce2edb7abc42dbeb0dd6b4be5d4373e06",
+    "apps/api/src/flow-capabilities.ts": "ede488517b626bde50c955538ecf2c56999034d413ef8fe352013f49da7d3692",
+    "apps/api/src/flow-engine.ts": "7cf1c6f7376ce088e8d642b50d5106e1e6f7a4f207e0ad0998fdb3d616de7155",
+    "apps/api/src/flow-forms.ts": "29fa2d82b0f7e8fcf65cc291e5915783ce53ad62525f9c489dae0e8c5b8a14d8",
+    "apps/api/src/flow-reuse.ts": "bc9bc6448fa0f29cec49668dbc60bac4a47554407df5de841fe01d9e31d2f33f",
+    "apps/api/src/flow-service.ts": "18b4ca41716db6a2f9528e56270d1ccfd90eb1391474278c522f58cd7e03bc93",
+    "apps/api/src/flow-time.ts": "ec2d50faee82ac05bc6d7a6ea25ab805ab9666658bb1b650450c3a7c5364eb0c",
+    "apps/api/src/server.ts": "ee30a14e59ff0d1da6b6d1a0dd4436e6980ac28ef17bfd9df1c710356cb62e4b",
+    "apps/api/src/social.ts": "ea5bffa3ae5635784a6007e5ad4f44a55ffe60a1aba782711af85e23535c4645",
+    "apps/api/src/subflows.ts": "6cd7dde64d3361559b8a468982e2d7f6e3152c7ce4f3431ca058cb811ec645b9",
+    "apps/web/public/flow-builder.css": "b6fb5a478d527c6fba311a39dc5ebed481fb9428d48bf4c3193df7efa84cb61e",
+    "apps/web/public/flow-builder.js": "205bb2527d56d3ef94504b4ce3b0a5f8add9f949a5e712916704309f05bca5c1",
+    "apps/web/public/flow-canvas.js": "2915ef7860d3cef247ad8baf6a7a6403439dd683dfaf65aa2ef72fef17ee1978",
+    "apps/web/public/flow-controls.js": "de6f7790841188a16b9d85b310343a1ff887623d56e929afebe197c7463ee2f4",
+    "apps/web/public/flow-geometry.js": "5d36b185ad8bd4c5dc2706837c1dd56c31db016aa4e25579162a8201b1f26756",
+    "apps/web/public/flow-labs.js": "773545b835ffc1f55f844edcc1a73e4577d5596aefb2f7f30f2208337013e1b9",
+    "apps/web/public/widget.js": "c061dd7d63cf712aab089d1e897bb011600664750ad75c5a89b59dedab81e19b",
+    "apps/web/server.mjs": "71e7800900d18e0dbd57267dd073f8bbd6bfc95e279822f3fa7ecb57928b4ce3",
+    "packages/database/migrations/0033_flow_runtime_controls.sql": "aa0593b35b081537729afc5cfd68fbe26f026cb8aece76536149d34c7d4c0d57",
+    "tests/browser-acceptance.mjs": "80fc9b2b4c61c5de30fa54ff9cdefec07523d5f48dbf73b72cdf413db2fd4d34",
+    "tests/flow-controls-db.mjs": "dece6e0732f79e0fdf69989ab693dcc6466c6a3f7e1f4d4a5c8c2ee12664e96e",
+    "tests/flow-controls-http.mjs": "36235626a7f597cce321767027510af243c032723df4474bc30c50350e407162",
+    "tests/flow-controls.test.mjs": "32428ccae3c7ce136e86902df0373c75b6bd60e3f7de19c1bf591e69a9aa446c",
+    "tests/premium-builder-browser.mjs": "43e7fe4b2a629c27244c55f07d3a2b301f93ad96fb21a4747253c0b2fc84694e",
+    "tests/runtime-acceptance.mjs": "085a7e6f64b394e3308b223dc204d6b2d501b9c563e0a1b65a3cbbfc9de70dc4"
+  },
+  "screenshotsSha256": {
+    "canvas-100-nodes.png": "b90d9e299ceb6c76a3ae4e889f0bb3fe2052e155960ecf1a4fecd246f63c7816",
+    "composite-message-editor.png": "be58411e2b501a6371c6121c547d67fa42c6bb91e3a22ce82a728fd56790e548",
+    "compound-inspector.png": "4bdb379e285f9acf77f1cfe4f6eb36ace543efa2afab7f64dba2f34d964c1bc2",
+    "draft-trigger-inspector.png": "3585925fc0d2f6cf7a02615aab007bc1e229bead949ccc952d658f37b0b7b237",
+    "durable-input-inspector.png": "4674b57d515a246f6cbef4733a8d703d3b976c05755e61949fadf6e17c86ca19",
+    "durable-timeout-simulator.png": "479823cb3ab5d60677704c0d65a621af03b7b27cf326daa9c9e457acb0f8df05",
+    "mock-draft-review.png": "d714bf3734160caa576bc4a5c7515a7255e2cfa271d83964c7cf300be26503e4",
+    "mock-text-review.png": "7131808ce247f2f02e43fd0636eb4ec5303e6b930415cc31989489e5ddfeb7c3",
+    "multiscreen-form-draft.png": "daf66537c29e44d180458b9239dc6f6b2bc1e075579a4240f5f514c154b11902",
+    "multiscreen-form-sandbox.png": "ec52dad189e86f91c37ac95339869e60ec7fb155781a2903a5b36fea8017b158",
+    "nested-condition-inspector.png": "7dbfb5e1002538468c164a967b3ed66ade7779db38366ba94996ebd0b1d679c4",
+    "revision-conflict.png": "1be8ba5118f2d1eec86d742dcf646721607e2999e72dbea3dd1d73bf4c39e9e9",
+    "simulator-trace.png": "8c3c54d01ea4cd02fddd6b755245f59a61825b9e038611ac4fd14a55715b1a3b",
+    "studio-1024.png": "fda0195d958e92b62b9cf72f8047f680cb9f574d941ba3f1c582a5cfa759da8f",
+    "studio-1440.png": "97dc03552d7fdf6351b1da98163f36f9e6a2ca8cdd393655c9c2b5dc495b7155",
+    "studio-200-percent.png": "61ec9e61e9a9abe04abce69e6ead8349e989215ba66964a329c9658fe5ae62a1",
+    "studio-390.png": "5f15341cab5975c7553730fe5ee1a9679c22b6b23a7ab0713d6cd72480966858",
+    "studio-768.png": "7443ef55ebbcee34429f198dc03dffe54bf0749b027c4f9997ed23cbe4d13b55",
+    "tourism-canvas.png": "fad2be57aeb6490b55b7c9d819df7e91f34ba9af553ae6eb9ed9433acd1360fa",
+    "weighted-randomizer-editor.png": "3c2c6b9d0d1c8a052e7ea76a71179f8ccb13b4a66e271249dcc073a2e52f629e"
+  }
+}

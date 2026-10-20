@@ -86,8 +86,8 @@ try{
  // Real business-user choice editor: 3 WhatsApp buttons, 10 WhatsApp list items.
  await evaluate("(()=>{const host=document.getElementById('builder-editor');const add=()=>[...host.querySelectorAll('button')].find(b=>b.textContent.trim()==='إضافة اختيار').click();add();add()})()");
  assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),3,'WhatsApp buttons cap is 3');
- await evaluate("(()=>{const input=document.querySelector('#builder-editor .builder-choice input[aria-label]');input.value='استفسار سريع';input.dispatchEvent(new Event('input',{bubbles:true}));const move=document.querySelector('#builder-editor .builder-choice-actions button:nth-child(2)');move.click()})()");
- assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice input[aria-label]')[1].value"),'استفسار سريع','Choice reorder must preserve its title');
+ await evaluate("(()=>{const input=document.querySelector('#builder-editor .builder-choice input[aria-label^=\"عنوان الاختيار \"]');input.value='استفسار سريع';input.dispatchEvent(new Event('input',{bubbles:true}));const move=document.querySelector('#builder-editor .builder-choice-actions button:nth-child(2)');move.click()})()");
+ assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice input[aria-label^=\"عنوان الاختيار \"]')[1].value"),'استفسار سريع','Choice reorder must preserve its title');
  await evaluate("(()=>{const btn=[...document.querySelectorAll('#builder-editor button')].find(b=>b.textContent.trim()==='إضافة اختيار');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),3,'Fourth WhatsApp button must be rejected');
  await evaluate("document.querySelector('.builder-quick-item[aria-label=\"إضافة قائمة اختيارات\"]').click()");

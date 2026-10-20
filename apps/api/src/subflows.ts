@@ -1,6 +1,6 @@
 import {randomUUID,createHash} from 'node:crypto';
 import {allow,HttpFailure,isUuid,type Actor,type SqlClient} from './services.js';
-import {validateFlow,type FlowDefinition,type FlowNode} from './flow-engine.js';
+import {validateFlow,mapConditionRules,type FlowDefinition,type FlowNode} from './flow-engine.js';
 export async function listSubflows(db:SqlClient,actor:Actor){allow(actor,['OWNER','MANAGER']);return (await db.query(`SELECT s.id,s.name,v.version,v.definition FROM chatbot_subflows s JOIN chatbot_subflow_versions v ON v.tenant_id=s.tenant_id AND v.subflow_id=s.id WHERE s.tenant_id=$1 ORDER BY s.created_at DESC,v.version DESC LIMIT 500`,[actor.tenantId])).rows}
 export async function saveSubflow(db:SqlClient,actor:Actor,input:unknown){
  allow(actor,['OWNER','MANAGER']);const d=input as {id?:string;definition?:unknown};let definition:FlowDefinition;
@@ -19,21 +19,26 @@ export async function saveSubflow(db:SqlClient,actor:Actor,input:unknown){
  * This is compilation, not mutable copied snippets: source calls retain exact library versions.
  * Field bindings map callee keys to caller keys, so input/output persist safely across delays. */
 export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDefinition,ancestors:string[]=[]):Promise<FlowDefinition>{
- let serial=0;const nodes:FlowNode[]=[];
+ let serial=0;const nodes:FlowNode[]=[],variables=new Map<string,import('./flow-engine.js').FlowVariable>();
  async function expand(flow:FlowDefinition,prefix:string,bindings:Record<string,string>,exit?:string,stack=ancestors){
+  for(const field of flow.variables||[]){const key=Object.hasOwn(bindings,field.key)?bindings[field.key]:field.key;const v={...field,key};const existing=variables.get(key);if(existing&&(existing.type!==v.type||existing.scope!==v.scope||JSON.stringify(existing.options)!==JSON.stringify(v.options)))throw new HttpFailure(400,'Conflicting bound variable types');variables.set(key,v)}
   const map=(id:string)=>prefix?prefix+createHash('sha256').update(id).digest('hex').slice(0,20):id;
   for(const raw of flow.nodes){
    const n=JSON.parse(JSON.stringify(raw)) as FlowNode;n.id=map(n.id);
+   if(n.type==='INPUT'&&!n.validation){const v=flow.variables?.find(v=>v.key===n.field);if(v&&['text','phone','email','number','date','datetime','location'].includes(v.type))n.validation={type:v.type as import('./flow-engine.js').InputValidation['type']}}
    const template=(text:string)=>text.replace(/\{\{([a-z][a-z0-9_]{0,39})\}\}/g,(token,key:string)=>Object.hasOwn(bindings,key)?'{{'+bindings[key]+'}}':token);
    if('text'in n)n.text=template(n.text);
    if(n.type==='MEDIA'&&n.caption)n.caption=template(n.caption);
    if(n.type==='SET_FIELD')n.value=template(n.value);
    if(n.type==='TEXT'&&n.blocks)n.blocks=n.blocks.map(b=>b.type==='MEDIA'?{...b,caption:template(b.caption||'')}:{...b,text:template(b.text)});
    if('field'in n)n.field=Object.hasOwn(bindings,n.field)?bindings[n.field]:n.field;
-   if(n.type==='CONDITION'&&n.rules)n.rules=n.rules.map(r=>({...r,field:Object.hasOwn(bindings,r.field)?bindings[r.field]:r.field}));
+   if(n.type==='CONDITION'&&n.rules)n.rules=mapConditionRules(n.rules,field=>Object.hasOwn(bindings,field)?bindings[field]:field);
+   if('policy'in n&&n.policy){for(const key of ['invalidNext','timeoutNext','skipNext'] as const)if(n.policy[key])n.policy[key]=map(n.policy[key]!)}
+   if('errorNext'in n&&n.errorNext)n.errorNext=map(n.errorNext);
+   if(n.type==='DELAY'){if(n.schedule?.mode==='AT'&&n.schedule.field)n.schedule.field=Object.hasOwn(bindings,n.schedule.field)?bindings[n.schedule.field]:n.schedule.field}
    if('next'in n)n.next=map(n.next);
-   if(n.type==='BUTTONS'||n.type==='LIST'||n.type==='RANDOMIZER')n.choices=n.choices.map(c=>({...c,next:map(c.next)}));
-   if(n.type==='CONDITION'||n.type==='KEYWORD'){n.yes=map(n.yes);n.no=map(n.no)}
+   if(n.type==='BUTTONS'||n.type==='LIST'||n.type==='RANDOMIZER')n.choices=n.choices.map(c=>({...c,next:c.action==='URL'?c.next:map(c.next),...(c.assign?{assign:{field:Object.hasOwn(bindings,c.assign.field)?bindings[c.assign.field]:c.assign.field,value:template(c.assign.value)}}:{})}));
+   if(n.type==='CONDITION'||n.type==='KEYWORD'||n.type==='BUSINESS_HOURS'){n.yes=map(n.yes);n.no=map(n.no)}
    if(n.type==='SUBFLOW'){
     if(stack.includes(n.subflowId)||stack.length>=5)throw new HttpFailure(400,'Recursive or excessively nested subflow');
     const r=await db.query('SELECT definition FROM chatbot_subflow_versions WHERE tenant_id=$1 AND subflow_id=$2 AND version=$3',[tenantId,n.subflowId,n.version]);
@@ -49,5 +54,5 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
  }
  await expand(source,'',{});
  // Nested entry nodes become empty transitions (START); runtime validation allows several.
- const compiled={...source,nodes};validateFlow(compiled,{runtime:true});return compiled;
+ const compiled={...source,nodes,...(variables.size?{variables:[...variables.values()]}:{})};validateFlow(compiled,{runtime:true});return compiled;
 }

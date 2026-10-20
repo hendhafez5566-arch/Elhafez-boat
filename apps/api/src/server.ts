@@ -1,7 +1,9 @@
+import {mockFlowAssistance} from './flow-assistance.js';
+import {flowChannelIssues,channelCapabilities} from './flow-capabilities.js';
 import {workspaceSummary,completeWorkspaceSetup} from './workspace-setup.js';
 import {prepareBotTemplate,botTemplates,botTemplate} from './bot-templates.js';
 import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
-import {botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
+import {flowStepInsights,botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
@@ -38,7 +40,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
 import { sessionCookie, sessionBearer, requireCookieCsrf } from './session-cookie.js';
-import { HttpFailure, allow, withTenantTransaction, type SqlPool, type SqlClient } from './services.js';
+import { HttpFailure, allow, isUuid, withTenantTransaction, type SqlPool, type SqlClient } from './services.js';
 import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, getSummary } from './sales.js';
 import { teamMembers } from './team-directory.js';
 const require=createRequire(import.meta.url);
@@ -155,6 +157,13 @@ const server=createServer(async(req,res)=>{
       if(req.method==='POST'&&!botTrigger[2])return json(res,201,await runBody(async(tx,input)=>createTrigger(tx,actor,input,await botScope(tx,actor,id,true))));
       if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
     }
+    const stepStats=/^\/api\/v1\/bots\/([^/]+)\/flow-insights$/.exec(pathname);
+    if(stepStats&&req.method==='GET')return json(res,200,await run(tx=>flowStepInsights(tx,actor,stepStats[1],new URL(req.url||'/','http://local').searchParams)));
+    if(pathname==='/api/v1/flows/assist'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,mockFlowAssistance(await body(req)))}
+    if(pathname==='/api/v1/flows/capabilities'&&req.method==='GET')return json(res,200,channelCapabilities);
+    if(pathname==='/api/v1/flows/preflight'&&req.method==='POST'){
+     allow(actor,['OWNER','MANAGER']);const d=await body(req);return json(res,200,await run(async tx=>{try{const flow=await compileSubflows(tx,actor.tenantId,validateFlow(d));const issues=flowChannelIssues(flow);return {publishable:!issues.some(i=>i.severity==='error'),issues}}catch(e){return {publishable:false,issues:[{severity:'error',code:'GRAPH_INVALID',message:e instanceof Error?e.message:'Invalid graph'}]}}}));
+    }
     const botStats=/^\/api\/v1\/bots\/([^/]+)\/insights$/.exec(pathname);
     if(botStats&&req.method==='GET')return json(res,200,await run(tx=>botInsights(tx,actor,botStats[1])));
     const botChannel=/^\/api\/v1\/bots\/([^/]+)\/routes$/.exec(pathname);
@@ -270,11 +279,14 @@ const server=createServer(async(req,res)=>{
       const d=input as Record<string,unknown>;let flow;try{flow=validateFlow(d.definition)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
       const state=d.state as ReturnType<typeof initialFlowState>|undefined;
       if(state&&(!Array.isArray(state.tags)||state.tags.length>100||state.tags.some(t=>typeof t!=='string'||t.length>40)||!state.answers||typeof state.answers!=='object'||Array.isArray(state.answers)||Object.keys(state.answers).length>200||Object.values(state.answers).some(v=>typeof v!=='string'||v.length>500)||(state.at!==null&&(typeof state.at!=='string'||state.at.length>180))))throw new HttpFailure(400,'Invalid preview state');
-      const incoming=d.input as {kind:'TEXT'|'CHOICE';value:string}|undefined;
-      if(incoming&&(!['TEXT','CHOICE'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
+      const incoming=d.input as import('./flow-engine.js').FlowInput|undefined;
+      if(incoming&&(!['TEXT','CHOICE','SKIP','TIMEOUT'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
       flow=await compileSubflows(tx,actor.tenantId,flow);
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
-      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
+      const simulation=d.simulation as {now?:number;seed?:number}|undefined;
+      if(simulation&&(typeof simulation!=='object'||simulation.now!==undefined&&(!Number.isFinite(simulation.now)||simulation.now<0||simulation.now>4102444800000)||simulation.seed!==undefined&&(!Number.isFinite(simulation.seed)||simulation.seed<0||simulation.seed>=1)))throw new HttpFailure(400,'Invalid simulation clock/seed');
+      if(state?.runtime){const r=state.runtime;if(!r.attempts||typeof r.attempts!=='object'||Array.isArray(r.attempts)||Object.keys(r.attempts).length>100||Object.values(r.attempts).some(v=>!Number.isInteger(v)||v<0||v>10)||r.wait&&(!Number.isFinite(r.wait.expiresAt)||typeof r.wait.token!=='string'||!isUuid(r.wait.token)||typeof r.wait.nodeId!=='string')||r.experiments&&(typeof r.experiments!=='object'||Array.isArray(r.experiments)||Object.keys(r.experiments).length>100||Object.values(r.experiments).some(v=>typeof v!=='string'||v.length>40)))throw new HttpFailure(400,'Invalid simulation runtime state')}
+      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/inspect-draft'){
       allow(actor,['OWNER','MANAGER']);const input=await body(req);

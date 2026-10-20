@@ -69,19 +69,20 @@ async function receive(db:SqlClient,t:string,account:string,channel:string,m:Inc
 }
 /** Convert internal neutral messages to provider-supported formats. Large Telegram callbacks
  * use opaque 24-byte action references rather than exceeding its 64-byte limit. */
-export function socialPayload(channel:string,recipient:string,message:ReturnType<typeof websitePayload>,actions:{id:string;title:string}[]=[]):{method:string;body:Record<string,unknown>}[]{
+export function socialPayload(channel:string,recipient:string,message:ReturnType<typeof websitePayload>,actions:{id:string;title:string;url?:string}[]=[]):{method:string;body:Record<string,unknown>}[]{
  if(channel==='TELEGRAM'){
  if(message.type==='MEDIA'){const kind=String(message.kind),method=({image:'sendPhoto',video:'sendVideo',audio:'sendAudio',document:'sendDocument'} as Record<string,string>)[kind],field=kind==='image'?'photo':kind;return [{method,body:{chat_id:recipient,[field]:message.url,...(message.caption?{caption:message.caption}:{})}}]}
- return [{method:'sendMessage',body:{chat_id:recipient,text:message.text,...(actions.length?{reply_markup:{inline_keyboard:actions.map(a=>[{text:a.title,callback_data:a.id}])}}:{})}}];
+ return [{method:'sendMessage',body:{chat_id:recipient,text:message.text,...(actions.length?{reply_markup:{inline_keyboard:actions.map(a=>[{text:a.title,...(a.url?{url:a.url}:{callback_data:a.id})}])}}:{})}}];
  }
  if(message.type==='MEDIA'){
  if(channel==='INSTAGRAM'&&message.kind!=='image')return [{method:'messages',body:{recipient:{id:recipient},message:{text:([message.caption,message.url].filter(Boolean).join('\n')).slice(0,1000)}}}];
  return [{method:'messages',body:{recipient:{id:recipient},...(channel==='MESSENGER'?{messaging_type:'RESPONSE'}:{}),message:{attachment:{type:message.kind==='document'?'file':message.kind,payload:{url:message.url}}}}}];}
+ if(channel==='MESSENGER'&&actions.some(a=>a.url))return [{method:'messages',body:{recipient:{id:recipient},messaging_type:'RESPONSE',message:{attachment:{type:'template',payload:{template_type:'button',text:message.text,buttons:actions.map(a=>a.url?{type:'web_url',title:a.title,url:a.url}:{type:'postback',title:a.title,payload:a.id})}}}}}];
  const text=String(message.text||''),limit=channel==='INSTAGRAM'?1000:2000,out=[];for(let i=0;i<text.length;i+=limit){const last=i+limit>=text.length;out.push({method:'messages',body:{recipient:{id:recipient},...(channel==='MESSENGER'?{messaging_type:'RESPONSE'}:{}),message:{text:text.slice(i,i+limit),...(last&&actions.length?{quick_replies:actions.map(a=>({content_type:'text',title:a.title.slice(0,20),payload:a.id}))}:{})}}})}return out;
 }
 export async function enqueueSocial(db:SqlClient,t:string,cid:string,account:string,channel:string,recipient:string,payloads:Record<string,unknown>[]){
  const count=await db.query("SELECT count(*)::int AS n FROM chatbot_social_outbox WHERE tenant_id=$1 AND status='PENDING'",[t]);if(Number(count.rows[0].n)+payloads.length>1000)throw new HttpFailure(429,'Channel queue limit reached');
- for(const p of payloads){const message=websitePayload(p),actions=[];for(const choice of message.type==='CHOICES'?(message.choices||[]):[]){const token=randomBytes(18).toString('base64url');await db.query('INSERT INTO chatbot_social_actions(tenant_id,conversation_id,token,action_id) VALUES($1,$2,$3,$4)',[t,cid,token,choice.id]);actions.push({id:token,title:choice.title})}
+ for(const p of payloads){const message=websitePayload(p),actions=[];for(const choice of message.type==='CHOICES'?(message.choices||[]):[]){if('url'in choice&&choice.url){actions.push({id:'',title:choice.title,url:choice.url});continue}const token=randomBytes(18).toString('base64url');await db.query('INSERT INTO chatbot_social_actions(tenant_id,conversation_id,token,action_id) VALUES($1,$2,$3,$4)',[t,cid,token,choice.id]);actions.push({id:token,title:choice.title})}
  for(const item of socialPayload(channel,recipient,message,actions))await db.query('INSERT INTO chatbot_social_outbox(tenant_id,account_id,conversation_id,payload) VALUES($1,$2,$3,$4::jsonb)',[t,account,cid,JSON.stringify(item)]);
  }
 }
