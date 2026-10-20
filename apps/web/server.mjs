@@ -24,6 +24,7 @@ const assets={
  '/flow-merge.js':['flow-merge.js','text/javascript; charset=utf-8'],
  '/flow-builder.js':['flow-builder.js','text/javascript; charset=utf-8'],
  '/flow-onboarding.js':['flow-onboarding.js','text/javascript; charset=utf-8'],
+ '/analytics-export.js':['analytics-export.js','text/javascript; charset=utf-8'],
  '/insights-ui.js':['insights-ui.js','text/javascript; charset=utf-8'],
  '/flow-builder.css':['flow-builder.css','text/css; charset=utf-8'],
  '/vessel.css':['vessel.css','text/css; charset=utf-8'],

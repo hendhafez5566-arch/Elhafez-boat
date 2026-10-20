@@ -1,7 +1,8 @@
+import {activityDays,activityCsv} from './analytics-export.js';
 /** Clear owner/staff analytics; figures come from real tenant-scoped API only. */
 export function initInsights({api,$,el}){
  let periodDays=30,loadRevision=0;
- const clear=()=>{const host=$('bot-insights');if(host)host.replaceChildren()};
+ const clear=()=>{loadRevision++;periodDays=30;const host=$('bot-insights');if(host)host.replaceChildren()};
  const number=value=>new Intl.NumberFormat('ar-EG').format(Number(value)||0);
  function metric(host,title,value,note,unit=''){
   const card=el('article',undefined,'metric');
@@ -22,13 +23,15 @@ export function initInsights({api,$,el}){
   const period=el('select');period.setAttribute('aria-label','فترة التحليلات');
   for(const days of [7,30,90]){const option=el('option','آخر '+days+' يوم');option.value=String(days);period.append(option)}
   period.value=String(periodDays);period.onchange=()=>{periodDays=Number(period.value);void load()};
-  host.append(period);
+  const download=el('button','تنزيل النشاط اليومي CSV');download.type='button';download.onclick=()=>{const url=URL.createObjectURL(new Blob([activityCsv(data)],{type:'text/csv;charset=utf-8'}));const link=el('a');link.href=url;link.download='elhafez-activity-'+data.periodDays+'-days.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2500)};host.append(period,download);
+  if(data.range?.startDay)host.append(el('p','الفترة الحالية: '+data.range.startDay+' إلى '+data.range.endDay+' (UTC). السابقة: '+data.previous.startDay+' إلى '+data.previous.endDay+'.','muted'));
+  const comparison=(key,unit='')=>{if(!data.previous)return undefined;const difference=Math.round((Number(data[key])-Number(data.previous[key]))*100)/100;return difference===0?'دون تغير عن الفترة السابقة':(difference>0?'زيادة ':'انخفاض ')+number(Math.abs(difference))+unit+' عن الفترة السابقة'};
   const note=el('p','المحادثات والعملاء والحملات أُنشئت خلال الفترة المختارة. مهام المتابعة تعرض الوضع الحالي لكل الفترات. تسجيل الاهتمام ليس مبيعات أو حجوزات.','muted');
   host.append(note);
   const metrics=el('div',undefined,'metrics');
-  metric(metrics,'المحادثات الواردة',data.conversations);
-  metric(metrics,'عملاء سجلوا اهتمامهم',data.leads);
-  metric(metrics,'نسبة تحويل المحادثة إلى اهتمام',data.leadCapturePct,undefined,'٪');
+  metric(metrics,'المحادثات الواردة',data.conversations,comparison('conversations'));
+  metric(metrics,'عملاء سجلوا اهتمامهم',data.leads,comparison('leads'));
+  metric(metrics,'نسبة تحويل المحادثة إلى اهتمام',data.leadCapturePct,comparison('leadCapturePct',' نقطة مئوية'),'٪');
   metric(metrics,'جاهزون للموظف',data.ready);
   metric(metrics,'مهام متابعة متأخرة',data.tasks.overdue);
   metric(metrics,'حملات نشطة',data.campaigns.active);
@@ -41,7 +44,7 @@ export function initInsights({api,$,el}){
    const line=el('div',undefined,'insight-row');line.append(el('span',({WEBSITE:'شات الموقع',WHATSAPP:'واتساب',MESSENGER:'ماسنجر',INSTAGRAM:'إنستجرام',TELEGRAM:'تيليجرام'}[row.channel]||row.channel)+' — '+number(row.total)));
    const rail=el('div',undefined,'insight-rail'),fill=el('div',undefined,'insight-fill');fill.style.width=Math.round(Number(row.total)*100/full)+'%';rail.append(fill);line.append(rail);channels.append(line);
   }
-  const funnel=el('section',undefined,'panel');funnel.append(el('h3','رحلة العميل'));
+  const funnel=el('section',undefined,'panel');funnel.append(el('h3','حالة العملاء المسجلين خلال الفترة'));
   for(const [title,count] of [['سجل اهتمامه',data.leads],['جاهز للموظف',data.ready],['تم التواصل',data.contacted],['مغلق',data.closedLeads]]){
    const row=el('div',undefined,'insight-row');row.append(el('span',title+' — '+number(count)));
    const rail=el('div',undefined,'insight-rail'),fill=el('div',undefined,'insight-fill');fill.style.width=(data.leads?Math.round(Number(count)*100/data.leads):0)+'%';rail.append(fill);row.append(rail);funnel.append(row);
@@ -50,7 +53,7 @@ export function initInsights({api,$,el}){
   const activity=el('section',undefined,'panel');activity.append(el('h3','المحادثات والعملاء المهتمون يوميًا'));
   const incoming=new Map((data.daily||[]).map(x=>[x.day,Number(x.conversations)]));
   const captured=new Map((data.leadDaily||[]).map(x=>[x.day,Number(x.leads)]));
-  const today=new Date();const dates=Array.from({length:periodDays},(_,i)=>{const date=new Date(today);date.setUTCDate(date.getUTCDate()-periodDays+1+i);return date.toISOString().slice(0,10)});
+  const dates=activityDays({...data,periodDays});
   if(!incoming.size&&!captured.size)activity.append(el('p','لا يوجد نشاط في الفترة المحددة.','muted'));
   const chart=el('div',undefined,'vessel-activity-series'),peak=Math.max(1,...dates.flatMap(day=>[incoming.get(day)||0,captured.get(day)||0]));
   for(const day of dates){

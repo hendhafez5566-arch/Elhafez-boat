@@ -133,8 +133,14 @@ try{
  await admin.query("UPDATE conversations SET created_at=(date_trunc('day',now() AT TIME ZONE 'UTC')-interval '6 days') AT TIME ZONE 'UTC'-interval '1 millisecond' WHERE tenant_id=$1 AND id=$2",[a.tenantId,outside]);
  const utcAnalytics=await tx(a,db=>analyticsOverview(db,a,7));assert.equal(utcAnalytics.conversations,baselineAnalytics.conversations+1);
  assert.equal(utcAnalytics.daily.reduce((sum,row)=>sum+row.conversations,0),utcAnalytics.conversations);
+ assert.equal(utcAnalytics.previous.conversations,1,'Prior period includes instant before current UTC boundary');assert.equal(utcAnalytics.previous.leads,0);
  const otherTimezone=await tx(a,async db=>{await db.query("SET LOCAL TIME ZONE 'Asia/Tokyo'");return analyticsOverview(db,a,7)});assert.deepEqual(otherTimezone,utcAnalytics);
  assert.equal((await tx(b,db=>analyticsOverview(db,b,7))).conversations,0);
+ const previousBoundary=await conv(),beforePrevious=await conv();
+ await admin.query("UPDATE conversations SET created_at=((now() AT TIME ZONE 'UTC')::date-13)::timestamp AT TIME ZONE 'UTC' WHERE tenant_id=$1 AND id=$2",[a.tenantId,previousBoundary]);
+ await admin.query("UPDATE conversations SET created_at=(((now() AT TIME ZONE 'UTC')::date-13)::timestamp AT TIME ZONE 'UTC')-interval '1 millisecond' WHERE tenant_id=$1 AND id=$2",[a.tenantId,beforePrevious]);
+ const boundedComparison=await tx(a,db=>analyticsOverview(db,a,7));assert.equal(boundedComparison.previous.conversations,2,'Previous first day inclusive, earlier instant excluded');assert.equal(boundedComparison.conversations,utcAnalytics.conversations);
+
  console.log('PASS analytics UTC calendar boundary, daily/KPI reconciliation, session-timezone independence and tenant isolation');
  const manager={...a,role:'MANAGER'},agent={...a,role:'AGENT'},viewer={...a,role:'VIEWER'};
  const managerInvite=await tx(a,db=>createTeamInvite(db,a,{email:'manager-'+a.tenantId+'@example.invalid',role:'MANAGER'}));

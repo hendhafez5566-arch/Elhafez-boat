@@ -1,3 +1,9 @@
+## 2026-10-20 — Reports completion added to team batch (final acceptance pending)
+
+Actual PostgreSQL previous-period counts and UTC ranges now accompany the selected 7/30/90-day report. UI shows absolute count changes and percentage-point capture change, distinguishes current task snapshots and current stages of period-created leads, uses server dates for daily zero rows, and downloads aggregate-only Arabic UTF-8 CSV with no contact data. Reset invalidates outstanding report loads. Added actual file-download reconciliation and transport-failure retry probes.
+
+130 unit tests pass (3 new CSV/date/security cases), PostgreSQL current/previous inclusive/exclusive boundary and timezone invariance checks pass, plus full team role/token/seat/existing-password cases. A prior full browser run was interrupted by serving changed JS imports from a still-running older asset map during this expansion; repeat on a freshly started committed-source server before claiming final acceptance. All production limits remain unchanged; no real provider/email/delivery/merge/deploy.
+
 ## 2026-10-20 — Team/invitation completion batch (final acceptance pending)
 
 Same PR #4 branch after e14a528. Rebuilt team tasks with Arabic role explanations/status/expiry, owner-only role editing, manager-safe invitation controls, private one-time link copy/hide, retry retaining prior data and guarded write buttons. Server serializes case-insensitive active-email deduplication, restricts privileged invitation revocation to owner and audits revocation. Accepted invitations return company slug only after credential verification; actual join page clears token fragment, handles Arabic errors and links to login with company prefilled. No email delivery or external sharing performed.
