@@ -1,3 +1,7 @@
+## Current final handover
+
+[CI-CLOSURE.md](CI-CLOSURE.md) supersedes prior pending gates: 10 PASS / 26 PARTIAL; full local acceptance, backup/restore and packaged smoke pass. Remote CI remains unverified (Forbidden). No release/visual approval implied.
+
 ## Opt-in browser-close recovery — local functional checkpoint
 
 Continues saved request operations b22b9bf on the same branch/Draft PR #5. Existing session-only recovery remains the default. An explicit personal-device option adds identity/tenant/bot-scoped, per-tab browser backups. At most three bounded copies are retained, expired copies are removed on access after seven days, and oversized/blocked storage preserves the earlier copy and exposes JSON-download fallback. These are ordinary local browser-profile data, not an encrypted server vault; leave the option off on shared devices.

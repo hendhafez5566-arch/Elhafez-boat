@@ -1,3 +1,11 @@
+## Latest accepted handover — 20 October 2026
+
+Same premium branch / Draft PR #5. Saved source: e8edb1e pointer CI repair, b22b9bf request operations, 2be26d2 browser-close recovery. Full final PostgreSQL/API/worker/Chromium CI-equivalent acceptance exits 0 with all LOCAL_CLOSURE/TRACE/INTEGRATED/OPS/RECOVERY flags. 182 units pass; 54 dedicated browser checks across six suites; existing legacy/RLS/team/CRM and 14 control/19 request/5 rich/7 operation DB scenarios pass. Full 36-migration backup/restore fingerprints and isolated failed-restore protection pass. Trusted-proxy-CA local Node 22 non-root image build/authenticated HTTP smoke passes; repository Dockerfile unchanged.
+
+Canonical matrix is now 10 PASS / 26 PARTIAL / 0 wholly BLOCKED: F03/F05/F06/F25/F31 combined contracts accepted, F23/F36 improved but keep explicit connector/lease/idempotency gaps. Live provider/AI subparts remain blocked; physical/native zoom/WCAG/owner visual approval and other row-specific gaps are not claimed. Radical redesign remains deferred. GitHub Actions API Forbidden leaves remote CI unverified. No merge, Railway, provider login or real send.
+
+Full source/commands/diagnoses/limits: docs/product-rebuild/implementation/premium-2026-10-20/CI-CLOSURE.md. Exact source/image hashes, raw logs and refreshed actual regression evidence: docs/product-rebuild/evidence/handover-2026-10-20/final/verification.json. Prior historical images/manifests preserved. Environment install/start draft saved without publication. Protected target/main unchanged. This supersedes earlier pending gates/counts below.
+
 ## 2026-10-20 — Premium personal-device draft recovery / PR #5
 
 Added opt-in, identity/tenant/bot-scoped per-tab browser recovery, bounded to three copies/seven days with quota fallback. Actual tab close AND Chromium process/profile restart restore for review without server save/publication. Other-window changes pause optional autosave; another window choosing server does not delete its neighbour; explicit old-revision save produces real 409 and keeps edits. Logout clears persistent/session recovery. Copies are ordinary browser-profile data, not encryption; default remains session-only.

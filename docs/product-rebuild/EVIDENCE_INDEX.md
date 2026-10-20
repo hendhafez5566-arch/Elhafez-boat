@@ -1,3 +1,7 @@
+## Premium PR #5 account handover — 20 October 2026
+
+[Current F01–F36](implementation/premium-2026-10-20/F01-F36.md), [final accepted gates and remaining work](implementation/premium-2026-10-20/CI-CLOSURE.md), [source/image hashes and actual results](evidence/handover-2026-10-20/final/verification.json). Operations and actual browser-restart/cross-tab evidence are in their dated folders; earlier image bytes remain historical.
+
 ## 20 October — company/media/operations
 
 [Full batch](COMPLETION-BATCH-2026-10-20.md), [authoritative screen ledger](EXECUTION-LEDGER.md), [commands, results and hashed actual screenshots](evidence/completion-verification.json). Original-web before images and current after images cover dashboard, media, integrations, usage; additional company review, dense canvas, campaign variants and owner operations. Synthetic fixtures only; no private invitation tokens.

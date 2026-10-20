@@ -1,3 +1,7 @@
+## Current final handover
+
+[CI-CLOSURE.md](CI-CLOSURE.md) supersedes prior pending gates: 10 PASS / 26 PARTIAL; full local acceptance, backup/restore and packaged smoke pass. Remote CI remains unverified (Forbidden). No release/visual approval implied.
+
 ## Integrated content, actions and drawing checkpoint — continued from d551ef0
 
 Same branch / Draft PR #5. New end-to-end functionality targets **F03/F05/F06/F25/F31** together:

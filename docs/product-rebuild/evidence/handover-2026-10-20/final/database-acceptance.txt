@@ -1,0 +1,111 @@
+
+> elhafez-boat@0.1.0 db:migrate
+> node --env-file-if-exists=.env scripts/migrate.mjs
+
+.env not found. Continuing without it.
+Applied migration 0001_initial.sql
+Applied migration 0002_sessions_capacity.sql
+Applied migration 0003_sales_workspace.sql
+Applied migration 0004_program_trip_details.sql
+Applied migration 0005_bot_configuration.sql
+Applied migration 0006_whatsapp_inbox.sql
+Applied migration 0007_team_platform.sql
+Applied migration 0008_platform_owner_invites.sql
+Applied migration 0009_whatsapp_flows.sql
+Applied migration 0010_tenant_knowledge.sql
+Applied migration 0011_departures_rooms.sql
+Applied migration 0012_templates_consent.sql
+Applied migration 0013_whatsapp_booking_choices.sql
+Applied migration 0014_chatbot_leads_only.sql
+Applied migration 0015_generic_flows.sql
+Applied migration 0016_generic_catalog.sql
+Applied migration 0017_ai_settings.sql
+Applied migration 0018_team_inbox.sql
+Applied migration 0019_integrations.sql
+Applied migration 0020_scheduled_templates.sql
+Applied migration 0021_access_keys.sql
+Applied migration 0022_chatbot_runtime.sql
+Applied migration 0023_reusable_flow_sections.sql
+Applied migration 0024_advanced_runtime.sql
+Applied migration 0025_meta_commerce.sql
+Applied migration 0026_lead_followups.sql
+Applied migration 0027_comment_automation.sql
+Applied migration 0028_whatsapp_self_service.sql
+Applied migration 0029_independent_bots.sql
+Applied migration 0030_bot_channel_routes.sql
+Applied migration 0031_bot_triggers.sql
+Applied migration 0032_bot_integrity.sql
+Applied migration 0033_flow_runtime_controls.sql
+Applied migration 0034_flow_trace_order.sql
+Applied migration 0035_flow_integration_continuations.sql
+Applied migration 0036_flow_request_reconciliation.sql
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+PASS PostgreSQL catalog isolation, cross-tenant read/update/insert denial, and RLS/FORCE flags for all new tenant tables
+PASS immutable bot rollback, two concurrent editors, pinned version after publish/route change, new-session routing and non-destructive archive
+PASS contact-wide timeline pagination and all-or-nothing role-scoped bulk CRM state updates
+(node:164105) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS analytics UTC calendar boundary, daily/KPI reconciliation, session-timezone independence and tenant isolation
+PASS real team lifecycle: concurrent case-insensitive duplicate rejection, seat limits, owner/manager/agent/viewer restrictions, cross-tenant denial, revoked and reused tokens denied, acceptance and role-change session invalidation
+PASS campaign review: actual consent/opt-out audience, tenant/role denial, no queued jobs or provider requests
+PASS real lead profile/conversation identity and bot session metrics with cross-company denial
+PASS actual PostgreSQL lead pagination: 20-row page, second-page uniqueness, company isolation, literal wildcard and invalid-page rejection
+PASS PostgreSQL: legacy backfill twice preserves versions; two independent bots; optimistic conflict; tenant/RLS and roles; unique channel routing; actual runtime and pinned bot
+PASS draft trigger inert until atomic publication
+PASS retry count and immutable deadline survive separate real transactions; exhausted route cancels job
+PASS optional skip uses current node callback and never writes missing answer
+PASS durable timeout resumes through actual worker exactly once and premature clocks requeue
+PASS same-node re-entry rejects stale token and late answer follows timeout
+PASS reply/worker race serializes one timeout transition under real conversation lock
+PASS real CRM stage/assignee changes and session-only fields stay out of CRM including human-keyword handoff
+PASS persisted timing/goals, preview excluded, value-free analytics and real RLS isolation
+PASS foreign-company CRM assignee cannot publish; pinned version and active triggers remain unchanged
+PASS legacy null-bot pinned session is retained and included only in legacy-bot analytics
+PASS ordered execution IDs and exact cursor pagination retain every real transition without customer values
+PASS conversation trace rejects cross-company and same-company wrong-bot identifiers
+PASS historical events remain visible with explicit unknown order and legacy scope
+PASS diagnostics expose saved failed-continuation status and pinned node without raw error payloads
+PASS 14 PostgreSQL control scenarios; no external provider calls
+PASS unique wait-token queue, ignored inbound duplicates, stable key and exactly one committed success continuation
+PASS mapping response failure routes atomically without applying invalid fields
+PASS typed response failure routes atomically without applying invalid fields
+PASS POST HTTP 429 takes error branch with no automatic replay
+PASS ambiguous POST timeout is quarantined and follows timeout without resend
+PASS committed in-flight claim blocks second worker; expired interrupted claim never resends and ignores late success
+PASS real concurrent website/privacy contact-first locks and response continuation complete without deadlock or HTTP replay
+PASS durable stored response survives actual PostgreSQL delivery rollback and resumes without repeating HTTP
+PASS human takeover while HTTP is in flight prevents fields, continuation and automated delivery
+PASS publication during wait preserves pinned request and downstream version
+PASS same-node restart changes wait token and cancels stale job before dispatch
+PASS existing deadline worker takes timeout and cancels undispatched request once
+PASS opt-out and unavailable/expired messaging channel stop dispatch
+PASS expired WhatsApp authorization and explicit reauthorization prevent integration side effects even inside service window
+PASS bounded safe GET retry retains one job/idempotency key and one successful continuation
+PASS real forced RLS, other-tenant worker and author-role boundaries remain enforced
+PASS integration disabled after publication follows enqueue-error route without creating a job
+PASS owner erasure refuses unreconciled in-flight/uncertain request attempts
+PASS owner erasure scrubs stored mapped responses and request payloads, cancels pending work and prevents all continuation
+PASS 19 durable integration scenarios; every HTTP dispatch is an explicit local mock
+PASS published rich card/gallery and button-effect definition roundtrip, groups/collapse retained, real website route
+PASS actual website delivery stores native galleries and ordered composite content before interactive buttons
+PASS real visitor button effects persist typed fields/tags in session and CRM once under replayed message ID
+PASS new publication preserves existing conversation version and previously delivered card content
+PASS real cross-company bot/message denial, author role boundary and widget origin restriction retained
+PASS 5 integrated rich-content PostgreSQL scenarios
+PASS real Website Chat -> published request -> committed ambiguous worker outcome and timeout continuation
+PASS metadata diagnostics exclude body, mapped values, endpoint, credentials and customer content
+PASS author-only diagnostics/reconciliation; forced RLS, tenant and same-tenant wrong-bot guards
+PASS explicit evidence/stale-attempt guard; competing retries produce one audited resolution and no HTTP/flow/CRM replay
+PASS PENDING/PROCESSING/unsettled completion cannot be overridden; verified not-delivered is terminal without resend
+PASS real bounded cursor pagination, no repeated rows, literal status filters and safe error-code projection
+PASS verified reconciliation allows existing owner erasure; private payload/response scrubbed while operational decision remains
+PASS 7 real request-operations PostgreSQL scenarios
+PASS atomic workspace setup, retained unpublished draft, retry idempotency, owner guard, invalid rollback and tenant separation
+PASS real ClamAV clean/quarantine/offline/recovery; private preview tenant guards; independent published-bot reference deletion denied; unused deletion succeeds
+PASS real simultaneous agent takeover, exactly one owner, denied competing/closed reply and stored assigned website reply
+PASS real platform company provision/owner activation/company login hint, single-use invitation and administrative-only audit fields
+PASS local integration inspection with zero queued jobs; real secret encryption/rotation without disclosure, disable and tenant denial; no outbound connection
