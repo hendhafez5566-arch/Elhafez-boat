@@ -291,7 +291,11 @@ try{
  await db.query("INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at) VALUES($1,'STARTER','TRIAL',now()+interval '14 days')",[teamTenant]);
  await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'fixture_named','ar','MARKETING',$3::jsonb),($1,$2,'fixture_media','ar','MARKETING',$4::jsonb)`,[ids[0].tenantId,reviewAccount,JSON.stringify([{type:'HEADER',format:'TEXT',text:'أهلًا {{business}}'},{type:'BODY',text:'مرحبًا {{customer}}'},{type:'BUTTONS',buttons:[{type:'QUICK_REPLY',text:'مهتم'},{type:'URL',text:'التفاصيل',url:'https://example.invalid/offer/{{1}}'}]}]),JSON.stringify([{type:'HEADER',format:'IMAGE'},{type:'BODY',text:'رسالة {{1}}'}])]);
  await writeFile('acceptance-evidence/bot-browser-account.json',JSON.stringify({...await browserAccount('novice-ui'),team:{slug:teamSlug,email:teamEmail,password:pass}}));
- const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
+ // A separate real IPv4 gateway gives the independent novice/team client its own network identity.
+ // The broad/API client uses IPv6. The production 10/600-second limit and counters stay unchanged.
+ launch('novice-web',process.execPath,['apps/web/server.mjs'],{...env,WEB_PORT:'3002',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000'});
+ for(let i=0;i<50;i++){try{if((await fetch('http://127.0.0.1:3002/health')).ok)break}catch{}await sleep(100)}
+ const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
  const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
