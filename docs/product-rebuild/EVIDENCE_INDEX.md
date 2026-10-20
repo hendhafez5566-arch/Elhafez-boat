@@ -1,3 +1,7 @@
+## 20 October 2026 — Builder conflict recovery
+
+Source b592b7b; [verification](evidence/conflict-recovery-verification.json), [desktop comparison](evidence/conflict-review-1366.png), [mobile versions](evidence/conflict-review-320.png), [restored mobile draft](evidence/conflict-restored-draft-320.png). Actual synthetic fixtures, real PostgreSQL/Chromium, no provider operations. See EXECUTION-LEDGER.md for exact tested scope and remaining partial items.
+
 ## Latest Elhafez usability evidence — 19 October 2026
 
 Actual source a3b6418 / final test 8f0ad62. See [execution ledger](EXECUTION-LEDGER.md) for eleven desktop/mobile screenshots, actual functional journeys, source-to-screen mapping and remaining gaps; [verification](evidence/usability-verification.json). All are synthetic PostgreSQL fixtures, with no live provider action. Previous before images remain intact. 81 broad page visits are loading checks, not claims all 22 screens are complete.

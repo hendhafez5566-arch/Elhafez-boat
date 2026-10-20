@@ -1,3 +1,27 @@
+# 20 October 2026 — Builder collaboration/recovery batch
+
+Same implementation branch and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4), continuing `a781bab`. Tested executable commit: **`b592b7b2d12b178b1e093defc03501d581077540`**. Final evidence commit changes reports/images only. No schema migration, merge, Railway operation, paid AI or real provider connection/send.
+
+## Implemented and verified
+
+**S05/S06/S07 — still PARTIAL overall:** the editor now keeps the last loaded/saved server definition as a comparison base. On a real 409, independent edits can be combined; overlapping fields require an explicit local/server selection. Choice arrays, deletion versus edit, same-ID additions and incompatible node types are treated conservatively, retaining literal IDs and destinations rather than guessing. Canonical comparison avoids false differences from object property order. The combined candidate passes the real authenticated flow/subflow compiler before replacing local editor state. Applying review writes nothing to the server; the subsequent save uses the latest observed optimistic revision, so another intervening save still produces a conflict. Undo retains local work. Scope guards protect against changed company/bot/editor state during async review, and logout clears recovery snapshots/UI.
+
+Backup restore now accepts plain definitions or the existing download wrapper, limits files to 1 MiB, rejects malformed JSON, validates through the real compiler, confirms local replacement and preserves undo/redo. An imported historical revision never replaces the current save revision. Restore neither saves nor publishes automatically. Current limitation: merge/import requires a fully valid compilable graph, so unfinished/dangling drafts can still be downloaded/edited manually but cannot be applied through this recovery path. This is conservative structural combination, not proof that every merged conversation has the intended business behavior; operator review remains necessary.
+
+## Evidence and results
+
+- `npm run check`: **127 passed, 0 failed, 0 skipped**, including 9 new tests for independent edits, overlaps, deletion/edit conflicts, additions/order, atomic type/choice handling, layout changes, immutability and compiler rejection of a structurally combined but dangling graph.
+- Full `CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CHROME_BIN=/usr/bin/chromium MIGRATION_DATABASE_URL=postgresql://postgres:…@127.0.0.1:5432/elhafez_ci node tests/runtime-acceptance.mjs`: **exit 0 on b592b7b**, both original and extended Chromium suites. Actual PostgreSQL/runtime/API/worker recovery, roles, tenant boundaries, throttles and existing local website/campaign journeys remain passing. Provider transport stays offline.
+- Browser conflict case uses an authenticated external API update while the browser retains a local edit. One overlapping greeting requires a decision; the independent server name change survives. Applying review leaves server revision/content unchanged; explicit save stores the chosen greeting plus server name, keeps choice IDs and leaves the bot unpublished.
+- Browser file case uses Chromium's real file selection: malformed JSON rejected, valid wrapped backup compiled/restored, server unchanged before save, undo/redo preserved, explicit save succeeds with current revision and published remains null.
+- 81 broad page/viewport visits remain loading/named-control checks, not functional certification of every screen. Real 1366/320 conflict screenshots and 320 restore screenshot were visually inspected; no horizontal overflow. Full keyboard/screen-reader/native 200%/physical-device acceptance is still open.
+
+Actual images: [conflict desktop](evidence/conflict-review-1366.png), [conflict 320px with both versions visible](evidence/conflict-review-320.png), [restored draft 320px](evidence/conflict-restored-draft-320.png). [Machine-readable proof](evidence/conflict-recovery-verification.json). Historical actual builder before images remain under `evidence/rebuild-before-*`; this batch does not claim a separate screenshot of the former conflict dialog.
+
+S05/S06/S07/S22 remain PARTIAL. Full company onboarding, dense/cyclic/accessible canvas acceptance, remaining campaign template shapes, inbox concurrency/provider matrices, reporting and other partial rows remain open. Previously completed bot/gallery/CRM work is unchanged. GitHub API still returns Forbidden; no remote CI-success claim. Push this feature branch only, no replacement PR.
+
+---
+
 # Usability batch after 741e6cb — locally verified, PR #4 remains PARTIAL
 
 Application commit `a3b6418`, final executable/test commit `8f0ad62`, same branch and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4). No migration, merge, Railway deployment, paid AI or real provider connection/send.
