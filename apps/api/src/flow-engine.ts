@@ -1,3 +1,4 @@
+import {validateFlowRequest,type FlowRequest} from './flow-request.js';
 import {isUuid} from './services.js';
 import {validateFormDrafts,type FlowFormDraft} from './flow-forms.js';
 import {businessIsOpen,scheduledDelay,validateBusinessSchedule,validateDelaySchedule,validInstant,type BusinessSchedule,type DelaySchedule} from './flow-time.js';
@@ -23,7 +24,7 @@ export type FlowNode = (
  | {id:string;type:'GOAL';goal:string;next:string}
  | {id:string;type:'CRM_ACTION';operation:'SET_STAGE'|'ASSIGN';value:string;next:string;errorNext?:string}
  | {id:string;type:'CATALOG';category?:string;page?:number;next:string}
- | {id:string;type:'WEBHOOK';integrationId:string;next:string}
+ | {id:string;type:'WEBHOOK';integrationId:string;next:string;request?:FlowRequest}
  | {id:string;type:'AI';field:string;next:string}
  | {id:string;type:'KEYWORD';keywords:string[];yes:string;no:string}
  | {id:string;type:'QUESTION';text:string;field:string;next:string}
@@ -89,6 +90,7 @@ export function mapConditionRules(rules:ConditionRule[],map:(field:string)=>stri
 export function flowDestinations(node:FlowNode):string[]{
  const destinations:string[]=[];if('next'in node)destinations.push(node.next);if('yes'in node)destinations.push(node.yes,node.no);if('choices'in node)destinations.push(...node.choices.filter(c=>c.action!=='URL').map(c=>c.next));
  if('policy'in node&&node.policy)for(const key of ['invalidNext','skipNext','timeoutNext'] as const)if(node.policy[key])destinations.push(node.policy[key]!);
+ if(node.type==='WEBHOOK'&&node.request)destinations.push(node.request.errorNext,node.request.timeoutNext);
  if('errorNext'in node&&node.errorNext)destinations.push(node.errorNext);return destinations;
 }
 export function validateInputAnswer(node:Extract<FlowNode,{type:'INPUT'|'QUESTION'}>,raw:string):{valid:boolean;value:string;error:string}{
@@ -137,6 +139,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   if(type==='GOAL')requireTrue(typeof raw.goal==='string'&&key.test(raw.goal),'Invalid goal key');
   if(type==='TAG'&&raw.mode!==undefined)requireTrue(['ADD','REMOVE'].includes(String(raw.mode)),'Invalid tag action');
   if(type==='RANDOMIZER'&&raw.sticky!==undefined)requireTrue(typeof raw.sticky==='boolean','Invalid experiment policy');
+  if(type==='WEBHOOK'&&raw.request!==undefined)validateFlowRequest(raw.request);
   if(type==='WEBHOOK')requireTrue(typeof raw.integrationId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.integrationId),'Invalid webhook integration ID');
   if(type==='CATALOG'&&raw.category!==undefined)requireTrue(bounded(raw.category,80,0),'Invalid catalog category');
   if(type==='KEYWORD')requireTrue(Array.isArray(raw.keywords)&&raw.keywords.length>0&&raw.keywords.length<=20&&raw.keywords.every(k=>bounded(k,80)),'Invalid keywords');

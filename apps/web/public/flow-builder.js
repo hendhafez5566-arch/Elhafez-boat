@@ -1,3 +1,4 @@
+import {mountRequestControls} from './flow-request-controls.js';
 import {mountFlowDiagnostics} from './flow-diagnostics.js';
 import {mountFlowLabs} from './flow-labs.js';
 import {mountRuntimeControls} from './flow-controls.js';
@@ -111,7 +112,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    let id=selected;const seen=new Set(),steps=[];
    for(let i=0;i<count;i++){
     const n=map.get(id);
-    if(!n||!reuseKinds.has(n.type)||!('next'in n)||seen.has(id)||n.errorNext||Object.keys(n.policy||{}).some(k=>k.endsWith('Next')))
+    if(!n||!reuseKinds.has(n.type)||!('next'in n)||seen.has(id)||n.errorNext||n.request||Object.keys(n.policy||{}).some(k=>k.endsWith('Next')))
      throw new Error('اختار خطوة متتابعة (ليست بداية أو نهاية أو تفرعًا) ثم عددًا صحيحًا من الخطوات');
     seen.add(id);steps.push(deep(n));id=n.next;
    }
@@ -304,6 +305,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const s=el('select');if(optional){const blank=el('option','بدون مسار خطأ مخصص');blank.value='';s.append(blank)}for(const node of flow.nodes){const option=el('option',(types[node.type]||'خطوة')+' — '+String(node.text||'').slice(0,28));option.value=node.id;s.append(option)}
    s.value=value;s.addEventListener('change',()=>{change(s.value);markDirty();renderBlocks();canvas.draw()});return s;
  };
+ const requestMocks={};
+ const requestControls=mountRequestControls({el,button,label,control,target,changed:()=>{markDirty();canvas.draw()},repaint:()=>renderEditor(),getFlow:()=>flow,getMock:id=>requestMocks[id],setMock:(id,value)=>requestMocks[id]=value});
  const runtimeControls=mountRuntimeControls({el,button,label,control,target,changed:()=>{markDirty();canvas.draw()},repaint:()=>renderEditor(),getFlow:()=>flow});
  const variableHost=el('div');advanced.append(variableHost);runtimeControls.variables(variableHost);
  function renderBlocks(){
@@ -419,7 +422,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     for(const [key,title]of [['min','أقل قيمة / طول'],['max','أكبر قيمة / طول']]){const c=control(node.validation?.[key]??'',v=>{node.validation??={type:kind.value};if(v==='')delete node.validation[key];else node.validation[key]=Number(v)});c.type='number';section.append(label(title,c))}
     section.append(label('رسالة عند إجابة غير صحيحة',control(node.validation?.errorText||'',v=>{node.validation??={type:kind.value};if(v)node.validation.errorText=v;else delete node.validation.errorText})));host.append(section);
    }
-   runtimeControls.policy(host,node);runtimeControls.schedule(host,node);runtimeControls.triggers(host,node);
+   runtimeControls.policy(host,node);runtimeControls.schedule(host,node);runtimeControls.triggers(host,node);requestControls.render(host,node);
    if(node.type==='CRM_ACTION'){host.append(label('إجراء العميل',runtimeControls.select(node.operation,[['SET_STAGE','تحديث مرحلة العميل'],['ASSIGN','إسناد المحادثة لموظف']],v=>{node.operation=v;node.value=v==='SET_STAGE'?'CONTACTED':'';renderEditor()})));host.append(label(node.operation==='SET_STAGE'?'المرحلة':'معرف الموظف داخل الشركة',node.operation==='SET_STAGE'?runtimeControls.select(node.value,['INTERESTED','CONTACTED','READY_FOR_AGENT','CLOSED'].map(v=>[v,v]),v=>node.value=v):control(node.value,v=>node.value=v)),label('عند فشل الإجراء',target(node.errorNext||'',v=>{if(v)node.errorNext=v;else delete node.errorNext},true)));}
    if(node.type==='SET_FIELD')host.append(label('عند عدم توافق قيمة الحقل',target(node.errorNext||'',v=>{if(v)node.errorNext=v;else delete node.errorNext},true)));
    if(node.type==='GOAL')host.append(label('معرف الهدف',control(node.goal,v=>node.goal=v)));
@@ -593,7 +596,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   try{
    const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST';
    const inbound=eventKind?{kind:eventKind,value:input||''}:input!==undefined?{kind:choice?'CHOICE':'TEXT',value:choice?'flow:'+current.id+':'+input:input}:undefined;
-   const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,simulation:{now:simulationNow},...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
+   const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,simulation:{now:simulationNow,requests:requestMocks},...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
    if(generation!==simulationGeneration)return;
    if(input)bubble(choice?current.choices.find(c=>c.id===input)?.title||input:input,'customer');
    for(const entry of r.trace||[]){const item=el('li',entry.nodeId+' · '+entry.type+' · '+entry.outcome);item.onclick=()=>{simulatorDialog.close();canvas.focus(entry.nodeId)};traceHost.append(item)}valuesHost.textContent=JSON.stringify(r.state.answers,null,2);canvas.highlight(r.state.at);

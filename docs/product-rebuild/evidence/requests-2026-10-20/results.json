@@ -1,0 +1,10 @@
+{
+  "checks": [
+    "real PostgreSQL-backed API draft roundtrip and request/body/mapping/route inspector",
+    "actual shared-engine server preview takes Mock success, HTTP error and timeout routes",
+    "mock data never persists in draft and new response-waiting publication stays gated until worker is ready"
+  ],
+  "errors": [],
+  "chromium": "154.0.8037.57",
+  "date": "2026-10-20T18:19:48.965Z"
+}

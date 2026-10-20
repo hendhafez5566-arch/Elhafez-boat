@@ -1,3 +1,7 @@
+## 2026-10-20 — F23 request contract checkpoint
+
+Continued from verified a0c227d on the same execution branch/PR #5. Bounded request/mapping authoring and explicit Mock success/error/timeout work through the shared engine, stable graph ports and pinned subflow bindings. POST auto-retry is rejected; no raw credential inputs. New response-waiting nodes are deliberately publish/runtime gated until durable processing is ready; legacy behavior is unchanged. 166 Unit, existing 14 PostgreSQL scenarios and three actual API/PostgreSQL/Chromium checks pass. F23 stays PARTIAL; total 5 PASS / 31 PARTIAL. See REQUEST_CHECKPOINT.md. Baseline GitHub Verify run 962 is success. No external provider, merge or deployment; visual redesign deferred.
+
 ## 2026-10-20 — Final acceptance and continuous GitHub checkpoints
 
 Verified remote functional checkpoints on the same branch and Draft PR #5: `66031dd` (durable controls/advanced authoring) and `f7651be` (ordered actual conversation diagnostics). No work remains only in an unpushed functional tree. Current matrix: 5 PASS / 31 PARTIAL / 0 wholly BLOCKED; provider portions of F24/F29/F30 remain blocked.

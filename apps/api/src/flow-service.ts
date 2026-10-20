@@ -1,3 +1,4 @@
+import {mapRequestResponse,type RequestMock} from './flow-request.js';
 import {flowChannelIssues} from './flow-capabilities.js';
 import {flowStorage} from './flow-storage.js';
 import {resolveConversationBot} from './bot-routing.js';
@@ -10,7 +11,7 @@ import {enqueueIntegration,webhookURL} from './integrations.js';
 import {groundedReply} from './ai.js';
 /** Tenant-scoped draft/publish operations for industry-independent chatbot flows. */
 import {allow,HttpFailure,type Actor,type SqlClient} from './services.js';
-import {exampleFlow,validateFlow,advanceFlow,initialFlowState,type FlowDefinition,type FlowMessage,type FlowInput,type FlowState} from './flow-engine.js';
+import {exampleFlow,validateFlow,advanceFlow,initialFlowState,validVariableValue,type FlowDefinition,type FlowMessage,type FlowInput,type FlowState} from './flow-engine.js';
 import {registerInterest,readyForAgent} from './chatbot-leads.js';
 
 export async function getFlowConfig(db:SqlClient,actor:Actor,botId?:string){
@@ -241,11 +242,18 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
  return {...flow,nodes:[...new Map(nodes.map(n=>[n.id,n])).values()]};
 }
 
-export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string},simulation?:{now?:number;seed?:number}){
+export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>}){
  let crmStage:string|undefined;
  let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,simulation);const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
+  if(pending?.type==='WEBHOOK'&&pending.request){
+   if(!dryRun)throw new HttpFailure(409,'Response-waiting request runtime is not enabled yet');
+   const mock=simulation?.requests?.[pending.id]||{outcome:'SUCCESS' as const,body:{}},request=pending.request;let next=request.errorNext,outcome='mock_request_http_error';
+   if(mock.outcome==='TIMEOUT'){next=request.timeoutNext;outcome='mock_request_timeout'}
+   else if(mock.outcome==='SUCCESS'){try{const fields=mapRequestResponse(request,mock.body??{});for(const [key,value]of Object.entries(fields))if(!validVariableValue(flow.variables?.find(v=>v.key===key),value))throw Error('Response field type mismatch');Object.assign(result.state.answers,fields);next=pending.next;outcome='mock_request_success'}catch{outcome='mock_request_mapping_error'}}
+   trace.push({nodeId:pending.id,type:pending.type,outcome,elapsedMs:0});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next}:n)};
+  }
   if(pending?.type==='CRM_ACTION'){
    const started=performance.now();let next=pending.next,outcome=dryRun?'mock_crm_success':'crm_success';
    try{

@@ -16,7 +16,7 @@ export function validateSnippet(value:unknown):FlowSnippet{
   throw new Error('Reusable section requires 1–20 linear steps');
  const steps=deep(value.steps) as LinearNode[];
  for(const [i,node] of steps.entries()){
-  if(!isRecord(node)||!allowed.has(String(node.type))||typeof node.next!=='string'||('policy'in node&&node.policy&&Object.keys(node.policy).some(k=>k.endsWith('Next')))||'errorNext'in node)
+  if(!isRecord(node)||!allowed.has(String(node.type))||typeof node.next!=='string'||('policy'in node&&node.policy&&Object.keys(node.policy).some(k=>k.endsWith('Next')))||'errorNext'in node||node.type==='WEBHOOK'&&node.request)
    throw new Error('Reusable sections support sequential message, input, delay, tag, catalog, AI and webhook steps only');
   const next=i+1===steps.length?'__exit__':steps[i+1].id;
   if(node.next!==next)throw new Error('Reusable section must contain one linear path with a final exit');

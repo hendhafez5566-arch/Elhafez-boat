@@ -1,3 +1,4 @@
+import {validateRequestMocks,type RequestMock} from './flow-request.js';
 import {flowTraceSessions,flowConversationTrace} from './flow-trace.js';
 import {mockFlowAssistance} from './flow-assistance.js';
 import {flowChannelIssues,channelCapabilities} from './flow-capabilities.js';
@@ -286,8 +287,9 @@ const server=createServer(async(req,res)=>{
       if(incoming&&(!['TEXT','CHOICE','SKIP','TIMEOUT'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
       flow=await compileSubflows(tx,actor.tenantId,flow);
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
-      const simulation=d.simulation as {now?:number;seed?:number}|undefined;
+      const simulation=d.simulation as {now?:number;seed?:number;requests?:Record<string,RequestMock>}|undefined;
       if(simulation&&(typeof simulation!=='object'||simulation.now!==undefined&&(!Number.isFinite(simulation.now)||simulation.now<0||simulation.now>4102444800000)||simulation.seed!==undefined&&(!Number.isFinite(simulation.seed)||simulation.seed<0||simulation.seed>=1)))throw new HttpFailure(400,'Invalid simulation clock/seed');
+      if(simulation?.requests!==undefined){try{validateRequestMocks(simulation.requests)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid request mocks')}}
       if(state?.runtime){const r=state.runtime;if(!r.attempts||typeof r.attempts!=='object'||Array.isArray(r.attempts)||Object.keys(r.attempts).length>100||Object.values(r.attempts).some(v=>!Number.isInteger(v)||v<0||v>10)||r.wait&&(!Number.isFinite(r.wait.expiresAt)||typeof r.wait.token!=='string'||!isUuid(r.wait.token)||typeof r.wait.nodeId!=='string')||r.experiments&&(typeof r.experiments!=='object'||Array.isArray(r.experiments)||Object.keys(r.experiments).length>100||Object.values(r.experiments).some(v=>typeof v!=='string'||v.length>40)))throw new HttpFailure(400,'Invalid simulation runtime state')}
       const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
     }));
