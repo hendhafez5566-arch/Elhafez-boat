@@ -1,5 +1,6 @@
 {
   "checks": [
+    "initial fit waits for visible workspace instead of fitting a hidden zero-size canvas",
     "cursor zoom invariant at 3 points",
     "inspector does not jump camera",
     "select/disconnect/undo/redo preserves other edges",
@@ -12,15 +13,15 @@
     "offline failure and reload recovery preserve local draft",
     "optional debounced autosave persists without publish",
     "real optimistic conflict preserves local edits",
-    "50 nodes render/save/reopen 201 ms",
-    "48 actual property input edits and save 1442 ms",
-    "100 nodes render/save/reopen 206 ms",
-    "98 actual property input edits and save 5469 ms",
+    "50 nodes render/save/reopen 199 ms",
+    "48 actual property input edits and save 1482 ms",
+    "100 nodes render/save/reopen 230 ms",
+    "98 actual property input edits and save 6066 ms",
     "390/768/1024/1440 and CSS 200% layout (not OS/browser UI zoom)",
     "SET_FIELD, composite text/media and weighted randomizer run in actual server preview",
     "composite message and weighted branch properties reopen correctly"
   ],
   "errors": [],
   "chromium": "154.0.8037.57",
-  "date": "2026-10-20T12:39:36.918Z"
+  "date": "2026-10-20T12:44:41.071Z"
 }

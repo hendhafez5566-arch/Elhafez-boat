@@ -24,7 +24,7 @@ try{
  let cfg=await api(path);assert.equal((await api(path+'/draft','PUT',{...definition,expectedRevision:cfg.data.draft.draftRevision})).status,200);
  await page.goto('about:blank');await page.goto(base+'/#bot/'+id);await page.waitForSelector('.canvas-node[data-node-id=menu]');await page.waitForTimeout(200);
  // Switch from persisted simple mode if necessary.
- if(await page.locator('.flow-canvas').isHidden())await clickText('عرض المخطط المرئي');
+ if(await page.locator('.flow-canvas').isHidden())await clickText('عرض المخطط المرئي');await page.waitForFunction(()=>parseInt(document.querySelector('.canvas-zoom').textContent)>10);check('initial fit waits for visible workspace instead of fitting a hidden zero-size canvas');
  await page.locator('.canvas-zoom').click();const host=page.locator('.flow-canvas');const h=await host.boundingBox();
  // Ctrl wheel preserves cursor world coordinates at three points.
  for(const ratio of [.2,.5,.8]){const x=h.x+h.width*ratio,y=h.y+h.height*.4;const before=await page.locator('.flow-stage').evaluate(e=>{const m=new DOMMatrix(getComputedStyle(e).transform);return {x:m.e,y:m.f,z:m.a}});await page.mouse.move(x,y);await page.keyboard.down('Control');await page.mouse.wheel(0,-80);await page.keyboard.up('Control');await page.waitForTimeout(40);const after=await page.locator('.flow-stage').evaluate(e=>{const m=new DOMMatrix(getComputedStyle(e).transform);return {x:m.e,y:m.f,z:m.a}});assert.ok(Math.abs((x-h.x-before.x)/before.z-(x-h.x-after.x)/after.z)<1);assert.ok(Math.abs((y-h.y-before.y)/before.z-(y-h.y-after.y)/after.z)<1)}check('cursor zoom invariant at 3 points');

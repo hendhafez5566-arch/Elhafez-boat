@@ -36,3 +36,5 @@ Actual browser-UI zoom was unavailable in this headless configuration. The 200% 
 - Repeated manual launches exhausted the real 10-per-600-second login window. Waited for its normal boundary and used separate actors in the combined harness. Production throttle code/limits are unchanged.
 
 Final combined outcome and logs: `verification.txt`. No result establishes live provider readiness.
+
+Final targeted Chromium rerun also verifies initial fit waits for the hidden workspace to become visible; source stylesheet port rules retain their own font and size instead of inheriting generic button text.

@@ -4,7 +4,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   const ns='http://www.w3.org/2000/svg';
   const titles={SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
   const edges=graphOutputs;
-  let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,connectionGeneration=0;
+  let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,connectionGeneration=0,pendingFit=false;
   host.tabIndex=0;
   host.classList.add('flow-canvas');host.dir='ltr';host.setAttribute('role','region');
   host.setAttribute('aria-label','مساحة رسم المحادثة؛ Alt مع الأسهم لتحريك الخطوة المحددة؛ Shift يزيد المسافة. استخدم Tab لاختيار المخارج');
@@ -98,7 +98,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
           const choice=from.choices?.find(c=>c.id===source.key.slice(7));
           if(!choice)return notify('تعذر تحديد الاختيار','error');choice.next=target;
         }else from[source.key]=target;
-        source=null;changed();draw();highlight(target);
+        source=null;selectedEdge=null;edgeTools.hidden=true;changed();draw();highlight(target);
       };
       const input=btn(source?'اضغط لتوصيل المسار':'مدخل','canvas-input',()=>connectTo(n.id));
       input.setAttribute('aria-label','توصيل المسار إلى '+(titles[n.type]||'الخطوة'));
@@ -189,6 +189,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   }
   const zoomTo=(v,x=host.clientWidth/2,y=host.clientHeight/2)=>{const old=zoom;zoom=Math.max(.1,Math.min(2,v));pan={x:x-(x-pan.x)*zoom/old,y:y-(y-pan.y)*zoom/old};transform()};
   function fit(){
+    if(!host.clientWidth||!host.clientHeight){pendingFit=true;return}pendingFit=false;
     const f=getFlow(),points=Object.values(positionsFor(f));
     if(!points.length)return reset();
     const nodes=f.nodes,positions=positionsFor(f);
@@ -213,7 +214,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const stop=()=>{if(box){const r=box.getBoundingClientRect();const ids=[...stage.querySelectorAll('.canvas-node')].filter(c=>{const b=c.getBoundingClientRect();return b.left<r.right&&b.right>r.left&&b.top<r.bottom&&b.bottom>r.top}).map(c=>c.dataset.nodeId);box.remove();selectMany(ids);highlight(ids[0])}host.removeEventListener('pointermove',move);host.removeEventListener('pointerup',stop);host.removeEventListener('pointercancel',stop)};
     host.addEventListener('pointermove',move);host.addEventListener('pointerup',stop);host.addEventListener('pointercancel',stop);
   });
-  const resize=new ResizeObserver(()=>paintMap());resize.observe(host);
+  const resize=new ResizeObserver(()=>{if(pendingFit&&host.clientWidth&&host.clientHeight)fit();else paintMap()});resize.observe(host);
   function focus(id){
     const p=positionsFor(getFlow())[id];if(!p)return fit();
     const area=host.getBoundingClientRect();zoom=1;
