@@ -69,7 +69,7 @@ Actual Chromium captures from the updated application and synthetic fixtures:
 
 Checkpoint one is saved remotely at `66031dd20bcb1301a0cb8282e4a2dbc64aa7999c`. The next coherent batch adds execution IDs and step order to new events (migration 0034), preserves old events with explicit unknown order, provides exact microsecond cursor paging, and shows actual conversation traces without answers or message bodies. Bot/tenant scope is verified before events are read. The view shows the pinned revision/current step, saved wait and continuation-job status; selecting a current draft node changes selection only. Logout invalidates pending views. The diagnostic control remains available on mobile and in simple mode.
 
-Targeted validation: 161 Unit tests, 14 actual PostgreSQL scenarios and six Chromium/HTTP scenarios pass. Final combined acceptance is running at this checkpoint; its result will be saved separately. See [TRACE_CHECKPOINT.md](TRACE_CHECKPOINT.md).
+Targeted validation: 161 Unit tests, 14 actual PostgreSQL scenarios and six Chromium/HTTP scenarios pass. Full API/runtime, broad, novice, premium and committed-trace Chromium acceptance subsequently passed on the final executable source `f7651be`; results and resumable GitHub checkpoints are saved in [CHECKPOINTS.md](CHECKPOINTS.md). See [TRACE_CHECKPOINT.md](TRACE_CHECKPOINT.md).
 
 - [Actual session list](../../evidence/traces-2026-10-20/actual-session-list.png)
 - [Ordered committed trace](../../evidence/traces-2026-10-20/ordered-conversation-trace.png)

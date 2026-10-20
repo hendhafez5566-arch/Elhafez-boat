@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-20T17:46:26.454083+00:00",
+  "date": "2026-10-20T17:49:40.505806+00:00",
   "parent": "66031dd20bcb1301a0cb8282e4a2dbc64aa7999c",
   "unitPass": 161,
   "postgresScenarios": 14,
   "chromiumChecks": 6,
-  "combinedAcceptance": "running at this checkpoint",
+  "combinedAcceptance": "PASS: API/runtime, broad, novice, premium, trace Chromium; post-logout and zero campaign jobs/outbound messages",
   "F35": "PARTIAL",
   "sourceSha256": {
     ".github/workflows/verify.yml": "b739e86613fae43ee896cdc8a2086eaa182cebebc7f66549bf16f4f0d862bafb",
@@ -26,5 +26,10 @@
     "failed-wait-diagnostic.png": "128a57f5d982fd6113e16d001a2ecabbc32a07aedc2f5ad7dfa8b9d3bbe61155",
     "mobile-conversation-trace.png": "b08cafcd5a10a388890a8d2263f2502611f1fd50cbb58bb1b069ada4b8b23d58",
     "ordered-conversation-trace.png": "99a3fffc82eecee62cf8abdded7ed39ecb47370923702f3beca0fafd0612eea1"
-  }
+  },
+  "testedExecutableHead": "f7651bedb086fcc7f39ef75e616920b63a0e91a5",
+  "rls": "PASS",
+  "legacyBotsTeamCrm": "PASS",
+  "repeatMigration": "PASS",
+  "radicalVisualRedesignApproved": false
 }

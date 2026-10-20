@@ -1,6 +1,6 @@
 # Ordered conversation diagnostics — stable checkpoint
 
-Parent saved and verified on GitHub: `66031dd20bcb1301a0cb8282e4a2dbc64aa7999c`. Same execution branch and Draft PR #5. F35 stays PARTIAL; no other F status is promoted.
+Parent saved and verified on GitHub: `66031dd20bcb1301a0cb8282e4a2dbc64aa7999c`. This executable batch is saved and verified as `f7651bedb086fcc7f39ef75e616920b63a0e91a5`. Same execution branch and Draft PR #5. F35 stays PARTIAL; no other F status is promoted.
 
 Migration 0034 adds nullable execution/order/time metadata to the existing RLS events table; older rows are retained and identified as unordered. New committed traces share an execution UUID and statement timestamp and have exact step ordinals. Conversation event pages use a microsecond timestamp/UUID/ordinal/row-ID cursor to avoid skipped or repeated events. Existing pinned sessions, answers and versions are untouched.
 
@@ -17,6 +17,6 @@ Validated at this checkpoint:
 
 The fixture JSON is written only under ignored `acceptance-evidence/` with mode 0600. It contains disposable synthetic credentials, is never printed/committed/uploaded, and no external provider is contacted. CI prepares this fixture before starting background workers, then invokes the trace browser during runtime acceptance.
 
-Combined API/broad/novice/premium/trace acceptance is running at this stable checkpoint. The final result will be saved in the next documentation checkpoint.
+Combined API/broad/novice/premium/trace acceptance subsequently completed with EXIT 0 on the executable source. Post-acceptance independent-bot/legacy/team/CRM tests and repeat migration checks also passed. See `verification.txt` and `CHECKPOINTS.md`.
 
 Remaining: failed/rolled-back inbound transactions may have no event. This is a committed-transition diagnostic, not complete error/delivery telemetry. Retention, full inbound/outbound correlation, experiment/funnel attribution and the other matrix gaps remain. The owner has not approved a radical visual redesign; these functional diagnostics do not change that decision.

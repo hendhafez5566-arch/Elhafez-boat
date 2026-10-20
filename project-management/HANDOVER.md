@@ -1,3 +1,11 @@
+## 2026-10-20 — Final acceptance and continuous GitHub checkpoints
+
+Verified remote functional checkpoints on the same branch and Draft PR #5: `66031dd` (durable controls/advanced authoring) and `f7651be` (ordered actual conversation diagnostics). No work remains only in an unpushed functional tree. Current matrix: 5 PASS / 31 PARTIAL / 0 wholly BLOCKED; provider portions of F24/F29/F30 remain blocked.
+
+Final executable source `f7651be`: 161 Unit tests; 14 control/trace PostgreSQL scenarios; RLS and independent-bot/legacy/team/CRM checks; full real API/runtime and broad/novice/premium/trace Chromium acceptance PASS. Zero campaign jobs/outbound messages and post-logout rejection verified. Final syntax and repeat migration checks pass. Source/image hashes, logs, screenshots and next-step details are in `docs/product-rebuild/implementation/premium-2026-10-20/CHECKPOINTS.md`.
+
+Next coherent implementation: F23 request/response mapping and async failure/timeout continuation using existing integration/connector jobs and pinned session guards. Other true remaining gaps are in F01–F36.md. Do not redo saved input/condition/CRM/time/channel/trace work. Radical visual redesign remains NOT approved; collect visual feedback with final functional gaps. No merge, production deploy, real provider activation or customer send occurred. Remote CI completion is not claimed.
+
 ## 2026-10-20 — Ordered conversation diagnostics checkpoint
 
 The prior functional batch is safely pushed as `66031dd` on `feat/premium-flow-builder-2026-10-20`, Draft PR #5. New batch: additive migration 0034, execution UUID/ordered steps, exact microsecond cursor paging, bot-scoped session/trace APIs and real conversation trace UI. Displays pinned state, wait/job status and step timing/reasons without answers or message text; old events have explicit unknown order. Selection is read-only; logout invalidates delayed views. Same-company wrong-bot and cross-company access are denied.
