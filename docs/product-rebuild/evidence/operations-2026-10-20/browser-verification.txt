@@ -1,0 +1,7 @@
+Elhafez Boat dashboard http://127.0.0.1:3110
+Elhafez Boat API listening on 4110
+PASS real bot-scoped HTTP metadata and bounded older-page navigation render the saved request queue
+PASS actual uncertain state explains external verification; server rejects missing confirmation and excludes request/response content
+PASS real form saves one verified resolution, idempotent HTTP retry, no extra attempt and identical flow snapshot/committed trace
+PASS desktop/mobile real operations, retained-data failure and actual retry; no unsafe resend control
+PASS logout clears operation dialogs and authenticated access

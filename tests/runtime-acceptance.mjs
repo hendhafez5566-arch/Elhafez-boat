@@ -326,6 +326,7 @@ try{
  if(process.env.CI_INTEGRATED_BROWSER==='1'){const rich=spawn(process.execPath,['tests/integrated-builder-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [richCode]=await once(rich,'exit');assert.equal(richCode,0,'Integrated cards/actions/drawing Chromium acceptance failed');}
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
+ if(process.env.CI_OPS_BROWSER==='1'){const ops=spawn(process.execPath,['tests/flow-request-ops-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [opsCode]=await once(ops,'exit');assert.equal(opsCode,0,'Request operations and no-replay Chromium acceptance failed');}
  console.log('PASS campaign browser review queued zero jobs and zero outbound messages');
  const logout=await expectCode('/api/v1/auth/logout',{method:'POST',token:one},200);
  assert.ok(logout);

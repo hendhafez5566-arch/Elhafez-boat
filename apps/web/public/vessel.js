@@ -42,6 +42,8 @@ export function initVesselWorkspace(){
  const desktopNav=window.matchMedia('(min-width:1024px)');
  let desktopCollapsed=false;
  const syncNav=()=>{
+   // Fixed mobile drawer must escape the rail's stacking context above the backdrop.
+   if(desktopNav.matches)rail.append(drawer);else app.insertBefore(drawer,backdrop);
    const expanded=desktopNav.matches&&!desktopCollapsed;
    app.classList.toggle('vessel-nav-expanded',expanded);
    drawer.hidden=!expanded;

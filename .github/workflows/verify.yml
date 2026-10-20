@@ -61,6 +61,7 @@ jobs:
       CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
       CI_TRACE_BROWSER: '1'
       CI_INTEGRATED_BROWSER: '1'
+      CI_OPS_BROWSER: '1'
       PREMIUM_EVIDENCE_DIR: docs/product-rebuild/evidence/continuation-2026-10-20
     steps:
       - uses: actions/checkout@v4
@@ -107,6 +108,8 @@ jobs:
         run: node tests/flow-integration-db.mjs
       - name: Rich messages, button actions and isolated widget fixture
         run: RICH_BROWSER_FIXTURE=1 node tests/rich-flow-db.mjs
+      - name: Audited request reconciliation, scope and no replay
+        run: OPS_BROWSER_FIXTURE=1 node tests/flow-request-ops-db.mjs
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data

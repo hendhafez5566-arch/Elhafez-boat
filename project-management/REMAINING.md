@@ -1,3 +1,9 @@
+## 2026-10-20 — Premium request operations / PR #5
+
+New bot-scoped metadata paging/status and explicit audited UNCERTAIN reconciliation on the existing queue. Author/tenant/bot, acknowledgement and stale-attempt checks; concurrent equal retries produce one decision/audit, opposing decisions fail. No new HTTP dispatch, response data entry or flow replay. Migration 0036 only on disposable PostgreSQL. Privacy erasure remains blocked until a real operator-supplied resolution, then scrubs payload/results. Fixed the mobile drawer's parent stacking context exposed by actual logout clicks.
+
+181 Unit/typecheck/build, 7 real PostgreSQL and 5 actual Chromium/API cases PASS; evidence and limitations: docs/product-rebuild/implementation/premium-2026-10-20/OPERATIONS_CHECKPOINT.md. F23 remains PARTIAL for native connectors/provider contracts. Storage recovery primitives are tested but their tab-close UI is not delivered at this checkpoint. Full local CI-equivalent repeat and remote CI outcome remain open; GitHub API Forbidden. Same branch/PR only; no merge/deploy/real provider.
+
 ## 2026-10-20 — Premium PR #5 handover / Chromium CI repair
 
 Same feature branch feat/premium-flow-builder-2026-10-20, verified remote base b9679ce. Reproduced invalid plain-object PointerEvent in browser-acceptance.mjs; replaced with an actual trusted Chromium drag, visible hit-test target and unchanged collision assertion. Baseline 177 unit/typecheck/build pass; full targeted API/PostgreSQL/broad/novice/premium/trace/request/integrated browser command exits 0. CI_LOCAL_CLOSURE final repeat and remote CI verification remain open. Evidence and exact scope: docs/product-rebuild/implementation/premium-2026-10-20/CI-REPAIR.md. No merge, deployment or real provider action. Next coherent work: scoped request diagnostics and explicit audited UNCERTAIN reconciliation, with no POST replay.
