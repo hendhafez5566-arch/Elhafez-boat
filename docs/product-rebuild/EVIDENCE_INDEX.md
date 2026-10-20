@@ -1,3 +1,7 @@
+## 20 October — company/media/operations
+
+[Full batch](COMPLETION-BATCH-2026-10-20.md), [authoritative screen ledger](EXECUTION-LEDGER.md), [commands, results and hashed actual screenshots](evidence/completion-verification.json). Original-web before images and current after images cover dashboard, media, integrations, usage; additional company review, dense canvas, campaign variants and owner operations. Synthetic fixtures only; no private invitation tokens.
+
 ## 20 October 2026 — Team lifecycle and period reporting
 
 Final executable b50da9d. [Results](evidence/team-report-verification.json), [current S01–S22 table](EXECUTION-LEDGER.md), actual team [before](evidence/team-before-320.png)/[after](evidence/team-invitations-320.png), [join success](evidence/team-accepted-320.png), report [before](evidence/wizard-analytics-320.png)/[after](evidence/comparison-report-320.png)/[empty](evidence/comparison-empty-320.png). Desktop pairs and retry/role proof are linked from the ledger. Synthetic fixtures only; invitation links were hidden before capture. S14/S19 local core acceptance is closed; remaining screen/accessibility/provider limits are explicit.

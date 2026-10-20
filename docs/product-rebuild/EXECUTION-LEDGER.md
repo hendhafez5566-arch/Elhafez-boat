@@ -1,3 +1,47 @@
+# 20 October 2026 — Company, media and operations batch
+
+Same feature branch and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4). Application source `daf15cb`, final acceptance harness `4791b06`. [Detailed implementation, diagnoses and limits](COMPLETION-BATCH-2026-10-20.md); [machine-readable proof](evidence/completion-verification.json). No merge, Railway deployment, real provider login/send, paid AI or new migration.
+
+## Current S01–S22 status (supersedes every historical table below)
+
+**16 DONE+TESTED in the explicitly bounded local core scope, 5 PARTIAL, 1 BLOCKED_PROVIDER.** These are local functional acceptance results, not a declaration that the entire rebuild, commercial release or accessibility approval is complete.
+
+| ID | Status | Scope and remaining boundary |
+|---|---|---|
+| S01 | DONE+TESTED | Owner invitation/activation and company/business/template/deferred-channel/review/back journey; atomic idempotent independent unpublished/unrouted bot. Live channel authorization is separate. |
+| S02 | DONE+TESTED | Real KPI reconciliation, empty readiness, company setup shortcut, desktop/mobile, retained-data transport error/retry and actual inbox shortcut. |
+| S03 | DONE+TESTED | Previously accepted searchable template gallery/server preview/independent draft; regression repeated. |
+| S04 | DONE+TESTED | Previously accepted isolated CRUD/archive/routing/drafts/publications; regression repeated. |
+| S05 | PARTIAL | Novice wizard/same-definition branches/unfinished restore and 48-node mobile steps pass; full dense novice/keyboard acceptance remains open. |
+| S06 | PARTIAL | Real 48-node cyclic canvas, 100-node geometry, stable edges/layout, Alt-arrow/Ctrl-S and existing drag/zoom/undo pass; exhaustive keyboard/focus acceptance remains open. |
+| S07 | PARTIAL | Typed common inspectors and limits preserved; every advanced variant and accessible long-inspector matrix is not fully exercised. |
+| S08 | DONE+TESTED | Actual draft interpreter/questions/options/handoff, with no real lead creation or provider sends. |
+| S09 | DONE+TESTED | Bot-scoped routing/triggers and pinned sessions, tenant isolation; no live provider claim. |
+| S10 | DONE+TESTED | Local Website inbox assign/takeover/release/reply/close/private notes; two real agents compete, one wins, loser/closed reply denied; polling updates reply permission. External provider delivery is separate. |
+| S11 | DONE+TESTED | Actual tenant-safe search/filter/pagination/bounded bulk stages; regression repeated. |
+| S12 | DONE+TESTED | Contact-wide historical paging/exact thread links; bounded existing history, not unlimited export. |
+| S13 | DONE+TESTED | Real consent/template review and draft save; named header/body, quick/dynamic buttons, media header and two-card media carousel forms. No launch/send or provider approval implied. |
+| S14 | DONE+TESTED | Genuine aggregate UTC windows/previous comparison/CSV download reconciliation, zero/error/retry; no BI/revenue/delivery attribution claim. |
+| S15 | DONE+TESTED | Catalog regression plus actual upload/ClamAV CLEAN/quarantine/offline recovery/private image preview/download/delete/forged MIME rejection and immutable independent-bot reference protection. Production scanner definitions remain operational responsibility. |
+| S16 | BLOCKED_PROVIDER | Live/paid AI requires separate owner authorization; offline grounding/failure cases do not certify a live model. |
+| S17 | PARTIAL | Real saved-state directory, prerequisites and retry implemented; official live provider acceptance is prohibited and untested. |
+| S18 | DONE+TESTED | Local URL-policy inspection/zero jobs, saved encrypted integration/rotation/disable, no displayed secret, roles/tenant/SSRF and local transport failure matrix. No real endpoint connection claimed. |
+| S19 | DONE+TESTED | Previously accepted invitation/expiry/reuse/roles/session boundaries; actual role browser logins and full team lifecycle repeated. No automatic email service claimed. |
+| S20 | DONE+TESTED | Saved company name, actual plan/state/end/staff/pending seats/bots/catalog and three usage meters on desktop/mobile. Billing is manual as supported by backend. |
+| S21 | DONE+TESTED | Separate real admin auth/company provision/first-owner activation/search/subscription/limits/operational audit and logout. No private chat access or real invitation delivery claimed. |
+| S22 | PARTIAL | Broad 81 page/viewport loading visits plus actual functional desktop/mobile images; full native 200% zoom, physical devices, screen reader/WCAG and owner UX sign-off remain NOT_RUN. |
+
+## Current acceptance evidence
+
+- `npm run check`: 131 passed, zero failures/skips; actual TypeScript build/typecheck.
+- Fresh disposable PostgreSQL migrated through 0032; existing backfill/independent-bot/team/CRM/report suite and new `completion-db.mjs` pass.
+- Full final `CI_LOCAL_CLOSURE=1` runtime: both real Chromium suites, roles/team/company journeys, API/worker kill/recovery, authentic throttling, mixed load, local provider matrices, actual ClamAV. See verification JSON for exact source and results. No screen is marked done from the 81 loading visits alone.
+- Real daemon uses isolated EICAR acceptance definitions, not production malware coverage. Local transports exercise production adapters without real accounts or provider connections.
+- Before images reconstruct actual original web assets. [Dashboard before](evidence/closure-before-overview-320.png) / [after](evidence/closure-dashboard-320.png); [media before](evidence/closure-before-media-320.png) / [after](evidence/closure-media-clean-320.png); [integrations before](evidence/closure-before-integrations-320.png) / [after](evidence/closure-integrations-320.png); [usage before](evidence/closure-before-usage-320.png) / [after](evidence/closure-usage-320.png). Desktop companions and company/canvas/campaign/platform images are indexed in verification JSON.
+- GitHub API returns Forbidden. Push/remote SHA can be verified through Git, but GitHub CI outcome remains UNVERIFIED. Protected target/main are unchanged.
+
+---
+
 # 20 October 2026 — Team and reports core acceptance closed locally
 
 Same branch `feat/codex-product-rebuild-2026-10-19` and [Draft PR #4](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/4). Team source `96a25b2`, reporting source `815c5e8`, full runtime/both-browser run on `09fb2e8`; final test/baseline refinement `311ace6` and Arabic ISO direction fix **`b50da9d`** passed the targeted real runtime/Chromium suite. Final evidence commit is reports/images only. No migration, merge, Railway deployment, real email, external invitation sharing, paid AI or live provider request.
