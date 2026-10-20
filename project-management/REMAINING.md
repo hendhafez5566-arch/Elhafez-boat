@@ -290,3 +290,10 @@ New independent CI gate **PASSED** on [run 39105138303](https://github.com/hendh
 
 ### New container evidence
 [CI run 39105618688](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105618688): real Dockerfile image build and packaged static-web/widget HTTP smoke PASS, with `.dockerignore` secret/context exclusion. Previous claims that Docker build was *not tested* are superseded. **Still needed before commercial hosting**: real Compose/service networking and least-privilege credentials, domain/TLS, live providers, operational backup/offsite restoration, on-call alerts and load/fault tests. Do not confuse Docker image smoke with production deployment readiness.
+
+
+## Premium Flow Studio — 20 October 2026
+
+Input timeout/retry/skip scheduler; nested/date/tag conditions; typed field registry; START triggers; full CRM actions; channel preflight; timezone delays; sticky A/B metrics; HTTP response/error mapping; galleries/WhatsApp Flows; AI generation/text suggestions; review threads; persistent trace; tab-close recovery; pinch/screen reader/actual browser zoom acceptance.
+
+[Implementation and evidence](../docs/product-rebuild/implementation/premium-2026-10-20/README.md). Unit/build: 142 passed, zero failed/skipped. Exact PostgreSQL/API/Chromium outcomes and limits are recorded there.

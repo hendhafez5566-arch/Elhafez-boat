@@ -1,6 +1,6 @@
 import {mergeFlowDrafts,sameDraftValue} from './flow-merge.js';
 import {createCanvas} from './flow-canvas.js';
-import {graphOutputs} from './flow-geometry.js';
+import {graphOutputs,arrangeFlow} from './flow-geometry.js';
 import {mountGuidedWizard} from './flow-onboarding.js';
 /** Company-specific visual block editor, no industry assumptions or customer data. */
 export function initFlowBuilder({state,api:baseApi,notify,execute}){
@@ -12,7 +12,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
  const idPattern=/^[a-z][a-z0-9_-]{0,31}$/;
- const types={SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
+ const types={SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
  const deep=v=>JSON.parse(JSON.stringify(v));
  const preset=(industry='general')=>{
    const cards={general:['الخدمات','العروض'],shop:['المنتجات','الأسعار والمقاسات'],tourism:['البرامج','الأسعار والمواعيد'],clinic:['خدمات العيادة','ساعات العمل'],restaurant:['المنيو','فروع المطعم'],realestate:['العقارات','استفسار عن زيارة'],education:['الكورسات','مواعيد التسجيل']};
@@ -38,7 +38,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if(add){if(selectedNodes.has(id))selectedNodes.delete(id);else selectedNodes.add(id);}
    else selectedNodes=new Set([id]);
    selected=id;renderBlocks();renderEditor();showSelection();canvas.highlight(id);showInspector();
- },changed:()=>{markDirty();renderBlocks()},notify,addAfter:anchor=>openInsert(anchor)});
+ },changed:()=>{markDirty();renderBlocks()},notify,getSelection:()=>selectedNodes,selectMany:ids=>{selectedNodes=new Set(ids);showSelection()},addAfter:anchor=>openInsert(anchor)});
  const tools=el('div',undefined,'builder-toolbar');canvasHost.before(tools);
  const selectionBadge=el('span','خطوة واحدة محددة','builder-selection');
  const showSelection=()=>{selectionBadge.textContent=selectedNodes.size+' خطوة محددة — Shift للاختيار المتعدد'};
@@ -63,9 +63,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  });
  tools.append(selectionBadge,groupButton,ungroupButton);
 
- tools.append(button('فحص المسار',()=>execute(async()=>{if(state.demo){notify('فحص الخادم يتطلب تسجيل الدخول؛ المعاينة المحلية متاحة');return}await api('/flows/validate',{method:'POST',body:flow});notify('المسار صالح للنشر من ناحية البنية وحدود القناة')})),button('تراجع',()=>{if(cursor>0){flow=deep(history[--cursor]);dirty=true;renderAll()}}),button('إعادة',()=>{if(cursor<history.length-1){flow=deep(history[++cursor]);dirty=true;renderAll()}}),button('توسيط اللوحة',()=>canvas.reset()),button('نسخ الخطوة',()=>{
-  const node=nodeById(selected);if(!node||node.type==='START')return;let id='copy'+Date.now().toString(36);const copy=deep(node);copy.id=id;flow.nodes.push(copy);selected=id;markDirty();renderAll();
- }),button('الإصدارات والتراجع',()=>execute(async()=>{
+ tools.append(button('فحص المسار',()=>execute(async()=>{if(state.demo){notify('فحص الخادم يتطلب تسجيل الدخول؛ المعاينة المحلية متاحة');return}await api('/flows/validate',{method:'POST',body:flow});notify('المسار صالح للنشر من ناحية البنية وحدود القناة')})),button('تراجع',()=>{if(cursor>0){flow=deep(history[--cursor]);dirty=true;saveState='تعديلات غير محفوظة';storeRecovery();renderAll()}}),button('إعادة',()=>{if(cursor<history.length-1){flow=deep(history[++cursor]);dirty=true;saveState='تعديلات غير محفوظة';storeRecovery();renderAll()}}),button('توسيط اللوحة',()=>canvas.reset()),button('نسخ الخطوة',()=>{copySelection();pasteSelection()}),button('الإصدارات والتراجع',()=>execute(async()=>{
   if(state.demo){notify('الإصدارات متاحة بعد تسجيل الدخول');return}
   const versions=await api('/flows/versions');const panel=el('div',undefined,'builder-toolbar');
   for(const v of versions)panel.append(button('استعادة إصدار '+v.version,()=>execute(async()=>{
@@ -182,7 +180,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    item.ondragstart=e=>{e.dataTransfer?.setData('application/x-boat-block',kind);if(e.dataTransfer)e.dataTransfer.effectAllowed='copy'};
    quick.append(item);
  }
- palette.querySelector('h3').after(intro,quick);
+ const librarySearch=el('input');librarySearch.type='search';librarySearch.placeholder='ابحث عن مكون…';librarySearch.setAttribute('aria-label','بحث مكتبة المكونات');librarySearch.oninput=()=>{const q=librarySearch.value.trim().toLowerCase();for(const item of quick.children)item.hidden=!item.textContent.toLowerCase().includes(q)};palette.querySelector('h3').after(intro,librarySearch,quick);
  const steps=el('details',undefined,'builder-steps-list');steps.open=true;
  steps.append(el('summary','خطوات المحادثة'),$('builder-nodes'));palette.append(steps);
  const more=el('details',undefined,'builder-more-list');
@@ -191,7 +189,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const stageHead=el('header',undefined,'builder-stage-head');
  stageHead.append(el('h3','مساحة تصميم المحادثة'),el('p','اضغط على الرسالة لتحريرها، أو اضغط + لإضافة خطوة داخل المسار.'));
  const actions=el('div',undefined,'builder-view-actions');
- const paletteToggle=button('إخفاء المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات'});
+ const paletteToggle=button('إظهار المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات'});
  const focusToggle=button('ملء الشاشة',()=>{const on=document.body.classList.toggle('studio-focus');focusToggle.textContent=on?'إنهاء ملء الشاشة':'ملء الشاشة';stagePanel.scrollIntoView({block:'start'});requestAnimationFrame(()=>{window.scrollTo(0,0);canvas.focus(selected||flow.startId)})});
  const advancedView=el('details',undefined,'builder-view-advanced');
   advancedView.append(el('summary','أدوات العرض المتقدمة'));
@@ -209,7 +207,10 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const simpleMode=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
  simpleMode.classList.add('builder-mode-switch');
  actions.prepend(simpleMode);
- stageHead.append(actions,advancedView);
+ const graphSearch=el('input');graphSearch.type='search';graphSearch.className='builder-graph-search';graphSearch.placeholder='انتقل إلى خطوة…';graphSearch.setAttribute('aria-label','بحث المخطط بالاسم أو النص أو المعرف');
+ const searchResults=el('div',undefined,'builder-search-results');searchResults.hidden=true;
+ graphSearch.oninput=()=>{searchResults.replaceChildren();const q=graphSearch.value.trim().toLowerCase();searchResults.hidden=!q;if(!q)return;for(const n of flow.nodes.filter(n=>[n.id,n.label,n.text,types[n.type],n.field].some(v=>String(v||'').toLowerCase().includes(q))).slice(0,12))searchResults.append(button((types[n.type]||n.type)+' · '+String(n.text||n.id).slice(0,40),()=>{selected=n.id;selectedNodes=new Set([selected]);renderEditor();canvas.highlight(selected);canvas.focus(selected);searchResults.hidden=true;showInspector()}))};
+ stageHead.append(actions,graphSearch,searchResults,advancedView);
  const stageExtras=el('details',undefined,'builder-stage-extras');
  stageExtras.append(el('summary','أدوات المسار المتقدمة'),tools);
  stagePanel.append(stageHead,stageExtras,canvasHost);
@@ -229,7 +230,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  inspector.append(properties);
  properties.prepend(button('إغلاق ×',()=>{inspector.hidden=true;workspace.classList.remove('inspector-open')}));
  inspector.hidden=true;
- function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open');if(state.botId)requestAnimationFrame(()=>canvas.focus(selected))}
+ function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open')}
  const simulatorDialog=el('dialog',undefined,'builder-preview-dialog');
  const simulatorHead=el('header',undefined,'builder-dialog-header');
  simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
@@ -267,7 +268,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const pickerGrid=el('div',undefined,'builder-picker-grid');picker.append(pickerHead,pickerSearch,pickerGrid);document.body.append(picker);
  let insertAnchor=null;
  function paintPicker(){pickerGrid.replaceChildren();const q=pickerSearch.value.trim().toLowerCase();
-   for(const [kind] of kinds.concat([['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
+   for(const [kind] of kinds.concat([['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
      if(!types[kind].toLowerCase().includes(q)&&!kind.toLowerCase().includes(q))continue;
      pickerGrid.append(button(types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)},'builder-picker-item'));
    }
@@ -279,7 +280,18 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  advanced.append(el('summary','مكتبة الخطوات والمسارات المتقدمة'),linked,reuseHost);
  workspace.replaceChildren(palette,stagePanel,inspector);stageExtras.append(advanced);
 
- const markDirty=()=>{dirty=true;checkpoint();renderStatus()};
+ let autosaveTimer=null,saving=false,saveState='';
+ const recoveryKey=()=>state.tenantId&&state.userId?'eb-recovery:'+state.tenantId+':'+state.userId+':'+(state.botId||'default'):null;
+ function storeRecovery(){const key=recoveryKey();if(!key||mainSnapshot)return;try{sessionStorage.setItem(key,JSON.stringify({revision:draftRevision,definition:flow,savedAt:new Date().toISOString()}))}catch{saveState='تعذر الاسترداد المحلي؛ نزّل نسخة JSON'}}
+ const markDirty=()=>{dirty=true;saveState='تعديلات غير محفوظة';checkpoint();storeRecovery();renderStatus();clearTimeout(autosaveTimer);if(autosave.checked)autosaveTimer=setTimeout(()=>{if(dirty&&!saving&&!conflictDialog.open)void saveDraft(true)},1200)};
+ const autosave=el('input');autosave.type='checkbox';autosave.setAttribute('aria-label','حفظ تلقائي اختياري');autosave.onchange=()=>{if(autosave.checked&&dirty)markDirty()};advancedButtons.append(labelInput('حفظ تلقائي',autosave));
+ let copied=null;
+ function copySelection(){const ids=new Set([...selectedNodes].filter(id=>nodeById(id)?.type!=='START'));copied={nodes:deep(flow.nodes.filter(n=>ids.has(n.id))),layout:deep(flow.layout||{})};notify('نُسخت '+copied.nodes.length+' خطوة داخل المحرر')}
+ function pasteSelection(){if(!copied?.nodes.length)return;if(flow.nodes.length+copied.nodes.length>100){notify('حد المسار 100 خطوة','error');return}const used=new Set(flow.nodes.map(n=>n.id)),ids=new Map();let serial=1;for(const n of copied.nodes){let id;do{id='copy'+serial++}while(used.has(id));used.add(id);ids.set(n.id,id)}flow.layout??={};for(const n of deep(copied.nodes)){const old=n.id;n.id=ids.get(old);for(const output of graphOutputs(n)){const to=ids.get(output.to)||'';if(output.key.startsWith('choice:'))n.choices.find(c=>c.id===output.key.slice(7)).next=to;else n[output.key]=to}flow.nodes.push(n);const pos=copied.layout[old]||{x:50,y:50};flow.layout[n.id]={x:Math.min(9600,pos.x+70),y:Math.min(9600,pos.y+70)}}selectedNodes=new Set(ids.values());selected=[...selectedNodes][0];markDirty();renderAll()}
+ function deleteSelection(){const ids=new Set([...selectedNodes].filter(id=>nodeById(id)?.type!=='START'));if(!ids.size)return;flow.nodes=flow.nodes.filter(n=>!ids.has(n.id));for(const n of flow.nodes)for(const out of graphOutputs(n))if(ids.has(out.to)){if(out.key.startsWith('choice:'))n.choices.find(c=>c.id===out.key.slice(7)).next='';else n[out.key]=''}for(const id of ids)if(flow.layout)delete flow.layout[id];flow.groups=(flow.groups||[]).map(g=>({...g,nodeIds:g.nodeIds.filter(id=>!ids.has(id))})).filter(g=>g.nodeIds.length>=2);selected=flow.startId;selectedNodes=new Set([selected]);markDirty();renderAll()}
+ function alignSelection(axis,distribute=false){const nodes=flow.nodes.filter(n=>selectedNodes.has(n.id));if(nodes.length<2)return;flow.layout??=arrangeFlow(flow);for(const n of nodes)flow.layout[n.id]??=arrangeFlow(flow)[n.id];nodes.sort((a,b)=>flow.layout[a.id][axis]-flow.layout[b.id][axis]);const min=flow.layout[nodes[0].id][axis],max=flow.layout[nodes.at(-1).id][axis];nodes.forEach((n,i)=>{flow.layout[n.id][axis]=distribute?Math.round(min+(max-min)*i/(nodes.length-1)):min});markDirty();renderAll()}
+ tools.append(button('نسخ المحدد',copySelection),button('لصق',pasteSelection),button('تكرار المحدد',()=>{copySelection();pasteSelection()}),button('حذف المحدد',deleteSelection,'danger'),button('محاذاة أفقية',()=>alignSelection('y')),button('محاذاة رأسية',()=>alignSelection('x')),button('توزيع أفقي',()=>alignSelection('x',true)),button('توزيع رأسي',()=>alignSelection('y',true)));
+
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
  const control=(value,change,large=false)=>{
@@ -313,7 +325,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function renderEditor(){
    const host=$('builder-editor');host.replaceChildren();const node=nodeById(selected);
    if(!node){host.append(el('p','اختار خطوة من القائمة'));return}
-   host.append(el('h3',types[node.type]||'خصائص الخطوة'));
+   host.append(el('h3',types[node.type]||'خصائص الخطوة'),label('اسم الخطوة',control(node.label||'',v=>{if(v.trim())node.label=v;else delete node.label})));const note=el('details',undefined,'builder-developer');note.append(el('summary','ملاحظة داخلية — لا تُرسل للعميل'),label('ملاحظة للمراجعة',control(node.note||'',v=>{node.note=v},true)));
    const developerSettings=el('details',undefined,'builder-developer');developerSettings.append(el('summary','إعدادات تقنية متقدمة'));
    developerSettings.append(label('معرّف الخطوة',control(node.id,value=>{
      if(!idPattern.test(value))return;
@@ -324,7 +336,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
 
      for(const n of flow.nodes){if('next'in n&&n.next===prior)n.next=value;
        if(n.type==='CONDITION'||n.type==='KEYWORD'){if(n.yes===prior)n.yes=value;if(n.no===prior)n.no=value}
-       if(n.type==='BUTTONS'||n.type==='LIST')for(const c of n.choices)if(c.next===prior)c.next=value;
+       if(n.type==='BUTTONS'||n.type==='LIST'||n.type==='RANDOMIZER')for(const c of n.choices)if(c.next===prior)c.next=value;
      }
      selected=value;renderBlocks();
    })));
@@ -351,6 +363,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      flow.nodes[pos]=kind==='START'?{id:node.id,type:'START',next}
        :kind==='CONDITION'?{id:node.id,type:'CONDITION',field:'interest',operator:'equals',value:'yes',yes:next,no:next}
        :kind==='BUTTONS'||kind==='LIST'?{id:node.id,type:kind,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]}
+       :kind==='SET_FIELD'?{id:node.id,type:kind,field:'lead_status',value:'qualified',next}
+       :kind==='RANDOMIZER'?{id:node.id,type:kind,choices:[{id:'a',title:'A',weight:50,next},{id:'b',title:'B',weight:50,next}]}
        :kind==='DELAY'?{id:node.id,type:kind,seconds:60,next}
        :kind==='SUBFLOW'?{id:node.id,type:kind,subflowId:'',version:1,bindings:{},next}
        :kind==='CONNECTOR'?{id:node.id,type:kind,connectorId:'',next}
@@ -372,7 +386,18 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
 
    if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true)));
-   if('field'in node){
+   if(node.type==='TEXT'){
+    const section=el('fieldset',undefined,'builder-validation');section.append(el('legend','محتويات الرسالة بالترتيب'));
+    for(const [i,block]of (node.blocks||[]).entries()){
+     const row=el('div',undefined,'builder-choice');row.append(el('strong',block.type==='TEXT'?'نص إضافي':block.type==='LINK'?'رابط':'وسائط'));
+     if(block.type==='TEXT'||block.type==='LINK')row.append(label('النص',control(block.text,v=>{block.text=v},true)));
+     if(block.type!=='TEXT')row.append(label('رابط HTTPS',control(block.url,v=>{block.url=v})));
+     if(block.type==='MEDIA'){const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',k);o.value=k;kind.append(o)}kind.value=block.mediaKind;kind.onchange=()=>{block.mediaKind=kind.value;markDirty()};row.append(label('نوع الوسائط',kind),label('التعليق',control(block.caption||'',v=>{block.caption=v})))}
+     const move=offset=>{const j=i+offset;if(j<0||j>=node.blocks.length)return;[node.blocks[i],node.blocks[j]]=[node.blocks[j],node.blocks[i]];markDirty();renderEditor()};row.append(button('↑',()=>move(-1)),button('↓',()=>move(1)),button('حذف المحتوى',()=>{node.blocks.splice(i,1);markDirty();renderEditor()}));section.append(row);
+    }
+    for(const [type,title]of [['TEXT','إضافة نص'],['MEDIA','إضافة وسائط'],['LINK','إضافة رابط']])section.append(button(title,()=>{node.blocks??=[];if(node.blocks.length>=10){notify('الحد الأقصى 10 محتويات إضافية','error');return}node.blocks.push(type==='TEXT'?{type,text:'رسالة إضافية'}:type==='LINK'?{type,text:'تفاصيل',url:'https://example.com'}:{type,mediaKind:'image',url:'https://example.com/image.jpg',caption:''});markDirty();renderEditor()}));host.append(section);
+   }
+   if('field'in node&&!(node.type==='CONDITION'&&node.rules)){
     const fields=el('select'),common={customer_name:'اسم العميل',customer_phone:'رقم الهاتف',customer_email:'البريد الإلكتروني',customer_city:'المدينة',customer_need:'احتياج العميل'};
     for(const [key,title] of Object.entries(common)){const option=el('option',title);option.value=key;fields.append(option)}
     for(const source of flow.nodes.filter(n=>(n.type==='INPUT'||n.type==='QUESTION')&&n.field&&!common[n.field])){common[source.field]='إجابة: '+String(source.text||source.field).slice(0,55);const option=el('option',common[source.field]);option.value=source.field;fields.append(option)}
@@ -381,11 +406,26 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     host.append(label(node.type==='CONDITION'?'قارن إجابة العميل عن':'ما البيانات التي تجمعها؟',fields));
     developerSettings.append(label('معرّف حقل مخصص (للمتقدمين)',control(node.field,value=>{node.field=value})));
    }
+   if(node.type==='INPUT'){
+    const section=el('fieldset',undefined,'builder-validation');section.append(el('legend','التحقق من الإجابة'));
+    const kind=el('select');for(const [value,title]of Object.entries({text:'نص',email:'بريد إلكتروني',phone:'هاتف',number:'رقم',date:'تاريخ YYYY-MM-DD',datetime:'تاريخ ووقت مع المنطقة الزمنية',location:'موقع: خط العرض، خط الطول'})){const option=el('option',title);option.value=value;kind.append(option)}kind.value=node.validation?.type||(/phone$/.test(node.field)?'phone':'text');
+    kind.onchange=()=>{node.validation={type:kind.value};markDirty();renderEditor()};section.append(label('نوع الإجابة',kind));
+    for(const [key,title]of [['min','أقل قيمة / طول'],['max','أكبر قيمة / طول']]){const c=control(node.validation?.[key]??'',v=>{node.validation??={type:kind.value};if(v==='')delete node.validation[key];else node.validation[key]=Number(v)});c.type='number';section.append(label(title,c))}
+    section.append(label('رسالة عند إجابة غير صحيحة',control(node.validation?.errorText||'',v=>{node.validation??={type:kind.value};if(v)node.validation.errorText=v;else delete node.validation.errorText})));host.append(section);
+   }
+   if(node.type==='SET_FIELD')host.append(label('القيمة (يمكن استخدام {{field}})',control(node.value,v=>{node.value=v})));
    if(node.type==='TAG')host.append(label('التصنيف',control(node.tag,value=>{node.tag=value})));
    if(node.type==='CONDITION'){
      const ops=el('select');for(const [key,text] of [['equals','يساوي'],['contains','يحتوي على'],['exists','تم ملء الحقل']]){const o=el('option',text);o.value=key;ops.append(o)}ops.value=node.operator;
      const comparisonValue=label('الإجابة المطلوبة',control(node.value||'',value=>{node.value=value}));comparisonValue.hidden=node.operator==='exists';
-     ops.onchange=()=>{node.operator=ops.value;comparisonValue.hidden=node.operator==='exists';markDirty()};host.append(label('المقارنة',ops),comparisonValue);
+     ops.onchange=()=>{node.operator=ops.value;comparisonValue.hidden=node.operator==='exists';markDirty()};if(!node.rules)host.append(label('المقارنة',ops),comparisonValue);
+     const advancedRules=el('fieldset',undefined,'builder-condition-rules');advancedRules.append(el('legend','شروط متعددة'));
+     const match=el('select');for(const [v,t]of [['all','تحقق جميع الشروط AND'],['any','تحقق أي شرط OR']]){const o=el('option',t);o.value=v;match.append(o)}match.value=node.match||'all';match.onchange=()=>{node.match=match.value;node.rules??=[{field:node.field,operator:node.operator,value:node.value}];markDirty()};advancedRules.append(label('طريقة المطابقة',match));
+     for(const [i,rule]of (node.rules||[]).entries()){
+       const row=el('div',undefined,'builder-rule');row.append(label('الحقل',control(rule.field,v=>{rule.field=v})));
+       const op=el('select');for(const [v,t]of [['equals','يساوي'],['not_equals','لا يساوي'],['contains','يحتوي'],['exists','له قيمة'],['gt','أكبر من'],['gte','أكبر أو يساوي'],['lt','أقل من'],['lte','أقل أو يساوي']]){const o=el('option',t);o.value=v;op.append(o)}op.value=rule.operator;op.onchange=()=>{rule.operator=op.value;markDirty()};row.append(label('المقارنة',op),label('القيمة',control(rule.value||'',v=>{rule.value=v})),button('حذف الشرط',()=>{node.rules.splice(i,1);if(!node.rules.length){delete node.rules;delete node.match}markDirty();renderEditor()}));advancedRules.append(row);
+     }
+     advancedRules.append(button('إضافة شرط',()=>{node.rules??=[{field:node.field,operator:node.operator,value:node.value}];if(node.rules.length>=20)return;node.match??='all';node.rules.push({field:node.field,operator:'exists'});markDirty();renderEditor()}));host.append(advancedRules);
      host.append(el('p','اختر سؤالًا سابقًا؛ العميل ينتقل لمسار الإجابة المطابقة أو للمسار الآخر.','muted'));
      host.append(label('لو الشرط صحيح',target(node.yes,value=>{node.yes=value})));
      host.append(label('لو الشرط غلط',target(node.no,value=>{node.no=value})));
@@ -399,11 +439,12 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     host.append(label('كلمات مفصولة بفاصلة',control(node.keywords.join(','),v=>{node.keywords=v.split(',').map(x=>x.trim()).filter(Boolean)})),label('عند التطابق',target(node.yes,v=>{node.yes=v})),label('بدون تطابق',target(node.no,v=>{node.no=v})));
    }
    if('next'in node)developerSettings.append(label('الخطوة التالية',target(node.next,value=>{node.next=value})));
-   if(node.type==='BUTTONS'||node.type==='LIST'){
+   if(node.type==='BUTTONS'||node.type==='LIST'||node.type==='RANDOMIZER'){
      if(node.type==='LIST'){const listButton=control(node.buttonText||'اختار',value=>{node.buttonText=value});listButton.maxLength=20;host.append(label('عنوان زر فتح القائمة',listButton));}
      host.append(el('h4','الاختيارات والزراير'));
      for(const [i,choice] of node.choices.entries()){
        const block=el('div',undefined,'builder-choice');
+       if(node.type==='RANDOMIZER'){const weight=control(choice.weight,v=>{choice.weight=Number(v)});weight.type='number';weight.min='1';weight.max='100';block.append(label('نسبة الفرع % — المجموع يجب أن يساوي 100',weight));}
        const titleInput=control(choice.title,value=>{choice.title=value});titleInput.maxLength=node.type==='BUTTONS'?20:24;
        titleInput.setAttribute('aria-label','عنوان الاختيار '+(i+1));
        block.append(el('strong','الاختيار '+(i+1),'builder-choice-heading'),label('عنوان الاختيار',titleInput));
@@ -411,7 +452,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
        advancedChoice.append(label('معرّف الاختيار',control(choice.id,value=>{choice.id=value})));
        if(node.type==='LIST'){const description=control(choice.description||'',value=>{choice.description=value});description.maxLength=72;block.append(label('وصف قصير',description));}
        advancedChoice.append(label('عند الضغط ينتقل إلى',target(choice.next,value=>{choice.next=value})));
-       block.append(button('إضافة رد لهذا الاختيار',()=>openInsert({nodeId:node.id,key:'choice:'+i})),advancedChoice);
+       block.append(button('إضافة رد لهذا الاختيار',()=>openInsert({nodeId:node.id,key:'choice:'+choice.id})),advancedChoice);
        const moveChoice=(offset)=>{
          const other=i+offset;if(other<0||other>=node.choices.length)return;
          [node.choices[i],node.choices[other]]=[node.choices[other],node.choices[i]];markDirty();renderAll();
@@ -429,16 +470,16 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      host.append(button('إضافة اختيار',()=>{
        if(node.choices.length>=limit){notify('الحد الأقصى '+limit+' اختيارات لهذا النوع','error');return}
        let id='option'+(node.choices.length+1);while(node.choices.some(c=>c.id===id))id+='x';
-       node.choices.push({id,title:'اختيار جديد',next:flow.nodes.at(-1).id});markDirty();renderAll();
+       node.choices.push({id,title:'اختيار جديد',next:flow.nodes.at(-1).id,...(node.type==='RANDOMIZER'?{weight:1}:{})});markDirty();renderAll();
      }));
    }
 
    // Visual-only preview: does not invoke the engine or transmit messages.
    const sample=el('section',undefined,'builder-step-sample');
    const paint=()=>{
-     sample.replaceChildren(el('h4','شكل الرسالة للعميل'),el('p','معاينة تصميمية؛ ليست رسالة واتساب فعلية.','builder-sample-caption'));
+     sample.replaceChildren(el('h4',['SET_FIELD','RANDOMIZER','CONDITION','TAG','DELAY','START'].includes(node.type)?'سلوك خطوة داخلية — لا تُرسل كرسالة':'شكل الرسالة للعميل'),el('p','معاينة تصميمية؛ ليست رسالة واتساب فعلية.','builder-sample-caption'));
      const screen=el('div',undefined,'builder-sample-screen');
-     screen.append(el('div',String(node.text||node.caption||types[node.type]||'').trim(),'builder-sample-bubble'));
+     screen.append(el('div',String(node.text||node.caption||types[node.type]||'').trim(),'builder-sample-bubble'));for(const block of node.blocks||[])screen.append(el('div',block.text||('['+block.mediaKind+'] '+block.url),'builder-sample-bubble'));
      if(node.type==='BUTTONS'||node.type==='LIST'){
        const choices=el('div',undefined,'builder-sample-choices');
        if(node.type==='LIST')choices.append(el('strong',node.buttonText||'عرض القائمة'));
@@ -447,7 +488,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      }
      sample.append(screen);
    };
-   paint();host.oninput=paint;host.prepend(sample);host.append(developerSettings);
+   paint();host.oninput=paint;host.prepend(sample);host.append(developerSettings,note);
 
    if(node.type!=='START')host.append(button('حذف الخطوة',()=>{
      const inbound=flow.nodes.filter(n=>n!==node&&(
@@ -473,16 +514,16 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  }
  function renderStatus(){
    $('builder-version').textContent=published?'الإصدار المنشور: '+published.version:'مفيش إصدار منشور لسه';
-   $('builder-unsaved').textContent=dirty?'تعديلات غير محفوظة':'المسودة محفوظة أو جاهزة للتعديل';
+   $('builder-unsaved').textContent=saveState||(dirty?'تعديلات غير محفوظة':'المسودة محفوظة أو جاهزة للتعديل');$('builder-unsaved').setAttribute('role','status');$('builder-save').disabled=saving;
  }
  function renderAll(){
    $('builder-name').value=flow.name;renderStatus();renderBlocks();renderEditor();canvas.draw();canvas.highlight(selected);
  }
  function addNode(type,anchor=null){
    if(flow.nodes.length>=100){notify('وصلت للحد الأقصى 100 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
-   if(anchor&&nodeById(anchor.key.startsWith('choice:')?nodeById(anchor.nodeId)?.choices?.[Number(anchor.key.split(':')[1])]?.next:nodeById(anchor.nodeId)?.[anchor.key])&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
+   if(anchor&&nodeById(anchor.key.startsWith('choice:')?nodeById(anchor.nodeId)?.choices?.find(c=>c.id===anchor.key.slice(7))?.next:nodeById(anchor.nodeId)?.[anchor.key])&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
    const origin=anchor?nodeById(anchor.nodeId):null;
-   let oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.[Number(anchor.key.split(':')[1])]?.next:origin[anchor.key]):null;
+   let oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.find(c=>c.id===anchor.key.slice(7))?.next:origin[anchor.key]):null;
    let n=flow.nodes.length+1,id='step'+n;while(nodeById(id))id='step'+(++n);
    let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id;
    if(!next&&!['END','HANDOFF'].includes(type)){
@@ -492,6 +533,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    next??=flow.startId;
    if(origin&&!nodeById(oldTarget))oldTarget=['END','HANDOFF'].includes(type)?null:next;
    if(type==='BUTTONS'||type==='LIST')flow.nodes.push({id,type,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]});
+   else if(type==='SET_FIELD')flow.nodes.push({id,type,field:'lead_status',value:'qualified',next});
+   else if(type==='RANDOMIZER')flow.nodes.push({id,type,choices:[{id:'a',title:'A',weight:50,next},{id:'b',title:'B',weight:50,next}]});
    else if(type==='DELAY')flow.nodes.push({id,type,seconds:60,next});
    else if(type==='SUBFLOW')flow.nodes.push({id,type,subflowId:'',version:1,bindings:{},next});
    else if(type==='CONNECTOR')flow.nodes.push({id,type,connectorId:'',next});
@@ -508,7 +551,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    else flow.nodes.push({id,type:'TEXT',text:'اكتب رسالة للعميل هنا',next});
    if(origin){
      const inserted=flow.nodes.at(-1);
-     if(anchor.key.startsWith('choice:')){const choice=origin.choices?.[Number(anchor.key.split(':')[1])];if(choice)choice.next=id;}
+     if(anchor.key.startsWith('choice:')){const choice=origin.choices?.find(c=>c.id===anchor.key.slice(7));if(choice)choice.next=id;}
      else origin[anchor.key]=id;
      if('next'in inserted)inserted.next=oldTarget||next;
      if('yes'in inserted){inserted.yes=oldTarget;inserted.no=oldTarget;}
@@ -520,7 +563,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function bubble(message,side='bot'){
    const item=el('div',message,'builder-bubble '+side);$('builder-preview').append(item);
  }
- let previewBusy=false;
+ const diagnostics=el('details',undefined,'builder-diagnostics');diagnostics.append(el('summary','مسار التنفيذ والمتغيرات التجريبية'));const traceHost=el('ol'),valuesHost=el('pre');diagnostics.append(traceHost,valuesHost);simulator.append(diagnostics);
+ let previewBusy=false,simulationGeneration=0;
   const isPhoneField=field=>/(^|_)phone$|^customer_phone$/.test(String(field||''));
   const normalizePhone=value=>String(value||'').replace(/[٠-٩۰-۹]/g,ch=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(ch)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(ch):'۰۱۲۳۴۵۶۷۸۹'.indexOf(ch))).trim();
   const phoneOk=value=>/^\+?[0-9]{8,15}$/.test(normalizePhone(value));
@@ -538,12 +582,14 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     $('builder-preview-options').append(button('التحدث مع موظف',previewEmployee,'secondary'));
   }
  async function serverPreview(input){
-  if(previewBusy)return;previewBusy=true;
+  if(previewBusy)return;previewBusy=true;const generation=simulationGeneration;
   try{
    const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST';
    const inbound=input?{kind:choice?'CHOICE':'TEXT',value:choice?'flow:'+current.id+':'+input:input}:undefined;
    const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
+   if(generation!==simulationGeneration)return;
    if(input)bubble(choice?current.choices.find(c=>c.id===input)?.title||input:input,'customer');
+   for(const entry of r.trace||[]){const item=el('li',entry.nodeId+' · '+entry.type+' · '+entry.outcome);item.onclick=()=>{simulatorDialog.close();canvas.focus(entry.nodeId)};traceHost.append(item)}valuesHost.textContent=JSON.stringify(r.state.answers,null,2);canvas.highlight(r.state.at);
    preview=r.state;previewRuntimeNodes=r.runtimeNodes;$('builder-preview-options').replaceChildren();
    for(const message of r.messages){
     bubble(message.text||('['+message.mediaKind+'] '+message.url));
@@ -554,7 +600,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if(at?.type==='INPUT'||at?.type==='QUESTION'){
     const form=el('form',undefined,'builder-preview-input'),inp=el('input'),send=el('button','إرسال','primary');inp.required=true;send.type='submit';form.append(inp,send);form.onsubmit=e=>{e.preventDefault();execute(()=>serverPreview(isPhoneField(at.field)?normalizePhone(inp.value):inp.value.trim()))};$('builder-preview-options').append(form);inputWithHandoff(form,at.field);
    }
-  }catch(e){notify(e.message,'error')}finally{previewBusy=false}
+  }catch(e){notify(e.message,'error')}finally{if(generation===simulationGeneration)previewBusy=false}
  }
  function previewAdvance(input){
    if(!state.demo){void serverPreview(input);return}
@@ -575,7 +621,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    for(let steps=0;steps<30;steps++){
      const node=map.get(id);if(!node){bubble('الرابط مش صحيح: '+id);return}
      if(node.type==='START'||node.type==='TAG'||node.type==='TEXT'||node.type==='MEDIA'||node.type==='LINK'){
-       if(node.type==='TEXT')bubble(node.text);if(node.type==='LINK')bubble(node.text+'\n'+node.url);if(node.type==='MEDIA')bubble('['+node.mediaKind+'] '+node.url+(node.caption?'\n'+node.caption:''));
+       if(node.type==='TEXT'){bubble(node.text);for(const block of node.blocks||[])bubble(block.text||('['+block.mediaKind+'] '+block.url))}if(node.type==='LINK')bubble(node.text+'\n'+node.url);if(node.type==='MEDIA')bubble('['+node.mediaKind+'] '+node.url+(node.caption?'\n'+node.caption:''));
        if(node.type==='TAG'&&!preview.tags.includes(node.tag))preview.tags.push(node.tag);
        id=node.next;continue;
      }
@@ -595,7 +641,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
    bubble('اتصال دائري في خطوات تلقائية — راجع تصميم المسار');
  }
- function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();if(flow.nodes.length===1){bubble('ابدأ من علامة + لإضافة أول رسالة، ثم جرّب المحادثة هنا.');return;}previewAdvance()}
+ function resetPreview(){simulationGeneration++;previewBusy=false;traceHost.replaceChildren();valuesHost.textContent='{}';previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();if(flow.nodes.length===1){bubble('ابدأ من علامة + لإضافة أول رسالة، ثم جرّب المحادثة هنا.');return;}previewAdvance()}
  async function load(){
    document.body.classList.toggle('bot-studio',Boolean(state.botId));
    // Navigating to the catalog or company dashboard must not silently discard
@@ -608,7 +654,12 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
    const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
-   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();
+   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;
+   const key=recoveryKey();let recovery=null;try{recovery=JSON.parse(sessionStorage.getItem(key)||'null')}catch{}
+   if(recovery?.definition&&JSON.stringify(recovery.definition)!==JSON.stringify(flow)){
+    const dialog=el('dialog',undefined,'builder-conflict-dialog');dialog.append(el('h3','تعديلات محلية قابلة للاسترداد'),el('p','مسودة هذه الجلسة تختلف عن الخادم. يمكنك استردادها للمراجعة؛ الحفظ سيتحقق من تعارض الإصدار.'),button('استرداد تعديلاتي',()=>execute(async()=>{const inspected=await api('/flows/inspect-draft',{method:'POST',body:recovery.definition});mergeBase=deep(flow);flow=deep(inspected.definition);draftRevision=recovery.revision;selected=flow.startId;selectedNodes=new Set([selected]);dirty=true;history=[deep(flow)];cursor=0;renderAll();dialog.close();dialog.remove()}),'primary'),button('استخدام الخادم',()=>{sessionStorage.removeItem(key);dialog.close();dialog.remove()}));document.body.append(dialog);dialog.showModal();
+   }
+   await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');
@@ -742,17 +793,21 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }finally{importButton.disabled=false;importFile.value=''}
  });
 
- $('builder-save').onclick=()=>execute(async()=>{
-   if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
-   if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
+ async function saveDraft(automatic=false){
+   if(state.demo){if(!automatic)notify('وضع المعاينة فقط؛ لا حفظ على الخادم.');return}
+   if(saving)return;saving=true;saveState='جارٍ الحفظ…';renderStatus();
+   const snapshot=deep(flow),serialized=JSON.stringify(flow),scope={tenant:state.tenantId,bot:state.botId};
    try{
-     const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});
-     draftRevision=r.draftRevision;flow=deep(r.definition);mergeBase=deep(flow);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
-   }catch(error){
-     if(error.status===409){await showDraftConflict();return}
-     throw error;
-   }
- });
+    if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:snapshot}});editingSubflowId=saved.id;if(JSON.stringify(flow)===serialized)dirty=false;await refreshSubflows();saveState='حُفظ الإصدار الفرعي';return}
+    const r=await api('/flows/draft',{method:'PUT',body:{...snapshot,expectedRevision:draftRevision}});
+    if(scope.tenant!==state.tenantId||scope.bot!==state.botId)return;
+    draftRevision=r.draftRevision;mergeBase=deep(r.definition);
+    if(JSON.stringify(flow)===serialized){flow=deep(r.definition);dirty=false;const key=recoveryKey();if(key)sessionStorage.removeItem(key)}else storeRecovery();
+    saveState=dirty?'تعديلات أحدث تنتظر الحفظ':'تم الحفظ على الخادم';if(!automatic)notify(dirty?saveState:'تم حفظ مسودة المحادثة');
+   }catch(error){saveState=error.status===409?'تعارض: راجع النسختين':'تعذر الحفظ؛ تعديلاتك باقية — أعد المحاولة';storeRecovery();if(error.status===409){clearTimeout(autosaveTimer);autosave.checked=false;await showDraftConflict()}else if(!automatic)notify(saveState+' · '+error.message,'error')}
+   finally{saving=false;renderStatus();if(autosave.checked&&dirty&&saveState==='تعديلات أحدث تنتظر الحفظ')autosaveTimer=setTimeout(()=>void saveDraft(true),1200)}
+ }
+ $('builder-save').onclick=()=>execute(()=>saveDraft());
  $('builder-publish').onclick=()=>execute(async()=>{
    if(state.demo){notify('المعاينة لا تنشر على واتساب','error');return}
    if(mainSnapshot){notify('ارجع للمسار الرئيسي لنشره؛ المسارات الفرعية تُحفظ بإصدارات مستقلة','error');return;}
@@ -767,8 +822,14 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  window.addEventListener('keydown',event=>{
    if(state.page!=='flow-builder'||document.querySelector('dialog[open]'))return;
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();$('builder-save').click()}
+   if(!event.target.closest('input,textarea,select,[contenteditable]')){
+    const command=event.ctrlKey||event.metaKey,key=event.key.toLowerCase();
+    if(command&&['c','v','d','a'].includes(key)){event.preventDefault();if(key==='c')copySelection();if(key==='v')pasteSelection();if(key==='d'){copySelection();pasteSelection()}if(key==='a'){selectedNodes=new Set(flow.nodes.map(n=>n.id));showSelection();canvas.highlight(selected)}}
+    if((key==='delete'||key==='backspace')&&!canvasHost.querySelector('.canvas-edge-tools:not([hidden])')){event.preventDefault();deleteSelection()}
+    if(key==='f'&&!command&&canvasHost.contains(event.target)){event.preventDefault();canvas.fit()}
+   }
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
  });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){closeConflict();conflictDialog.replaceChildren();guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

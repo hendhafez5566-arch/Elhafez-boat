@@ -1,0 +1,90 @@
+unit/build/typecheck — EXIT 0
+ℹ tests 142
+ℹ suites 0
+ℹ pass 142
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2535.528713
+
+PostgreSQL RLS — EXIT 0
+PASS PostgreSQL catalog isolation, cross-tenant read/update/insert denial, and RLS/FORCE flags for all new tenant tables
+
+PostgreSQL bots/concurrency/compatibility — EXIT 0
+PASS immutable bot rollback, two concurrent editors, pinned version after publish/route change, new-session routing and non-destructive archive
+PASS contact-wide timeline pagination and all-or-nothing role-scoped bulk CRM state updates
+PASS analytics UTC calendar boundary, daily/KPI reconciliation, session-timezone independence and tenant isolation
+PASS real team lifecycle: concurrent case-insensitive duplicate rejection, seat limits, owner/manager/agent/viewer restrictions, cross-tenant denial, revoked and reused tokens denied, acceptance and role-change session invalidation
+PASS campaign review: actual consent/opt-out audience, tenant/role denial, no queued jobs or provider requests
+PASS real lead profile/conversation identity and bot session metrics with cross-company denial
+PASS actual PostgreSQL lead pagination: 20-row page, second-page uniqueness, company isolation, literal wildcard and invalid-page rejection
+PASS PostgreSQL: legacy backfill twice preserves versions; two independent bots; optimistic conflict; tenant/RLS and roles; unique channel routing; actual runtime and pinned bot
+
+Combined API + broad + novice + premium Chromium — EXIT 0
+PASS real CRM follow-up task, role-scoped endpoint, lead priority and tenant-isolated analytics
+PASS real Website Chat: published greeting, origin restriction, dedupe, lead qualification and staff handoff
+PASS background worker heartbeat for both scoped tenant queues
+PASS real delayed conversation continuation from PostgreSQL worker, exactly once
+PASS platform admin pool reconnects; company token cannot access platform administration
+PASS API SIGKILL/restart, competing worker survival, idle PostgreSQL disconnect/reconnect, durable session and completed delay preserved
+PASS HTTP load {"requests":400,"concurrency":40,"apiInstances":2,"workers":2,"elapsedMs":964.7523360000005,"requestsPerSecond":414.61418135400066,"p50Ms":86.48790199999985,"p95Ms":226.94297200000074,"p99Ms":277.1436109999995,"serverResources":[{"name":"api","cpuMs":300,"peakSampledRssBytes":61607936},{"name":"api-replica","cpuMs":310,"peakSampledRssBytes":62214144},{"name":"worker","cpuMs":110,"peakSampledRssBytes":62222336},{"name":"worker-restarted","cpuMs":230,"peakSampledRssBytes":53149696}],"scope":"authenticated catalog reads only; not full workload capacity"}
+PASS distributed throttle: 40 attempts, exactly 20 accepted / 20 HTTP 429 outcomes
+PASS 40 concurrent authenticated catalog requests in 126ms (CI smoke, not load benchmark)
+PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox
+PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role
+PASS choice editor: live titles, ordering and real WhatsApp 3-button / 10-list limits
+PASS visual studio palette, list/buttons sample and canvas block drop in Chromium
+PASS contextual add step, graph insertion, live inspector update, zoom, phone modal and full-screen
+PASS browser guide: actual flow generation plus unsaved draft preserved across catalog navigation; no external send
+PASS 3-branch graph, 6 connected new steps, undo/redo, collision-free auto layout and manual pointer drag
+PASS browser real catalog create/edit/publish/archive + stored XSS text safety; flow save/publish; privacy save; rejected integration host; keyboard Tab
+PASS Vessel cross-page UI: CRM, catalog filter/recovery and analytics
+PASS 81 owner page/viewport visits with named buttons (screen loading only; not all actions/forms)
+PASS browser session reload via server-managed cookie; no bearer token stored in browser storage
+PASS browser MANAGER/AGENT/VIEWER real login, inbox, admin visibility and logout
+PASS actual Website Widget desktop/mobile with published flow and customer-to-employee handoff; three extra Chromium PNGs
+PASS actual platform-admin browser login/company creation/invite generation/logout; private invitation never captured
+PASS headless Chrome: RTL company login, real dashboard, flow canvas, mobile viewport, logout
+PASS screenshots: dashboard, desktop/mobile flow builder and actual canvas views
+PASS second bot: service template, three buttons, name+phone capture, real server preview/human handoff, no real lead writes, first bot unchanged and 200% viewport equivalent
+PASS browser directory -> contact profile -> exact linked inbox conversation with real retained history
+PASS bot manager browser: rename, scoped keyword, local website route/unroute, archive/restore with original definition preserved
+PASS real condition/media/link branch insertion and saved typed fields, no provider/media requests
+PASS concurrent real bot draft review: explicit local/remote choice, independent edit preserved, compiler validation, no write until save and no publish
+PASS real file restore: malformed JSON rejected, compiler validation, no implicit write/publish, current revision used and undo/redo preserved
+PASS unfinished import/save, publish blocked; actual 48-node cyclic graph, stable routes, Alt-arrow and Ctrl-S, desktop canvas and mobile steps
+PASS browser website assignment, manual reply, release, take over and close without external transport
+PASS novice wizard/back/review/no-write, searchable gallery, same-definition simple/canvas branch editing, mobile steps, retained internal inbox note, contact context and truthful channel directory
+PASS campaign wizard actual draft save, back preservation, real template review and desktop/mobile
+PASS named header/body, dynamic URL/quick reply and media header forms save real campaign drafts without launch
+PASS real campaign audience/content review without launch and role-scoped CRM bulk interaction on mobile
+PASS analytics actual period requests and zero-filled UTC daily series
+PASS report comparison boundaries displayed, actual downloaded 90-day aggregate CSV reconciles to API, no contacts, real retry after injected transport failure
+PASS actual local ClamAV upload/private preview/delete and forged MIME rejection; integration inspect/save/disable with secret absent and no external connection
+PASS company setup/back/deferred channel/server preview/atomic name+independent unpublished bot and actual plan/usage meters
+PASS dashboard actual KPI reconciliation, empty readiness, company shortcut, desktop/mobile, retained-data error/retry and working inbox shortcut
+PASS browser team lifecycle: create/hide token, duplicate Arabic error, revoke/denied acceptance, actual accepted manager login, forbidden manager grant, owner role change and no external delivery
+PASS new Chromium bot journey: create independent Start, contextual message, Arabic template/three buttons, save, publish, cookie reload, same bot and definition; 1366/768/390/320 actual before/after screenshots and overflow checks
+PASS cursor zoom invariant at 3 points
+PASS inspector does not jump camera
+PASS select/disconnect/undo/redo preserves other edges
+PASS reconnect commits once; Escape retains original
+PASS real pointer node drag and position undo
+PASS real port drag ghost and connection
+PASS multi-selection clipboard and undo
+PASS tourism name/phone/compound branch/handoff transcript and trace
+PASS in-flight save acknowledgment cannot erase newer edit
+PASS offline failure and reload recovery preserve local draft
+PASS optional debounced autosave persists without publish
+PASS real optimistic conflict preserves local edits
+PASS 50 nodes render/save/reopen 201 ms
+PASS 48 actual property input edits and save 1442 ms
+PASS 100 nodes render/save/reopen 206 ms
+PASS 98 actual property input edits and save 5469 ms
+PASS 390/768/1024/1440 and CSS 200% layout (not OS/browser UI zoom)
+PASS SET_FIELD, composite text/media and weighted randomizer run in actual server preview
+PASS composite message and weighted branch properties reopen correctly
+PASS campaign browser review queued zero jobs and zero outbound messages
+PASS post-logout token invalidation
+

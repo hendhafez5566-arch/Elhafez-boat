@@ -34,7 +34,7 @@ export function placeWithoutOverlap(point,node,existing=[],gap=GAP,measured=null
  return {x:base.x,y:base.y}; // Only reachable if all legal canvas coordinates are occupied.
 }
 export function graphOutputs(node={}){
- if(Array.isArray(node.choices))return node.choices.map((c,i)=>({key:'choice:'+i,to:c.next,label:c.title||'اختيار'}));
+ if(Array.isArray(node.choices))return node.choices.map((c,i)=>({key:'choice:'+c.id,to:c.next,label:c.title||'اختيار'}));
  if(node.type==='CONDITION'||node.type==='KEYWORD')return [{key:'yes',to:node.yes,label:'نعم'},{key:'no',to:node.no,label:'لا'}];
  return 'next'in node?[{key:'next',to:node.next,label:'التالي'}]:[];
 }

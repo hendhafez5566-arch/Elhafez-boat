@@ -297,6 +297,9 @@ try{
  for(let i=0;i<50;i++){try{if((await fetch('http://127.0.0.1:3002/health')).ok)break}catch{}await sleep(100)}
  const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
  const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
+ const premiumAccount=await browserAccount('premium-ui');
+ const premiumBrowser=spawn(process.execPath,['tests/premium-builder-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_SLUG:premiumAccount.slug,ACCEPTANCE_EMAIL:premiumAccount.email,ACCEPTANCE_PASSWORD:premiumAccount.password},stdio:'inherit'});
+ const [premiumCode]=await once(premiumBrowser,'exit');assert.equal(premiumCode,0,'Premium flow builder Chromium acceptance failed');
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  console.log('PASS campaign browser review queued zero jobs and zero outbound messages');

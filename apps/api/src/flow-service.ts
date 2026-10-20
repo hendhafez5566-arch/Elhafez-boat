@@ -45,7 +45,10 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor,botId?:string){
  definition=await compileSubflows(db,actor.tenantId,definition);
  const triggers=await db.query(`SELECT target_node FROM ${botId?'chatbot_bot_triggers':'chatbot_triggers'} WHERE tenant_id=$1${botId?' AND bot_id=$2':''} AND enabled=true`,botId?[actor.tenantId,botId]:[actor.tenantId]);
  if(triggers.rows.some(t=>!definition.nodes.some(n=>n.id===t.target_node)))throw new HttpFailure(400,'An active trigger references a removed node; update triggers before publishing');
- for(const node of definition.nodes)if(node.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,node.url,node.mediaKind);
+ for(const node of definition.nodes){
+  if(node.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,node.url,node.mediaKind);
+  if(node.type==='TEXT')for(const block of node.blocks||[])if(block.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,block.url,block.mediaKind);
+ }
  for(const node of definition.nodes)if(node.type==='CONNECTOR'){const c=await db.query('SELECT 1 FROM chatbot_connectors WHERE tenant_id=$1 AND id=$2 AND enabled=true AND credentials_encrypted IS NOT NULL',[actor.tenantId,node.connectorId]);if(!c.rowCount)throw new HttpFailure(400,'Flow connector is not connected');}
  for(const node of definition.nodes)if(node.type==='WEBHOOK'){
   const integration=await db.query('SELECT url FROM chatbot_integrations WHERE tenant_id=$1 AND id=$2 AND enabled=true',[actor.tenantId,node.integrationId]);
@@ -201,7 +204,7 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
    if(!dryRun)await enqueueIntegration(db,tenantId,node.integrationId,{event:'FLOW_WEBHOOK',fields:answers,contactId});
    nodes.push({id:node.id,type:'START' as const,next:node.next});
   }else if(node.type==='AI'&&(!onlyId||node.id===onlyId)){
-   const result=await groundedReply(db,tenantId,answers[node.field]||incoming);
+   const result=dryRun?{handoff:false,text:'[Mock AI] رد تجريبي؛ لم يتم الاتصال بمزود ذكاء اصطناعي.'}:await groundedReply(db,tenantId,answers[node.field]||incoming);
    nodes.push(result.handoff?{id:node.id,type:'HANDOFF' as const,text:result.text}:{id:node.id,type:'TEXT' as const,text:result.text,next:node.next});
   }else nodes.push(node);
  }
@@ -209,15 +212,15 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
 }
 
 export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:{kind:'TEXT'|'CHOICE';value:string},dryRun=false,context?:{contactId:string;conversationId:string}){
- let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input);const messages=[...result.messages];
+ let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input);const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
   if(pending?.type==='CONNECTOR'){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'));}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
   flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId);
-  result=advanceFlow(flow,result.state,input);messages.push(...result.messages);
+  result=advanceFlow(flow,result.state,input);messages.push(...result.messages);trace.push(...(result.trace||[]));
  }
  if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
- return {...result,messages,flow};
+ return {...result,messages,trace,flow};
 }
 
 function unpublishedFlow():FlowDefinition{return {name:'مساعد الشركة',startId:'start',nodes:[{id:'start',type:'START',next:'handoff'},{id:'handoff',type:'HANDOFF',text:'معلومات الشركة لم تُنشر بعد. وصل استفسارك للفريق للرد عليك.'}]}}

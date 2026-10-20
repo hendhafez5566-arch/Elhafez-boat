@@ -276,3 +276,10 @@ Do NOT claim live Meta/Google/Shopify/Messenger/Instagram/Telegram/ClamAV/remote
 
 ### Container build evidence
 After `.dockerignore` and Docker smoke were committed, [CI 39105618688](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105618688) passed both jobs. A real Docker build ran; packaged web served dashboard, editor and widget static assets. The root `.env` is excluded from build context and absent from image. Still no actual production Compose/Railway/TLS/provider rollout. Maintain `.dockerignore` to prevent build context secrets.
+
+
+## Premium Flow Studio — 20 October 2026
+
+Continue the same implementation branch/Draft PR targeting staging. Preserve embedded-link JSON compatibility. Read the delivery and canonical matrix. Next: input timeout/retry/skip scheduling, channel capabilities and remaining advanced runtime. This is not full parity.
+
+[Implementation and evidence](../docs/product-rebuild/implementation/premium-2026-10-20/README.md). Unit/build: 142 passed, zero failed/skipped. Exact PostgreSQL/API/Chromium outcomes and limits are recorded there.

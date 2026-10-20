@@ -24,9 +24,15 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
   const map=(id:string)=>prefix?prefix+createHash('sha256').update(id).digest('hex').slice(0,20):id;
   for(const raw of flow.nodes){
    const n=JSON.parse(JSON.stringify(raw)) as FlowNode;n.id=map(n.id);
+   const template=(text:string)=>text.replace(/\{\{([a-z][a-z0-9_]{0,39})\}\}/g,(token,key:string)=>Object.hasOwn(bindings,key)?'{{'+bindings[key]+'}}':token);
+   if('text'in n)n.text=template(n.text);
+   if(n.type==='MEDIA'&&n.caption)n.caption=template(n.caption);
+   if(n.type==='SET_FIELD')n.value=template(n.value);
+   if(n.type==='TEXT'&&n.blocks)n.blocks=n.blocks.map(b=>b.type==='MEDIA'?{...b,caption:template(b.caption||'')}:{...b,text:template(b.text)});
    if('field'in n)n.field=Object.hasOwn(bindings,n.field)?bindings[n.field]:n.field;
+   if(n.type==='CONDITION'&&n.rules)n.rules=n.rules.map(r=>({...r,field:Object.hasOwn(bindings,r.field)?bindings[r.field]:r.field}));
    if('next'in n)n.next=map(n.next);
-   if(n.type==='BUTTONS'||n.type==='LIST')n.choices=n.choices.map(c=>({...c,next:map(c.next)}));
+   if(n.type==='BUTTONS'||n.type==='LIST'||n.type==='RANDOMIZER')n.choices=n.choices.map(c=>({...c,next:map(c.next)}));
    if(n.type==='CONDITION'||n.type==='KEYWORD'){n.yes=map(n.yes);n.no=map(n.no)}
    if(n.type==='SUBFLOW'){
     if(stack.includes(n.subflowId)||stack.length>=5)throw new HttpFailure(400,'Recursive or excessively nested subflow');
