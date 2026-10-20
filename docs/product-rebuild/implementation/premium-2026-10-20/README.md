@@ -2,6 +2,22 @@
 
 This is a substantial **incomplete** implementation batch, not certification of F01–F36 parity. Canonical requirements remain the handoff's `FLOW_BUILDER_PARITY_F01_F36.md`. No merge, Railway deployment, real provider account, campaign launch or real customer delivery occurred.
 
+## Latest saved batch — request privacy lifecycle and CI-equivalent acceptance
+
+Source checkpoints already verified on the same GitHub branch/Draft PR #5: `8dffe74` contracts, `6f41af8` durable worker, `7979892` initial full evidence, **`cfeb13e8ada09f53976cc51a08ab156b7f109c37`** widget/privacy-compatible contact-before-conversation locks and exact isolated HMAC fixture checks. This follow-up completes the new response-data privacy lifecycle and saves the final repeated evidence. No new branch, merge or deployment.
+
+New response fields are now scrubbed together with integration request payloads during authorized contact erasure, completion is disabled and pending requested jobs become CANCELLED. In-flight/UNCERTAIN requested jobs follow the existing platform policy: owner erasure returns 409 until reconciliation; retention defers. Tests reconcile only synthetic attempts explicitly, then prove response/payload erasure, cancellation and zero later HTTP/continuation. This does not implement an operator reconciliation UI/API: that is a real remaining F23 gap, and no external effect is inferred from a timeout.
+
+Latest checks actually run: **171 Unit PASS** and TypeScript/build; **19 durable integration PostgreSQL scenarios PASS**, including real contact-lock/poll race and two privacy scenarios; repeated existing setup/media/inbox/integration checks PASS. Existing 14 control/trace, legacy/bots/team/CRM/RLS and migration rerun were also run earlier this session. [Latest request/privacy log](request-privacy-verification.txt).
+
+The full CI-equivalent command with **CI_LOCAL_CLOSURE=1** exited **0** on request/concurrency source `cfeb13e`, including mixed HTTP workload, OAuth/provider fixtures, exact HMAC checks, native social fixtures, privacy races, real ClamAV, API/delay crash checks and all broad/novice/premium/trace/request Chromium suites. [Complete log](request-ci-equivalent-acceptance.txt). The subsequent privacy delta is verified by its 19-scenario PostgreSQL and Unit rerun; the earlier full process is not relabeled as testing code written after it loaded.
+
+Actual current application screenshots and machine results: [request inspector](../../evidence/requests-2026-10-20/request-inspector.png), [Mock mapped-response preview](../../evidence/requests-2026-10-20/mock-response-success.png), combined premium/trace results and updated source/image SHA-256 manifest in the same folder. Prior trace screenshots remain unchanged. All provider traffic uses local mock transports; no live Meta/WhatsApp/AI/customer sends. ClamAV signatures are CI-only qualification.
+
+GitHub CI history: contract Verify **964 SUCCESS**. Verify **966** and the evidence-only successor exposed the old cumulative-fixture count; source fix is `cfeb13e`. On Verify **970 / 39477200993**, Unit/TypeScript/DB `checks` succeeded and full runtime acceptance was in progress at writing. Inspect the newest HEAD/run separately before claiming overall CI green. No test weakening or production guard changes.
+
+Matrix remains **5 PASS / 31 PARTIAL / 0 wholly BLOCKED**. F23 stays PARTIAL. **Next functional task:** scoped request-job diagnostics plus explicit audited operator reconciliation of UNCERTAIN attempts (never automatic POST replay), then native CONNECTOR response/error continuation using its existing queue. Other true gaps remain those in F01–F36.md: cards/gallery and native channel coverage, consent/human policies, scheduling extremes, funnel/experiment/delivery correlation, tab-close recovery and advanced drawing/device/accessibility acceptance. Meta/WhatsApp/AI external qualification remains blocked within PARTIAL items. Radical redesign remains deferred; earlier screenshots were not owner-approved. Do not repeat saved controls, traces or request runtime.
+
 ## Request concurrency and CI fixture correction — follow-up to `7979892`
 
 Inspection of GitHub Verify 966 found its Unit/DB checks successful, but its additional local-closure acceptance failed because the old HMAC test counted three earlier request-fixture calls along with its own two. The test now snapshots the call list before dispatch and still asserts exactly two new requests and exact signatures/keys. No count or signature requirement was relaxed.

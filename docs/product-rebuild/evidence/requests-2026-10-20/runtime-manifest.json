@@ -1,5 +1,5 @@
 {
-  "functionalCommit": "pending concurrency follow-up to 797989258b3f84a1de438445e650552dbb7cd392",
+  "functionalCommit": "privacy follow-up to cfeb13e8ada09f53976cc51a08ab156b7f109c37; exact source bytes below",
   "files": [
     {
       "path": "apps/api/src/flow-integration-worker.ts",
@@ -31,23 +31,27 @@
     },
     {
       "path": "docs/product-rebuild/evidence/requests-2026-10-20/mock-response-success.png",
-      "sha256": "b7ccf937d94d15cb3697c36444aee2782ad3179d16d047de3d69495b528e19ae"
+      "sha256": "90b842ebf75074d761ffe2ac71d2061ce9827c38d36323f9b43d62f161c37181"
     },
     {
       "path": "docs/product-rebuild/evidence/requests-2026-10-20/request-inspector.png",
-      "sha256": "ad71141865866d64cbffcabb2c781c47ef97e5420863735f5219b7f16cf28b82"
+      "sha256": "cdc9c508feff3c1160c158827784e9c83dc1940fd24b305d76f0776e7a38bcbc"
     },
     {
       "path": "docs/product-rebuild/evidence/requests-2026-10-20/combined-trace-results.json",
-      "sha256": "6e89799a91a6ab047e2a2e073dd056da47a7e50913d29b46dbd46733c34a6107"
+      "sha256": "ba78cc71e8b1962eaad40ee7a287d1330b5d814ac39a145c5a03778f31277b2c"
     },
     {
       "path": "docs/product-rebuild/evidence/requests-2026-10-20/combined-premium-results.json",
-      "sha256": "640c21c7cedb635fc871f5de79e819763309324857dd2b48be8d54a5d007300d"
+      "sha256": "9460302f796106d58d1b38986ef725ada3dba4dc490ed3277fd63f6897e1fd03"
     },
     {
       "path": "docs/product-rebuild/evidence/requests-2026-10-20/results.json",
-      "sha256": "1812a609424970c691beafac1b3966520143cf2cc9cbb0481d89f830fb77d8e0"
+      "sha256": "0393e4779b8fff99250f0ea43cdc956f6805e7d98d7744fb337ada62d83c5aa6"
+    },
+    {
+      "path": "apps/api/src/privacy.ts",
+      "sha256": "565a7a4c27423835752b80fddc504e2efd535ba8b74c16377846445c42441059"
     }
   ]
 }

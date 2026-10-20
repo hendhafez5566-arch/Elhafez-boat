@@ -1,3 +1,7 @@
+## 2026-10-20 — final request lifecycle checkpoint
+
+Saved source cfeb13e passed full CI-equivalent local acceptance (CI_LOCAL_CLOSURE=1), including all Chromium suites and old HMAC test. Latest privacy delta scrubs mapped response fields, cancels pending continuation and retains existing reconciliation-before-erasure policy for in-flight/UNCERTAIN attempts. 171 Unit and 19 durable PostgreSQL scenarios pass; existing setup/media/inbox regressions repeat PASS. See newest CHECKPOINTS.md for exact tested scopes, source hashes, screenshots, logs and actual CI limits. Totals stay 5 PASS / 31 PARTIAL / 0 wholly BLOCKED. Next: audited request-job diagnostics/reconciliation without POST replay, then native connector response continuation. Providers and radical redesign remain unqualified/deferred; no merge/deploy.
+
 ## 2026-10-20 — integration concurrency and CI fixture fix
 
 GitHub Verify 966 passed Unit/DB but failed an old HMAC test that counted earlier new fixture calls. Isolated its exact two-call/signature assertion. A CI-equivalent local repeat additionally exposed and fixed a real contact-before-conversation deadlock in the new request worker. 171 Unit and 17 durable PostgreSQL scenarios pass, including deterministic concurrent widget/privacy lock coverage. Full CI-local-closure repeat is pending; see newest CHECKPOINTS.md. Matrix unchanged (5/31/0); provider/redesign restrictions unchanged.
