@@ -55,3 +55,9 @@ export async function updateIntegration(db:SqlClient,actor:Actor,id:string,input
  const r=await db.query('UPDATE chatbot_integrations SET enabled=$3,secret_encrypted=coalesce($4,secret_encrypted) WHERE tenant_id=$1 AND id=$2 RETURNING id,name,enabled',[actor.tenantId,id,d.enabled,encrypted]);if(!r.rowCount)throw new HttpFailure(404,'Integration not found');
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'INTEGRATION_UPDATED','integration',$3)`,[actor.tenantId,actor.userId,id]);return r.rows[0];
 }
+
+/** Configuration inspection only: no DNS lookup, connection, job or provider call. */
+export function inspectIntegration(actor:Actor,input:unknown){
+ allow(actor,['OWNER','MANAGER']);const value=input as {url?:unknown};if(typeof value?.url!=='string')throw new HttpFailure(400,'Invalid webhook URL');
+ const url=webhookURL(value.url);return {valid:true,hostname:url.hostname,queued:0,connected:false};
+}

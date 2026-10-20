@@ -24,6 +24,7 @@ export async function launchCampaign(db:SqlClient,actor:Actor,id:string){
  allow(actor,['OWNER','MANAGER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid campaign');
  const r=await db.query('SELECT * FROM chatbot_campaigns WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[actor.tenantId,id]);if(!r.rowCount||r.rows[0].status!=='DRAFT')throw new HttpFailure(409,'Campaign must be a draft');const c=r.rows[0],segment=c.segment as Segment,steps=c.steps as Step[];
  if(new Date(String(c.start_at)).getTime()<Date.now()-60000)throw new HttpFailure(409,'Draft start has passed; recreate with a future start');
+ const review=await reviewCampaign(db,actor,id);if(!review.canLaunch)throw new HttpFailure(409,review.warnings.join(' '));
  const recipients=await db.query(`SELECT k.id FROM contacts k WHERE k.tenant_id=$1 AND k.marketing_opt_in=true AND k.do_not_contact=false AND k.phone IS NOT NULL AND (($2='' AND $3='') OR EXISTS(SELECT 1 FROM chatbot_flow_sessions s JOIN conversations v ON v.tenant_id=s.tenant_id AND v.id=s.conversation_id WHERE s.tenant_id=k.tenant_id AND v.contact_id=k.id AND ($2='' OR s.tags ? $2) AND ($3='' OR s.answers->>$3=$4))) ORDER BY k.id LIMIT 1001`,[actor.tenantId,segment.tag,segment.field,segment.value]);
  if(recipients.rows.length>1000)throw new HttpFailure(409,'Narrow the segment to at most 1000 consenting contacts');if(!recipients.rowCount)throw new HttpFailure(409,'No consenting recipients match the segment');
  for(const contact of recipients.rows)for(const [index,step] of steps.entries())await db.query(`INSERT INTO chatbot_campaign_jobs(tenant_id,campaign_id,contact_id,step,due_at) VALUES($1,$2,$3,$4,$5::timestamptz+($6::int*interval '1 minute'))`,[actor.tenantId,id,contact.id,index,c.start_at,step.offsetMinutes]);
@@ -40,4 +41,32 @@ export async function processCampaign(db:SqlClient,tenantId:string){
   await db.query('UPDATE whatsapp_outbox SET campaign_id=$3 WHERE tenant_id=$1 AND id=$2',[tenantId,out.outboxId,j.campaign_id]);
   await db.query("UPDATE chatbot_campaign_jobs SET status='QUEUED',outbox_id=$3,error=NULL WHERE tenant_id=$1 AND id=$2",[tenantId,j.id,out.outboxId]);await db.query('RELEASE SAVEPOINT campaign_send');
  }catch(e){await db.query('ROLLBACK TO SAVEPOINT campaign_send');if(e instanceof HttpFailure&&e.status===429){await db.query("UPDATE chatbot_campaign_jobs SET due_at=now()+interval '1 hour',error='Rate limit; deferred' WHERE tenant_id=$1 AND id=$2",[tenantId,j.id])}else if(e instanceof HttpFailure&&[502,503].includes(e.status)&&Number(j.attempts)<5){await db.query("UPDATE chatbot_campaign_jobs SET attempts=attempts+1,due_at=now()+($3::int*interval '1 second'),error='Provider temporarily unavailable; retry scheduled' WHERE tenant_id=$1 AND id=$2",[tenantId,j.id,60*2**Number(j.attempts)])}else await db.query('UPDATE chatbot_campaign_jobs SET status=$3,error=$4 WHERE tenant_id=$1 AND id=$2',[tenantId,j.id,e instanceof HttpFailure&&e.status===403?'SKIPPED':'FAILED',e instanceof HttpFailure?e.message.slice(0,160):'Template enqueue failed']);}
+}
+
+/** Read-only campaign review. It never inserts jobs or contacts a provider. */
+export async function reviewCampaign(db:SqlClient,actor:Actor,id:string){
+ allow(actor,['OWNER','MANAGER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid campaign');
+ const r=await db.query('SELECT id,name,status,segment,steps,start_at FROM chatbot_campaigns WHERE tenant_id=$1 AND id=$2',[actor.tenantId,id]);
+ if(!r.rowCount)throw new HttpFailure(404,'Campaign not found');const campaign=r.rows[0],segment=campaign.segment as Segment,steps=campaign.steps as Step[];
+ const counts=await db.query(`SELECT count(*)::int AS matched,
+ count(*) FILTER(WHERE k.marketing_opt_in=true AND k.do_not_contact=false AND k.phone IS NOT NULL)::int AS eligible,
+ count(*) FILTER(WHERE k.do_not_contact=true)::int AS "optedOut",
+ count(*) FILTER(WHERE k.do_not_contact=false AND k.marketing_opt_in=false)::int AS "noConsent",
+ count(*) FILTER(WHERE k.do_not_contact=false AND k.marketing_opt_in=true AND k.phone IS NULL)::int AS "missingPhone"
+ FROM contacts k WHERE k.tenant_id=$1 AND (($2='' AND $3='') OR EXISTS(
+ SELECT 1 FROM chatbot_flow_sessions s JOIN conversations v ON v.tenant_id=s.tenant_id AND v.id=s.conversation_id
+ WHERE s.tenant_id=k.tenant_id AND v.contact_id=k.id AND ($2='' OR s.tags ? $2) AND ($3='' OR s.answers->>$3=$4)))`,[actor.tenantId,segment.tag,segment.field,segment.value]);
+ const audience=counts.rows[0],warnings:string[]=[],content=[];
+ for(const step of steps){const t=await db.query(`SELECT t.template_name,t.language_code,t.components,t.account_id,a.status AS account_status,a.token_expires_at,a.authorization_status,a.display_phone FROM whatsapp_approved_templates t JOIN whatsapp_accounts a ON a.tenant_id=t.tenant_id AND a.id=t.account_id WHERE t.tenant_id=$1 AND t.id=$2`,[actor.tenantId,step.templateId]);
+  if(!t.rowCount){warnings.push('أحد القوالب غير متاح في الشركة.');continue}const template=t.rows[0];
+  if(template.account_status!=='CONNECTED')warnings.push('حساب أحد القوالب مفصول.');
+  if(template.authorization_status==='REAUTH_REQUIRED'||template.token_expires_at&&new Date(String(template.token_expires_at)).getTime()<=Date.now())warnings.push('اعتماد حساب القالب يحتاج تجديدًا.');
+  try{await prepareCommerceTemplate(db,actor.tenantId,String(template.account_id),template.components,step.parameters)}catch{warnings.push('راجع قيم متغيرات القالب أو الوسائط قبل الإطلاق.');}
+  content.push({name:template.template_name,language:template.language_code,offsetMinutes:step.offsetMinutes,components:template.components});
+ }
+ if(campaign.status!=='DRAFT')warnings.push('الحملة ليست مسودة.');
+ if(new Date(String(campaign.start_at)).getTime()<Date.now()-60000)warnings.push('موعد البداية مضى؛ أنشئ مسودة بموعد قادم.');
+ if(!Number(audience.eligible))warnings.push('لا يوجد عملاء موافقون مطابقون للشريحة.');
+ if(Number(audience.eligible)>1000)warnings.push('ضيّق الجمهور إلى 1000 عميل موافق كحد أقصى.');
+ return {campaign,audience,content,warnings:[...new Set(warnings)],canLaunch:warnings.length===0,queuedByReview:0};
 }

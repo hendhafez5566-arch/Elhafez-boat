@@ -31,6 +31,8 @@ jobs:
       - run: node tests/flow-load.mjs
       - run: npm run db:migrate
       - run: CI_DB_INTEGRATION=1 node tests/db-integration.mjs
+      - name: Independent bots, legacy backfill and channel isolation
+        run: node tests/bots-db.mjs
 
   acceptance-runtime:
     name: Disposable PostgreSQL and headless browser acceptance
@@ -57,6 +59,8 @@ jobs:
       CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Before screenshots archive the exact handoff ancestor.
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -90,6 +94,8 @@ jobs:
           test -S /tmp/boat-clamd.sock || { cat /tmp/boat-clam-start.log; exit 1; }
           echo 'CLAMAV_SOCKET=/tmp/boat-clamd.sock' >> "$GITHUB_ENV"
           echo 'CI_LOCAL_CLOSURE=1' >> "$GITHUB_ENV"
+      - name: Atomic company setup, media safety, inbox concurrency and platform isolation
+        run: node tests/completion-db.mjs
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data

@@ -1,3 +1,5 @@
+import {mountBotSetup} from './bot-setup.js';
+import {initBotManager} from './bot-manager.js';
 import {initWhatsAppSignup} from './whatsapp-signup.js';
 import {initCommerce} from './commerce-ui.js';
 import {initAdvanced} from './advanced-ui.js';
@@ -12,6 +14,8 @@ const el=(tag,text,klass)=>{const n=document.createElement(tag);if(text!==undefi
 const state={token:'',role:'',tenantId:'',userId:'',demo:false,page:'overview',team:[],contacts:[]};
 const canEdit=()=>['OWNER','MANAGER'].includes(state.role);
 const uiErrorTranslations={
+ 'Only the assigned staff member can reply':'المحادثة ليست مستلمة لك الآن. حدّث الحالة أو اطلب من المدير إسنادها إليك.',
+ 'Conversation already assigned to another agent':'استلم موظف آخر المحادثة. حدّث القائمة قبل المحاولة مجددًا.',
  'Flow has unreachable nodes':'يوجد خطوات غير متصلة بالمسار الرئيسي. اربطها من مخارج الرسائل قبل النشر.',
  'Flow contains an automatic loop without customer input':'يوجد مسار دائري بدون سؤال أو اختيار للعميل. أضف انتظارًا لإجابة العميل.',
  'Invalid number of options':'عدد الاختيارات غير صحيح؛ الأزرار حتى 3 والقوائم حتى 10، وبحد أدنى اختيار واحد.',
@@ -50,6 +54,10 @@ document.addEventListener('invalid',event=>{
 ctx.commerce=initCommerce(ctx);
 const whatsappSignup=initWhatsAppSignup(ctx);
 const advanced=initAdvanced(ctx),workspace=initWorkspace(ctx),extensions=initExtensions(ctx),builder=initFlowBuilder(ctx),insights=initInsights(ctx);
+
+const companySetup=mountBotSetup({host:document.body,api,el,button,notify,workspaceSetup:true,canStart:()=>!builder.hasUnsavedChanges(),openBuilder:async bot=>{const company=await api('/workspace');$('company-name').textContent=company.name;sessionStorage.setItem('eb-tenant-label',company.name);state.botId=bot.id;state.botName=bot.name;state.editorMode='simple';await choose('flow-builder')}});
+const bots=initBotManager(ctx,async bot=>{if(builder.hasUnsavedChanges()){notify('احفظ تعديلات البوت الحالي قبل فتح بوت آخر.','error');return;}state.botId=bot.id;state.botName=bot.name;state.editorMode=bot.editorMode||null;await choose('flow-builder')},()=>!builder.hasUnsavedChanges());
+const botsNav=button('إدارة البوتات',()=>choose('bots'),'nav');botsNav.dataset.page='bots';document.querySelector('.sidebar nav').prepend(botsNav);
  // Keep everyday catalog fields visible, move optional channels/metadata to a disclosure.
  // All original input elements remain inside the SAME form for FormData and validation.
  const catalogForm=$('catalog-form');
@@ -89,7 +97,7 @@ if(mediaFile){
 // First-time company owners see the 9 everyday destinations; advanced settings remain
 // one disclosure away. This only reorganizes navigation, not API permissions.
 const nav=document.querySelector('.sidebar nav');
-const basics=new Set(['overview','flow-builder','wa-inbox','leads','catalog','analytics','website','settings','team']);
+const basics=new Set(['bots','overview','flow-builder','wa-inbox','leads','catalog','analytics','website','settings','team']);
 const advancedNav=document.createElement('details');advancedNav.className='nav-advanced';
 const advancedLabel=document.createElement('summary');advancedLabel.textContent='أدوات متقدمة وإعدادات';advancedNav.append(advancedLabel);
 const advancedButtons=document.createElement('div');advancedButtons.className='nav-advanced-buttons';
@@ -139,18 +147,20 @@ advancedNav.append(advancedButtons);nav.append(advancedNav);
  }
 
 const names=Object.fromEntries([...document.querySelectorAll('[data-page]')].map(n=>[n.dataset.page,n.textContent.trim()]));
-async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();const focus=document.querySelector('.builder-view-actions button:last-child');if(focus)focus.textContent='ملء الشاشة';}if(!basics.has(page)&&!mobileNavQuery.matches)advancedNav.open=true;else advancedNav.open=false;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;const alerts=$('notification-list');if(alerts){alerts.hidden=true;$('notifications').setAttribute('aria-expanded','false')}$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
+async function choose(page){if(!names[page])return;if(page!=='flow-builder'){document.body.classList.remove('studio-focus','bot-studio');const preview=document.querySelector('.builder-preview-dialog[open]');if(preview?.close)preview.close();const focus=document.querySelector('.builder-view-actions button:last-child');if(focus)focus.textContent='ملء الشاشة';}if(!basics.has(page)&&!mobileNavQuery.matches)advancedNav.open=true;else advancedNav.open=false;if(!canEdit()&&document.querySelector('[data-page="'+page+'"]')?.dataset.admin)return;state.page=page;window.scrollTo(0,0);if(page==='flow-builder'&&state.botId)history.replaceState(null,'','#bot/'+state.botId);else if(location.hash.startsWith('#bot/'))history.replaceState(null,'',location.pathname+location.search);const alerts=$('notification-list');if(alerts){alerts.hidden=true;$('notifications').setAttribute('aria-expanded','false')}$('page-title').textContent=names[page];document.querySelectorAll('.page').forEach(n=>n.hidden=n.id!==page);document.querySelectorAll('[data-page]').forEach(n=>n.classList.toggle('active',n.dataset.page===page));notify('');await execute(async()=>{if(page==='bots')await bots.load();else if(page==='flow-builder')await builder.load();else if(page==='analytics')await insights.load();else if(page==='wa-connect')await whatsappSignup.load();else if(['wa-inbox','leads','templates','team'].includes(page))await workspace.load(page);else if(['connectors','channels','privacy','comment-automation'].includes(page))await advanced.load(page);else if(['triggers','campaigns','media','website','integrations','usage','ai-settings'].includes(page))await extensions.load(page);else if(page==='catalog')await catalog();else if(page==='settings')await knowledge();else await dashboard()})}
 ctx.choose=choose;
+document.addEventListener('boat-open-bots',()=>choose('bots'));
 async function onboardingProgress(){
  const host=$('getting-started');host.replaceChildren();host.hidden=!canEdit();
  if(!canEdit())return;
- const [flowConfig,items,widget]=await Promise.all([api('/flows'),api('/catalog'),api('/widget/settings')]);
+ const [bots,items,widget]=await Promise.all([api('/bots'),api('/catalog'),api('/widget/settings')]);
  const steps=[
-  {name:'صمّم بوتك الأول في 3 خطوات',ready:Boolean(flowConfig.published),page:'flow-builder',action:'ابدأ تصميم البوت'},
+  {name:'أنشئ بوتك الأول وانشر إصدارًا صالحًا',ready:bots.some(b=>b.publishedVersion),page:'bots',action:'إدارة البوتات'},
   {name:'أضف ونشّر منتجات أو خدمات شركتك',ready:items.some(item=>item.status==='PUBLISHED'),page:'catalog',action:'افتح الكتالوج'},
   {name:'جهّز شات موقعك (اختياري)',ready:Boolean(widget.enabled),page:'website',action:'شات الموقع'}
  ];
  const completed=steps.filter(item=>item.ready).length;
+ if(state.role==='OWNER')host.append(button(bots.some(bot=>!bot.legacyDefault&&!bot.archivedAt)?'إعداد الشركة وبوت جديد':'إعداد الشركة والبوت الأول',async()=>{companySetup.setTemplates(await api('/bots/templates'));companySetup.start('service')},'primary'));
  host.append(el('h3','ابدأ بسهولة — '+completed+' من '+steps.length+' خطوات جاهزة'));
  host.append(el('p','دي خطوات إعداد اختيارية هتسهّل عليك أول بوت. مش هنطلب منك ربط أي منصة خارجية دلوقتي.','muted'));
  const grid=el('div',undefined,'getting-started-grid');
@@ -163,7 +173,20 @@ async function onboardingProgress(){
  }
  host.append(grid);
 }
-async function dashboard(){const host=$('dashboard-metrics');host.replaceChildren();$('dashboard-ready').replaceChildren();const [s,notes]=await Promise.all([api('/leads/summary'),api('/notifications')]);for(const [label,value] of [['الاستفسارات المؤهلة',s.total],['جاهزون لموظف',s.ready],['تم التواصل',s.contacted],['مهتمون',s.interested]]){const c=el('article',undefined,'metric');c.append(el('span',label),el('strong',value));host.append(c)}const ready=notes.filter(x=>x.stage==='READY_FOR_AGENT');if(!ready.length)$('dashboard-ready').append(el('p','لا يوجد عملاء ينتظرون التحويل حاليًا.'));for(const n of ready.slice(0,8))$('dashboard-ready').append(button(n.customer_name+' • '+n.channel,()=>choose('wa-inbox')));await onboardingProgress()}
+async function dashboard(){
+ const host=$('dashboard-metrics'),readyHost=$('dashboard-ready');host.setAttribute('aria-busy','true');
+ let s,notes;
+ try{[s,notes]=await Promise.all([api('/leads/summary'),api('/notifications')])}
+ catch{readyHost.querySelector('.dashboard-load-error')?.remove();const error=el('div',undefined,'dashboard-load-error');error.setAttribute('role','alert');error.append(el('p','تعذر تحديث الرئيسية. الأرقام الظاهرة من آخر تحديث ناجح.'),button('إعادة المحاولة',()=>execute(dashboard),'secondary'));readyHost.append(error);host.setAttribute('aria-busy','false');return}
+ host.replaceChildren();readyHost.replaceChildren();host.setAttribute('aria-busy','false');
+ for(const [label,value] of [['الاستفسارات المؤهلة',s.total],['جاهزون لموظف',s.ready],['تم التواصل',s.contacted],['مهتمون',s.interested]]){const c=el('article',undefined,'metric');c.append(el('span',label),el('strong',new Intl.NumberFormat('ar-EG').format(value)));host.append(c)}
+ const ready=notes.filter(x=>x.stage==='READY_FOR_AGENT');
+ if(!ready.length)readyHost.append(el('p','لا يوجد عملاء ينتظرون التحويل حاليًا.'));
+ const channels={WEBSITE:'شات الموقع',WHATSAPP:'واتساب',MESSENGER:'ماسنجر',INSTAGRAM:'إنستجرام',TELEGRAM:'تيليجرام'};
+ for(const n of ready.slice(0,8)){const action=button(n.customer_name+' • '+(channels[n.channel]||n.channel),async()=>{await choose('wa-inbox');await workspace.openConversation(n.id)},'secondary');action.dataset.conversationId=n.id;readyHost.append(action)}
+ readyHost.append(button('كل المحادثات',()=>choose('wa-inbox'),'secondary'),button('متابعة العملاء',()=>choose('leads'),'secondary'));
+ await onboardingProgress();
+}
 async function catalog(){
  const host=$('catalog-items');host.replaceChildren();
  const rows=await api('/catalog');
@@ -235,8 +258,9 @@ const closeNotifications=()=>{notificationPanel.hidden=true;$('notifications').s
 $('notifications').onclick=()=>{const open=notificationPanel.hidden;notificationPanel.hidden=!open;$('notifications').setAttribute('aria-expanded',String(open));if(open)execute(refreshNotifications)};
 document.addEventListener('keydown',event=>{if(event.key==='Escape'&&!notificationPanel.hidden){closeNotifications();$('notifications').focus()}});
 document.addEventListener('click',event=>{if(!notificationPanel.hidden&&!notificationPanel.contains(event.target)&&!$('notifications').contains(event.target))closeNotifications()});
-bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'POST',body:d});state.token=session.token;state.role=session.role;const me=await api('/auth/me');state.userId=me.userId;state.tenantId=me.tenantId;$('company-name').textContent=d.tenantSlug;sessionStorage.setItem('eb-tenant-label',d.tenantSlug);f.reset();state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());$('login').hidden=true;$('app').hidden=false;await choose('overview');await refreshNotifications()});
-$('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;await api('/auth/logout',{method:'POST'}).catch(()=>{});sessionStorage.removeItem('eb-tenant-label');state.token='';state.userId='';state.tenantId='';state.contacts=[];state.templateCatalog=[];state.team=[];ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
+const companyHint=new URLSearchParams(location.search).get('company');if(companyHint&&companyHint.length<=120){$('login-form').elements.tenantSlug.value=companyHint;$('login-form').elements.tenantSlug.defaultValue=companyHint}
+bind('login-form',async(d,f)=>{const session=await api('/auth/login',{method:'POST',body:d});state.token=session.token;state.role=session.role;const me=await api('/auth/me');state.userId=me.userId;state.tenantId=me.tenantId;$('company-name').textContent=d.tenantSlug;sessionStorage.setItem('eb-tenant-label',d.tenantSlug);f.reset();state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());await choose('overview');await refreshNotifications();document.body.dataset.authReady='true';$('login').hidden=true;$('app').hidden=false});
+$('logout').onclick=()=>execute(async()=>{if(builder.hasUnsavedChanges()&&!confirm('هناك تعديلات بوت غير محفوظة. تسجيل الخروج سيفقدها. هل تريد المتابعة؟'))return;await api('/auth/logout',{method:'POST'}).catch(()=>{});sessionStorage.removeItem('eb-tenant-label');state.token='';state.userId='';state.tenantId='';state.botId=null;state.botName='';delete document.body.dataset.authReady;state.contacts=[];state.templateCatalog=[];state.team=[];companySetup.reset();ctx.commerce.reset();whatsappSignup.reset();advanced.reset();workspace.reset();extensions.reset();builder.reset();insights.reset();for(const id of ['dashboard-metrics','dashboard-ready','inbox-list','thread-context','lead-list','catalog-items','faq-list','team-list','team-invites','template-list','template-parameters','trigger-list','media-list','campaign-list','integration-list','key-list','usage-summary','runtime-jobs'])$(id).replaceChildren();document.querySelectorAll('form').forEach(f=>f.reset());$('notification-list').replaceChildren();$('notification-list').hidden=true;$('app').hidden=true;$('login').hidden=false;notify('')});
 document.querySelectorAll('[data-page]').forEach(n=>n.onclick=()=>choose(n.dataset.page));document.querySelectorAll('[data-goto]').forEach(n=>n.onclick=()=>choose(n.dataset.goto));
 initVesselWorkspace();
 initVesselPages();
@@ -249,8 +273,10 @@ void (async()=>{
     $('company-name').textContent=sessionStorage.getItem('eb-tenant-label')||'مساحة شركتك';
     state.contacts=await api('/contacts');state.team=canEdit()?await api('/team'):[];
     document.querySelectorAll('[data-admin]').forEach(n=>n.hidden=!canEdit());
+    const requestedBot=/^#bot\/([a-f0-9-]{36})$/.exec(location.hash)?.[1];
+    if(requestedBot){const available=await api('/bots');const selected=available.find(b=>b.id===requestedBot);if(selected){state.botId=selected.id;state.botName=selected.name}}
+    await choose(state.botId?'flow-builder':'overview');await refreshNotifications();document.body.dataset.authReady='true';
     $('login').hidden=true;$('app').hidden=false;
-    await choose('overview');await refreshNotifications();
   }catch{
     if(state.token==='cookie-session'){state.token='';$('app').hidden=true;$('login').hidden=false}
   }

@@ -16,12 +16,18 @@ const require=createRequire(import.meta.url);
 const {Pool}=require('pg') as {Pool:new (o:{connectionString:string;max:number})=>{
  query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>;
  connect():Promise<{query(sql:string,values?:unknown[]):Promise<{rows:Record<string,unknown>[];rowCount:number|null}>;release():void}>;
- on(event:string,listener:(error:{code?:string})=>void):void;
+ on(event:'error',listener:(error:{code?:string})=>void):void;
+ on(event:'connect',listener:(client:{on(event:'error',listener:(error:{code?:string})=>void):void})=>void):void;
  end():Promise<void>;
 }};
 if(!process.env.DATABASE_URL)throw new Error('DATABASE_URL missing');
 const pool=new Pool({connectionString:process.env.DATABASE_URL,max:4});
 pool.on('error',error=>console.error('Worker database connection lost',{code:error.code||'DB_CONNECTION_LOST'}));
+// A checked-out connection can be terminated between queries (including a committed
+// transaction awaiting provider work). Pool errors only cover idle pool clients.
+// Observe client errors as well; failed queries still reject and the normal transaction
+// handlers roll back, while pg removes the non-queryable connection on release.
+pool.on('connect',client=>client.on('error',error=>console.error('Worker client connection lost',{code:error.code||'DB_CONNECTION_LOST'})));
 let running=true;let maintainedAt=0;
 const wait=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
 function decrypt(ciphertext:string):string {
@@ -123,7 +129,7 @@ async function run(){
    // The tenants table has no tenant RLS; each tenant's jobs still run inside RLS-scoped transactions.
    if(Date.now()-maintainedAt>3600000){await pool.query("DELETE FROM chatbot_rate_buckets WHERE window_at<now()-interval '1 day'");await pool.query('DELETE FROM chatbot_oauth_states WHERE expires_at<now()');maintainedAt=Date.now();}
    const t=await pool.query('SELECT id FROM tenants ORDER BY id LIMIT 10000');
-   for(const row of t.rows){if(!running)break;const id=String(row.id);try{await tenantTask(id,async db=>{await db.query("UPDATE whatsapp_signup_operations SET status='UNCERTAIN' WHERE tenant_id=$1 AND status='PROCESSING' AND created_at<now()-interval '2 minutes'",[id]);await db.query("UPDATE whatsapp_onboarding_attempts SET token_encrypted=NULL,phone_choices=NULL,status=CASE WHEN status='PROCESSING' THEN 'UNCERTAIN' ELSE 'FAILED' END,error_code='EXPIRED' WHERE tenant_id=$1 AND expires_at<now() AND status IN ('PENDING','SELECT_PHONE','PROCESSING')",[id])});worked=(await tenantTask(id,processDelay))||worked;await tenantTask(id,processCampaign);await tenantTask(id,processIntegrationJob);await tenantTask(id,processConnector);await tenantTask(id,processMediaScan);await tenantTask(id,processRetention,false);await processSocial(pool,id);await processPrivateReply(pool,id);worked=(await processTenant(id))||worked}catch(e){console.error('Tenant worker task failed',{tenant:id,code:(e as {code?:string}).code||'TASK_FAILED'});await tenantTask(id,async db=>{await db.query("UPDATE chatbot_worker_health SET last_error_code='TASK_FAILED' WHERE tenant_id=$1",[id])}).catch(()=>{})}}
+   for(const row of t.rows){if(!running)break;const id=String(row.id);try{await tenantTask(id,async db=>{await db.query("UPDATE whatsapp_signup_operations SET status='UNCERTAIN' WHERE tenant_id=$1 AND status='PROCESSING' AND created_at<now()-interval '2 minutes'",[id]);await db.query("UPDATE whatsapp_onboarding_attempts SET token_encrypted=NULL,phone_choices=NULL,status=CASE WHEN status='PROCESSING' THEN 'UNCERTAIN' ELSE 'FAILED' END,error_code='EXPIRED' WHERE tenant_id=$1 AND expires_at<now() AND status IN ('PENDING','SELECT_PHONE','PROCESSING')",[id])});for(let delayCount=0;delayCount<25&&running;delayCount++){const delayed=await tenantTask(id,processDelay);worked=delayed||worked;if(!delayed)break;}await tenantTask(id,processCampaign);await tenantTask(id,processIntegrationJob);await tenantTask(id,processConnector);await tenantTask(id,processMediaScan);await tenantTask(id,processRetention,false);await processSocial(pool,id);await processPrivateReply(pool,id);worked=(await processTenant(id))||worked}catch(e){console.error('Tenant worker task failed',{tenant:id,code:(e as {code?:string}).code||'TASK_FAILED'});await tenantTask(id,async db=>{await db.query("UPDATE chatbot_worker_health SET last_error_code='TASK_FAILED' WHERE tenant_id=$1",[id])}).catch(()=>{})}}
   }catch(e){console.error('Worker poll failed',{code:(e as {code?:string}).code||'POLL_FAILED'});}
   if(!worked)await wait(2000);
  }

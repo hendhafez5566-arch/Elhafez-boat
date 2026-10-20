@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-20",
+  "sourceCommits": [
+    "96a25b2",
+    "815c5e8"
+  ],
+  "fullRuntimeCommit": "09fb2e8",
+  "finalExecutableCommit": "b50da9d",
+  "finalTargetedRuntimeAndChromium": "PASS exit 0, includes real API/PostgreSQL/worker recovery; broad browser child skipped only after full success",
+  "fullRuntimeAndBothChromiumSuites": "PASS exit 0",
+  "unit": {
+    "pass": 130,
+    "fail": 0,
+    "skip": 0
+  },
+  "postgresBotAndTeamAndReporting": "PASS",
+  "browserProof": [
+    "UTC previous/current ranges and real 90-day CSV download reconciles to API",
+    "report transport error preserves six prior metrics and retry recovers",
+    "actual zero-activity company report",
+    "create/hide/revoke invitation; actual join form and manager login; owner changes persisted roles",
+    "manager cannot grant manager or change roles; actual server 403",
+    "team transport fault retains members and retry succeeds"
+  ],
+  "baselineTeamSource": "b02a3132751ed0b6acbbc5f1a928b83b04dcb572",
+  "screenshots": [
+    "team-before-1366.png",
+    "team-before-320.png",
+    "team-invitations-1366.png",
+    "team-invitations-320.png",
+    "team-retry-320.png",
+    "team-accepted-320.png",
+    "team-manager-permissions-320.png",
+    "comparison-report-1366.png",
+    "comparison-report-320.png",
+    "comparison-empty-320.png"
+  ],
+  "broadPageVisitCount": 81,
+  "broadVisitScope": "loading/named controls only; not full functional certification",
+  "rateLimits": "unchanged: reused existing owner session instead of repeated authentication",
+  "realEmailOrProviderOperations": false,
+  "mergeOrDeployment": false,
+  "remoteCI": "UNVERIFIED: GitHub API Forbidden"
+}

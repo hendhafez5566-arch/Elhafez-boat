@@ -1,0 +1,255 @@
+{
+  "date": "2026-10-20",
+  "testedCommit": "daf15cb035b42e93a177de08218b66be9ff1293e",
+  "applicationCommit": "daf15cb035b42e93a177de08218b66be9ff1293e",
+  "branch": "feat/codex-product-rebuild-2026-10-19",
+  "pr": 4,
+  "unit": {
+    "pass": 131,
+    "fail": 0,
+    "skip": 0
+  },
+  "postgresExistingSuite": "PASS exit 0: tests/bots-db.mjs",
+  "postgresCompletionSuite": "PASS exit 0: tests/completion-db.mjs with real local ClamAV",
+  "freshMigration": "PASS 0001 through 0032; new isolated elhafez_ci_final_20261020_04; previous databases preserved",
+  "fullRuntimeBothChromium": "PASS with CI_LOCAL_CLOSURE=1; real PostgreSQL, API/worker recovery, roles, broad loading and actual functional journeys",
+  "command": "CLAMAV_SOCKET=<local socket> CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CI_LOCAL_CLOSURE=1 CHROME_BIN=/usr/bin/chromium MIGRATION_DATABASE_URL=<fresh disposable database> node tests/runtime-acceptance.mjs",
+  "browserPassMarkers": [
+    "PASS real CRM follow-up task, role-scoped endpoint, lead priority and tenant-isolated analytics",
+    "PASS real Website Chat: published greeting, origin restriction, dedupe, lead qualification and staff handoff",
+    "PASS background worker heartbeat for both scoped tenant queues",
+    "PASS real delayed conversation continuation from PostgreSQL worker, exactly once",
+    "PASS platform admin pool reconnects; company token cannot access platform administration",
+    "PASS API SIGKILL/restart, competing worker survival, idle PostgreSQL disconnect/reconnect, durable session and completed delay preserved",
+    "PASS HTTP load {\"requests\":400,\"concurrency\":40,\"apiInstances\":2,\"workers\":2,\"elapsedMs\":359.4514170000002,\"requestsPerSecond\":1112.8068525599936,\"p50Ms\":32.812291999999616,\"p95Ms\":79.45097799999985,\"p99Ms\":90.23312999999962,\"serverResources\":[{\"name\":\"api\",\"cpuMs\":180,\"peakSampledRssBytes\":62136320},{\"name\":\"api-replica\",\"cpuMs\":180,\"peakSampledRssBytes\":61595648},{\"name\":\"worker\",\"cpuMs\":0,\"peakSampledRssBytes\":53862400},{\"name\":\"worker-restarted\",\"cpuMs\":110,\"peakSampledRssBytes\":50499584}],\"scope\":\"authenticated catalog reads only; not full workload capacity\"}",
+    "PASS distributed throttle: 40 attempts, exactly 20 accepted / 20 HTTP 429 outcomes",
+    "PASS 40 concurrent authenticated catalog requests in 67ms (CI smoke, not load benchmark)",
+    "PASS LOCAL CLOSURE 30-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE",
+    "PASS COEXISTENCE new Cloud authorization/register once; Coexistence refuses register; denied provider authorization fails safely",
+    "PASS COEXISTENCE signed customer -> real WhatsApp buttons/list/input -> CRM interest -> handoff -> manual reply queue",
+    "PASS COEXISTENCE real API/DB: cancel/expiry/cookie+tenant binding/one-use code/ownership/CSRF/encrypted credentials; signed app echo dedupe without bot; consent history no service window; delayed chunks/offboarding",
+    "PASS LOCAL CLOSURE actual API roles OWNER/MANAGER/AGENT/VIEWER and cross-tenant write denial",
+    "PASS LOCAL CLOSURE production Google PKCE/OAuth single-use state/refresh/RAW Sheets and HubSpot/Shopify/WooCommerce deduplicated contact sync",
+    "PASS LOCAL CLOSURE production provider 401/403/429/500/reset matrix, mixed/private DNS rejection, webhook HMAC/stable keys and grounded AI fallback",
+    "PASS LOCAL CLOSURE production Messenger/Instagram/Telegram account validation and competing dispatch",
+    "PASS LOCAL CLOSURE WhatsApp disconnect/reconnect preserves identity and routing; provider diagnostic explicitly excludes live acceptance",
+    "PASS LOCAL CLOSURE actual worker accepted-send SIGKILL -> PROCESSING -> UNCERTAIN -> correlated SENT; one send; duplicate/out-of-order receipt preserves read",
+    "PASS LOCAL CLOSURE real ClamAV CLEAN/EICAR QUARANTINED, pending inaccessible, tenant media denial, deleted link revoked, fake MIME denied, offline/recovery",
+    "PASS LOCAL CLOSURE concurrent customer message and owner erasure: no resurrected contact or retained message content",
+    "PASS LOCAL CLOSURE retention preserves scheduled work, owner export/anonymization cancels jobs; seeded media/ciphertext/audit/pending queue for restore",
+    "PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox",
+    "PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role",
+    "PASS choice editor: live titles, ordering and real WhatsApp 3-button / 10-list limits",
+    "PASS visual studio palette, list/buttons sample and canvas block drop in Chromium",
+    "PASS contextual add step, graph insertion, live inspector update, zoom, phone modal and full-screen",
+    "PASS browser guide: actual flow generation plus unsaved draft preserved across catalog navigation; no external send",
+    "PASS 3-branch graph, 6 connected new steps, undo/redo, collision-free auto layout and manual pointer drag",
+    "PASS browser real catalog create/edit/publish/archive + stored XSS text safety; flow save/publish; privacy save; rejected integration host; keyboard Tab",
+    "PASS COEXISTENCE Chromium actual two-path Arabic UI, SDK contract fixture, API/DB-backed phone selection, encrypted grant, cancelled popup, desktop/mobile; HTTPS-cookie bridge is test-only, not live Meta",
+    "PASS Vessel cross-page UI: CRM, catalog filter/recovery and analytics",
+    "PASS 81 owner page/viewport visits with named buttons (screen loading only; not all actions/forms)",
+    "PASS browser session reload via server-managed cookie; no bearer token stored in browser storage",
+    "PASS browser MANAGER/AGENT/VIEWER real login, inbox, admin visibility and logout",
+    "PASS actual Website Widget desktop/mobile with published flow and customer-to-employee handoff; three extra Chromium PNGs",
+    "PASS actual platform-admin browser login/company creation/invite generation/logout; private invitation never captured",
+    "PASS headless Chrome: RTL company login, real dashboard, flow canvas, mobile viewport, logout",
+    "PASS screenshots: dashboard, desktop/mobile flow builder and actual canvas views",
+    "PASS second bot: service template, three buttons, name+phone capture, real server preview/human handoff, no real lead writes, first bot unchanged and 200% viewport equivalent",
+    "PASS browser directory -> contact profile -> exact linked inbox conversation with real retained history",
+    "PASS bot manager browser: rename, scoped keyword, local website route/unroute, archive/restore with original definition preserved",
+    "PASS real condition/media/link branch insertion and saved typed fields, no provider/media requests",
+    "PASS concurrent real bot draft review: explicit local/remote choice, independent edit preserved, compiler validation, no write until save and no publish",
+    "PASS real file restore: malformed JSON rejected, compiler validation, no implicit write/publish, current revision used and undo/redo preserved",
+    "PASS unfinished import/save, publish blocked; actual 48-node cyclic graph, stable routes, Alt-arrow and Ctrl-S, desktop canvas and mobile steps",
+    "PASS browser website assignment, manual reply, release, take over and close without external transport",
+    "PASS novice wizard/back/review/no-write, searchable gallery, same-definition simple/canvas branch editing, mobile steps, retained internal inbox note, contact context and truthful channel directory",
+    "PASS campaign wizard actual draft save, back preservation, real template review and desktop/mobile",
+    "PASS named header/body, dynamic URL/quick reply and media header forms save real campaign drafts without launch",
+    "PASS real campaign audience/content review without launch and role-scoped CRM bulk interaction on mobile",
+    "PASS analytics actual period requests and zero-filled UTC daily series",
+    "PASS report comparison boundaries displayed, actual downloaded 90-day aggregate CSV reconciles to API, no contacts, real retry after injected transport failure",
+    "PASS actual local ClamAV upload/private preview/delete and forged MIME rejection; integration inspect/save/disable with secret absent and no external connection",
+    "PASS company setup/back/deferred channel/server preview/atomic name+independent unpublished bot and actual plan/usage meters",
+    "PASS dashboard actual KPI reconciliation, empty readiness, company shortcut, desktop/mobile, retained-data error/retry and working inbox shortcut",
+    "PASS browser team lifecycle: create/hide token, duplicate Arabic error, revoke/denied acceptance, actual accepted manager login, forbidden manager grant, owner role change and no external delivery",
+    "PASS new Chromium bot journey: create independent Start, contextual message, Arabic template/three buttons, save, publish, cookie reload, same bot and definition; 1366/768/390/320 actual before/after screenshots and overflow checks",
+    "PASS campaign browser review queued zero jobs and zero outbound messages",
+    "PASS post-logout token invalidation"
+  ],
+  "localTransportChecks": [
+    "30-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE",
+    "actual API roles OWNER/MANAGER/AGENT/VIEWER and cross-tenant write denial",
+    "production Google PKCE/OAuth single-use state/refresh/RAW Sheets and HubSpot/Shopify/WooCommerce deduplicated contact sync",
+    "production provider 401/403/429/500/reset matrix, mixed/private DNS rejection, webhook HMAC/stable keys and grounded AI fallback",
+    "production Messenger/Instagram/Telegram account validation and competing dispatch",
+    "WhatsApp disconnect/reconnect preserves identity and routing; provider diagnostic explicitly excludes live acceptance",
+    "actual worker accepted-send SIGKILL -> PROCESSING -> UNCERTAIN -> correlated SENT; one send; duplicate/out-of-order receipt preserves read",
+    "real ClamAV CLEAN/EICAR QUARANTINED, pending inaccessible, tenant media denial, deleted link revoked, fake MIME denied, offline/recovery",
+    "concurrent customer message and owner erasure: no resurrected contact or retained message content",
+    "retention preserves scheduled work, owner export/anonymization cancels jobs; seeded media/ciphertext/audit/pending queue for restore"
+  ],
+  "mixedWorkload": {
+    "durationMs": 35733.48958,
+    "companies": 4,
+    "visitors": 200,
+    "persistedMessages": 1640,
+    "operations": 7220,
+    "statusCounts": {
+      "200": 4979,
+      "429": 2041
+    },
+    "operationsPerSecond": 202.05135532134054,
+    "p50Ms": 5.025214999999662,
+    "p95Ms": 12.64408999999796,
+    "p99Ms": 49.532750999999735,
+    "clientCpuMicroseconds": {
+      "user": 2097632,
+      "system": 488138
+    },
+    "clientRssBytes": 209817600,
+    "pendingDelayJobs": 0,
+    "queueLagSeconds": 0,
+    "peakQueueLagSeconds": 5.11957,
+    "serverResources": [
+      {
+        "process": "api-0",
+        "cpuMs": 2660,
+        "peakSampledRssBytes": 128000000
+      },
+      {
+        "process": "api-1",
+        "cpuMs": 0,
+        "peakSampledRssBytes": 61833216
+      },
+      {
+        "process": "worker-0",
+        "cpuMs": 510,
+        "peakSampledRssBytes": 69849088
+      },
+      {
+        "process": "worker-1",
+        "cpuMs": 480,
+        "peakSampledRssBytes": 67600384
+      }
+    ]
+  },
+  "baselineWebCommit": "b02a3132751ed0b6acbbc5f1a928b83b04dcb572",
+  "screenshots": [
+    {
+      "path": "closure-before-integrations-1366.png",
+      "sha256": "416bebd51d8500b1ca4a7a62734a923e055844388ce8956573b3df1505c4bc3e"
+    },
+    {
+      "path": "closure-before-integrations-320.png",
+      "sha256": "c694c6ed7400d3b64c7199f6d7f981c9b2a155efe1d07ab3732943efac34a018"
+    },
+    {
+      "path": "closure-before-media-1366.png",
+      "sha256": "37b5db645013bc3ff090fff85e00815e2e9573b6179effea7421396a77677d31"
+    },
+    {
+      "path": "closure-before-media-320.png",
+      "sha256": "e757537d888ead5c31b00a261c338d47605606ab03aab518831c8d611f396a51"
+    },
+    {
+      "path": "closure-before-overview-1366.png",
+      "sha256": "ad0990cb1b52ba024692871148363b7fe01249414946a65a5d3d3d19903bf804"
+    },
+    {
+      "path": "closure-before-overview-320.png",
+      "sha256": "7e8aece2fdc09b58b69cc23b4773d1cb78d833636fd59a5348a2666afe497811"
+    },
+    {
+      "path": "closure-before-usage-1366.png",
+      "sha256": "1bc8a6aa3c3e8965d1a7a32d05ea28c0601cec5012f5348c5f0fe5f68d7b4615"
+    },
+    {
+      "path": "closure-before-usage-320.png",
+      "sha256": "56eae624c3c42807c828d8d9f33fe6f983e68e57a07f50201e24faa480a6891e"
+    },
+    {
+      "path": "closure-campaign-fixture_carousel-320.png",
+      "sha256": "68bafacb65c17a2edf5e7c655e6f6d9774c481867ebd588f83905ea971658818"
+    },
+    {
+      "path": "closure-campaign-fixture_media-320.png",
+      "sha256": "8f11737bbda128fa0d053b30bbe7cd5c5e46cc06c1ccc30932fef1eadcaebf18"
+    },
+    {
+      "path": "closure-campaign-fixture_named-320.png",
+      "sha256": "1cfeb7399caec782fe2f66896fc485abfdc78394e3f54f272fc4ec1e70d2436d"
+    },
+    {
+      "path": "closure-company-review-1366.png",
+      "sha256": "7f2cffbb1f3b26fc754a7dfeeb02982e9d242ace73c9f9c2665316a866099736"
+    },
+    {
+      "path": "closure-company-review-320.png",
+      "sha256": "f517e1d1f49f83c85f7b86af3475fcc0f7fc7dc3eaa816768b37d5ce33d2b5e0"
+    },
+    {
+      "path": "closure-dashboard-1366.png",
+      "sha256": "c28de5ac46c61ddf27a13cfb422ee478fb84e621fd9444bbac64c6bd33bdf4f0"
+    },
+    {
+      "path": "closure-dashboard-320.png",
+      "sha256": "3cf007e2efd039163c166ea9a39d10de4d8f4a254448bc367e49e21608408516"
+    },
+    {
+      "path": "closure-dashboard-retry-320.png",
+      "sha256": "3cf007e2efd039163c166ea9a39d10de4d8f4a254448bc367e49e21608408516"
+    },
+    {
+      "path": "closure-dense-canvas-1366.png",
+      "sha256": "7ceb6730f164116e8c3f9c8d126c32bfda4e22e503f771a35314467a0dfa9edd"
+    },
+    {
+      "path": "closure-dense-steps-320.png",
+      "sha256": "51b2a137fb1d9591aba34e58067afa5ae6c1c0331433a89f559f427abc86a16d"
+    },
+    {
+      "path": "closure-integrations-1366.png",
+      "sha256": "97c58ffd4da5dc627129bd45c4eabc16a43f467cdc707aaf918608d62360df02"
+    },
+    {
+      "path": "closure-integrations-320.png",
+      "sha256": "9063ec86dfe4e258424ffdb45bc7696235a0aca2221a93fecb3d1afdb5a24be1"
+    },
+    {
+      "path": "closure-media-clean-1366.png",
+      "sha256": "32aa0a97e726a1d586c84a40edad24567b8d1890ed20be47072d23d066dfd947"
+    },
+    {
+      "path": "closure-media-clean-320.png",
+      "sha256": "de64a7aebf876dd21f3f383aa213ffac18be68e74e1a9429fb04511ec0ad6503"
+    },
+    {
+      "path": "closure-platform-1366.png",
+      "sha256": "e56543b2a467005edffdbdd7ac16e8a7e993788f089b1a2edb57ae38bfbca2a8"
+    },
+    {
+      "path": "closure-platform-320.png",
+      "sha256": "dd05e784a15ad81fb0830a4643fe041caf83602935b3e1d288cbfbf3debd7065"
+    },
+    {
+      "path": "closure-usage-1366.png",
+      "sha256": "3c680ded4258e8f99beb7e01323ba7b94baf9fa672c1e03165b80354ed87d538"
+    },
+    {
+      "path": "closure-usage-320.png",
+      "sha256": "450d699c0d99f7a0930abd4fda11d3974bb95177e9d4e0a8de95309e8a74a3f6"
+    }
+  ],
+  "scopeLimits": [
+    "ClamAV custom EICAR acceptance signatures only, not full production definitions",
+    "Provider adapters run via isolated offline transport, no real account or provider connection",
+    "81 visits prove loading and named controls, not all functionality",
+    "Native 200% browser zoom, physical devices, screen reader/WCAG and owner UX sign-off NOT_RUN",
+    "Advanced novice/keyboard/inspector matrix remains partial",
+    "Remote GitHub CI UNVERIFIED: API Forbidden"
+  ],
+  "protectedRefs": {
+    "target": "ada4db6764c8ee8665764663b3a47351cf807637",
+    "main": "c8acec40d44803417e9e21a381d7e7f9b0d41fe0"
+  }
+}

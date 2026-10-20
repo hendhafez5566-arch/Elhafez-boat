@@ -6,7 +6,7 @@ export function initVesselWorkspace(){
  const brand=rail.querySelector('.brand');brand.replaceChildren(make('span','vessel-monogram','B.'),make('small','vessel-logotype','BOAT'));brand.classList.add('vessel-brand');brand.append(make('strong','vessel-brand-name','Elhafez Boat'));
  const all=[...nav.querySelectorAll('button[data-page]')],byId=new Map(all.map(b=>[b.dataset.page,b]));
  const legacy=nav.querySelector('.nav-advanced');if(legacy)legacy.style.display='none';
- const quick=['overview','wa-inbox','flow-builder','leads','catalog'];
+ const quick=['overview','wa-inbox','bots','leads','catalog'];
  for(const id of quick){const b=byId.get(id);if(b){b.classList.add('vessel-rail-item');b.title=b.textContent.trim();nav.append(b)}}
  const trigger=make('button','vessel-menu-button','☷');trigger.type='button';trigger.setAttribute('aria-label','جميع الأقسام');trigger.setAttribute('aria-expanded','false');rail.insertBefore(trigger,nav);
  const drawer=make('aside','vessel-drawer');drawer.id='vessel-drawer';drawer.hidden=true;
@@ -16,7 +16,7 @@ export function initVesselWorkspace(){
  heading.append(identity,close);
  const search=make('input','vessel-search');search.type='search';search.placeholder='ابحث عن قسم أو أداة';search.setAttribute('aria-label','البحث في أقسام المنصة');
  const groups=make('div','vessel-menu-groups');
- const categories=[['العمل اليومي',['overview','wa-inbox','leads']],['البوت والأتمتة',['flow-builder','triggers','campaigns']],['المحتوى',['catalog','settings','media','templates','ai-settings']],['القنوات والتطبيقات',['website','wa-connect','channels','connectors','comment-automation','integrations']],['الإدارة والتقارير',['analytics','team','privacy','usage']]];
+ const categories=[['العمل اليومي',['overview','wa-inbox','leads']],['البوت والأتمتة',['bots','flow-builder','triggers','campaigns']],['المحتوى',['catalog','settings','media','templates','ai-settings']],['القنوات والتطبيقات',['website','wa-connect','channels','connectors','comment-automation','integrations']],['الإدارة والتقارير',['analytics','team','privacy','usage']]];
  const grouped=new Set(quick);
  for(const [name,ids] of categories){const section=make('section','vessel-menu-section');section.append(make('h3','',name));for(const id of ids){grouped.add(id);const b=byId.get(id);if(b){if(quick.includes(id)){const link=b.cloneNode(true);link.classList.remove('vessel-rail-item');link.classList.add('vessel-menu-link');link.removeAttribute('id');link.onclick=()=>{b.click();hide()};section.append(link)}else{b.classList.add('vessel-menu-link');section.append(b)}}}groups.append(section)}
  const remaining=all.filter(b=>!grouped.has(b.dataset.page));

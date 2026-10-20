@@ -1,8 +1,13 @@
+import {mergeFlowDrafts,sameDraftValue} from './flow-merge.js';
 import {createCanvas} from './flow-canvas.js';
 import {graphOutputs} from './flow-geometry.js';
 import {mountGuidedWizard} from './flow-onboarding.js';
 /** Company-specific visual block editor, no industry assumptions or customer data. */
-export function initFlowBuilder({state,api,notify,execute}){
+export function initFlowBuilder({state,api:baseApi,notify,execute}){
+ const api=(path,options)=>{
+  const scoped=state.botId&&(/^\/flows(?:\/(draft|publish|versions)(?:\/.*)?)?$/.test(path));
+  return baseApi(scoped?'/bots/'+encodeURIComponent(state.botId)+path:path,options);
+ };
  const $=id=>document.getElementById(id);
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
@@ -21,6 +26,7 @@ export function initFlowBuilder({state,api,notify,execute}){
      {id:'handoff',type:'HANDOFF',text:'وصل طلبك للموظف المختص. هيكمل معاك.'}
    ]};
  };
+ let mergeBase=null;
  let flow=preset(),selected='menu',published=null,dirty=false,draftRevision=0,previewRuntimeNodes=null;
  let subflows=[],editingSubflowId=null,mainSnapshot=null;
  let selectedNodes=new Set([selected]),snippets=[];
@@ -193,14 +199,15 @@ export function initFlowBuilder({state,api,notify,execute}){
   advancedButtons.append(button('إعادة العرض',()=>canvas.reset()),button('الخطوة المختارة',()=>canvas.focus(selected)));
   advancedView.append(advancedButtons);
   actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
- const simpleMode=button('عرض مبسط بالخطوات',()=>{
-   const linear=workspace.classList.toggle('builder-linear-mode');
-   palette.hidden=!linear;workspace.classList.toggle('palette-collapsed',!linear);
-   paletteToggle.disabled=linear;
+ function setEditorMode(linear){
+   workspace.classList.toggle('builder-linear-mode',linear);palette.hidden=!linear;workspace.classList.toggle('palette-collapsed',!linear);paletteToggle.disabled=linear;
    simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
-   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open');palette.scrollIntoView({block:'start'})}
-   else{canvas.draw();canvas.focus(selected)}
- },'secondary');
+   if(state.botId)sessionStorage.setItem('eb-editor-mode:'+state.tenantId+':'+state.botId,linear?'simple':'canvas');
+   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open')}
+   else{canvas.draw();requestAnimationFrame(()=>canvas.fit())}
+ }
+ const simpleMode=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
+ simpleMode.classList.add('builder-mode-switch');
  actions.prepend(simpleMode);
  stageHead.append(actions,advancedView);
  const stageExtras=el('details',undefined,'builder-stage-extras');
@@ -222,7 +229,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  inspector.append(properties);
  properties.prepend(button('إغلاق ×',()=>{inspector.hidden=true;workspace.classList.remove('inspector-open')}));
  inspector.hidden=true;
- function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open')}
+ function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open');if(state.botId)requestAnimationFrame(()=>canvas.focus(selected))}
  const simulatorDialog=el('dialog',undefined,'builder-preview-dialog');
  const simulatorHead=el('header',undefined,'builder-dialog-header');
  simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
@@ -270,7 +277,7 @@ export function initFlowBuilder({state,api,notify,execute}){
  pickerSearch.oninput=paintPicker;
  const advanced=el('details',undefined,'builder-extras');
  advanced.append(el('summary','مكتبة الخطوات والمسارات المتقدمة'),linked,reuseHost);
- workspace.replaceChildren(palette,stagePanel,inspector,advanced);
+ workspace.replaceChildren(palette,stagePanel,inspector);stageExtras.append(advanced);
 
  const markDirty=()=>{dirty=true;checkpoint();renderStatus()};
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
@@ -290,7 +297,17 @@ export function initFlowBuilder({state,api,notify,execute}){
      let desc='';if('text'in node)desc=String(node.text);if(node.type==='CONDITION')desc='شرط على: '+node.field;
      if(node.type==='TAG')desc='تصنيف: '+node.tag;
      card.append(el('p',desc.slice(0,90)||'بداية المسار'));
-     card.onclick=()=>{selected=node.id;selectedNodes=new Set([selected]);renderBlocks();renderEditor();canvas.highlight(selected);showInspector()};host.append(card);
+     card.onclick=()=>{selected=node.id;selectedNodes=new Set([selected]);renderBlocks();renderEditor();canvas.highlight(selected);showInspector()};
+     const row=el('article',undefined,'builder-step-row');row.dataset.stepId=node.id;row.append(card);
+     const outputs=el('div',undefined,'builder-step-outputs');
+     for(const output of graphOutputs(node)){
+      const dest=nodeById(output.to),caption=(node.type==='BUTTONS'||node.type==='LIST'?'لما العميل يضغط «'+output.label+'»':node.type==='CONDITION'?'إذا كانت الإجابة '+output.label:'بعد هذه الخطوة');
+      const branch=el('div',undefined,'builder-step-branch');branch.append(el('span',caption));
+      if(dest)branch.append(button((types[dest.type]||'خطوة')+' — '+String(dest.text||'بداية المحادثة').slice(0,45),()=>{selected=dest.id;renderBlocks();renderEditor();showInspector()}));
+      branch.append(button('إضافة خطوة هنا',()=>openInsert({nodeId:node.id,key:output.key})));outputs.append(branch);
+     }
+     if(!graphOutputs(node).length)outputs.append(el('small',node.type==='HANDOFF'?'يكمل الموظف المحادثة من صندوق الوارد.':'تنتهي المحادثة هنا.'));
+     row.append(outputs);host.append(row);
    }
  }
  function renderEditor(){
@@ -351,16 +368,25 @@ export function initFlowBuilder({state,api,notify,execute}){
    });host.append(label('نوع الخطوة',typeSelect));
    if(node.type==='MEDIA'||node.type==='LINK')host.append(label('رابط HTTPS',control(node.url,v=>{node.url=v})));
    if(node.type==='MEDIA'){
-    const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',k);o.value=k;kind.append(o)}kind.value=node.mediaKind;kind.onchange=()=>{node.mediaKind=kind.value;markDirty()};host.append(label('نوع الوسائط',kind),label('التعليق',control(node.caption||'',v=>{node.caption=v})));
+    const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',({image:'صورة',video:'فيديو',audio:'صوت',document:'مستند'})[k]);o.value=k;kind.append(o)}kind.value=node.mediaKind;kind.onchange=()=>{node.mediaKind=kind.value;markDirty()};host.append(label('نوع الوسائط',kind),label('التعليق',control(node.caption||'',v=>{node.caption=v})));
    }
 
    if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true)));
-   if('field'in node)host.append(label('اسم الحقل المخصص (بالإنجليزية)',control(node.field,value=>{node.field=value})));
+   if('field'in node){
+    const fields=el('select'),common={customer_name:'اسم العميل',customer_phone:'رقم الهاتف',customer_email:'البريد الإلكتروني',customer_city:'المدينة',customer_need:'احتياج العميل'};
+    for(const [key,title] of Object.entries(common)){const option=el('option',title);option.value=key;fields.append(option)}
+    for(const source of flow.nodes.filter(n=>(n.type==='INPUT'||n.type==='QUESTION')&&n.field&&!common[n.field])){common[source.field]='إجابة: '+String(source.text||source.field).slice(0,55);const option=el('option',common[source.field]);option.value=source.field;fields.append(option)}
+    if(!common[node.field]){const option=el('option','حقل مخصص محفوظ');option.value=node.field;fields.append(option)}
+    fields.value=node.field;fields.onchange=()=>{node.field=fields.value;markDirty();renderBlocks();canvas.draw()};
+    host.append(label(node.type==='CONDITION'?'قارن إجابة العميل عن':'ما البيانات التي تجمعها؟',fields));
+    developerSettings.append(label('معرّف حقل مخصص (للمتقدمين)',control(node.field,value=>{node.field=value})));
+   }
    if(node.type==='TAG')host.append(label('التصنيف',control(node.tag,value=>{node.tag=value})));
    if(node.type==='CONDITION'){
      const ops=el('select');for(const [key,text] of [['equals','يساوي'],['contains','يحتوي على'],['exists','تم ملء الحقل']]){const o=el('option',text);o.value=key;ops.append(o)}ops.value=node.operator;
-     ops.onchange=()=>{node.operator=ops.value;markDirty()};host.append(label('المقارنة',ops));
-     host.append(label('القيمة',control(node.value||'',value=>{node.value=value})));
+     const comparisonValue=label('الإجابة المطلوبة',control(node.value||'',value=>{node.value=value}));comparisonValue.hidden=node.operator==='exists';
+     ops.onchange=()=>{node.operator=ops.value;comparisonValue.hidden=node.operator==='exists';markDirty()};host.append(label('المقارنة',ops),comparisonValue);
+     host.append(el('p','اختر سؤالًا سابقًا؛ العميل ينتقل لمسار الإجابة المطابقة أو للمسار الآخر.','muted'));
      host.append(label('لو الشرط صحيح',target(node.yes,value=>{node.yes=value})));
      host.append(label('لو الشرط غلط',target(node.no,value=>{node.no=value})));
    }
@@ -385,7 +411,7 @@ export function initFlowBuilder({state,api,notify,execute}){
        advancedChoice.append(label('معرّف الاختيار',control(choice.id,value=>{choice.id=value})));
        if(node.type==='LIST'){const description=control(choice.description||'',value=>{choice.description=value});description.maxLength=72;block.append(label('وصف قصير',description));}
        advancedChoice.append(label('عند الضغط ينتقل إلى',target(choice.next,value=>{choice.next=value})));
-       block.append(advancedChoice);
+       block.append(button('إضافة رد لهذا الاختيار',()=>openInsert({nodeId:node.id,key:'choice:'+i})),advancedChoice);
        const moveChoice=(offset)=>{
          const other=i+offset;if(other<0||other>=node.choices.length)return;
          [node.choices[i],node.choices[other]]=[node.choices[other],node.choices[i]];markDirty();renderAll();
@@ -454,11 +480,17 @@ export function initFlowBuilder({state,api,notify,execute}){
  }
  function addNode(type,anchor=null){
    if(flow.nodes.length>=100){notify('وصلت للحد الأقصى 100 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
-   if(anchor&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
+   if(anchor&&nodeById(anchor.key.startsWith('choice:')?nodeById(anchor.nodeId)?.choices?.[Number(anchor.key.split(':')[1])]?.next:nodeById(anchor.nodeId)?.[anchor.key])&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
    const origin=anchor?nodeById(anchor.nodeId):null;
-   const oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.[Number(anchor.key.split(':')[1])]?.next:origin[anchor.key]):null;
+   let oldTarget=origin?(anchor.key.startsWith('choice:')?origin.choices?.[Number(anchor.key.split(':')[1])]?.next:origin[anchor.key]):null;
    let n=flow.nodes.length+1,id='step'+n;while(nodeById(id))id='step'+(++n);
-   let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id||flow.startId;
+   let next=flow.nodes.find(n=>n.type==='END'||n.type==='HANDOFF')?.id;
+   if(!next&&!['END','HANDOFF'].includes(type)){
+    let endId='finish';while(nodeById(endId))endId+='x';
+    flow.nodes.push({id:endId,type:'END',text:'شكرًا لتواصلك معنا.'});next=endId;
+   }
+   next??=flow.startId;
+   if(origin&&!nodeById(oldTarget))oldTarget=['END','HANDOFF'].includes(type)?null:next;
    if(type==='BUTTONS'||type==='LIST')flow.nodes.push({id,type,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]});
    else if(type==='DELAY')flow.nodes.push({id,type,seconds:60,next});
    else if(type==='SUBFLOW')flow.nodes.push({id,type,subflowId:'',version:1,bindings:{},next});
@@ -474,11 +506,11 @@ export function initFlowBuilder({state,api,notify,execute}){
    else if(type==='LINK')flow.nodes.push({id,type,text:'اعرف التفاصيل من الرابط',url:'https://example.com',next});
    else if(type==='HANDOFF'||type==='END')flow.nodes.push({id,type,text:type==='HANDOFF'?'هحوّل كلامك لموظف يساعدك.':'شكرًا لتواصلك معانا.'});
    else flow.nodes.push({id,type:'TEXT',text:'اكتب رسالة للعميل هنا',next});
-   if(origin&&oldTarget){
+   if(origin){
      const inserted=flow.nodes.at(-1);
      if(anchor.key.startsWith('choice:')){const choice=origin.choices?.[Number(anchor.key.split(':')[1])];if(choice)choice.next=id;}
      else origin[anchor.key]=id;
-     if('next'in inserted)inserted.next=oldTarget;
+     if('next'in inserted)inserted.next=oldTarget||next;
      if('yes'in inserted){inserted.yes=oldTarget;inserted.no=oldTarget;}
      if(Array.isArray(inserted.choices))for(const choice of inserted.choices)choice.next=oldTarget;
      const pos=flow.layout?.[origin.id]||{x:80,y:80};flow.layout??={};flow.layout[id]={x:Math.min(8700,pos.x+365),y:Math.min(9000,pos.y+315)};
@@ -563,8 +595,9 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    bubble('اتصال دائري في خطوات تلقائية — راجع تصميم المسار');
  }
- function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();previewAdvance()}
+ function resetPreview(){previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();if(flow.nodes.length===1){bubble('ابدأ من علامة + لإضافة أول رسالة، ثم جرّب المحادثة هنا.');return;}previewAdvance()}
  async function load(){
+   document.body.classList.toggle('bot-studio',Boolean(state.botId));
    // Navigating to the catalog or company dashboard must not silently discard
    // a just-generated bot or changes to a linked subflow. Explicit save is required.
    if(dirty){
@@ -574,11 +607,12 @@ export function initFlowBuilder({state,api,notify,execute}){
    }
    editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
-   const cfg=await api('/flows');flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
-   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();resetPreview();
+   const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
+   selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');
+ const studioBack=button('← إدارة البوتات',()=>document.dispatchEvent(new Event('boat-open-bots')),'secondary');studioBack.classList.add('bot-studio-back');primaryBar.prepend(studioBack);
  const presetOptions=el('details',undefined,'builder-preset-disclosure');
  presetOptions.append(el('summary','القوالب الجاهزة (اختياري)'),$('builder-industry').closest('label'),$('builder-load-preset'));
  const guideDisclosure=el('details',undefined,'builder-guide-disclosure');
@@ -623,24 +657,63 @@ export function initFlowBuilder({state,api,notify,execute}){
    const oldNodes=new Map((remote?.nodes||[]).map(n=>[n.id,n])),newNodes=new Map((local?.nodes||[]).map(n=>[n.id,n]));
    const added=[...newNodes.keys()].filter(id=>!oldNodes.has(id));
    const removed=[...oldNodes.keys()].filter(id=>!newNodes.has(id));
-   const changed=[...newNodes.keys()].filter(id=>oldNodes.has(id)&&JSON.stringify(newNodes.get(id))!==JSON.stringify(oldNodes.get(id)));
+   const changed=[...newNodes.keys()].filter(id=>oldNodes.has(id)&&!sameDraftValue(newNodes.get(id),oldNodes.get(id)));
    return {added,removed,changed};
  };
  async function showDraftConflict(){
+   const requestScope={tenantId:state.tenantId,botId:state.botId,revision:draftRevision,local:JSON.stringify(flow)};
    conflictDialog.replaceChildren();
    conflictDialog.append(el('h3','فيه مسودة أحدث على الخادم'),el('p','تعديلاتك المحلية ما زالت موجودة في المحرر. لن نكتب فوق النسخة الأحدث بدون موافقتك. نزّل نسخة من شغلك قبل اتخاذ أي قرار.'));
    let current=null;
    try{
      current=await api('/flows');
+     if(state.tenantId!==requestScope.tenantId||state.botId!==requestScope.botId||draftRevision!==requestScope.revision||JSON.stringify(flow)!==requestScope.local)return;
      const diff=compareDrafts(flow,current.draft.definition);
      const text=['خطوات عندك ليست في الخادم: '+diff.added.length,'خطوات بالخادم ليست عندك: '+diff.removed.length,'خطوات مختلفة: '+diff.changed.length];
-     conflictDialog.append(el('p',text.join(' • ')),el('p','المراجعة دي مقارنة هيكلية فقط، وليست دمجًا آليًا.'));
+     conflictDialog.append(el('p',text.join(' • ')),el('p','يمكنك مراجعة التعديلات أدناه قبل جمعها في المحرر.'));
    }catch{conflictDialog.append(el('p','تعذرت قراءة أحدث نسخة؛ ما زالت تعديلاتك المحلية محفوظة داخل الصفحة.'))}
+   if(current&&mergeBase){
+     const choices={},local=deep(flow),base=deep(mergeBase),remote=deep(current.draft.definition);
+     const scope={tenantId:state.tenantId,botId:state.botId,revision:draftRevision,local:JSON.stringify(flow)};
+     const mergeHost=el('section',undefined,'builder-merge-review');
+     const feedback=el('p');feedback.setAttribute('role','status');
+     const fieldNames={text:'نص الرسالة',name:'اسم المسار',next:'الخطوة التالية',choices:'الاختيارات ومساراتها',field:'الإجابة المسجلة',type:'نوع الخطوة',yes:'مسار المطابقة',no:'المسار الآخر',value:'قيمة المقارنة',operator:'المقارنة',url:'الرابط',layout:'مواضع الخطوات',groups:'المجموعات',startId:'بداية المحادثة',caption:'التعليق',tag:'التصنيف'};
+     const describe=path=>{const node=path[0]==='nodes'?[...local.nodes,...remote.nodes].find(n=>n.id===path[1]):null;return (node?(types[node.type]||'خطوة')+' «'+String(node.text||node.id).slice(0,55)+'» — ':'')+(fieldNames[path.at(-1)]||'إعداد الخطوة')};
+     const valueText=value=>value===undefined?'محذوف':typeof value==='string'?value:JSON.stringify(value,null,2);
+     const renderMerge=()=>{
+       const result=mergeFlowDrafts(base,local,remote,choices);mergeHost.replaceChildren(el('h4','جمع التعديلات في مسودة للمراجعة'),el('p','التعديلات المستقلة تُجمع معًا. اختر النسخة المطلوبة لكل اختلاف؛ لن يُحفظ أو يُنشر شيء عند تطبيق المراجعة.'));
+       for(const item of result.conflicts){
+         const row=el('fieldset',undefined,'builder-merge-conflict');row.append(el('legend',describe(item.path)));
+         const select=el('select');select.setAttribute('aria-label','حل اختلاف '+describe(item.path));
+         for(const [value,title] of [['','اختر نسخة للاحتفاظ بها'],['local','تعديلاتي'],['remote','نسخة الخادم']]){const option=el('option',title);option.value=value;select.append(option)}
+         select.value=choices[item.key]||'';select.onchange=()=>{choices[item.key]=select.value;apply.disabled=mergeFlowDrafts(base,local,remote,choices).unresolved>0};
+         for(const [title,value] of [['تعديلاتي',item.local],['نسخة الخادم',item.remote]]){const details=el('details');details.append(el('summary',title),el('pre',valueText(value)));row.append(details)}
+         row.append(select);mergeHost.append(row);
+       }
+       if(!result.conflicts.length)mergeHost.append(el('p','لا توجد تعديلات متعارضة؛ يمكن جمع العملين دون استبدال أحدهما.'));
+       mergeHost.append(apply,feedback);apply.disabled=result.unresolved>0;
+     };
+     const apply=button('فحص وتطبيق المسودة المجمعة',()=>execute(async()=>{
+       if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||draftRevision!==scope.revision||JSON.stringify(flow)!==scope.local){feedback.textContent='تغيرت مساحة التحرير. أغلق المراجعة وحاول الحفظ مجددًا.';return}
+       const result=mergeFlowDrafts(base,local,remote,choices);if(result.unresolved)return;
+       apply.disabled=true;
+       try{
+         // Validate through the real compiler; broken cross-branch deletions never replace local work.
+         const inspected=await api('/flows/inspect-draft',{method:'POST',body:result.definition});
+         if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)return;
+         mergeBase=deep(remote);draftRevision=current.draft.draftRevision;published=current.published;
+         flow=deep(result.definition);selected=flow.nodes.some(n=>n.id===selected)?selected:flow.startId;selectedNodes=new Set([selected]);
+         history=[deep(local),deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();closeConflict();notify(inspected.publishable?'جُمعت التعديلات داخل المحرر. راجعها ثم احفظ المسودة؛ لم يتم النشر.':'جُمعت مسودة غير مكتملة داخل المحرر. أكمل الوصلات وافحصها قبل النشر.');
+       }catch(error){feedback.textContent='تعذر تطبيق الدمج: '+error.message+' — تعديلاتك المحلية لم تتغير.'}
+       finally{apply.disabled=false}
+     }),'primary');
+     renderMerge();conflictDialog.append(mergeHost);
+   }
    const actions=el('div',undefined,'builder-conflict-actions');
    actions.append(button('تنزيل نسختي JSON',backupLocal,'primary'));
    if(current)actions.append(button('تحميل نسخة الخادم بعد التأكيد',()=>{
      if(!confirm('سيتم استبدال التعديلات المحلية داخل المحرر. هل نزّلت نسخة احتياطية وتوافق على المتابعة؟'))return;
-     const cfg=current;flow=deep(cfg.draft.definition);published=cfg.published;
+     const cfg=current;flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;
      draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;selectedNodes=new Set([selected]);
      history=[deep(flow)];cursor=0;renderAll();resetPreview();closeConflict();notify('تم تحميل آخر مسودة من الخادم دون نشر.');
    }));
@@ -650,12 +723,31 @@ export function initFlowBuilder({state,api,notify,execute}){
  }
  const backupButton=button('تنزيل نسخة احتياطية',backupLocal);
  advancedButtons.append(backupButton);
+ const importFile=el('input');importFile.type='file';importFile.accept='.json,application/json';importFile.hidden=true;importFile.setAttribute('aria-label','ملف نسخة المسودة');
+ const importButton=button('استرجاع نسخة احتياطية',()=>{if(mainSnapshot){notify('ارجع للمسار الرئيسي قبل استرجاع نسخة','error');return}importFile.value='';importFile.click()});
+ advancedButtons.append(importButton,importFile);
+ importFile.onchange=()=>execute(async()=>{
+   const file=importFile.files?.[0];if(!file)return;
+   if(state.demo){notify('استرجاع الملفات يحتاج تسجيل الدخول وفحص الخادم','error');return}
+   if(file.size>1048576)throw new Error('حجم النسخة يجب ألا يزيد عن 1 MiB');
+   const scope={tenantId:state.tenantId,botId:state.botId,local:JSON.stringify(flow)};
+   importButton.disabled=true;
+   try{
+     let parsed;try{parsed=JSON.parse(await file.text())}catch{throw new Error('تعذر قراءة الملف؛ اختر نسخة JSON صحيحة')}
+     const definition=parsed?.definition||parsed;
+     const inspected=await api('/flows/inspect-draft',{method:'POST',body:definition});
+     if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)throw new Error('تغيرت مساحة التحرير أثناء الفحص. اختر الملف مجددًا.');
+     if(!confirm('استرجاع النسخة داخل المحرر سيستبدل تعديلاتك المحلية. لن تتغير مسودة الخادم أو النسخة المنشورة قبل الحفظ والنشر. هل تتابع؟'))return;
+     const before=deep(flow);flow=deep(inspected.definition);selected=flow.startId;selectedNodes=new Set([selected]);history=[before,deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();notify(inspected.publishable?'استُرجعت النسخة داخل المحرر بعد فحصها. راجعها ثم احفظ؛ لم يتم النشر.':'استُرجعت النسخة غير المكتملة. أكمل خطواتها ووصلاتها قبل النشر.');
+   }finally{importButton.disabled=false;importFile.value=''}
+ });
+
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
    if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
    try{
      const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});
-     draftRevision=r.draftRevision;flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
+     draftRevision=r.draftRevision;flow=deep(r.definition);mergeBase=deep(flow);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
    }catch(error){
      if(error.status===409){await showDraftConflict();return}
      throw error;
@@ -665,13 +757,18 @@ export function initFlowBuilder({state,api,notify,execute}){
    if(state.demo){notify('المعاينة لا تنشر على واتساب','error');return}
    if(mainSnapshot){notify('ارجع للمسار الرئيسي لنشره؛ المسارات الفرعية تُحفظ بإصدارات مستقلة','error');return;}
    if(dirty){notify('احفظ المسودة الأول قبل النشر','error');return}
-   if(!confirm('نشر الإصدار الحالي لعملاء الشركة على واتساب؟'))return;
-   published=await api('/flows/publish',{method:'POST'});renderStatus();notify('تم نشر إصدار المحادثة. واتساب الحقيقي يحتاج رقم Meta متصل.');
+   if(!confirm(state.botId?'نشر إصدار مستقل لهذا البوت؟ ربط القنوات يحتاج إعدادًا منفصلًا.':'نشر الإصدار الحالي للبوت الأساسي؟'))return;
+   published=await api('/flows/publish',{method:'POST'});renderStatus();notify('تم نشر إصدار البوت. لا يعني ذلك ربط قناة أو إرسال رسالة حقيقية.');
  });
  $('builder-preview-reset').onclick=resetPreview;
  $('builder-export').onclick=()=>{
    const data=JSON.stringify(flow,null,2);navigator.clipboard?.writeText(data).then(()=>notify('تم نسخ المسار JSON')).catch(()=>notify('انسخ المسار من شاشة التحرير','error'));
  };
+ window.addEventListener('keydown',event=>{
+   if(state.page!=='flow-builder'||document.querySelector('dialog[open]'))return;
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();$('builder-save').click()}
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
+ });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){closeConflict();conflictDialog.replaceChildren();guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

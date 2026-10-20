@@ -1,0 +1,24 @@
+{
+  "source_sha": "cbf76676874b9e386e4ce904d347cb9234617571",
+  "base_sha": "b02a3132751ed0b6acbbc5f1a928b83b04dcb572",
+  "unit": {
+    "passed": 117,
+    "failed": 0,
+    "skipped": 0
+  },
+  "postgresql": "16; isolated fixtures; non-owner/non-BYPASSRLS runtime",
+  "migrations": "0001-0032; fresh schema and migration privilege guard verified",
+  "database_tests": "PASS: legacy backfill, independent bots, immutable rollback, optimistic concurrency, routing/pinning, role/tenant denial, contact profiles, real pagination",
+  "browser": "PASS: full existing runtime/Chromium suite and extended independent-bot management/capture/handoff/profile journeys",
+  "viewport_widths": [
+    1366,
+    768,
+    390,
+    320
+  ],
+  "zoom": "683px at 2x density equivalent tested; native browser zoom not certified",
+  "backup_restore": "92-table full row fingerprints matched at disposable snapshot",
+  "draft_pr": "NOT_CREATED: GitHub API proxy Forbidden",
+  "remote_ci": "UNVERIFIED",
+  "release": "PARTIAL; no merge, Railway deployment, real provider activation or real customer messages"
+}

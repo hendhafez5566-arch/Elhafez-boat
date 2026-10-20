@@ -4,6 +4,7 @@ import {initInsights} from '../apps/web/public/insights-ui.js';
 
 function node(tag,text='',className=''){
  return {tag,textContent:text??'',className,style:{},children:[],
+  querySelector(selector){return this.children.find(n=>'.'+n.className===selector)},
   append(...items){this.children.push(...items)},
   setAttribute(name,value){(this.attributes??={})[name]=value},
   replaceChildren(...items){this.children=items}};

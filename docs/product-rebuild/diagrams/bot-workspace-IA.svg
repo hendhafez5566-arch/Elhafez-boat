@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1260" height="720" viewBox="0 0 1260 720">
+<title>Benchmark-informed IA diagram, not a screenshot of BotSailor or Elhafez Boat</title>
+<rect width="1260" height="720" rx="22" fill="#eef3f9"/>
+<rect x="20" y="18" width="1220" height="66" rx="14" fill="#fff" stroke="#dbe1ed"/>
+<text x="52" y="60" font-family="Arial,sans-serif" font-weight="bold" font-size="25" fill="#302e57">Elhafez Boat — proposed Arabic-first bot workspace</text>
+<rect x="20" y="98" width="225" height="594" rx="16" fill="#fff" stroke="#dce1ed"/>
+<text x="43" y="135" font-size="20" font-family="Arial,sans-serif" font-weight="bold" fill="#5643b1">Workspace navigation</text>
+<g font-size="19" font-family="Arial,sans-serif" fill="#39415d">
+<text x="45" y="200">Dashboard</text><text x="45" y="249">Shared Inbox</text>
+<rect x="32" y="266" width="201" height="46" rx="10" fill="#f0edff"/><text x="45" y="295" fill="#5445b7" font-weight="bold">Bot Manager</text>
+<text x="45" y="362">Contacts</text><text x="45" y="414">Campaigns</text><text x="45" y="466">Connect Channels</text><text x="45" y="518">Settings and usage</text>
+</g>
+<rect x="259" y="98" width="275" height="594" rx="16" fill="#fff" stroke="#dce1ed"/>
+<text x="278" y="136" font-size="20" font-family="Arial,sans-serif" font-weight="bold" fill="#302e57">Bots / connected accounts</text>
+<rect x="275" y="164" width="241" height="45" rx="10" fill="#f5f7fb" stroke="#dce1ed"/><text x="292" y="193" font-family="Arial" font-size="17" fill="#687389">Search bots…</text>
+<rect x="275" y="236" width="241" height="104" rx="12" fill="#efedff" stroke="#887dec"/><text x="292" y="273" font-family="Arial" font-size="21" fill="#4337a3">Bot A — draft</text><text x="292" y="313" font-size="16" font-family="Arial" fill="#647184">WhatsApp (unconnected)</text>
+<rect x="275" y="353" width="241" height="105" rx="12" fill="#f8f9fc" stroke="#e0e4ef"/><text x="292" y="391" font-family="Arial" font-size="21" fill="#39415d">Bot B — published</text><text x="292" y="431" font-family="Arial" font-size="16" fill="#647184">Website widget</text>
+<rect x="548" y="98" width="692" height="594" rx="16" fill="#fff" stroke="#dce1ed"/>
+<text x="572" y="141" font-size="25" font-family="Arial" font-weight="bold" fill="#302e57">Selected bot: Bot A</text>
+<rect x="1052" y="113" width="158" height="45" rx="11" fill="#5f4dd9"/><text x="1080" y="142" font-size="17" font-family="Arial" fill="white">Test draft</text>
+<g font-family="Arial" font-size="17" fill="#56607b">
+<text x="569" y="213">Automation</text><text x="696" y="213">Data Capture</text><text x="835" y="213">AI</text><text x="912" y="213">Engagement</text><text x="1050" y="213">Commerce</text>
+</g><rect x="569" y="231" width="141" height="4" fill="#6652dd"/>
+<rect x="570" y="266" width="639" height="205" rx="16" fill="#f7f9fd" stroke="#e0e5ee"/>
+<text x="596" y="314" font-size="22" font-family="Arial" font-weight="bold" fill="#37405f">Automations and flows for this bot only</text>
+<rect x="590" y="340" width="575" height="58" rx="11" fill="#fff" stroke="#d4dae7"/>
+<text x="613" y="375" font-size="19" font-family="Arial" fill="#37405f">Greeting flow — edit, preview, versions</text>
+<rect x="570" y="489" width="639" height="132" rx="15" fill="#eefaf4" stroke="#c4e6d4"/>
+<text x="596" y="532" font-size="20" font-family="Arial" font-weight="bold" fill="#176b50">Independence is a DB/API contract</text>
+<text x="596" y="571" font-size="18" font-family="Arial" fill="#176b50">tenant_id + bot_id, migration, channel routing and RBAC</text>
+<text x="25" y="709" font-size="14" font-family="Arial" fill="#65728b">Original schematic derived from user-provided visual benchmarks; NOT a vendor screenshot or an implemented feature.</text>
+</svg>

@@ -1,3 +1,7 @@
+import {workspaceSummary,completeWorkspaceSetup} from './workspace-setup.js';
+import {prepareBotTemplate,botTemplates,botTemplate} from './bot-templates.js';
+import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
+import {botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
@@ -9,14 +13,14 @@ import {listConnectors,saveConnector,beginConnectorOAuth,finishConnectorOAuth,co
 import {listSocialAccounts,connectSocial,disableSocial,receiveTelegram,receiveMetaSocial} from './social.js';
 import {listCommentRules,saveCommentRule,listCommentCandidates,decideComment,receiveMetaComments} from './comment-automation.js';
 import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
-import {listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
+import {reviewCampaign,listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
 import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages} from './website.js';
-import {listMedia,uploadMedia,deleteMedia,publicMedia} from './media.js';
+import {listMedia,uploadMedia,deleteMedia,publicMedia,privateMedia} from './media.js';
 import {listTriggers,createTrigger,deleteTrigger} from './triggers.js';
 import {usageSummary} from './usage.js';
 import {authenticateAccessKey,listAccessKeys,createAccessKey,revokeAccessKey} from './access-keys.js';
-import {listIntegrations,createIntegration,updateIntegration} from './integrations.js';
+import {inspectIntegration,listIntegrations,createIntegration,updateIntegration} from './integrations.js';
 import {savedReplies,createSavedReply,deleteSavedReply,updateSavedReply,inboxNote} from './inbox.js';
 import {aiSettings,saveAiSettings,previewAgent} from './ai.js';
 import {executeFlow} from './flow-service.js';
@@ -24,12 +28,12 @@ import {validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import {analyticsOverview} from './analytics.js';
-import { listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
+import { bulkLeadStage,leadProfile,leadPage,listLeads, leadSummary, updateLeadStage, listLeadTasks, addLeadTask, completeLeadTask, assignLead } from './chatbot-leads.js';
 import { listTemplates, registerApprovedTemplate, recordMarketingConsent, sendApprovedTemplate } from './templates.js';
 import { listKnowledge, createKnowledge, updateKnowledgeDraft, publishKnowledge } from './knowledge.js';
 import { verifyWebhookSignature, verifyChallenge, handleVerifiedWebhook, diagnoseWhatsApp, connectWhatsApp, whatsappConnection, disconnectWhatsApp, whatsappInbox, whatsappThread, setWhatsAppHandoff, replyWhatsApp, optOutWhatsApp } from './whatsapp.js';
 import { createTeamInvite, listTeamInvitations, revokeTeamInvite, updateTeamRole, acceptTeamInvite } from './team.js';
-import { platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, platformUsageLimits, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
+import { platformEvents, platformLogin, platformAuth, platformLogout, platformTenants, platformPlans, platformUsageLimits, createTenant, updateSubscription, acceptFirstOwner } from './platform.js';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
@@ -111,6 +115,7 @@ const server=createServer(async(req,res)=>{
       if(req.method==='POST'&&pathname==='/api/v1/platform/auth/logout')return json(res,200,await platformLogout(req.headers.authorization));
       if(req.method==='GET'&&pathname==='/api/v1/platform/tenants')return json(res,200,await platformTenants(platformOwnerId));
       if(req.method==='POST'&&pathname==='/api/v1/platform/tenants')return json(res,201,await createTenant(platformOwnerId,await body(req)));
+      if(req.method==='GET'&&pathname==='/api/v1/platform/events')return json(res,200,await platformEvents(platformOwnerId));
       if(req.method==='GET'&&pathname==='/api/v1/platform/plans')return json(res,200,await platformPlans(platformOwnerId));
       const limits=/^\/api\/v1\/platform\/tenants\/([^/]+)\/usage-limits$/.exec(pathname);
       if(req.method==='PUT'&&limits)return json(res,200,await platformUsageLimits(platformOwnerId,limits[1],await body(req)));
@@ -139,6 +144,31 @@ const server=createServer(async(req,res)=>{
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
     const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    if(pathname==='/api/v1/bots/templates/preview'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,prepareBotTemplate(await body(req)));}
+    if(pathname==='/api/v1/bots/templates'&&req.method==='GET')return json(res,200,botTemplates.map(t=>({...t,definition:botTemplate(t.id,t.name)})));
+    if(pathname==='/api/v1/bots'&&req.method==='GET')return json(res,200,await run(tx=>listBots(tx,actor)));
+    if(pathname==='/api/v1/bots'&&req.method==='POST')return json(res,201,await runBody((tx,input)=>createBot(tx,actor,input)));
+    const botTrigger=/^\/api\/v1\/bots\/([^/]+)\/triggers(?:\/([^/]+))?$/.exec(pathname);
+    if(botTrigger){
+      const id=botTrigger[1];
+      if(req.method==='GET'&&!botTrigger[2])return json(res,200,await run(async tx=>listTriggers(tx,actor,await botScope(tx,actor,id))));
+      if(req.method==='POST'&&!botTrigger[2])return json(res,201,await runBody(async(tx,input)=>createTrigger(tx,actor,input,await botScope(tx,actor,id,true))));
+      if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
+    }
+    const botStats=/^\/api\/v1\/bots\/([^/]+)\/insights$/.exec(pathname);
+    if(botStats&&req.method==='GET')return json(res,200,await run(tx=>botInsights(tx,actor,botStats[1])));
+    const botChannel=/^\/api\/v1\/bots\/([^/]+)\/routes$/.exec(pathname);
+    if(botChannel&&req.method==='GET')return json(res,200,await run(tx=>getBotRoutes(tx,actor,botChannel[1])));
+    if(botChannel&&req.method==='DELETE')return json(res,200,await runBody((tx,input)=>unbindBotRoute(tx,actor,botChannel[1],input)));
+    if(botChannel&&req.method==='POST')return json(res,200,await runBody((tx,input)=>bindBotRoute(tx,actor,botChannel[1],input)));
+    const botRoute=/^\/api\/v1\/bots\/([^/]+)(?:\/flows(?:\/(draft|publish|versions)(?:\/([0-9]+)\/rollback)?)?)?$/.exec(pathname);
+    if(botRoute){
+      const id=botRoute[1],op=botRoute[3]?'rollback:'+botRoute[3]:botRoute[2]||'get';
+      if(req.method==='PATCH'&&!pathname.includes('/flows'))return json(res,200,await runBody((tx,input)=>updateBot(tx,actor,id,input)));
+      if(req.method==='GET'&&pathname.includes('/flows')&&['get','versions'].includes(op))return json(res,200,await run(tx=>botFlow(tx,actor,id,op)));
+      if(req.method==='PUT'&&op==='draft')return json(res,200,await runBody((tx,input)=>botFlow(tx,actor,id,op,input)));
+      if(req.method==='POST'&&(op==='publish'||op.startsWith('rollback:')))return json(res,200,await run(tx=>botFlow(tx,actor,id,op)));
+    }
     if(req.method==='GET'&&pathname==='/api/v1/flows/subflows')return json(res,200,await run(tx=>listSubflows(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/flows/subflows')return json(res,201,await runBody((tx,input)=>saveSubflow(tx,actor,input)));
     if(req.method==='GET'&&pathname==='/api/v1/privacy/settings')return json(res,200,await run(tx=>privacySettings(tx,actor)));
@@ -197,8 +227,15 @@ const server=createServer(async(req,res)=>{
     if(req.method==='GET'&&pathname==='/api/v1/runtime/jobs')return json(res,200,await run(tx=>runtimeJobs(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/campaigns')return json(res,200,await run(tx=>listCampaigns(tx,actor)));
     if(req.method==='POST'&&pathname==='/api/v1/campaigns')return json(res,201,await runBody((tx,input)=>createCampaign(tx,actor,input)));
+    const campaignReview=/^\/api\/v1\/campaigns\/([^/]+)\/review$/.exec(pathname);
+    if(campaignReview&&req.method==='GET')return json(res,200,await run(tx=>reviewCampaign(tx,actor,campaignReview[1])));
     const campaignAction=/^\/api\/v1\/campaigns\/([^/]+)\/(launch|cancel)$/.exec(pathname);
     if(req.method==='POST'&&campaignAction)return json(res,200,await run<unknown>(tx=>campaignAction[2]==='launch'?launchCampaign(tx,actor,campaignAction[1]):cancelCampaign(tx,actor,campaignAction[1])));
+    const mediaContent=/^\/api\/v1\/media\/([^/]+)\/content$/.exec(pathname);
+    if(req.method==='GET'&&mediaContent){const asset=await run(tx=>privateMedia(tx,actor,mediaContent[1]));res.writeHead(200,{'content-type':asset.mime,'cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; sandbox",'content-disposition':'attachment'});return res.end(asset.content)}
+    if(req.method==='GET'&&pathname==='/api/v1/workspace')return json(res,200,await run(tx=>workspaceSummary(tx,actor)));
+    if(req.method==='POST'&&pathname==='/api/v1/workspace/setup')return json(res,201,await runBody((tx,input)=>completeWorkspaceSetup(tx,actor,input)));
+    if(req.method==='POST'&&pathname==='/api/v1/integrations/inspect'){const input=await body(req);return json(res,200,inspectIntegration(actor,input))}
     if(req.method==='GET'&&pathname==='/api/v1/usage')return json(res,200,await run(tx=>usageSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/widget/settings')return json(res,200,await run(tx=>widgetSettings(tx,actor)));
     if(req.method==='PUT'&&pathname==='/api/v1/widget/settings')return json(res,200,await runBody((tx,input)=>saveWidgetSettings(tx,actor,input)));
@@ -239,6 +276,11 @@ const server=createServer(async(req,res)=>{
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
       const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
     }));
+    if(req.method==='POST'&&pathname==='/api/v1/flows/inspect-draft'){
+      allow(actor,['OWNER','MANAGER']);const input=await body(req);
+      let definition;try{definition=validateFlow(input,{draft:true})}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid draft')}
+      return json(res,200,await run(async tx=>{try{await compileSubflows(tx,actor.tenantId,validateFlow(definition));return {definition,publishable:true,issues:[]}}catch(error){return {definition,publishable:false,issues:[error instanceof Error?error.message:'Draft needs completion']}}}));
+    }
     if(req.method==='POST'&&pathname==='/api/v1/flows/validate'){
       allow(actor,['OWNER','MANAGER']);
       const input=await body(req);try{await run(tx=>compileSubflows(tx,actor.tenantId,validateFlow(input)));return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
@@ -257,9 +299,13 @@ const server=createServer(async(req,res)=>{
     const rollback=/^\/api\/v1\/flows\/versions\/([0-9]+)\/rollback$/.exec(pathname);
     if(req.method==='POST'&&rollback)return json(res,200,await run(tx=>rollbackFlow(tx,actor,rollback[1])));
     if(req.method==='POST'&&pathname==='/api/v1/ai/agent/preview')return json(res,200,await runBody((tx,input)=>previewAgent(tx,actor,input)));
+    if(req.method==='GET'&&pathname==='/api/v1/leads/page')return json(res,200,await run(tx=>leadPage(tx,actor,new URL(req.url||'/','http://local').searchParams)));
      if(req.method==='GET'&&pathname==='/api/v1/leads')return json(res,200,await run(tx=>listLeads(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/leads/summary')return json(res,200,await run(tx=>leadSummary(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/analytics/overview'){const days=new URL(req.url||'/','http://local').searchParams.get('days')||'30';if(!['7','30','90'].includes(days))throw new HttpFailure(400,'Invalid reporting period');return json(res,200,await run(tx=>analyticsOverview(tx,actor,Number(days))));}
+    if(req.method==='POST'&&pathname==='/api/v1/leads/bulk-stage')return json(res,200,await runBody((tx,input)=>bulkLeadStage(tx,actor,input)));
+    const leadDetail=/^\/api\/v1\/leads\/([^/]+)\/profile$/.exec(pathname);
+    if(leadDetail&&req.method==='GET')return json(res,200,await run(tx=>leadProfile(tx,actor,leadDetail[1],Number(new URL(req.url||'/','http://local').searchParams.get('conversationPage')||1))));
     const leadAssignment=/^\/api\/v1\/leads\/([^/]+)\/assign$/.exec(pathname);
      if(req.method==='PATCH'&&leadAssignment)return json(res,200,await runBody((tx,input)=>assignLead(tx,actor,leadAssignment[1],input)));
      const leadStage=/^\/api\/v1\/leads\/([^/]+)\/stage$/.exec(pathname);

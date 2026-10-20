@@ -225,3 +225,8 @@ details{margin-top:14px}summary{cursor:pointer;font-weight:700}
 .crm-lead-more[open]{padding-bottom:16px}
 .crm-lead-more>button{margin-top:9px}
 .crm-lead-card>.primary{justify-self:start}
+
+/* Bot workspace: list-first, compact task controls, same responsive shell. */
+.bot-create-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-block:20px}.bot-create-form label{flex:1;min-width:160px}.bot-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:16px;margin-block:20px}.bot-card{min-width:0}.bot-card h3{overflow-wrap:anywhere}.bot-card-actions{display:flex;flex-wrap:wrap;gap:8px}.bot-card-actions button{min-height:44px}#bots>input{width:min(100%,440px)}
+
+.campaign-progress{display:flex;flex-wrap:wrap;gap:.5rem;list-style:none;padding:0;margin:0 0 1rem}.campaign-progress li{padding:.4rem .65rem;border:1px solid var(--border,#ddd);border-radius:.6rem;font-size:.85rem}.campaign-progress [aria-current=step]{background:#eee8ff;color:#45248b;font-weight:700}.campaign-wizard-panel{min-width:0}.campaign-wizard-panel[hidden]{display:none}.campaign-wizard-actions{display:flex;justify-content:space-between;gap:1rem;margin-top:1rem}.campaign-draft-summary{background:#f6f3ff;padding:1rem;border-radius:.75rem;overflow-wrap:anywhere}.campaign-draft-summary p{white-space:pre-wrap}

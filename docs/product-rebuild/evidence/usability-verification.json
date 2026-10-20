@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "a3b6418",
+  "finalExecutableCommit": "8f0ad62",
+  "date": "2026-10-19",
+  "unit": {
+    "passed": 118,
+    "failed": 0,
+    "skipped": 0
+  },
+  "postgresBotSecurityAndUtcBoundary": "PASS",
+  "postgresRlsIntegration": "PASS",
+  "fullRuntimeAndBothChromiumSuites": "PASS on a3b6418 application source with strengthened browser visibility assertions",
+  "finalTargetedRuntimeAndChromium": "PASS on 8f0ad62",
+  "broadPageVisits": 81,
+  "broadVisitScope": "page loading and named controls only; not complete functional acceptance",
+  "desktopAndMobileScreenshots": [
+    "wizard-inbox-closed-1366.png",
+    "wizard-campaign-320.png",
+    "wizard-dashboard-320.png",
+    "wizard-campaign-1366.png",
+    "wizard-inbox-closed-320.png",
+    "wizard-analytics-320.png",
+    "wizard-campaign-390.png",
+    "wizard-dashboard-1366.png",
+    "wizard-analytics-1366.png",
+    "wizard-condition-1366.png",
+    "wizard-condition-320.png"
+  ],
+  "remoteCI": "UNVERIFIED: GitHub API Forbidden",
+  "realProviderOperations": false,
+  "mergeOrDeployment": false
+}

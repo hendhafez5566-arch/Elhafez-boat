@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-20",
+  "executableCommit": "b592b7b2d12b178b1e093defc03501d581077540",
+  "unit": {
+    "pass": 127,
+    "fail": 0,
+    "skip": 0
+  },
+  "fullRuntimeAndBothChromiumSuites": "PASS, exit 0",
+  "browserConflict": "external authenticated API update while local browser edits remain; explicit overlap decision; independent field retained; compiler validation; no server write until save; published remains null",
+  "browserRestore": "real Chromium file selection, malformed JSON rejected, valid wrapped backup checked by compiler, current server revision retained, undo/redo and explicit save",
+  "viewports": [
+    1366,
+    320
+  ],
+  "broadPageVisits": 81,
+  "broadVisitsScope": "loading/named controls only, not full screen completion",
+  "providerTransport": "offline",
+  "realProviderOperations": false,
+  "remoteCI": "UNVERIFIED: GitHub API Forbidden"
+}

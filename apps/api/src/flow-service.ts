@@ -1,3 +1,5 @@
+import {flowStorage} from './flow-storage.js';
+import {resolveConversationBot} from './bot-routing.js';
 import {createHash} from 'node:crypto';
 import {compileSubflows} from './subflows.js';
 import {enqueueConnector} from './connectors.js';
@@ -10,41 +12,38 @@ import {allow,HttpFailure,type Actor,type SqlClient} from './services.js';
 import {exampleFlow,validateFlow,advanceFlow,initialFlowState,type FlowDefinition,type FlowMessage} from './flow-engine.js';
 import {registerInterest,readyForAgent} from './chatbot-leads.js';
 
-export async function getFlowConfig(db:SqlClient,actor:Actor){
+export async function getFlowConfig(db:SqlClient,actor:Actor,botId?:string){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
- const [draft,live]=await Promise.all([
-  db.query('SELECT definition,draft_revision AS "draftRevision",updated_at AS "updatedAt" FROM chatbot_flow_drafts WHERE tenant_id=$1',[actor.tenantId]),
-  db.query('SELECT version,coalesce(source_definition,definition) AS definition,published_at AS "publishedAt" FROM chatbot_flow_versions WHERE tenant_id=$1 ORDER BY version DESC LIMIT 1',[actor.tenantId])
- ]);
+ const store=flowStorage(db,actor,botId);
+ const [draft,live]=await Promise.all([store.draft(),store.published()]);
  return {draft:draft.rows[0]??{definition:exampleFlow(),draftRevision:0},published:live.rows[0]??null};
 }
-export async function saveFlowDraft(db:SqlClient,actor:Actor,input:unknown,internal=false){
+export async function saveFlowDraft(db:SqlClient,actor:Actor,input:unknown,internal=false,botId?:string){
  allow(actor,['OWNER','MANAGER']);
  let definition:FlowDefinition;
  try{definition=validateFlow(input,{draft:true})}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
- const current=await db.query('SELECT draft_revision FROM chatbot_flow_drafts WHERE tenant_id=$1 FOR UPDATE',[actor.tenantId]);
+ const store=flowStorage(db,actor,botId);
+ const current=await store.draft(true);
  const expected=(input as {expectedRevision?:unknown}).expectedRevision;
- if(!internal&&(!Number.isInteger(expected)||Number(expected)!==Number(current.rows[0]?.draft_revision||0)))throw new HttpFailure(409,'Draft changed in another session; reload before saving');
- const saved=await db.query(`INSERT INTO chatbot_flow_drafts(tenant_id,definition,updated_by)
- VALUES($1,$2::jsonb,$3) ON CONFLICT(tenant_id) DO UPDATE
- SET definition=EXCLUDED.definition,draft_revision=chatbot_flow_drafts.draft_revision+1,
- updated_by=EXCLUDED.updated_by,updated_at=now()
- RETURNING draft_revision AS "draftRevision"`,[actor.tenantId,JSON.stringify(definition),actor.userId]);
- await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_DRAFT_SAVED','bot_flow','default')`,[actor.tenantId,actor.userId]);
+ if(!internal&&(!Number.isInteger(expected)||Number(expected)!==Number(current.rows[0]?.draftRevision||0)))throw new HttpFailure(409,'Draft changed in another session; reload before saving');
+ const saved=await store.save(definition);
+ if(!botId)await db.query(`INSERT INTO chatbot_bots(tenant_id,id,name,legacy_default,created_by) VALUES($1,$1,'البوت الأساسي',true,$2) ON CONFLICT DO NOTHING`,[actor.tenantId,actor.userId]);
+ await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_DRAFT_SAVED','bot_flow',$3)`,[actor.tenantId,actor.userId,botId??'default']);
  return {draftRevision:saved.rows[0].draftRevision,definition};
 }
-export async function publishFlowDraft(db:SqlClient,actor:Actor){
+export async function publishFlowDraft(db:SqlClient,actor:Actor,botId?:string){
  allow(actor,['OWNER','MANAGER']);
  // Tenant row lock serializes competing publishes even across different workers.
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
- const draft=await db.query('SELECT definition,draft_revision FROM chatbot_flow_drafts WHERE tenant_id=$1 FOR UPDATE',[actor.tenantId]);
+ const store=flowStorage(db,actor,botId);
+ const draft=await store.draft(true);
  if(draft.rowCount!==1)throw new HttpFailure(409,'Save a draft before publishing');
  let definition:FlowDefinition;
  try{definition=validateFlow(draft.rows[0].definition)}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
  const sourceDefinition=definition;
  definition=await compileSubflows(db,actor.tenantId,definition);
- const triggers=await db.query('SELECT target_node FROM chatbot_triggers WHERE tenant_id=$1 AND enabled=true',[actor.tenantId]);
+ const triggers=await db.query(`SELECT target_node FROM ${botId?'chatbot_bot_triggers':'chatbot_triggers'} WHERE tenant_id=$1${botId?' AND bot_id=$2':''} AND enabled=true`,botId?[actor.tenantId,botId]:[actor.tenantId]);
  if(triggers.rows.some(t=>!definition.nodes.some(n=>n.id===t.target_node)))throw new HttpFailure(400,'An active trigger references a removed node; update triggers before publishing');
  for(const node of definition.nodes)if(node.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,node.url,node.mediaKind);
  for(const node of definition.nodes)if(node.type==='CONNECTOR'){const c=await db.query('SELECT 1 FROM chatbot_connectors WHERE tenant_id=$1 AND id=$2 AND enabled=true AND credentials_encrypted IS NOT NULL',[actor.tenantId,node.connectorId]);if(!c.rowCount)throw new HttpFailure(400,'Flow connector is not connected');}
@@ -53,23 +52,27 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor){
   if(!integration.rowCount)throw new HttpFailure(400,'Flow references an unavailable integration');
   webhookURL(String(integration.rows[0].url));
  }
- const saved=await db.query(`INSERT INTO chatbot_flow_versions(tenant_id,version,definition,draft_revision,published_by,source_definition)
- SELECT $1,COALESCE(MAX(version),0)+1,$2::jsonb,$3,$4,$5::jsonb FROM chatbot_flow_versions WHERE tenant_id=$1
- RETURNING version,published_at AS "publishedAt"`,[actor.tenantId,JSON.stringify(definition),draft.rows[0].draft_revision,actor.userId,JSON.stringify(sourceDefinition)]);
- await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_PUBLISHED','bot_flow',$3)`,[actor.tenantId,actor.userId,String(saved.rows[0].version)]);
+ const saved=await store.publish(definition,draft.rows[0].draftRevision,sourceDefinition);
+ await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_PUBLISHED','bot_flow',$3)`,[actor.tenantId,actor.userId,(botId?botId+':':'')+String(saved.rows[0].version)]);
  return {version:saved.rows[0].version,publishedAt:saved.rows[0].publishedAt};
 }
-export async function listFlowVersions(db:SqlClient,actor:Actor){
+export async function listFlowVersions(db:SqlClient,actor:Actor,botId?:string){
  allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);
- return (await db.query('SELECT version,published_at AS "publishedAt" FROM chatbot_flow_versions WHERE tenant_id=$1 ORDER BY version DESC LIMIT 30',[actor.tenantId])).rows;
+ return (await flowStorage(db,actor,botId).versions()).rows;
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
 export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;resume?:{version:number;nodeId:string}}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
- const session=await db.query(`SELECT version,node_id,answers,tags,runtime_nodes FROM chatbot_flow_sessions
+ const session=await db.query(`SELECT version,node_id,answers,tags,runtime_nodes,bot_id FROM chatbot_flow_sessions
  WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId]);
  const previous=session.rows[0];
+ const bot=previous&&!previous.bot_id?null:await resolveConversationBot(db,tenantId,conversationId,previous?.bot_id);
+ const botId=bot?.id??null;
+ const botVersions=bot&&!bot.legacy_default;
+ const readVersion=async(version?:number)=>db.query(
+  `SELECT version,definition FROM ${botVersions?'chatbot_bot_versions':'chatbot_flow_versions'} WHERE tenant_id=$1${botVersions?' AND bot_id=$2':''}${version===undefined?' ORDER BY version DESC LIMIT 1':` AND version=$${botVersions?3:2}`}`,
+  [tenantId,...(botVersions?[botId]:[]),...(version===undefined?[]:[version])]);
  // Customer can request an employee at ANY point, even mid-question.
  if(actionId==='handoff'||/^(موظف|عايز موظف|عاوز موظف|خدمة العملاء|كلموني|عايز حد|عاوز حد|human|agent)$/i.test(body.trim())){
    const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
@@ -80,16 +83,16 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
    return {payloads:[{messaging_product:'whatsapp',type:'text',text:{preview_url:false,
      body:'تم تحويل محادثتك للموظف المختص. هيكمل معاك كل التفاصيل.'}}],handedOff:true};
  }
- const triggered=!ctx.resume&&(!previous||body)?await matchTrigger(db,tenantId,body,!previous):undefined;
+ const triggered=!ctx.resume&&(!previous||body)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined):undefined;
  const restart=Boolean(triggered)||/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
  let version=Number(previous?.version??0),flow:FlowDefinition;
  if(!previous||restart){
-  const current=await db.query('SELECT version,definition FROM chatbot_flow_versions WHERE tenant_id=$1 ORDER BY version DESC LIMIT 1',[tenantId]);
+  const current=await readVersion();
   version=current.rowCount?Number(current.rows[0].version):0;
   flow=current.rowCount?validateFlow(current.rows[0].definition,{runtime:true}):unpublishedFlow();
  } else if(version===0){flow=unpublishedFlow()}
  else{
-  const pinned=await db.query('SELECT definition FROM chatbot_flow_versions WHERE tenant_id=$1 AND version=$2',[tenantId,version]);
+  const pinned=await readVersion(version);
   if(pinned.rowCount!==1)throw new HttpFailure(409,'Published flow version unavailable');
   flow=validateFlow(pinned.rows[0].definition,{runtime:true});
  }
@@ -117,11 +120,11 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  const inbound=actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body};
  const result=await executeFlow(db,tenantId,flow,state,ctx.resume||triggered?undefined:inbound,false,{contactId,conversationId});
  flow=result.flow;
- await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,runtime_nodes,updated_at)
- VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,now())
+ await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,runtime_nodes,updated_at,bot_id)
+ VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,now(),$8)
  ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=EXCLUDED.version,node_id=EXCLUDED.node_id,
- answers=EXCLUDED.answers,tags=EXCLUDED.tags,runtime_nodes=EXCLUDED.runtime_nodes,updated_at=now()`,[
-   tenantId,conversationId,version,result.state.at,JSON.stringify(result.state.answers),JSON.stringify(result.state.tags),JSON.stringify(flow.nodes.filter(n=>n.id.startsWith('@catalog:')||result.flow.nodes.find(x=>x.id===n.id)?.type==='LIST'))
+ answers=EXCLUDED.answers,tags=EXCLUDED.tags,runtime_nodes=EXCLUDED.runtime_nodes,bot_id=EXCLUDED.bot_id,updated_at=now()`,[
+   tenantId,conversationId,version,result.state.at,JSON.stringify(result.state.answers),JSON.stringify(result.state.tags),JSON.stringify(flow.nodes.filter(n=>n.id.startsWith('@catalog:')||result.flow.nodes.find(x=>x.id===n.id)?.type==='LIST')),botId
  ]);
  if(result.waiting){
   await db.query(`INSERT INTO chatbot_delay_jobs(tenant_id,conversation_id,version,node_id,due_at) VALUES($1,$2,$3,$4,now()+($5::int*interval '1 second')) ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=$3,node_id=$4,due_at=EXCLUDED.due_at,status='PENDING',error=NULL`,[tenantId,conversationId,version,result.state.at,result.waiting.seconds]);
@@ -154,14 +157,14 @@ export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:F
  });
 }
 /** Rollback creates a new immutable live revision; existing sessions remain pinned. */
-export async function rollbackFlow(db:SqlClient,actor:Actor,version:string){
+export async function rollbackFlow(db:SqlClient,actor:Actor,version:string,botId?:string){
  allow(actor,['OWNER','MANAGER']);
  if(!/^[1-9][0-9]{0,8}$/.test(version))throw new HttpFailure(400,'Invalid version');
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
- const r=await db.query('SELECT coalesce(source_definition,definition) AS definition FROM chatbot_flow_versions WHERE tenant_id=$1 AND version=$2',[actor.tenantId,Number(version)]);
+ const r=await flowStorage(db,actor,botId).published(Number(version));
  if(r.rowCount!==1)throw new HttpFailure(404,'Version not found');
- await saveFlowDraft(db,actor,r.rows[0].definition,true);
- return publishFlowDraft(db,actor);
+ await saveFlowDraft(db,actor,r.rows[0].definition,true,botId);
+ return publishFlowDraft(db,actor,botId);
 }
 
 /** Resolve approved dynamic content without changing immutable flow definitions. */

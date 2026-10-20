@@ -6,7 +6,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
   const edges=graphOutputs;
   let zoom=1,pan={x:36,y:36},source=null,active=null;
   host.classList.add('flow-canvas');host.dir='ltr';host.setAttribute('role','region');
-  host.setAttribute('aria-label','مساحة رسم المحادثة؛ اسحب بطاقات الخطوات أو استخدم أزرار التكبير والتحريك');
+  host.setAttribute('aria-label','مساحة رسم المحادثة؛ Alt مع الأسهم لتحريك الخطوة المحددة؛ Shift يزيد المسافة. استخدم Tab لاختيار المخارج');
   const stage=document.createElement('div');stage.className='flow-stage';host.append(stage);
   const svg=document.createElementNS(ns,'svg');svg.classList.add('flow-lines');stage.append(svg);
   const transform=()=>{stage.style.transform=`translate(${pan.x}px,${pan.y}px) scale(${zoom})`};
@@ -46,7 +46,13 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
       card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(titles[n.type]||'محادثة'));
       const chooseCard=()=>{active=n.id;select(n.id,false);highlight(n.id)};
       card.addEventListener('click',event=>{if(!event.target.closest('button'))chooseCard()});
-      card.addEventListener('keydown',event=>{if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();chooseCard()}});
+      card.addEventListener('keydown',event=>{
+        if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();chooseCard()}
+        if(event.altKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)&&!event.target.matches('input,textarea,select')){
+          event.preventDefault();const distance=event.shiftKey?80:20,delta={ArrowLeft:[-distance,0],ArrowRight:[distance,0],ArrowUp:[0,-distance],ArrowDown:[0,distance]}[event.key];
+          f.layout[n.id]={x:Math.max(0,Math.min(9600,p.x+delta[0])),y:Math.max(0,Math.min(9600,p.y+delta[1]))};active=n.id;changed();draw();highlight(n.id);stage.querySelector('[data-node-id="'+n.id+'"]')?.focus({preventScroll:true});
+        }
+      });
       const head=mk('div',undefined,'canvas-node-head'),drag=btn(titles[n.type]||'خطوة','canvas-title',e=>{active=n.id;select(n.id,e.shiftKey);highlight(n.id)});
       drag.setAttribute('aria-label','اختيار وتحريك '+(titles[n.type]||'خطوة'));
       head.append(mk('span',undefined,'canvas-kind-indicator'),drag);card.append(head);
@@ -146,6 +152,11 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
       if(endX-startX>=100){
         const mid=startX+(endX-startX)/2+Math.min(20,count*10);
         data=`M${startX},${startY} C${mid},${startY} ${mid},${endY} ${endX},${endY}`;
+      }else if(to.y>from.y+origin.offsetHeight+15){
+        // Forward vertical edges use the gap below their card, rather than looping above Start.
+        const lane=(from.y+origin.offsetHeight+to.y)/2;
+        const right=startX+45+slot*14,left=endX-35-count*12;
+        data=`M${startX},${startY} C${right},${startY} ${right},${lane} ${right},${lane} L${left},${lane} C${left},${lane} ${left},${endY} ${endX},${endY}`;
       }else{
         const lane=Math.max(25,Math.min(from.y,to.y)-75-slot*15-count*18);
         const excursion=Math.max(startX+55,endX+65);
@@ -157,13 +168,14 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter}){
     }
     transform();highlight(active);
   }
-  const zoomTo=v=>{zoom=Math.max(.3,Math.min(1.75,v));transform()};
+  const zoomTo=v=>{zoom=Math.max(.02,Math.min(1.75,v));transform()};
   function fit(){
     const f=getFlow(),points=Object.values(positionsFor(f));
     if(!points.length)return reset();
     const nodes=f.nodes,positions=positionsFor(f);
-    const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+nodeFootprint(n).width)),bottom=Math.max(...nodes.map(n=>positions[n.id].y+nodeFootprint(n).height));
-    const rect=host.getBoundingClientRect();zoom=Math.max(.3,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
+    const rendered=new Map([...stage.querySelectorAll('.canvas-node')].map(card=>[card.dataset.nodeId,card]));
+    const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+Math.max(rendered.get(n.id)?.offsetWidth||0,nodeFootprint(n).width))),bottom=Math.max(...nodes.map(n=>positions[n.id].y+Math.max(rendered.get(n.id)?.offsetHeight||0,nodeFootprint(n).height)));
+    const rect=host.getBoundingClientRect();zoom=Math.max(.02,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
     pan={x:(rect.width-(right-left)*zoom)/2-left*zoom,y:Math.max(25,(rect.height-(bottom-top)*zoom)/2-top*zoom)};transform();
   }
   function reset(){zoom=1;pan={x:36,y:36};transform()}

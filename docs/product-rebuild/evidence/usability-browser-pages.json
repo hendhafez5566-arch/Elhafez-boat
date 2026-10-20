@@ -1,0 +1,569 @@
+[
+  {
+    "page": "overview",
+    "device": "desktop",
+    "buttons": 6,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-inbox",
+    "device": "desktop",
+    "buttons": 12,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "bots",
+    "device": "desktop",
+    "buttons": 13,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "leads",
+    "device": "desktop",
+    "buttons": 14,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "catalog",
+    "device": "desktop",
+    "buttons": 8,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "overview",
+    "device": "desktop",
+    "buttons": 6,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-inbox",
+    "device": "desktop",
+    "buttons": 12,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "leads",
+    "device": "desktop",
+    "buttons": 14,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "bots",
+    "device": "desktop",
+    "buttons": 13,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "flow-builder",
+    "device": "desktop",
+    "buttons": 155,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "triggers",
+    "device": "desktop",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "campaigns",
+    "device": "desktop",
+    "buttons": 5,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "catalog",
+    "device": "desktop",
+    "buttons": 8,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "settings",
+    "device": "desktop",
+    "buttons": 3,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "media",
+    "device": "desktop",
+    "buttons": 2,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "templates",
+    "device": "desktop",
+    "buttons": 10,
+    "forms": 4,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "ai-settings",
+    "device": "desktop",
+    "buttons": 2,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "website",
+    "device": "desktop",
+    "buttons": 2,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-connect",
+    "device": "desktop",
+    "buttons": 4,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "channels",
+    "device": "desktop",
+    "buttons": 3,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "connectors",
+    "device": "desktop",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "comment-automation",
+    "device": "desktop",
+    "buttons": 1,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "integrations",
+    "device": "desktop",
+    "buttons": 2,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "analytics",
+    "device": "desktop",
+    "buttons": 0,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "team",
+    "device": "desktop",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "privacy",
+    "device": "desktop",
+    "buttons": 4,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "usage",
+    "device": "desktop",
+    "buttons": 2,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "overview",
+    "device": "tablet",
+    "buttons": 6,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-inbox",
+    "device": "tablet",
+    "buttons": 12,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "bots",
+    "device": "tablet",
+    "buttons": 13,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "leads",
+    "device": "tablet",
+    "buttons": 14,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "catalog",
+    "device": "tablet",
+    "buttons": 8,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "overview",
+    "device": "tablet",
+    "buttons": 6,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-inbox",
+    "device": "tablet",
+    "buttons": 12,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "leads",
+    "device": "tablet",
+    "buttons": 14,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "bots",
+    "device": "tablet",
+    "buttons": 13,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "flow-builder",
+    "device": "tablet",
+    "buttons": 155,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "triggers",
+    "device": "tablet",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "campaigns",
+    "device": "tablet",
+    "buttons": 5,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "catalog",
+    "device": "tablet",
+    "buttons": 8,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "settings",
+    "device": "tablet",
+    "buttons": 3,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "media",
+    "device": "tablet",
+    "buttons": 2,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "templates",
+    "device": "tablet",
+    "buttons": 10,
+    "forms": 4,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "ai-settings",
+    "device": "tablet",
+    "buttons": 2,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "website",
+    "device": "tablet",
+    "buttons": 2,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-connect",
+    "device": "tablet",
+    "buttons": 4,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "channels",
+    "device": "tablet",
+    "buttons": 3,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "connectors",
+    "device": "tablet",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "comment-automation",
+    "device": "tablet",
+    "buttons": 1,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "integrations",
+    "device": "tablet",
+    "buttons": 2,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "analytics",
+    "device": "tablet",
+    "buttons": 0,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "team",
+    "device": "tablet",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "privacy",
+    "device": "tablet",
+    "buttons": 4,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "usage",
+    "device": "tablet",
+    "buttons": 2,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "overview",
+    "device": "mobile",
+    "buttons": 6,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-inbox",
+    "device": "mobile",
+    "buttons": 12,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "bots",
+    "device": "mobile",
+    "buttons": 13,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "leads",
+    "device": "mobile",
+    "buttons": 14,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "catalog",
+    "device": "mobile",
+    "buttons": 8,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "overview",
+    "device": "mobile",
+    "buttons": 6,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-inbox",
+    "device": "mobile",
+    "buttons": 12,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "leads",
+    "device": "mobile",
+    "buttons": 14,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "bots",
+    "device": "mobile",
+    "buttons": 13,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "flow-builder",
+    "device": "mobile",
+    "buttons": 155,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "triggers",
+    "device": "mobile",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "campaigns",
+    "device": "mobile",
+    "buttons": 5,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "catalog",
+    "device": "mobile",
+    "buttons": 8,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "settings",
+    "device": "mobile",
+    "buttons": 3,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "media",
+    "device": "mobile",
+    "buttons": 2,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "templates",
+    "device": "mobile",
+    "buttons": 10,
+    "forms": 4,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "ai-settings",
+    "device": "mobile",
+    "buttons": 2,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "website",
+    "device": "mobile",
+    "buttons": 2,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "wa-connect",
+    "device": "mobile",
+    "buttons": 4,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "channels",
+    "device": "mobile",
+    "buttons": 3,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "connectors",
+    "device": "mobile",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "comment-automation",
+    "device": "mobile",
+    "buttons": 1,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "integrations",
+    "device": "mobile",
+    "buttons": 2,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "analytics",
+    "device": "mobile",
+    "buttons": 0,
+    "forms": 0,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "team",
+    "device": "mobile",
+    "buttons": 1,
+    "forms": 1,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "privacy",
+    "device": "mobile",
+    "buttons": 4,
+    "forms": 2,
+    "unnamedButtons": 0
+  },
+  {
+    "page": "usage",
+    "device": "mobile",
+    "buttons": 2,
+    "forms": 0,
+    "unnamedButtons": 0
+  }
+]

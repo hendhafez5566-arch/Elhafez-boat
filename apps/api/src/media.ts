@@ -24,8 +24,15 @@ export async function uploadMedia(db:SqlClient,actor:Actor,input:unknown){
  await db.query('INSERT INTO chatbot_media_routes(token_hash,tenant_id,media_id) VALUES($1,$2,$3)',[tokenDigest(token),actor.tenantId,r.rows[0].id]);return {...r.rows[0],url:null,scanStatus:'PENDING'};
 }
 export async function deleteMedia(db:SqlClient,actor:Actor,id:string){allow(actor,['OWNER','MANAGER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid media');
+ await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
  const r=await db.query("SELECT public_token FROM chatbot_media WHERE tenant_id=$1 AND id=$2 AND status='ACTIVE' FOR UPDATE",[actor.tenantId,id]);if(!r.rowCount)throw new HttpFailure(404,'Media not found');
- const used=await db.query('SELECT 1 FROM chatbot_flow_versions WHERE tenant_id=$1 AND definition::text LIKE $2 LIMIT 1',[actor.tenantId,'%/api/v1/media/public/'+r.rows[0].public_token+'%']);if(used.rowCount)throw new HttpFailure(409,'Media is referenced by a published flow version; preserve active conversations');
+ const used=await db.query(`SELECT 1 FROM (
+ SELECT definition::text AS content FROM chatbot_flow_versions WHERE tenant_id=$1
+ UNION ALL SELECT definition::text FROM chatbot_bot_versions WHERE tenant_id=$1
+ UNION ALL SELECT definition::text FROM chatbot_subflow_versions WHERE tenant_id=$1
+ UNION ALL SELECT payload::text FROM whatsapp_outbox WHERE tenant_id=$1 AND status IN ('PENDING','PROCESSING','UNCERTAIN')
+ UNION ALL SELECT steps::text FROM chatbot_campaigns WHERE tenant_id=$1 AND status IN ('DRAFT','ACTIVE')
+ ) refs WHERE strpos(content,$2)>0 LIMIT 1`,[actor.tenantId,'/api/v1/media/public/'+r.rows[0].public_token]);if(used.rowCount)throw new HttpFailure(409,'Media is referenced by a published flow or pending message; preserve active conversations');
  await db.query("UPDATE chatbot_media SET status='DELETED',content=NULL WHERE tenant_id=$1 AND id=$2",[actor.tenantId,id]);return {deleted:true};
 }
 export async function publicMedia(pool:SqlClient&SqlPool,token:string){if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw new HttpFailure(404,'Media not found');const route=await pool.query('SELECT tenant_id,media_id FROM chatbot_media_routes WHERE token_hash=$1',[tokenDigest(token)]);if(!route.rowCount)throw new HttpFailure(404,'Media not found');const tenantId=String(route.rows[0].tenant_id);return publicTenant(pool,tenantId,async db=>{const r=await db.query("SELECT content,mime FROM chatbot_media WHERE tenant_id=$1 AND id=$2 AND status='ACTIVE' AND scan_status='CLEAN'",[tenantId,route.rows[0].media_id]);if(!r.rowCount)throw new HttpFailure(410,'Media removed');return {data:r.rows[0].content as Buffer,mime:String(r.rows[0].mime)}})}
@@ -37,4 +44,11 @@ export async function validateManagedMedia(db:SqlClient,tenantId:string,url:stri
  const r=await db.query("SELECT mime FROM chatbot_media WHERE tenant_id=$1 AND public_token=$2 AND status='ACTIVE' AND scan_status='CLEAN'",[tenantId,token]);if(!r.rowCount)throw new HttpFailure(400,'Managed media is unavailable in this company');
  const supported:Record<string,string[]>={image:['image/jpeg','image/png'],video:['video/mp4'],audio:['audio/mpeg','audio/ogg'],document:['application/pdf']};
  if(!supported[kind]?.includes(String(r.rows[0].mime)))throw new HttpFailure(400,'Managed media format is not supported for this WhatsApp node/header');
+}
+
+/** Authenticated preview/download never depends on public delivery configuration. */
+export async function privateMedia(db:SqlClient,actor:Actor,id:string){
+ allow(actor,['OWNER','MANAGER','AGENT','VIEWER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid media');
+ const asset=await db.query("SELECT content,mime,name FROM chatbot_media WHERE tenant_id=$1 AND id=$2 AND status='ACTIVE' AND scan_status='CLEAN'",[actor.tenantId,id]);
+ if(!asset.rowCount)throw new HttpFailure(404,'Clean media not available');return asset.rows[0] as {content:Buffer;mime:string;name:string};
 }

@@ -72,7 +72,7 @@ try{
   ids.push({tenantId:t,userId:u,slug});
  }
  // A real low-privilege role (unlike SET ROLE from a privileged connection).
- const env={APP_PUBLIC_ORIGIN:'https://pilot.fixture.test',META_APP_ID:'9999911111',META_GRAPH_VERSION:'v24.0',META_EMBEDDED_CONFIG_ID:'1111122222',META_COEXISTENCE_CONFIG_ID:'3333344444',META_EMBEDDED_SIGNUP_ENABLED:'true',META_ONBOARDING_REVIEWED:'true',META_COEXISTENCE_ENABLED:'true',NODE_OPTIONS:'--import=./tests/support/offline-transport.mjs',OFFLINE_PROVIDER_ORIGIN:sim.origin,CLAMAV_SOCKET:process.env.CLAMAV_SOCKET,DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
+ const env={OUTBOUND_WEBHOOK_HOSTS:'webhook.fixture.invalid',APP_PUBLIC_ORIGIN:'https://pilot.fixture.test',META_APP_ID:'9999911111',META_GRAPH_VERSION:'v24.0',META_EMBEDDED_CONFIG_ID:'1111122222',META_COEXISTENCE_CONFIG_ID:'3333344444',META_EMBEDDED_SIGNUP_ENABLED:'true',META_ONBOARDING_REVIEWED:'true',META_COEXISTENCE_ENABLED:'true',NODE_OPTIONS:'--import=./tests/support/offline-transport.mjs',OFFLINE_PROVIDER_ORIGIN:sim.origin,CLAMAV_SOCKET:process.env.CLAMAV_SOCKET,DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://[::1]:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
  apiProcess=launch('api',process.execPath,['.build/apps/api/src/server.js'],env);
  webProcess=launch('web',process.execPath,['apps/web/server.mjs'],env);
  await waitForHealth();
@@ -260,18 +260,46 @@ try{
   process.env.WHATSAPP_TOKEN_ENCRYPTION_KEY=env.WHATSAPP_TOKEN_ENCRYPTION_KEY;process.env.INTEGRATION_SECRET_ENCRYPTION_KEY=env.INTEGRATION_SECRET_ENCRYPTION_KEY;process.env.META_GRAPH_VERSION='v24.0';
   // Keep two instrumented workers for mixed load; stop them before provider fixtures.
   const {localClosure}=await import('./local-closure.mjs');await localClosure({db,env,sim,launch,request,expectCode,apiProcesses:[apiProcess,replica]});
+  // Closure intentionally stops its crash/load workers; browser uploads still need the real scanner queue.
+  launch('browser-scan-worker',process.execPath,['.build/apps/worker/main.js'],env);
  }
  const browserFlow=await expectCode('/api/v1/flows',{token:one},200);await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{...def,expectedRevision:browserFlow.draft.draftRevision}},200);await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
  // Browser acceptance uses this **disposable** account only, never real credentials.
  const {writeFile,mkdir}=await import('node:fs/promises');
  await mkdir('acceptance-evidence',{recursive:true});
- await writeFile('acceptance-evidence/browser-account.json',JSON.stringify({...pageAuth,widgetKey:widgetConfig.widgetKey,roles:process.env.CI_LOCAL_CLOSURE==='1'?JSON.parse(await readFile('acceptance-evidence/browser-roles-private.json','utf8')):[]}));
+ // Separate fixture actors for load, broad UI and novice UI preserve the real per-user limiter.
+ async function browserAccount(label){const email=label+'-'+suffix+'@example.invalid';const user=(await db.query('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id',[email,hash])).rows[0].id;await db.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')",[ids[0].tenantId,user]);return {...pageAuth,email,widgetKey:widgetConfig.widgetKey,roles:process.env.CI_LOCAL_CLOSURE==='1'?JSON.parse(await readFile('acceptance-evidence/browser-roles-private.json','utf8')):[]}}
+ await writeFile('acceptance-evidence/browser-account.json',JSON.stringify(await browserAccount('broad-ui')));
  console.log('PASS live HTTP through web gateway: auth, tenant boundary, catalog, FAQ, flow save/publish/preview, leads and inbox');
  console.log('PASS runtime uses PostgreSQL non-owner, non-superuser, non-BYPASSRLS role');
  // Keep API/web running for browser test, executed as child before cleanup.
+ if(process.env.CI_BOT_BROWSER_ONLY!=='1'){
  const browser=spawn(process.execPath,['tests/browser-acceptance.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/browser-account.json'},stdio:'inherit'});
  const [code]=await once(browser,'exit');
  assert.equal(code,0,'Chromium/browser acceptance failed');
+ }
+ // Unroutable, synthetic campaign fixture: review only, never launch or real provider auth.
+ const reviewAccount=(await db.query(`INSERT INTO whatsapp_accounts(tenant_id,phone_number_id,waba_id,access_token_encrypted,connected_by) VALUES($1,$2,'9999911111','DISPOSABLE-NOT-A-PROVIDER-CREDENTIAL',$3) RETURNING id`,[ids[0].tenantId,BigInt('0x'+randomBytes(8).toString('hex')).toString(),ids[0].userId])).rows[0].id;
+ const reviewTemplate=(await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'review_fixture','ar','MARKETING',$3::jsonb) RETURNING id`,[ids[0].tenantId,reviewAccount,JSON.stringify([{type:'BODY',text:'قالب اختبار محلي — لا يُرسل'}])])).rows[0].id;
+ const reviewCampaign=(await db.query(`INSERT INTO chatbot_campaigns(tenant_id,name,segment,steps,start_at,created_by) VALUES($1,'حملة مراجعة محلية دون إرسال','{}',$2::jsonb,now()+interval '1 day',$3) RETURNING id`,[ids[0].tenantId,JSON.stringify([{templateId:reviewTemplate,offsetMinutes:0}]),ids[0].userId])).rows[0].id;
+ await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'fixture_carousel','ar','MARKETING',$3::jsonb)`,[ids[0].tenantId,reviewAccount,JSON.stringify([{type:'BODY',text:'بطاقات محلية'},{type:'CAROUSEL',cards:[0,1].map(()=>({components:[{type:'HEADER',format:'IMAGE'},{type:'BODY',text:'بطاقة {{1}}'},{type:'BUTTONS',buttons:[{type:'URL',text:'زيارة',url:'https://example.invalid/item/{{1}}'}]}]}))}])]);
+ // Dedicated company preserves the production seat limit instead of raising it for test actors.
+ const teamSlug='team-browser-'+suffix,teamEmail=teamSlug+'@example.invalid';
+ const teamTenant=(await db.query('INSERT INTO tenants(slug,name) VALUES($1,$2) RETURNING id',[teamSlug,'Disposable team browser company'])).rows[0].id;
+ const teamOwner=(await db.query('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id',[teamEmail,hash])).rows[0].id;
+ await db.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')",[teamTenant,teamOwner]);
+ await db.query("INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at) VALUES($1,'STARTER','TRIAL',now()+interval '14 days')",[teamTenant]);
+ await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'fixture_named','ar','MARKETING',$3::jsonb),($1,$2,'fixture_media','ar','MARKETING',$4::jsonb)`,[ids[0].tenantId,reviewAccount,JSON.stringify([{type:'HEADER',format:'TEXT',text:'أهلًا {{business}}'},{type:'BODY',text:'مرحبًا {{customer}}'},{type:'BUTTONS',buttons:[{type:'QUICK_REPLY',text:'مهتم'},{type:'URL',text:'التفاصيل',url:'https://example.invalid/offer/{{1}}'}]}]),JSON.stringify([{type:'HEADER',format:'IMAGE'},{type:'BODY',text:'رسالة {{1}}'}])]);
+ await writeFile('acceptance-evidence/bot-browser-account.json',JSON.stringify({...await browserAccount('novice-ui'),team:{slug:teamSlug,email:teamEmail,password:pass}}));
+ // A separate real IPv4 gateway gives the independent novice/team client its own network identity.
+ // The broad/API client uses IPv6. The production 10/600-second limit and counters stay unchanged.
+ launch('novice-web',process.execPath,['apps/web/server.mjs'],{...env,WEB_PORT:'3002',API_INTERNAL_ORIGIN:'http://127.0.0.1:4000'});
+ for(let i=0;i<50;i++){try{if((await fetch('http://127.0.0.1:3002/health')).ok)break}catch{}await sleep(100)}
+ const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
+ const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
+ assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
+ console.log('PASS campaign browser review queued zero jobs and zero outbound messages');
  const logout=await expectCode('/api/v1/auth/logout',{method:'POST',token:one},200);
  assert.ok(logout);
  await expectCode('/api/v1/auth/me',{token:one},401);

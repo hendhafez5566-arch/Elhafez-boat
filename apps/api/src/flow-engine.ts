@@ -46,7 +46,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  requireTrue(plain(input),'Flow must be an object');
  requireTrue(bounded(input.name,100,2),'Flow name must be 2–100 characters');
  requireTrue(typeof input.startId==='string'&&ident.test(input.startId),'Invalid start node ID');
- requireTrue(Array.isArray(input.nodes)&&input.nodes.length>1&&input.nodes.length<=(options.runtime?500:100),'Flow requires 2–100 nodes');
+ requireTrue(Array.isArray(input.nodes)&&input.nodes.length>=(options.draft?1:2)&&input.nodes.length<=(options.runtime?500:100),'Flow requires 2–100 nodes');
  const seen=new Set<string>();const fields=new Set<string>();let startCount=0;
  for(const raw of input.nodes){
   requireTrue(plain(raw),'Invalid node object');
