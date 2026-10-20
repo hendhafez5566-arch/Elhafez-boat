@@ -1,3 +1,7 @@
+## 2026-10-20 — Premium PR #5 handover / Chromium CI repair
+
+Same feature branch feat/premium-flow-builder-2026-10-20, verified remote base b9679ce. Reproduced invalid plain-object PointerEvent in browser-acceptance.mjs; replaced with an actual trusted Chromium drag, visible hit-test target and unchanged collision assertion. Baseline 177 unit/typecheck/build pass; full targeted API/PostgreSQL/broad/novice/premium/trace/request/integrated browser command exits 0. CI_LOCAL_CLOSURE final repeat and remote CI verification remain open. Evidence and exact scope: docs/product-rebuild/implementation/premium-2026-10-20/CI-REPAIR.md. No merge, deployment or real provider action. Next coherent work: scoped request diagnostics and explicit audited UNCERTAIN reconciliation, with no POST replay.
+
 ## 2026-10-20 — integrated user-facing content/actions/drawing batch
 
 Continued d551ef0 on the same branch/Draft PR #5. CARD/GALLERY composite content, structured editing, native website carousel and supported channel contracts/fallbacks; atomic typed field/tag button effects; group folding/breadcrumbs/path focus; bounded group snap; ordered website messages and save-closure fix. 177 Unit, 5 new PostgreSQL/CRM/website scenarios, existing 14 controls + 19 requests, legacy/bots/CRM/team/RLS and 8 actual Chromium/API checks pass. Full combined acceptance is next before promoting F03/F05/F06/F25/F31; current conservative totals 5/31/0. See INTEGRATED_CHECKPOINT.md. No live providers, merge/deploy or independent redesign.
