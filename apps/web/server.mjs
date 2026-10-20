@@ -11,6 +11,7 @@ const assets={
  '/commerce-ui.js':['commerce-ui.js','text/javascript; charset=utf-8'],
  '/advanced-ui.js':['advanced-ui.js','text/javascript; charset=utf-8'],
  '/campaign-wizard.js':['campaign-wizard.js','text/javascript; charset=utf-8'],
+ '/media-ui.js':['media-ui.js','text/javascript; charset=utf-8'],
  '/extensions.js':['extensions.js','text/javascript; charset=utf-8'],
  '/app.js':['app.js','text/javascript; charset=utf-8'],
  '/style.css':['style.css','text/css; charset=utf-8'],
@@ -44,6 +45,6 @@ const server=createServer(async(req,res)=>{
    req.pipe(upstream);return;
  }
  if(req.method!=='GET'||!(path in assets)){res.writeHead(404);res.end('Not found');return}
- const [filename,type]=assets[path];try{const body=await readFile(new URL('public/'+filename,import.meta.url));res.writeHead(200,{'content-type':type,'x-content-type-options':'nosniff','content-security-policy':path==='/'?"default-src 'self'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://graph.facebook.com; frame-src https://www.facebook.com https://web.facebook.com; style-src 'self'; img-src 'self' https://www.facebook.com data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'":"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'cache-control':'no-store','referrer-policy':'no-referrer','x-frame-options':'DENY'});res.end(body)}catch{res.writeHead(500);res.end('Asset unavailable')}
+ const [filename,type]=assets[path];try{const body=await readFile(new URL('public/'+filename,import.meta.url));res.writeHead(200,{'content-type':type,'x-content-type-options':'nosniff','content-security-policy':path==='/'?"default-src 'self'; script-src 'self' https://connect.facebook.net; connect-src 'self' https://www.facebook.com https://graph.facebook.com; frame-src https://www.facebook.com https://web.facebook.com; style-src 'self'; img-src 'self' https://www.facebook.com data: blob:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'":"default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'cache-control':'no-store','referrer-policy':'no-referrer','x-frame-options':'DENY'});res.end(body)}catch{res.writeHead(500);res.end('Asset unavailable')}
 });
 server.listen(port,()=>console.log('Elhafez Boat dashboard http://127.0.0.1:'+port));

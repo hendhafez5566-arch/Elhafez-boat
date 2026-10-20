@@ -27,7 +27,7 @@ export function installCampaignWizard({form,el,button,templates}){
   for(const field of messages.querySelectorAll('fieldset')){
    const template=templates().find(t=>t.id===field.querySelector('[data-template]').value);
    summary.append(el('h4',template?.name||'لم يُحدد قالب'));
-   for(const part of template?.components||[])if(part.text){let text=part.text;for(const input of field.querySelectorAll('[data-kind="'+part.type.toLowerCase()+'"]'))text=text.replaceAll('{{'+(Number(input.dataset.index)+1)+'}}',input.value);summary.append(el('p',text))}
+   for(const part of template?.components||[])if(part.text){let text=part.text;for(const input of field.querySelectorAll('[data-kind="'+part.type.toLowerCase()+'"],[data-kind="'+part.type.toLowerCase()+'Named"]'))text=text.replaceAll('{{'+(input.dataset.parameter||Number(input.dataset.index)+1)+'}}',input.value);summary.append(el('p',text))}
    summary.append(el('p','بعد '+field.querySelector('[data-offset]').value+' دقيقة من موعد البداية'));
   }
   summary.append(el('p','حفظ مسودة فقط. راجع عدد العملاء والاستبعادات وحالة الحساب من بطاقة الحملة قبل البدء.'));

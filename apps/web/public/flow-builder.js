@@ -699,11 +699,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
        apply.disabled=true;
        try{
          // Validate through the real compiler; broken cross-branch deletions never replace local work.
-         await api('/flows/validate',{method:'POST',body:result.definition});
+         const inspected=await api('/flows/inspect-draft',{method:'POST',body:result.definition});
          if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)return;
          mergeBase=deep(remote);draftRevision=current.draft.draftRevision;published=current.published;
          flow=deep(result.definition);selected=flow.nodes.some(n=>n.id===selected)?selected:flow.startId;selectedNodes=new Set([selected]);
-         history=[deep(local),deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();closeConflict();notify('جُمعت التعديلات داخل المحرر. راجعها ثم احفظ المسودة؛ لم يتم النشر.');
+         history=[deep(local),deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();closeConflict();notify(inspected.publishable?'جُمعت التعديلات داخل المحرر. راجعها ثم احفظ المسودة؛ لم يتم النشر.':'جُمعت مسودة غير مكتملة داخل المحرر. أكمل الوصلات وافحصها قبل النشر.');
        }catch(error){feedback.textContent='تعذر تطبيق الدمج: '+error.message+' — تعديلاتك المحلية لم تتغير.'}
        finally{apply.disabled=false}
      }),'primary');
@@ -735,10 +735,10 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    try{
      let parsed;try{parsed=JSON.parse(await file.text())}catch{throw new Error('تعذر قراءة الملف؛ اختر نسخة JSON صحيحة')}
      const definition=parsed?.definition||parsed;
-     await api('/flows/validate',{method:'POST',body:definition});
+     const inspected=await api('/flows/inspect-draft',{method:'POST',body:definition});
      if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)throw new Error('تغيرت مساحة التحرير أثناء الفحص. اختر الملف مجددًا.');
      if(!confirm('استرجاع النسخة داخل المحرر سيستبدل تعديلاتك المحلية. لن تتغير مسودة الخادم أو النسخة المنشورة قبل الحفظ والنشر. هل تتابع؟'))return;
-     const before=deep(flow);flow=deep(definition);selected=flow.startId;selectedNodes=new Set([selected]);history=[before,deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();notify('استُرجعت النسخة داخل المحرر بعد فحصها. راجعها ثم احفظ؛ لم يتم النشر.');
+     const before=deep(flow);flow=deep(inspected.definition);selected=flow.startId;selectedNodes=new Set([selected]);history=[before,deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();notify(inspected.publishable?'استُرجعت النسخة داخل المحرر بعد فحصها. راجعها ثم احفظ؛ لم يتم النشر.':'استُرجعت النسخة غير المكتملة. أكمل خطواتها ووصلاتها قبل النشر.');
    }finally{importButton.disabled=false;importFile.value=''}
  });
 
@@ -764,6 +764,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  $('builder-export').onclick=()=>{
    const data=JSON.stringify(flow,null,2);navigator.clipboard?.writeText(data).then(()=>notify('تم نسخ المسار JSON')).catch(()=>notify('انسخ المسار من شاشة التحرير','error'));
  };
+ window.addEventListener('keydown',event=>{
+   if(state.page!=='flow-builder'||document.querySelector('dialog[open]'))return;
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='s'){event.preventDefault();$('builder-save').click()}
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
+ });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
  return {load,hasUnsavedChanges:()=>dirty,reset(){closeConflict();conflictDialog.replaceChildren();guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

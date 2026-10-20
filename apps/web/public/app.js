@@ -1,3 +1,4 @@
+import {mountBotSetup} from './bot-setup.js';
 import {initBotManager} from './bot-manager.js';
 import {initWhatsAppSignup} from './whatsapp-signup.js';
 import {initCommerce} from './commerce-ui.js';
@@ -13,6 +14,8 @@ const el=(tag,text,klass)=>{const n=document.createElement(tag);if(text!==undefi
 const state={token:'',role:'',tenantId:'',userId:'',demo:false,page:'overview',team:[],contacts:[]};
 const canEdit=()=>['OWNER','MANAGER'].includes(state.role);
 const uiErrorTranslations={
+ 'Only the assigned staff member can reply':'المحادثة ليست مستلمة لك الآن. حدّث الحالة أو اطلب من المدير إسنادها إليك.',
+ 'Conversation already assigned to another agent':'استلم موظف آخر المحادثة. حدّث القائمة قبل المحاولة مجددًا.',
  'Flow has unreachable nodes':'يوجد خطوات غير متصلة بالمسار الرئيسي. اربطها من مخارج الرسائل قبل النشر.',
  'Flow contains an automatic loop without customer input':'يوجد مسار دائري بدون سؤال أو اختيار للعميل. أضف انتظارًا لإجابة العميل.',
  'Invalid number of options':'عدد الاختيارات غير صحيح؛ الأزرار حتى 3 والقوائم حتى 10، وبحد أدنى اختيار واحد.',
@@ -52,6 +55,7 @@ ctx.commerce=initCommerce(ctx);
 const whatsappSignup=initWhatsAppSignup(ctx);
 const advanced=initAdvanced(ctx),workspace=initWorkspace(ctx),extensions=initExtensions(ctx),builder=initFlowBuilder(ctx),insights=initInsights(ctx);
 
+const companySetup=mountBotSetup({host:$('overview'),api,el,button,notify,workspaceSetup:true,canStart:()=>!builder.hasUnsavedChanges(),openBuilder:async bot=>{const company=await api('/workspace');$('company-name').textContent=company.name;sessionStorage.setItem('eb-tenant-label',company.name);state.botId=bot.id;state.botName=bot.name;state.editorMode='simple';await choose('flow-builder')}});
 const bots=initBotManager(ctx,async bot=>{if(builder.hasUnsavedChanges()){notify('احفظ تعديلات البوت الحالي قبل فتح بوت آخر.','error');return;}state.botId=bot.id;state.botName=bot.name;state.editorMode=bot.editorMode||null;await choose('flow-builder')},()=>!builder.hasUnsavedChanges());
 const botsNav=button('إدارة البوتات',()=>choose('bots'),'nav');botsNav.dataset.page='bots';document.querySelector('.sidebar nav').prepend(botsNav);
  // Keep everyday catalog fields visible, move optional channels/metadata to a disclosure.
@@ -156,6 +160,7 @@ async function onboardingProgress(){
   {name:'جهّز شات موقعك (اختياري)',ready:Boolean(widget.enabled),page:'website',action:'شات الموقع'}
  ];
  const completed=steps.filter(item=>item.ready).length;
+ if(state.role==='OWNER')host.append(button(bots.some(bot=>!bot.legacyDefault&&!bot.archivedAt)?'إعداد الشركة وبوت جديد':'إعداد الشركة والبوت الأول',async()=>{companySetup.setTemplates(await api('/bots/templates'));companySetup.start('service')},'primary'));
  host.append(el('h3','ابدأ بسهولة — '+completed+' من '+steps.length+' خطوات جاهزة'));
  host.append(el('p','دي خطوات إعداد اختيارية هتسهّل عليك أول بوت. مش هنطلب منك ربط أي منصة خارجية دلوقتي.','muted'));
  const grid=el('div',undefined,'getting-started-grid');

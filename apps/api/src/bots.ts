@@ -20,10 +20,11 @@ export async function listBots(db:SqlClient,actor:Actor){
  ELSE (SELECT max(version) FROM chatbot_bot_versions WHERE tenant_id=b.tenant_id AND bot_id=b.id) END AS "publishedVersion"
  FROM chatbot_bots b WHERE b.tenant_id=$1 ORDER BY b.created_at,b.id`,[actor.tenantId])).rows;
 }
-export async function createBot(db:SqlClient,actor:Actor,input:unknown){
+export async function createBot(db:SqlClient,actor:Actor,input:unknown,id?:string){
+ if(id!==undefined&&!isUuid(id))throw new HttpFailure(400,'Invalid bot ID');
  allow(actor,['OWNER','MANAGER']);
  const {name,definition}=prepareBotTemplate(input);
- const r=await db.query('INSERT INTO chatbot_bots(tenant_id,name,created_by) VALUES($1,$2,$3) RETURNING id,name',[actor.tenantId,name,actor.userId]);
+ const r=await db.query('INSERT INTO chatbot_bots(tenant_id,name,created_by,id) VALUES($1,$2,$3,coalesce($4::uuid,gen_random_uuid())) RETURNING id,name',[actor.tenantId,name,actor.userId,id||null]);
  const bot=r.rows[0];
  await db.query('INSERT INTO chatbot_bot_drafts(tenant_id,bot_id,definition,draft_revision,updated_by) VALUES($1,$2,$3::jsonb,1,$4)',[actor.tenantId,bot.id,JSON.stringify(definition),actor.userId]);
  return bot;

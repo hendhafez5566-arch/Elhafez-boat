@@ -91,10 +91,15 @@ export async function acceptFirstOwner(input:unknown){
  else{const hash=await passwordHash(password);userId=String((await tx.query(`INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id`,[email,hash])).rows[0].id);}
  await tx.query(`INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')`,[tenantId,userId]);
  await tx.query(`UPDATE tenant_owner_invites SET accepted_at=now() WHERE token_hash=$1`,[tokenDigest(token)]);
- await tx.query('COMMIT');return {accepted:true,loginRequired:true};
+ const company=await tx.query('SELECT slug FROM tenants WHERE id=$1',[tenantId]);await tx.query('COMMIT');return {accepted:true,loginRequired:true,tenantSlug:String(company.rows[0].slug)};
  }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
 }
 export async function platformUsageLimits(ownerId:string,id:string,input:unknown){
  const d=object(input);if(!/^[0-9a-f-]{36}$/i.test(id)||!Number.isInteger(d.dailyInbound)||Number(d.dailyInbound)<1||Number(d.dailyInbound)>1000000||!Number.isInteger(d.dailyTemplates)||Number(d.dailyTemplates)<1||Number(d.dailyTemplates)>100000||!Number.isInteger(d.mediaBytes)||Number(d.mediaBytes)<1||Number(d.mediaBytes)>10737418240)throw new HttpFailure(400,'Invalid usage limits');
  const tx=await adminPool().connect();try{await tx.query('BEGIN');await tx.query(`INSERT INTO chatbot_usage_limits(tenant_id,daily_inbound,daily_templates,media_bytes) VALUES($1,$2,$3,$4) ON CONFLICT(tenant_id) DO UPDATE SET daily_inbound=$2,daily_templates=$3,media_bytes=$4`,[id,d.dailyInbound,d.dailyTemplates,d.mediaBytes]);await tx.query(`INSERT INTO platform_audit_events(owner_id,action,tenant_id) VALUES($1,'USAGE_LIMITS_UPDATED',$2)`,[ownerId,id]);await tx.query('COMMIT');return {updated:true}}catch(e){await tx.query('ROLLBACK');throw e}finally{tx.release()}
+}
+
+/** Platform operational audit only. Never selects conversations, contacts or company secrets. */
+export async function platformEvents(ownerId:string){
+ return (await adminPool().query(`SELECT a.action,a.created_at AS "createdAt",t.name AS "companyName",t.slug AS "companySlug" FROM platform_audit_events a LEFT JOIN tenants t ON t.id=a.tenant_id ORDER BY a.created_at DESC LIMIT 100`)).rows;
 }
