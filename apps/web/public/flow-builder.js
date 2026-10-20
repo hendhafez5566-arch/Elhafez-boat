@@ -1,3 +1,4 @@
+import {mergeFlowDrafts,sameDraftValue} from './flow-merge.js';
 import {createCanvas} from './flow-canvas.js';
 import {graphOutputs} from './flow-geometry.js';
 import {mountGuidedWizard} from './flow-onboarding.js';
@@ -25,6 +26,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      {id:'handoff',type:'HANDOFF',text:'وصل طلبك للموظف المختص. هيكمل معاك.'}
    ]};
  };
+ let mergeBase=null;
  let flow=preset(),selected='menu',published=null,dirty=false,draftRevision=0,previewRuntimeNodes=null;
  let subflows=[],editingSubflowId=null,mainSnapshot=null;
  let selectedNodes=new Set([selected]),snippets=[];
@@ -605,7 +607,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
    editingSubflowId=null;mainSnapshot=null;mode.textContent='تحرير المسار الرئيسي';await refreshSubflows();
    if(state.demo){flow=preset('general');published=null;dirty=false;selected='menu';selectedNodes=new Set([selected]);snippets=[];redrawSnippets();renderAll();resetPreview();return}
-   const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
+   const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
@@ -655,24 +657,63 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const oldNodes=new Map((remote?.nodes||[]).map(n=>[n.id,n])),newNodes=new Map((local?.nodes||[]).map(n=>[n.id,n]));
    const added=[...newNodes.keys()].filter(id=>!oldNodes.has(id));
    const removed=[...oldNodes.keys()].filter(id=>!newNodes.has(id));
-   const changed=[...newNodes.keys()].filter(id=>oldNodes.has(id)&&JSON.stringify(newNodes.get(id))!==JSON.stringify(oldNodes.get(id)));
+   const changed=[...newNodes.keys()].filter(id=>oldNodes.has(id)&&!sameDraftValue(newNodes.get(id),oldNodes.get(id)));
    return {added,removed,changed};
  };
  async function showDraftConflict(){
+   const requestScope={tenantId:state.tenantId,botId:state.botId,revision:draftRevision,local:JSON.stringify(flow)};
    conflictDialog.replaceChildren();
    conflictDialog.append(el('h3','فيه مسودة أحدث على الخادم'),el('p','تعديلاتك المحلية ما زالت موجودة في المحرر. لن نكتب فوق النسخة الأحدث بدون موافقتك. نزّل نسخة من شغلك قبل اتخاذ أي قرار.'));
    let current=null;
    try{
      current=await api('/flows');
+     if(state.tenantId!==requestScope.tenantId||state.botId!==requestScope.botId||draftRevision!==requestScope.revision||JSON.stringify(flow)!==requestScope.local)return;
      const diff=compareDrafts(flow,current.draft.definition);
      const text=['خطوات عندك ليست في الخادم: '+diff.added.length,'خطوات بالخادم ليست عندك: '+diff.removed.length,'خطوات مختلفة: '+diff.changed.length];
-     conflictDialog.append(el('p',text.join(' • ')),el('p','المراجعة دي مقارنة هيكلية فقط، وليست دمجًا آليًا.'));
+     conflictDialog.append(el('p',text.join(' • ')),el('p','يمكنك مراجعة التعديلات أدناه قبل جمعها في المحرر.'));
    }catch{conflictDialog.append(el('p','تعذرت قراءة أحدث نسخة؛ ما زالت تعديلاتك المحلية محفوظة داخل الصفحة.'))}
+   if(current&&mergeBase){
+     const choices={},local=deep(flow),base=deep(mergeBase),remote=deep(current.draft.definition);
+     const scope={tenantId:state.tenantId,botId:state.botId,revision:draftRevision,local:JSON.stringify(flow)};
+     const mergeHost=el('section',undefined,'builder-merge-review');
+     const feedback=el('p');feedback.setAttribute('role','status');
+     const fieldNames={text:'نص الرسالة',name:'اسم المسار',next:'الخطوة التالية',choices:'الاختيارات ومساراتها',field:'الإجابة المسجلة',type:'نوع الخطوة',yes:'مسار المطابقة',no:'المسار الآخر',value:'قيمة المقارنة',operator:'المقارنة',url:'الرابط',layout:'مواضع الخطوات',groups:'المجموعات',startId:'بداية المحادثة',caption:'التعليق',tag:'التصنيف'};
+     const describe=path=>{const node=path[0]==='nodes'?[...local.nodes,...remote.nodes].find(n=>n.id===path[1]):null;return (node?(types[node.type]||'خطوة')+' «'+String(node.text||node.id).slice(0,55)+'» — ':'')+(fieldNames[path.at(-1)]||'إعداد الخطوة')};
+     const valueText=value=>value===undefined?'محذوف':typeof value==='string'?value:JSON.stringify(value,null,2);
+     const renderMerge=()=>{
+       const result=mergeFlowDrafts(base,local,remote,choices);mergeHost.replaceChildren(el('h4','جمع التعديلات في مسودة للمراجعة'),el('p','التعديلات المستقلة تُجمع معًا. اختر النسخة المطلوبة لكل اختلاف؛ لن يُحفظ أو يُنشر شيء عند تطبيق المراجعة.'));
+       for(const item of result.conflicts){
+         const row=el('fieldset',undefined,'builder-merge-conflict');row.append(el('legend',describe(item.path)));
+         const select=el('select');select.setAttribute('aria-label','حل اختلاف '+describe(item.path));
+         for(const [value,title] of [['','اختر نسخة للاحتفاظ بها'],['local','تعديلاتي'],['remote','نسخة الخادم']]){const option=el('option',title);option.value=value;select.append(option)}
+         select.value=choices[item.key]||'';select.onchange=()=>{choices[item.key]=select.value;apply.disabled=mergeFlowDrafts(base,local,remote,choices).unresolved>0};
+         for(const [title,value] of [['تعديلاتي',item.local],['نسخة الخادم',item.remote]]){const details=el('details');details.append(el('summary',title),el('pre',valueText(value)));row.append(details)}
+         row.append(select);mergeHost.append(row);
+       }
+       if(!result.conflicts.length)mergeHost.append(el('p','لا توجد تعديلات متعارضة؛ يمكن جمع العملين دون استبدال أحدهما.'));
+       mergeHost.append(apply,feedback);apply.disabled=result.unresolved>0;
+     };
+     const apply=button('فحص وتطبيق المسودة المجمعة',()=>execute(async()=>{
+       if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||draftRevision!==scope.revision||JSON.stringify(flow)!==scope.local){feedback.textContent='تغيرت مساحة التحرير. أغلق المراجعة وحاول الحفظ مجددًا.';return}
+       const result=mergeFlowDrafts(base,local,remote,choices);if(result.unresolved)return;
+       apply.disabled=true;
+       try{
+         // Validate through the real compiler; broken cross-branch deletions never replace local work.
+         await api('/flows/validate',{method:'POST',body:result.definition});
+         if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)return;
+         mergeBase=deep(remote);draftRevision=current.draft.draftRevision;published=current.published;
+         flow=deep(result.definition);selected=flow.nodes.some(n=>n.id===selected)?selected:flow.startId;selectedNodes=new Set([selected]);
+         history=[deep(local),deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();closeConflict();notify('جُمعت التعديلات داخل المحرر. راجعها ثم احفظ المسودة؛ لم يتم النشر.');
+       }catch(error){feedback.textContent='تعذر تطبيق الدمج: '+error.message+' — تعديلاتك المحلية لم تتغير.'}
+       finally{apply.disabled=false}
+     }),'primary');
+     renderMerge();conflictDialog.append(mergeHost);
+   }
    const actions=el('div',undefined,'builder-conflict-actions');
    actions.append(button('تنزيل نسختي JSON',backupLocal,'primary'));
    if(current)actions.append(button('تحميل نسخة الخادم بعد التأكيد',()=>{
      if(!confirm('سيتم استبدال التعديلات المحلية داخل المحرر. هل نزّلت نسخة احتياطية وتوافق على المتابعة؟'))return;
-     const cfg=current;flow=deep(cfg.draft.definition);published=cfg.published;
+     const cfg=current;flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;
      draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;selectedNodes=new Set([selected]);
      history=[deep(flow)];cursor=0;renderAll();resetPreview();closeConflict();notify('تم تحميل آخر مسودة من الخادم دون نشر.');
    }));
@@ -682,12 +723,31 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  }
  const backupButton=button('تنزيل نسخة احتياطية',backupLocal);
  advancedButtons.append(backupButton);
+ const importFile=el('input');importFile.type='file';importFile.accept='.json,application/json';importFile.hidden=true;importFile.setAttribute('aria-label','ملف نسخة المسودة');
+ const importButton=button('استرجاع نسخة احتياطية',()=>{if(mainSnapshot){notify('ارجع للمسار الرئيسي قبل استرجاع نسخة','error');return}importFile.value='';importFile.click()});
+ advancedButtons.append(importButton,importFile);
+ importFile.onchange=()=>execute(async()=>{
+   const file=importFile.files?.[0];if(!file)return;
+   if(state.demo){notify('استرجاع الملفات يحتاج تسجيل الدخول وفحص الخادم','error');return}
+   if(file.size>1048576)throw new Error('حجم النسخة يجب ألا يزيد عن 1 MiB');
+   const scope={tenantId:state.tenantId,botId:state.botId,local:JSON.stringify(flow)};
+   importButton.disabled=true;
+   try{
+     let parsed;try{parsed=JSON.parse(await file.text())}catch{throw new Error('تعذر قراءة الملف؛ اختر نسخة JSON صحيحة')}
+     const definition=parsed?.definition||parsed;
+     await api('/flows/validate',{method:'POST',body:definition});
+     if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)throw new Error('تغيرت مساحة التحرير أثناء الفحص. اختر الملف مجددًا.');
+     if(!confirm('استرجاع النسخة داخل المحرر سيستبدل تعديلاتك المحلية. لن تتغير مسودة الخادم أو النسخة المنشورة قبل الحفظ والنشر. هل تتابع؟'))return;
+     const before=deep(flow);flow=deep(definition);selected=flow.startId;selectedNodes=new Set([selected]);history=[before,deep(flow)];cursor=1;dirty=true;renderAll();resetPreview();notify('استُرجعت النسخة داخل المحرر بعد فحصها. راجعها ثم احفظ؛ لم يتم النشر.');
+   }finally{importButton.disabled=false;importFile.value=''}
+ });
+
  $('builder-save').onclick=()=>execute(async()=>{
    if(state.demo){notify('وضع المعاينة فقط. تقدر تجرب المصمم من غير حفظ على الخادم.');return}
    if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:flow}});editingSubflowId=saved.id;dirty=false;await refreshSubflows();renderStatus();notify('تم حفظ إصدار فرعي '+saved.version+'؛ المستدعون يظلون على الإصدار المثبت');return;}
    try{
      const r=await api('/flows/draft',{method:'PUT',body:{...flow,expectedRevision:draftRevision}});
-     draftRevision=r.draftRevision;flow=deep(r.definition);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
+     draftRevision=r.draftRevision;flow=deep(r.definition);mergeBase=deep(flow);dirty=false;renderStatus();notify('تم حفظ مسودة المحادثة');
    }catch(error){
      if(error.status===409){await showDraftConflict();return}
      throw error;
@@ -705,5 +765,5 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const data=JSON.stringify(flow,null,2);navigator.clipboard?.writeText(data).then(()=>notify('تم نسخ المسار JSON')).catch(()=>notify('انسخ المسار من شاشة التحرير','error'));
  };
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){closeConflict();conflictDialog.replaceChildren();guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

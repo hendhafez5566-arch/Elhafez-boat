@@ -172,6 +172,39 @@ try{
  assert.ok(advancedSaved.draft.definition.nodes.some(n=>n.type==='MEDIA'&&n.url==='https://example.invalid/local-image.png'));
  assert.ok(advancedSaved.draft.definition.nodes.some(n=>n.type==='LINK'&&n.url==='https://example.invalid/local-information'));
  console.log('PASS real condition/media/link branch insertion and saved typed fields, no provider/media requests');
+ // A real concurrent editor updates this bot through the API. The visible editor retains local work.
+ await send('Emulation.setDeviceMetricsOverride',{width:1366,height:900,deviceScaleFactor:1,mobile:false});
+ await evaluate("document.querySelector('[data-step-id=welcome] .builder-node').click()");
+ await evaluate("(()=>{const input=[...document.querySelectorAll('#builder-editor label')].find(l=>l.textContent.startsWith('نص الرسالة')).querySelector('textarea');input.value='ترحيب محلي نحتفظ به';input.dispatchEvent(new Event('input',{bubbles:true}))})()");
+ await evaluate("document.querySelector('.builder-properties > button').click()");
+ const external=structuredClone(advancedSaved.draft.definition);external.name='اسم زميل الفريق';external.nodes.find(n=>n.id==='welcome').text='ترحيب زميل الفريق';
+ const externalSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows/draft',{method:'PUT',headers:{'content-type':'application/json','x-boat-csrf':'1'},body:JSON.stringify({...${JSON.stringify(external)},expectedRevision:${advancedSaved.draft.draftRevision}})}).then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);
+ await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("Boolean(document.querySelector('.builder-conflict-dialog[open] .builder-merge-review'))",'real optimistic conflict review');
+ assert.equal(await evaluate("document.querySelectorAll('.builder-merge-conflict').length"),1,'one same-field conflict, independent name change merged');
+ assert.ok(await evaluate("[...document.querySelectorAll('.builder-merge-review button')].find(b=>b.textContent==='فحص وتطبيق المسودة المجمعة').disabled"),'explicit decision required');
+ await evaluate("document.querySelectorAll('.builder-merge-conflict summary').forEach(summary=>summary.click())");
+ for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate("document.querySelector('.builder-merge-conflict').scrollIntoView({block:'center'})");await sleep(200);await screenshot('conflict-review-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'conflict review overflow '+width)}
+ await evaluate("(()=>{const select=document.querySelector('.builder-merge-conflict select');select.value='local';select.dispatchEvent(new Event('change',{bubbles:true}))})()");
+ await click('فحص وتطبيق المسودة المجمعة','.builder-merge-review button');await until("!document.querySelector('.builder-conflict-dialog').open",'validated merge applied locally');
+ const beforeMergeSave=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);assert.equal(beforeMergeSave.draft.draftRevision,externalSaved.draftRevision,'applying review must not write to server');assert.equal(beforeMergeSave.draft.definition.nodes.find(n=>n.id==='welcome').text,'ترحيب زميل الفريق');
+ await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'merged draft saved with current revision');
+ const mergedSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);assert.equal(mergedSaved.draft.definition.name,'اسم زميل الفريق');assert.equal(mergedSaved.draft.definition.nodes.find(n=>n.id==='welcome').text,'ترحيب محلي نحتفظ به');assert.equal(mergedSaved.published,null);assert.equal(mergedSaved.draft.definition.nodes.find(n=>n.id==='menu').choices[0].id,'info');
+ console.log('PASS concurrent real bot draft review: explicit local/remote choice, independent edit preserved, compiler validation, no write until save and no publish');
+ // Real Chromium file selection: reject malformed JSON, then restore a validated backup locally.
+ const backupPath=join(profile,'draft-backup.json');
+ const documentNode=await send('DOM.getDocument');const fileNode=await send('DOM.querySelector',{nodeId:documentNode.root.nodeId,selector:'#flow-builder input[type=file]'});assert.ok(fileNode.nodeId);
+ await writeFile(backupPath,'{broken');await evaluate("document.getElementById('notice').textContent=''");await send('DOM.setFileInputFiles',{nodeId:fileNode.nodeId,files:[backupPath]});await until("document.getElementById('notice').textContent.includes('تعذر قراءة الملف')",'invalid backup rejected');
+ assert.equal(await evaluate("document.getElementById('builder-name').value"),'اسم زميل الفريق');
+ const backup=structuredClone(mergedSaved.draft.definition);backup.name='نسخة مسترجعة للاختبار';
+ await writeFile(backupPath,JSON.stringify({draftRevision:1,definition:backup}));await send('DOM.setFileInputFiles',{nodeId:fileNode.nodeId,files:[backupPath]});await until("document.getElementById('notice').textContent.includes('استُرجعت النسخة')",'valid backup restored after real compiler validation');
+ assert.equal(await evaluate("document.getElementById('builder-name').value"),'نسخة مسترجعة للاختبار');
+ const beforeRestoreSave=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);assert.equal(beforeRestoreSave.draft.draftRevision,mergedSaved.draft.draftRevision,'imported old revision is never reused');assert.equal(beforeRestoreSave.draft.definition.name,'اسم زميل الفريق');
+ await click('تراجع','.builder-toolbar button');assert.equal(await evaluate("document.getElementById('builder-name').value"),'اسم زميل الفريق');await click('إعادة','.builder-toolbar button');assert.equal(await evaluate("document.getElementById('builder-name').value"),'نسخة مسترجعة للاختبار');
+ await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'restored backup saved');
+ const restoredSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);assert.equal(restoredSaved.draft.definition.name,'نسخة مسترجعة للاختبار');assert.equal(restoredSaved.published,null);
+ await screenshot('conflict-restored-draft-320.png');console.log('PASS real file restore: malformed JSON rejected, compiler validation, no implicit write/publish, current revision used and undo/redo preserved');
+
+
  await evaluate("document.querySelector('[data-page=bots]').click()");await click('مكتبة القوالب');await until("!document.querySelector('.template-gallery').hidden",'template gallery');
  await evaluate("(()=>{const s=document.querySelector('.template-gallery input');s.value='بيانات';s.dispatchEvent(new Event('input',{bubbles:true}))})()");assert.equal(await evaluate("document.querySelectorAll('.template-gallery .template-card').length"),1);await screenshot('continuation-template-gallery-320.png');
  // Internal note and inbox context are exercised only on synthetic website conversations.
