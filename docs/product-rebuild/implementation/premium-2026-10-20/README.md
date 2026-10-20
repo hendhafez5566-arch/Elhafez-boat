@@ -2,6 +2,14 @@
 
 This is a substantial **incomplete** implementation batch, not certification of F01–F36 parity. Canonical requirements remain the handoff's `FLOW_BUILDER_PARITY_F01_F36.md`. No merge, Railway deployment, real provider account, campaign launch or real customer delivery occurred.
 
+## Request concurrency and CI fixture correction — follow-up to `7979892`
+
+Inspection of GitHub Verify 966 found its Unit/DB checks successful, but its additional local-closure acceptance failed because the old HMAC test counted three earlier request-fixture calls along with its own two. The test now snapshots the call list before dispatch and still asserts exactly two new requests and exact signatures/keys. No count or signature requirement was relaxed.
+
+Repeating with `CI_LOCAL_CLOSURE=1` also exposed a real contact/conversation deadlock between widget polling and response continuation (PostgreSQL 40P01). The new request worker now locks **contact before conversation**, matching Website Chat/privacy, and then session/job, in claim/result/completion transactions. Candidate readiness is rechecked after locks, so a competing worker cannot reinterpret a newly claimed POST as expired. Busy claims skip without dispatch; response persistence waits safely for contact-first visitors. A deterministic PostgreSQL test holds the actual contact lock, observes the worker waiting on that contact before conversation, polls/locks the conversation, and then verifies one successful continuation and one HTTP attempt.
+
+Actually rerun: TypeScript/build, **171 Unit PASS**, **17 durable integration PostgreSQL scenarios PASS** (previous 16 plus real lock-order race). Full acceptance with the same extra CI local-closure setting is running; do not treat the preceding narrower EXIT 0 as proof of this pending repeat. No schema/provider changes. F23 stays PARTIAL, totals 5 PASS / 31 PARTIAL / 0 wholly BLOCKED. No merge/deploy or independent redesign.
+
 ## Final verification of saved runtime `6f41af8`
 
 Remote functional checkpoint: **6f41af89841bf76c31b562b0c85105bd97e56d16** (after contract checkpoint **8dffe747e07c44cb84ebcea87fd97d9500333836**). Both were pushed immediately after stable tests; remote/local trees and branch HEAD verified. Same Draft PR #5, same target `feat/stage0-foundation` at `cc702b7`; no merge/deploy. The follow-up is evidence/handoff only.

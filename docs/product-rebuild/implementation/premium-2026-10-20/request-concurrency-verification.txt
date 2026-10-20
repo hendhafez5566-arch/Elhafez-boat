@@ -1,0 +1,32 @@
+TypeScript/build/Unit — EXIT 0
+✔ one-character WhatsApp sender profile uses a contact name accepted by PostgreSQL (0.150517ms)
+ℹ tests 171
+ℹ suites 0
+ℹ pass 171
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4225.249206
+
+PostgreSQL concurrency regression — EXIT 0
+PASS unique wait-token queue, ignored inbound duplicates, stable key and exactly one committed success continuation
+PASS mapping response failure routes atomically without applying invalid fields
+PASS typed response failure routes atomically without applying invalid fields
+PASS POST HTTP 429 takes error branch with no automatic replay
+PASS ambiguous POST timeout is quarantined and follows timeout without resend
+PASS committed in-flight claim blocks second worker; expired interrupted claim never resends and ignores late success
+PASS real concurrent website/privacy contact-first locks and response continuation complete without deadlock or HTTP replay
+PASS durable stored response survives actual PostgreSQL delivery rollback and resumes without repeating HTTP
+PASS human takeover while HTTP is in flight prevents fields, continuation and automated delivery
+PASS publication during wait preserves pinned request and downstream version
+PASS same-node restart changes wait token and cancels stale job before dispatch
+PASS existing deadline worker takes timeout and cancels undispatched request once
+PASS opt-out and unavailable/expired messaging channel stop dispatch
+PASS expired WhatsApp authorization and explicit reauthorization prevent integration side effects even inside service window
+PASS bounded safe GET retry retains one job/idempotency key and one successful continuation
+PASS real forced RLS, other-tenant worker and author-role boundaries remain enforced
+PASS integration disabled after publication follows enqueue-error route without creating a job
+PASS 17 durable integration scenarios; every HTTP dispatch is an explicit local mock
+
+CI-local-closure repeat pending at source checkpoint. Earlier GitHub failure inspected: Verify 966 / job 118813106250, tests/local-closure.mjs legacy total-host call count 5 vs 2. Scoped call window retains exact checks.

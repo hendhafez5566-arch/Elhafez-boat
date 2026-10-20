@@ -1,9 +1,9 @@
 {
-  "functionalCommit": "6f41af89841bf76c31b562b0c85105bd97e56d16",
+  "functionalCommit": "pending concurrency follow-up to 797989258b3f84a1de438445e650552dbb7cd392",
   "files": [
     {
       "path": "apps/api/src/flow-integration-worker.ts",
-      "sha256": "379e7ae7b3f1e455b4f6e203e560309418aa601107d30f1ab4950273880bfc01"
+      "sha256": "0fdd318d6505cb699bcb1645a4806ac57054ceeb0a2631f31b6f89be227c8d66"
     },
     {
       "path": "apps/api/src/flow-request.ts",

@@ -1,3 +1,7 @@
+## 2026-10-20 — integration concurrency and CI fixture fix
+
+GitHub Verify 966 passed Unit/DB but failed an old HMAC test that counted earlier new fixture calls. Isolated its exact two-call/signature assertion. A CI-equivalent local repeat additionally exposed and fixed a real contact-before-conversation deadlock in the new request worker. 171 Unit and 17 durable PostgreSQL scenarios pass, including deterministic concurrent widget/privacy lock coverage. Full CI-local-closure repeat is pending; see newest CHECKPOINTS.md. Matrix unchanged (5/31/0); provider/redesign restrictions unchanged.
+
 ## 2026-10-20 — saved runtime and complete acceptance
 
 Functional checkpoint `6f41af8` is verified on GitHub (same branch/Draft PR #5). Full combined API/worker/broad/novice/premium/trace/request Chromium acceptance exited 0; 171 Unit, 16 new and 14 existing PostgreSQL scenarios passed. Final logs, screenshots, limitations and next CONNECTOR response-contract boundary: docs/product-rebuild/implementation/premium-2026-10-20/CHECKPOINTS.md. Matrix stays 5 PASS / 31 PARTIAL; live providers and radical visual redesign remain unqualified/deferred. Contract CI 964 succeeded; runtime/latest CI status must be inspected separately.
