@@ -78,5 +78,5 @@ Migration rerun — EXIT 0
 
 .env not found. Continuing without it.
 
-Combined acceptance: running at functional checkpoint; public widget/API/worker/HTTP-boundary success/error/timeout already passed. Final result recorded in a following verification checkpoint.
+Combined acceptance: EXIT 0. Full log in request-combined-acceptance.txt. Public API/widget/worker HTTP-boundary mapped success/error/timeout and broad/novice/premium/trace/request Chromium passed, as did zero campaign jobs/outbound and post-logout rejection.
 No real provider used. Integration interruption is simulated lease expiry; no claim of integration-process SIGKILL.

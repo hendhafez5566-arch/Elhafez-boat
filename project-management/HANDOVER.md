@@ -1,3 +1,7 @@
+## 2026-10-20 — saved runtime and complete acceptance
+
+Functional checkpoint `6f41af8` is verified on GitHub (same branch/Draft PR #5). Full combined API/worker/broad/novice/premium/trace/request Chromium acceptance exited 0; 171 Unit, 16 new and 14 existing PostgreSQL scenarios passed. Final logs, screenshots, limitations and next CONNECTOR response-contract boundary: docs/product-rebuild/implementation/premium-2026-10-20/CHECKPOINTS.md. Matrix stays 5 PASS / 31 PARTIAL; live providers and radical visual redesign remain unqualified/deferred. Contract CI 964 succeeded; runtime/latest CI status must be inspected separately.
+
 ## 2026-10-20 — F23 durable request continuation
 
 Migration 0035 extends the existing queue with pinned wait tokens and durable response completion. One POST attempt; interrupted/ambiguous attempts never auto-resend. Bounded GET retry, typed atomic mapping, explicit success/error/timeout routes, takeover/consent/window/account checks and local delivery recovery without HTTP replay are implemented. Legacy fire-and-forget jobs/versions/RLS remain compatible. 171 Unit, 16 new PostgreSQL scenarios and existing 14 control/trace scenarios pass, plus bots/CRM/team/RLS/media regressions and actual public widget/worker HTTP-boundary local Mock success/failure/timeout. Dedicated/combined browser results and checkpoint SHA are in docs/product-rebuild/implementation/premium-2026-10-20/. Full CI completion is a separate result.

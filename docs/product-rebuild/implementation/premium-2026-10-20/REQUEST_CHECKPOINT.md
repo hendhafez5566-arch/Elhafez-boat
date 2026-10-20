@@ -1,3 +1,15 @@
+## Final verification of saved runtime `6f41af8`
+
+Remote functional checkpoint: **6f41af89841bf76c31b562b0c85105bd97e56d16** (after contract checkpoint **8dffe747e07c44cb84ebcea87fd97d9500333836**). Both were pushed immediately after stable tests; remote/local trees and branch HEAD verified. Same Draft PR #5, same target `feat/stage0-foundation` at `cc702b7`; no merge/deploy. The follow-up is evidence/handoff only.
+
+`npm run check`: 171/171, zero failed/skipped; 16 durable request PostgreSQL scenarios and 14 existing controls/trace scenarios; bots/CRM/team/legacy/RLS and local media/setup/inbox regressions; migration rerun: all EXIT 0. Combined `CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CI_TRACE_BROWSER=1 ... node tests/runtime-acceptance.mjs`: **EXIT 0**. Includes actual public API/widget -> worker -> production HTTP boundary against loopback fixtures for mapped success, HTTP 429 and timeout, one POST attempt per wait; API SIGKILL/restart and delay worker competition; broad and novice UI; premium 50/100 nodes, 48/98 real edits, save/reopen, offline/409 recovery, mobile/RTL, CSS 200% (not browser UI zoom); ordered actual trace, request inspector/Mock branches and logout. Campaign review created zero campaign jobs/outbound. No live customer/provider traffic.
+
+Evidence: [complete combined log](request-combined-acceptance.txt), [unit/database/browser/migration log](request-runtime-verification.txt), [request inspector](../../evidence/requests-2026-10-20/request-inspector.png), [Mock response preview](../../evidence/requests-2026-10-20/mock-response-success.png), machine results and SHA-256 manifest in that same evidence folder. Earlier trace screenshot bytes retained; re-run trace results copied into the request evidence folder. ClamAV uses the small CI acceptance signature database, not production signature qualification.
+
+GitHub CI: contract checkpoint `8dffe74`, Verify **964 / 39473977403**, completed SUCCESS. Runtime checkpoint `6f41af8`, Verify **966 / 39476327203**, was IN_PROGRESS when this evidence was written; inspect actual latest Actions status before claiming final CI success. These local results do not assert remote CI completion.
+
+Status unchanged: **5 PASS / 31 PARTIAL / 0 wholly BLOCKED**; F23 delivered request runtime but native connector/provider contracts and qualification remain. Next functional step is bounded CONNECTOR response/error continuation through its existing jobs, followed by channel/composite-card and experiment/funnel gaps. Real Meta/WhatsApp/AI qualification remains an external dependency. Radical redesign remains deferred and earlier images were not approved.
+
 ## Durable F23 runtime checkpoint — 20 October 2026
 
 Continued from verified remote `8dffe747e07c44cb84ebcea87fd97d9500333836`, on the same execution branch and Draft PR #5. Migration **0035** extends the existing integration jobs, preserves old rows/RLS and published definitions, and adds one unique tenant/conversation/wait-token request. Existing fire-and-forget WEBHOOK jobs retain their existing semantics.
