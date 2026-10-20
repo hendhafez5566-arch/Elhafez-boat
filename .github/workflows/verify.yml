@@ -102,6 +102,8 @@ jobs:
         run: node tests/completion-db.mjs
       - name: Ordered conversation traces and isolated browser fixture
         run: TRACE_BROWSER_FIXTURE=1 node tests/flow-controls-db.mjs
+      - name: Durable integration claims, continuations and tenant isolation
+        run: node tests/flow-integration-db.mjs
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data
@@ -187,5 +189,7 @@ jobs:
             docs/product-rebuild/evidence/continuation-2026-10-20/results.json
             docs/product-rebuild/evidence/traces-2026-10-20/*.png
             docs/product-rebuild/evidence/traces-2026-10-20/results.json
+            docs/product-rebuild/evidence/requests-2026-10-20/*.png
+            docs/product-rebuild/evidence/requests-2026-10-20/results.json
           if-no-files-found: ignore
           retention-days: 7

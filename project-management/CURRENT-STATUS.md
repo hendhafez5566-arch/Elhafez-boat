@@ -1,3 +1,9 @@
+## 2026-10-20 — F23 durable request continuation
+
+Migration 0035 extends the existing queue with pinned wait tokens and durable response completion. One POST attempt; interrupted/ambiguous attempts never auto-resend. Bounded GET retry, typed atomic mapping, explicit success/error/timeout routes, takeover/consent/window/account checks and local delivery recovery without HTTP replay are implemented. Legacy fire-and-forget jobs/versions/RLS remain compatible. 171 Unit, 16 new PostgreSQL scenarios and existing 14 control/trace scenarios pass, plus bots/CRM/team/RLS/media regressions and actual public widget/worker HTTP-boundary local Mock success/failure/timeout. Dedicated/combined browser results and checkpoint SHA are in docs/product-rebuild/implementation/premium-2026-10-20/. Full CI completion is a separate result.
+
+F23 stays PARTIAL; totals 5 PASS / 31 PARTIAL / 0 wholly BLOCKED. Native connector response continuation and real provider qualification remain. No merge, production deployment or external provider activated. Radical visual redesign remains deferred and not approved. Continue from the newest CHECKPOINTS.md entry on the same branch/PR #5.
+
 ## 2026-10-20 — F23 request contract checkpoint
 
 Continued from verified a0c227d on the same execution branch/PR #5. Bounded request/mapping authoring and explicit Mock success/error/timeout work through the shared engine, stable graph ports and pinned subflow bindings. POST auto-retry is rejected; no raw credential inputs. New response-waiting nodes are deliberately publish/runtime gated until durable processing is ready; legacy behavior is unchanged. 166 Unit, existing 14 PostgreSQL scenarios and three actual API/PostgreSQL/Chromium checks pass. F23 stays PARTIAL; total 5 PASS / 31 PARTIAL. See REQUEST_CHECKPOINT.md. Baseline GitHub Verify run 962 is success. No external provider, merge or deployment; visual redesign deferred.

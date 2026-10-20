@@ -45,7 +45,7 @@ export type FlowChannel='WHATSAPP'|'WEBSITE'|'MESSENGER'|'INSTAGRAM'|'TELEGRAM';
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[];runtime?:FlowRuntime};
 export type FlowMessage={type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
 export type FlowTrace={nodeId:string;type:string;outcome:string;elapsedMs?:number};
-export type FlowAdvance={trace?:FlowTrace[];state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;waiting?:{seconds:number;next:string;kind?:'INPUT'|'CHOICE'|'DELAY';expiresAt?:number;token?:string}};
+export type FlowAdvance={trace?:FlowTrace[];state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;waiting?:{seconds:number;next:string;kind?:'INPUT'|'CHOICE'|'DELAY'|'INTEGRATION';expiresAt?:number;token?:string}};
 const key=/^[a-z][a-z0-9_]{0,39}$/;
 const ident=/^[a-z][a-z0-9_-]{0,31}$/;
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -265,7 +265,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
 }
 export function renderFlowText(text:string,answers:Record<string,string>,limit=4096):string{return text.replace(/\{\{([a-z][a-z0-9_]{0,39})\}\}/g,(_,key:string)=>Object.hasOwn(answers,key)?answers[key]:'').slice(0,limit)}
 export function initialFlowState():FlowState{return {at:null,answers:{},tags:[]}}
-export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number}={}):FlowAdvance{
+export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number;enter?:boolean}={}):FlowAdvance{
  const now=context.now??Date.now(),nodes=new Map(flow.nodes.map(n=>[n.id,n]));
  const answers:Record<string,string>=Object.assign(Object.create(null),state.answers),tags=[...state.tags];let at=state.at??flow.startId;
  let runtime:FlowRuntime|undefined=state.runtime?JSON.parse(JSON.stringify(state.runtime)):undefined;
@@ -284,7 +284,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   else messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});
  };
  const current=nodes.get(at);if(!current)throw Error('Unknown current flow node');
- if(state.at!==null){
+ if(state.at!==null&&!context.enter){
   if(current.type==='INPUT'||current.type==='QUESTION'||current.type==='BUTTONS'||current.type==='LIST'){
    const policy='policy'in current?current.policy:undefined,entry:FlowTrace={nodeId:current.id,type:current.type,outcome:'resume'};trace.push(entry);
    const timedOut=runtime?.wait?.nodeId===current.id&&now>=runtime.wait.expiresAt;

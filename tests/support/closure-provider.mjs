@@ -10,8 +10,10 @@ export async function closureProvider(){
   if(/^\d+$/.test(mode)){res.writeHead(Number(mode)).end('{}');return}
   if(mode==='reset'){req.socket.destroy();return}
   if(url.pathname.endsWith('/oauth/access_token')&&url.searchParams.get('code')==='fixture-denied-code'){res.writeHead(400).end('{}');return}
+  if(host==='webhook.fixture.test'&&mode==='hold')return;
   let result={};
-  if(url.pathname.endsWith('/messages')&&req.method==='POST'){
+  if(host==='webhook.fixture.test')result={data:{value:'fixture-response'}};
+  else if(url.pathname.endsWith('/messages')&&req.method==='POST'){
    const id='wamid.fixture.'+calls.length;accepted.set(body.biz_opaque_callback_data||id,{id,body});
    if(mode==='hold')return;result=host==='graph.facebook.com'&&body.messaging_product?{messages:[{id}]}:{message_id:id};
   }else if(url.pathname.includes('message_templates'))result={data:[{name:'fixture_notice',language:'en',status:'APPROVED',category:'UTILITY',components:[{type:'BODY',text:'Fixture notification'}]}]};

@@ -1,0 +1,82 @@
+TypeScript/build/Unit — EXIT 0
+✔ one-character WhatsApp sender profile uses a contact name accepted by PostgreSQL (2.603222ms)
+ℹ tests 171
+ℹ suites 0
+ℹ pass 171
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5094.818988
+
+Durable PostgreSQL requests — EXIT 0
+PASS unique wait-token queue, ignored inbound duplicates, stable key and exactly one committed success continuation
+PASS mapping response failure routes atomically without applying invalid fields
+PASS typed response failure routes atomically without applying invalid fields
+PASS POST HTTP 429 takes error branch with no automatic replay
+PASS ambiguous POST timeout is quarantined and follows timeout without resend
+PASS committed in-flight claim blocks second worker; expired interrupted claim never resends and ignores late success
+PASS durable stored response survives actual PostgreSQL delivery rollback and resumes without repeating HTTP
+PASS human takeover while HTTP is in flight prevents fields, continuation and automated delivery
+PASS publication during wait preserves pinned request and downstream version
+PASS same-node restart changes wait token and cancels stale job before dispatch
+PASS existing deadline worker takes timeout and cancels undispatched request once
+PASS opt-out and unavailable/expired messaging channel stop dispatch
+PASS expired WhatsApp authorization and explicit reauthorization prevent integration side effects even inside service window
+PASS bounded safe GET retry retains one job/idempotency key and one successful continuation
+PASS real forced RLS, other-tenant worker and author-role boundaries remain enforced
+PASS integration disabled after publication follows enqueue-error route without creating a job
+PASS 16 durable integration scenarios; every HTTP dispatch is an explicit local mock
+
+Previous PostgreSQL controls/traces — EXIT 0
+PASS draft trigger inert until atomic publication
+PASS retry count and immutable deadline survive separate real transactions; exhausted route cancels job
+PASS optional skip uses current node callback and never writes missing answer
+PASS durable timeout resumes through actual worker exactly once and premature clocks requeue
+PASS same-node re-entry rejects stale token and late answer follows timeout
+PASS reply/worker race serializes one timeout transition under real conversation lock
+PASS real CRM stage/assignee changes and session-only fields stay out of CRM including human-keyword handoff
+PASS persisted timing/goals, preview excluded, value-free analytics and real RLS isolation
+PASS foreign-company CRM assignee cannot publish; pinned version and active triggers remain unchanged
+PASS legacy null-bot pinned session is retained and included only in legacy-bot analytics
+PASS ordered execution IDs and exact cursor pagination retain every real transition without customer values
+PASS conversation trace rejects cross-company and same-company wrong-bot identifiers
+PASS historical events remain visible with explicit unknown order and legacy scope
+PASS diagnostics expose saved failed-continuation status and pinned node without raw error payloads
+PASS 14 PostgreSQL control scenarios; no external provider calls
+
+Legacy bots/CRM/team — EXIT 0
+PASS immutable bot rollback, two concurrent editors, pinned version after publish/route change, new-session routing and non-destructive archive
+PASS contact-wide timeline pagination and all-or-nothing role-scoped bulk CRM state updates
+(node:28533) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS analytics UTC calendar boundary, daily/KPI reconciliation, session-timezone independence and tenant isolation
+PASS real team lifecycle: concurrent case-insensitive duplicate rejection, seat limits, owner/manager/agent/viewer restrictions, cross-tenant denial, revoked and reused tokens denied, acceptance and role-change session invalidation
+PASS campaign review: actual consent/opt-out audience, tenant/role denial, no queued jobs or provider requests
+PASS real lead profile/conversation identity and bot session metrics with cross-company denial
+PASS actual PostgreSQL lead pagination: 20-row page, second-page uniqueness, company isolation, literal wildcard and invalid-page rejection
+PASS PostgreSQL: legacy backfill twice preserves versions; two independent bots; optimistic conflict; tenant/RLS and roles; unique channel routing; actual runtime and pinned bot
+
+FORCE/RLS — EXIT 0
+PASS PostgreSQL catalog isolation, cross-tenant read/update/insert denial, and RLS/FORCE flags for all new tenant tables
+
+Local ClamAV/setup/inbox/integration configuration — EXIT 0
+PASS atomic workspace setup, retained unpublished draft, retry idempotency, owner guard, invalid rollback and tenant separation
+PASS real ClamAV clean/quarantine/offline/recovery; private preview tenant guards; independent published-bot reference deletion denied; unused deletion succeeds
+PASS real simultaneous agent takeover, exactly one owner, denied competing/closed reply and stored assigned website reply
+PASS real platform company provision/owner activation/company login hint, single-use invitation and administrative-only audit fields
+PASS local integration inspection with zero queued jobs; real secret encryption/rotation without disclosure, disable and tenant denial; no outbound connection
+
+Dedicated real API/Chromium requests — EXIT 0
+PASS real PostgreSQL-backed API draft roundtrip and request/body/mapping/route inspector
+PASS actual shared-engine server preview takes Mock success, HTTP error and timeout routes
+PASS mock data never persists in draft; real scoped integration reference publishes without any dispatch or channel binding
+
+Migration rerun — EXIT 0
+> elhafez-boat@0.1.0 db:migrate
+> node --env-file-if-exists=.env scripts/migrate.mjs
+
+.env not found. Continuing without it.
+
+Combined acceptance: running at functional checkpoint; public widget/API/worker/HTTP-boundary success/error/timeout already passed. Final result recorded in a following verification checkpoint.
+No real provider used. Integration interruption is simulated lease expiry; no claim of integration-process SIGKILL.

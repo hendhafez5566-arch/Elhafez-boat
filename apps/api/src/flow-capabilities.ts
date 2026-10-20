@@ -5,7 +5,6 @@ export function flowChannelIssues(flow:FlowDefinition,channel:FlowChannel=flow.c
  const issues:FlowIssue[]=[],cap=channelCapabilities[channel];
  if(flow.forms?.length)issues.push({severity:'warning',code:'FORM_DRAFT_ONLY',message:'النماذج مسودات داخلية فقط؛ لا توجد مراجع Meta معتمدة أو إرسال حي.'});
  for(const node of flow.nodes){
-  if(node.type==='WEBHOOK'&&node.request)issues.push({severity:'error',nodeId:node.id,code:'REQUEST_RUNTIME_PENDING',message:'ربط الاستجابة متاح في Mock فقط حتى استكمال عامل التشغيل؛ النشر محظور لهذه الخطوة.'});
   if(node.type==='BUTTONS'||node.type==='LIST'){
    const urls=node.choices.filter(c=>c.action==='URL'),replies=node.choices.length-urls.length;
    if(channel==='MESSENGER'&&urls.length&&node.text.length>640)issues.push({severity:'error',nodeId:node.id,code:'CHANNEL_BUTTON_TEXT',message:'نص رسالة أزرار الروابط في Messenger لا يتجاوز 640 حرفًا.'});
