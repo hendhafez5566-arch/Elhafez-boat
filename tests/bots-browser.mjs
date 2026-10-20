@@ -286,20 +286,24 @@ try{
  const testPassword='Disposable-team-browser-1234';
  const revokedStatus=await evaluate(`fetch('/api/v1/team/accept',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:${JSON.stringify(revokedToken)},email:${JSON.stringify(staffEmail)},password:${JSON.stringify(testPassword)}})}).then(r=>r.status)`);assert.equal(revokedStatus,404);
  const managerEmail='manager-browser-'+Date.now()+'@example.invalid',managerToken=await invite(managerEmail,'MANAGER');
- await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'owner logout before invitation acceptance');
+ // Keep the existing owner cookie while accepting the public invite with the invitee credentials.
  await pageLoaded(()=>send('Page.navigate',{url:base+'/join.html#team.'+managerToken}));
  await evaluate(`(()=>{const f=document.getElementById('join-form');f.elements.email.value=${JSON.stringify(managerEmail)};f.elements.password.value=${JSON.stringify(testPassword)};f.requestSubmit()})()`);await until("document.getElementById('join-form').hidden",'actual join form accepted');
  assert.equal(await evaluate('location.hash'),'','invitation secret removed from URL');
  await evaluate('window.scrollTo(0,0)');await sleep(150);await screenshot('team-accepted-320.png');
  await pageLoaded(()=>evaluate("document.getElementById('join-login').click()"));await until("Boolean(document.getElementById('login-form')?.onsubmit)",'company login ready after join');assert.equal(await evaluate("document.getElementById('login-form').elements.tenantSlug.value"),teamAccount.slug);
+ await until("document.body.dataset.authReady==='true'",'owner cookie restored without another login');
+ await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list select'))",'owner edit role available');
+ for(const role of ['VIEWER','MANAGER']){await evaluate(`(()=>{const row=[...document.querySelectorAll('#team-list [data-member-id]')].find(n=>n.textContent.includes(${JSON.stringify(managerEmail)}));row.querySelector('select').value=${JSON.stringify(role)};row.querySelector('button').click()})()`);await until(`([...document.querySelectorAll('#team-list [data-member-id]')].find(n=>n.textContent.includes(${JSON.stringify(managerEmail)})))?.textContent.includes('${role==='VIEWER'?'مشاهدة فقط':'مدير'}')`,'owner role change stored '+role)}
+ await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'owner logout before manager login');
+ assert.equal(await evaluate("document.getElementById('login-form').elements.tenantSlug.value"),teamAccount.slug);
  await evaluate(`(()=>{const f=document.getElementById('login-form');f.elements.email.value=${JSON.stringify(managerEmail)};f.elements.password.value=${JSON.stringify(testPassword)};f.requestSubmit()})()`);await until("document.body.dataset.authReady==='true'",'real invited manager login');
  await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list [data-member-id]'))",'manager team load');
  assert.ok(await evaluate("document.querySelector('#invite-form option[value=MANAGER]').disabled"),'manager invitation option is unavailable');assert.equal(await evaluate("document.querySelectorAll('#team-list select').length"),0,'manager cannot change roles');
  const deniedManagerInvite=await evaluate("fetch('/api/v1/team/invitations',{method:'POST',headers:{'content-type':'application/json','x-boat-csrf':'1'},body:JSON.stringify({email:'forbidden-manager@example.invalid',role:'MANAGER'})}).then(r=>r.status)");assert.equal(deniedManagerInvite,403);
  await screenshot('team-manager-permissions-320.png');
- await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'manager logout');await login(base,teamAccount);
- await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list select'))",'owner edit role available');
- await evaluate(`(()=>{const row=[...document.querySelectorAll('#team-list [data-member-id]')].find(n=>n.textContent.includes(${JSON.stringify(managerEmail)}));row.querySelector('select').value='VIEWER';row.querySelector('button').click()})()`);await until(`([...document.querySelectorAll('#team-list [data-member-id]')].find(n=>n.textContent.includes(${JSON.stringify(managerEmail)})))?.textContent.includes('مشاهدة فقط')`,'owner role change stored');
+ await evaluate("document.querySelector('[data-page=analytics]').click()");await until("Boolean(document.querySelector('#bot-insights select'))&&!document.querySelector('.insights-loading')",'empty company report');
+ assert.equal(await evaluate("document.querySelector('#bot-insights .metric strong').textContent"),new Intl.NumberFormat('ar-EG').format(0));assert.ok(await evaluate("document.getElementById('bot-insights').textContent.includes('لا يوجد نشاط في الفترة المحددة')"));await evaluate('window.scrollTo(0,0)');await sleep(150);await screenshot('comparison-empty-320.png');
  console.log('PASS browser team lifecycle: create/hide token, duplicate Arabic error, revoke/denied acceptance, actual accepted manager login, forbidden manager grant, owner role change and no external delivery');
  assert.deepEqual(exceptions,[]);
  console.log('PASS new Chromium bot journey: create independent Start, contextual message, Arabic template/three buttons, save, publish, cookie reload, same bot and definition; 1366/768/390/320 actual before/after screenshots and overflow checks');
