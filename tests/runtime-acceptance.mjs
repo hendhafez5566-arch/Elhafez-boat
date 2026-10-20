@@ -280,7 +280,13 @@ try{
  const reviewAccount=(await db.query(`INSERT INTO whatsapp_accounts(tenant_id,phone_number_id,waba_id,access_token_encrypted,connected_by) VALUES($1,$2,'9999911111','DISPOSABLE-NOT-A-PROVIDER-CREDENTIAL',$3) RETURNING id`,[ids[0].tenantId,BigInt('0x'+randomBytes(8).toString('hex')).toString(),ids[0].userId])).rows[0].id;
  const reviewTemplate=(await db.query(`INSERT INTO whatsapp_approved_templates(tenant_id,account_id,template_name,language_code,category,components) VALUES($1,$2,'review_fixture','ar','MARKETING',$3::jsonb) RETURNING id`,[ids[0].tenantId,reviewAccount,JSON.stringify([{type:'BODY',text:'قالب اختبار محلي — لا يُرسل'}])])).rows[0].id;
  const reviewCampaign=(await db.query(`INSERT INTO chatbot_campaigns(tenant_id,name,segment,steps,start_at,created_by) VALUES($1,'حملة مراجعة محلية دون إرسال','{}',$2::jsonb,now()+interval '1 day',$3) RETURNING id`,[ids[0].tenantId,JSON.stringify([{templateId:reviewTemplate,offsetMinutes:0}]),ids[0].userId])).rows[0].id;
- await writeFile('acceptance-evidence/bot-browser-account.json',JSON.stringify(await browserAccount('novice-ui')));
+ // Dedicated company preserves the production seat limit instead of raising it for test actors.
+ const teamSlug='team-browser-'+suffix,teamEmail=teamSlug+'@example.invalid';
+ const teamTenant=(await db.query('INSERT INTO tenants(slug,name) VALUES($1,$2) RETURNING id',[teamSlug,'Disposable team browser company'])).rows[0].id;
+ const teamOwner=(await db.query('INSERT INTO users(email,password_hash) VALUES($1,$2) RETURNING id',[teamEmail,hash])).rows[0].id;
+ await db.query("INSERT INTO memberships(tenant_id,user_id,role) VALUES($1,$2,'OWNER')",[teamTenant,teamOwner]);
+ await db.query("INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at) VALUES($1,'STARTER','TRIAL',now()+interval '14 days')",[teamTenant]);
+ await writeFile('acceptance-evidence/bot-browser-account.json',JSON.stringify({...await browserAccount('novice-ui'),team:{slug:teamSlug,email:teamEmail,password:pass}}));
  const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
  const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);

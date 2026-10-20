@@ -1,3 +1,9 @@
+## 2026-10-20 — Team/invitation completion batch (final acceptance pending)
+
+Same PR #4 branch after e14a528. Rebuilt team tasks with Arabic role explanations/status/expiry, owner-only role editing, manager-safe invitation controls, private one-time link copy/hide, retry retaining prior data and guarded write buttons. Server serializes case-insensitive active-email deduplication, restricts privileged invitation revocation to owner and audits revocation. Accepted invitations return company slug only after credential verification; actual join page clears token fragment, handles Arabic errors and links to login with company prefilled. No email delivery or external sharing performed.
+
+127 unit tests pass; real PostgreSQL team checks pass concurrent duplicate/seat protection, all roles/tenant rejection, expired/revoked/reused tokens, existing password preservation, acceptance and role-change session invalidation. Initial actual Chromium full local team lifecycle passed; final full committed-source suite with the additional network-retry fault probe remains pending. Harness gives team tests a separate disposable STARTER company because existing broad/novice fixture accounts consume the original company's real seats; production plan limits are unchanged. S19 final local acceptance and evidence refresh pending. No migration, provider, merge or deployment.
+
 ## 2026-10-20 — Builder collaboration/recovery verified
 
 Tested source b592b7b2d12b178b1e093defc03501d581077540, same branch/PR #4. Real 409 review now combines independent fields, requires explicit choices for overlaps and validates the candidate before local application. Save remains separate and optimistic; publication is unchanged. Added validated JSON backup restore with current revision, scope/size/parse guards and undo/redo; logout clears recovery UI/snapshots. No schema/provider/deployment operations.

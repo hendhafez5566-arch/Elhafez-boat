@@ -39,10 +39,10 @@ try{
  ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{ws.addEventListener('open',resolve,{once:true});ws.addEventListener('error',reject,{once:true})});
  ws.addEventListener('message',event=>{const v=JSON.parse(String(event.data));if(v.id){const p=pending.get(v.id);pending.delete(v.id);if(p)v.error?p.reject(Error(v.error.message)):p.resolve(v.result)}else if(v.method==='Page.javascriptDialogOpening')void send('Page.handleJavaScriptDialog',{accept:true,...(dialogReplies.length?{promptText:dialogReplies.shift()}:{})});else if(v.method==='Runtime.exceptionThrown')exceptions.push(v.params.exceptionDetails.text)});
  await send('Page.enable');await send('Runtime.enable');await mkdir('acceptance-evidence',{recursive:true});
- async function login(origin){
+ async function login(origin,credentials=account){
   await pageLoaded(()=>send('Page.navigate',{url:origin+'/'}));await until("Boolean(document.getElementById('login-form')?.onsubmit)",'login ready');
   const restored=await evaluate("fetch('/api/v1/auth/me').then(r=>r.ok)");
-  if(!restored)await evaluate(`(()=>{const p=${JSON.stringify(account)},f=document.getElementById('login-form');f.elements.tenantSlug.value=p.slug;f.elements.email.value=p.email;f.elements.password.value=p.password;f.requestSubmit()})()`);
+  if(!restored)await evaluate(`(()=>{const p=${JSON.stringify(credentials)},f=document.getElementById('login-form');f.elements.tenantSlug.value=p.slug;f.elements.email.value=p.email;f.elements.password.value=p.password;f.requestSubmit()})()`);
   await until("!document.getElementById('app').hidden",'logged in');
   if(origin===base)await until("document.body.dataset.authReady==='true'",'session initialization complete');
   else await sleep(500);
@@ -264,6 +264,35 @@ try{
  for(const days of [7,90]){await evaluate(`(()=>{const s=document.querySelector('#bot-insights select');s.value='${days}';s.dispatchEvent(new Event('change'))})()`);await until("document.getElementById('bot-insights').getAttribute('aria-busy')==='false'",'analytics period loaded');assert.equal(await evaluate("document.querySelectorAll('.vessel-activity-day').length"),days)}
  for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await screenshot('wizard-analytics-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'analytics overflow '+width)}
  console.log('PASS analytics actual period requests and zero-filled UTC daily series');
+ // Team lifecycle has a separate company: production seat limits stay unchanged.
+ const teamAccount=account.team;assert.ok(teamAccount);await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'switch to dedicated team company');await login(base,teamAccount);
+ await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list [data-member-id]'))",'team task page loaded');
+ const priorMembers=await evaluate("document.querySelectorAll('#team-list [data-member-id]').length");
+ await evaluate("(()=>{const original=window.fetch;window.fetch=(input,options)=>{if(String(input)==='/api/v1/team'){window.fetch=original;return Promise.reject(new TypeError('Injected offline transport fault'))}return original(input,options)};document.querySelector('[data-page=team]').click()})()");await until("Boolean(document.querySelector('.team-load-error'))",'team network error state');assert.equal(await evaluate("document.querySelectorAll('#team-list [data-member-id]').length"),priorMembers,'last good team data retained');await screenshot('team-retry-320.png');await click('إعادة المحاولة','.team-load-error button');await until("!document.querySelector('.team-load-error')",'team retry recovers real API data');
+ const staffEmail='staff-browser-'+Date.now()+'@example.invalid';
+ async function invite(email,role){await evaluate(`(()=>{const f=document.getElementById('invite-form');f.elements.email.value=${JSON.stringify(email)};f.elements.role.value=${JSON.stringify(role)};f.elements.role.dispatchEvent(new Event('change'));f.requestSubmit()})()`);await until("Boolean(document.querySelector('#invite-result input'))",'private invitation link created');const link=await evaluate("document.querySelector('#invite-result input').value");await click('إخفاء الرابط','#invite-result button');assert.ok(await evaluate("!document.querySelector('#invite-result input')"),'private token cleared before screenshots');return link.split('#team.')[1]}
+ const revokedToken=await invite(staffEmail,'AGENT');
+ await evaluate(`(()=>{const f=document.getElementById('invite-form');f.elements.email.value=${JSON.stringify(staffEmail.toUpperCase())};f.requestSubmit()})()`);await until("document.getElementById('notice').textContent.includes('توجد دعوة سارية')",'Arabic duplicate invitation error');
+ for(const [width,height] of [[1366,900],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<500});await evaluate('window.scrollTo(0,0)');await sleep(150);await screenshot('team-invitations-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'team overflow '+width)}
+ await evaluate(`(()=>{const row=[...document.querySelectorAll('#team-invites [data-invitation-id]')].find(n=>n.textContent.includes(${JSON.stringify(staffEmail)}));row.querySelector('button').click()})()`);await until("document.querySelector('#team-invites [data-status=REVOKED]')!==null",'invitation revoked');
+ const testPassword='Disposable-team-browser-1234';
+ const revokedStatus=await evaluate(`fetch('/api/v1/team/accept',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({token:${JSON.stringify(revokedToken)},email:${JSON.stringify(staffEmail)},password:${JSON.stringify(testPassword)}})}).then(r=>r.status)`);assert.equal(revokedStatus,404);
+ const managerEmail='manager-browser-'+Date.now()+'@example.invalid',managerToken=await invite(managerEmail,'MANAGER');
+ await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'owner logout before invitation acceptance');
+ await pageLoaded(()=>send('Page.navigate',{url:base+'/join.html#team.'+managerToken}));
+ await evaluate(`(()=>{const f=document.getElementById('join-form');f.elements.email.value=${JSON.stringify(managerEmail)};f.elements.password.value=${JSON.stringify(testPassword)};f.requestSubmit()})()`);await until("document.getElementById('join-form').hidden",'actual join form accepted');
+ assert.equal(await evaluate('location.hash'),'','invitation secret removed from URL');
+ await evaluate('window.scrollTo(0,0)');await sleep(150);await screenshot('team-accepted-320.png');
+ await pageLoaded(()=>evaluate("document.getElementById('join-login').click()"));await until("Boolean(document.getElementById('login-form')?.onsubmit)",'company login ready after join');assert.equal(await evaluate("document.getElementById('login-form').elements.tenantSlug.value"),teamAccount.slug);
+ await evaluate(`(()=>{const f=document.getElementById('login-form');f.elements.email.value=${JSON.stringify(managerEmail)};f.elements.password.value=${JSON.stringify(testPassword)};f.requestSubmit()})()`);await until("document.body.dataset.authReady==='true'",'real invited manager login');
+ await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list [data-member-id]'))",'manager team load');
+ assert.ok(await evaluate("document.querySelector('#invite-form option[value=MANAGER]').disabled"),'manager invitation option is unavailable');assert.equal(await evaluate("document.querySelectorAll('#team-list select').length"),0,'manager cannot change roles');
+ const deniedManagerInvite=await evaluate("fetch('/api/v1/team/invitations',{method:'POST',headers:{'content-type':'application/json','x-boat-csrf':'1'},body:JSON.stringify({email:'forbidden-manager@example.invalid',role:'MANAGER'})}).then(r=>r.status)");assert.equal(deniedManagerInvite,403);
+ await screenshot('team-manager-permissions-320.png');
+ await evaluate("document.getElementById('logout').click()");await until("!document.getElementById('login').hidden",'manager logout');await login(base,teamAccount);
+ await evaluate("document.querySelector('[data-page=team]').click()");await until("Boolean(document.querySelector('#team-list select'))",'owner edit role available');
+ await evaluate(`(()=>{const row=[...document.querySelectorAll('#team-list [data-member-id]')].find(n=>n.textContent.includes(${JSON.stringify(managerEmail)}));row.querySelector('select').value='VIEWER';row.querySelector('button').click()})()`);await until(`([...document.querySelectorAll('#team-list [data-member-id]')].find(n=>n.textContent.includes(${JSON.stringify(managerEmail)})))?.textContent.includes('مشاهدة فقط')`,'owner role change stored');
+ console.log('PASS browser team lifecycle: create/hide token, duplicate Arabic error, revoke/denied acceptance, actual accepted manager login, forbidden manager grant, owner role change and no external delivery');
  assert.deepEqual(exceptions,[]);
  console.log('PASS new Chromium bot journey: create independent Start, contextual message, Arabic template/three buttons, save, publish, cookie reload, same bot and definition; 1366/768/390/320 actual before/after screenshots and overflow checks');
 }catch(error){console.error('BOT BROWSER FAILURE',error);await screenshot('rebuild-failure.png').catch(()=>{});throw error}

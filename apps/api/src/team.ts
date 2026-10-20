@@ -11,6 +11,8 @@ export async function createTeamInvite(db:SqlClient,actor:Actor,input:unknown){
  if(actor.role==='MANAGER'&&role==='MANAGER')throw new HttpFailure(403,'Only owner invites managers');
  // Serialize invite creation for a tenant, to enforce seat limits under concurrency.
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[actor.tenantId]);
+ const duplicate=await db.query(`SELECT 1 FROM team_invitations WHERE tenant_id=$1 AND lower(invited_email)=$2 AND accepted_at IS NULL AND revoked_at IS NULL AND expires_at>now()`,[actor.tenantId,email]);
+ if(duplicate.rowCount)throw new HttpFailure(409,'Active invitation already exists for this email');
  const seats=await db.query(`SELECT coalesce(p.max_staff,3) AS max_staff FROM tenants t
  LEFT JOIN tenant_subscriptions s ON s.tenant_id=t.id
  LEFT JOIN subscription_plans p ON p.code=s.plan_code WHERE t.id=$1`,[actor.tenantId]);
@@ -35,9 +37,13 @@ export async function listTeamInvitations(db:SqlClient,actor:Actor){
 }
 export async function revokeTeamInvite(db:SqlClient,actor:Actor,id:string){
  allow(actor,['OWNER','MANAGER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid invitation ID');
+ const invitation=await db.query(`SELECT role FROM team_invitations WHERE tenant_id=$1 AND id=$2 AND accepted_at IS NULL AND revoked_at IS NULL FOR UPDATE`,[actor.tenantId,id]);
+ if(!invitation.rowCount)throw new HttpFailure(404,'Active invitation not found');
+ if(actor.role==='MANAGER'&&!['AGENT','VIEWER'].includes(String(invitation.rows[0].role)))throw new HttpFailure(403,'Only owner manages privileged invitations');
  const r=await db.query(`UPDATE team_invitations SET revoked_at=now() WHERE tenant_id=$1 AND id=$2 AND accepted_at IS NULL AND revoked_at IS NULL RETURNING id`,[actor.tenantId,id]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Active invitation not found');
  await db.query(`DELETE FROM invitation_lookup WHERE tenant_id=$1 AND invitation_id=$2`,[actor.tenantId,id]);
+ await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'TEAM_INVITE_REVOKED','invitation',$3)`,[actor.tenantId,actor.userId,id]);
  return {revoked:true};
 }
 export async function updateTeamRole(db:SqlClient,actor:Actor,userId:string,input:unknown){
@@ -69,6 +75,7 @@ export async function acceptTeamInvite(pool:SqlPool&SqlClient,input:unknown){
   if(m.rowCount!==1)throw new HttpFailure(409,'User already has membership');
   await tx.query(`UPDATE team_invitations SET accepted_at=now() WHERE tenant_id=$1 AND id=$2`,[tenantId,row.rows[0].id]);
   await tx.query(`DELETE FROM invitation_lookup WHERE tenant_id=$1 AND invitation_id=$2`,[tenantId,row.rows[0].id]);
-  await tx.query('COMMIT');return {accepted:true,loginRequired:true};
+  const company=await tx.query('SELECT slug FROM tenants WHERE id=$1',[tenantId]);
+  await tx.query('COMMIT');return {accepted:true,loginRequired:true,tenantSlug:String(company.rows[0].slug)};
  }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
 }

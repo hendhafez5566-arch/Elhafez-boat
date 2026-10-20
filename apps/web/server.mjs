@@ -15,6 +15,7 @@ const assets={
  '/app.js':['app.js','text/javascript; charset=utf-8'],
  '/style.css':['style.css','text/css; charset=utf-8'],
  '/whatsapp-signup.js':['whatsapp-signup.js','text/javascript; charset=utf-8'],
+ '/team-ui.js':['team-ui.js','text/javascript; charset=utf-8'],
  '/workspace-ui.js':['workspace-ui.js','text/javascript; charset=utf-8'],
  '/ui-states.js':['ui-states.js','text/javascript; charset=utf-8'],
  '/operations.css':['style.css','text/css; charset=utf-8'],
