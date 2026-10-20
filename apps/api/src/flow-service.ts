@@ -1,7 +1,7 @@
 import {flowChannelIssues} from './flow-capabilities.js';
 import {flowStorage} from './flow-storage.js';
 import {resolveConversationBot} from './bot-routing.js';
-import {createHash} from 'node:crypto';
+import {createHash,randomUUID} from 'node:crypto';
 import {compileSubflows} from './subflows.js';
 import {enqueueConnector} from './connectors.js';
 import {validateManagedMedia} from './media.js';
@@ -158,7 +158,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
   await db.query(`INSERT INTO chatbot_delay_jobs(tenant_id,conversation_id,version,node_id,due_at,wait_token) VALUES($1,$2,$3,$4,to_timestamp($5::double precision/1000),$6) ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=$3,node_id=$4,due_at=EXCLUDED.due_at,wait_token=EXCLUDED.wait_token,status='PENDING',error=NULL`,[tenantId,conversationId,version,result.state.at,dueAt,result.waiting.token||null]);
  }
  // Events contain identifiers/outcomes only, never answer values or message bodies.
- if(result.trace?.length)await db.query(`INSERT INTO chatbot_flow_step_events(tenant_id,conversation_id,bot_id,version,node_id,node_type,outcome,elapsed_ms) SELECT $1,$2,$3,$4,x."nodeId",x.type,x.outcome,coalesce(x."elapsedMs",0) FROM jsonb_to_recordset($5::jsonb) AS x("nodeId" text,type text,outcome text,"elapsedMs" numeric)`,[tenantId,conversationId,botId,version,JSON.stringify(result.trace)]);
+ if(result.trace?.length)await db.query(`INSERT INTO chatbot_flow_step_events(tenant_id,conversation_id,bot_id,version,node_id,node_type,outcome,elapsed_ms,execution_id,step_index,recorded_at) SELECT $1,$2,$3,$4,x."nodeId",x.type,x.outcome,coalesce(x."elapsedMs",0),$6,x."stepIndex",statement_timestamp() FROM jsonb_to_recordset($5::jsonb) AS x("nodeId" text,type text,outcome text,"elapsedMs" numeric,"stepIndex" integer)`,[tenantId,conversationId,botId,version,JSON.stringify(result.trace.map((entry,stepIndex)=>({...entry,stepIndex}))),randomUUID()]);
  if(!result.handoff&&(Object.keys(result.state.answers).length||result.state.tags.length)){
   const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
   await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb,updated_at=now() WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify({...contactAnswers,lead_tags:result.state.tags.join(', ')})]);

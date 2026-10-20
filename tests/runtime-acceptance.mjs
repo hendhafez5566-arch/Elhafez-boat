@@ -301,6 +301,7 @@ try{
  const premiumBrowser=spawn(process.execPath,['tests/premium-builder-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_SLUG:premiumAccount.slug,ACCEPTANCE_EMAIL:premiumAccount.email,ACCEPTANCE_PASSWORD:premiumAccount.password},stdio:'inherit'});
  const [premiumCode]=await once(premiumBrowser,'exit');assert.equal(premiumCode,0,'Premium flow builder Chromium acceptance failed');
  const controlsHttp=spawn(process.execPath,['tests/flow-controls-http.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/browser-account.json'},stdio:'inherit'});const [controlsCode]=await once(controlsHttp,'exit');assert.equal(controlsCode,0,'Flow controls HTTP acceptance failed');
+ if(process.env.CI_TRACE_BROWSER==='1'){const traceBrowser=spawn(process.execPath,['tests/flow-trace-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [traceCode]=await once(traceBrowser,'exit');assert.equal(traceCode,0,'Committed conversation trace browser acceptance failed');}
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  console.log('PASS campaign browser review queued zero jobs and zero outbound messages');

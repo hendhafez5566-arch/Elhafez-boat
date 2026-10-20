@@ -1,3 +1,11 @@
+## 2026-10-20 — Ordered conversation diagnostics checkpoint
+
+The prior functional batch is safely pushed as `66031dd` on `feat/premium-flow-builder-2026-10-20`, Draft PR #5. New batch: additive migration 0034, execution UUID/ordered steps, exact microsecond cursor paging, bot-scoped session/trace APIs and real conversation trace UI. Displays pinned state, wait/job status and step timing/reasons without answers or message text; old events have explicit unknown order. Selection is read-only; logout invalidates delayed views. Same-company wrong-bot and cross-company access are denied.
+
+161 Unit tests, 14 PostgreSQL scenarios and six dedicated real Chromium/HTTP scenarios pass. Full combined acceptance is running at this checkpoint; do not infer its final result from this entry. F35 advances but remains PARTIAL because failed rolled-back inbound transactions and full delivery correlation are not covered. Totals remain 5 PASS / 31 PARTIAL. Evidence: `docs/product-rebuild/implementation/premium-2026-10-20/TRACE_CHECKPOINT.md` and `docs/product-rebuild/evidence/traces-2026-10-20/`.
+
+Owner has NOT approved a radical visual redesign; previous screenshots showed limited visual change. Keep this note for the later combined visual/functional assignment. No independent redesign, merge, production deploy or real provider/send is performed.
+
 ## 2026-10-20 — Premium Flow Builder continuation on Draft PR #5
 
 Branch `feat/premium-flow-builder-2026-10-20`, continued from verified remote `a4ced99`; target `feat/stage0-foundation` unchanged. Durable input/choice retry, fallback, optional skip and no-reply worker paths; wait-token stale/race protection; nested conditions; typed contact/session variables; inline draft START triggers; remove-tag and CRM stage/eligible assignment; zoned smart delays; sticky branches/goals; URL button adapters and channel lint; persisted tenant-scoped transition outcomes/timing and bot analytics. Additive migration 0033 retains old answers/jobs/immutable versions. Internal multi-screen form sandbox and opt-in draft/text review are explicitly MOCK, without AI or Meta calls.

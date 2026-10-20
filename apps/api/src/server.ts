@@ -1,3 +1,4 @@
+import {flowTraceSessions,flowConversationTrace} from './flow-trace.js';
 import {mockFlowAssistance} from './flow-assistance.js';
 import {flowChannelIssues,channelCapabilities} from './flow-capabilities.js';
 import {workspaceSummary,completeWorkspaceSetup} from './workspace-setup.js';
@@ -157,6 +158,8 @@ const server=createServer(async(req,res)=>{
       if(req.method==='POST'&&!botTrigger[2])return json(res,201,await runBody(async(tx,input)=>createTrigger(tx,actor,input,await botScope(tx,actor,id,true))));
       if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
     }
+    const tracePath=/^\/api\/v1\/bots\/([^/]+)\/flow-traces(?:\/([^/]+))?$/.exec(pathname);
+    if(tracePath&&req.method==='GET'){if(tracePath[2])return json(res,200,await run(tx=>flowConversationTrace(tx,actor,tracePath[1],tracePath[2],new URL(req.url||'/','http://local').searchParams)));return json(res,200,await run(tx=>flowTraceSessions(tx,actor,tracePath[1])))}
     const stepStats=/^\/api\/v1\/bots\/([^/]+)\/flow-insights$/.exec(pathname);
     if(stepStats&&req.method==='GET')return json(res,200,await run(tx=>flowStepInsights(tx,actor,stepStats[1],new URL(req.url||'/','http://local').searchParams)));
     if(pathname==='/api/v1/flows/assist'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,mockFlowAssistance(await body(req)))}

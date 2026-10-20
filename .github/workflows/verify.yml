@@ -59,6 +59,7 @@ jobs:
       MIGRATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/elhafez_ci
       CI_RUNTIME_ACCEPTANCE: '1'
       CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
+      CI_TRACE_BROWSER: '1'
       PREMIUM_EVIDENCE_DIR: docs/product-rebuild/evidence/continuation-2026-10-20
     steps:
       - uses: actions/checkout@v4
@@ -99,6 +100,8 @@ jobs:
           echo 'CI_LOCAL_CLOSURE=1' >> "$GITHUB_ENV"
       - name: Atomic company setup, media safety, inbox concurrency and platform isolation
         run: node tests/completion-db.mjs
+      - name: Ordered conversation traces and isolated browser fixture
+        run: TRACE_BROWSER_FIXTURE=1 node tests/flow-controls-db.mjs
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data
@@ -182,5 +185,7 @@ jobs:
             acceptance-evidence/local-closure.json
             docs/product-rebuild/evidence/continuation-2026-10-20/*.png
             docs/product-rebuild/evidence/continuation-2026-10-20/results.json
+            docs/product-rebuild/evidence/traces-2026-10-20/*.png
+            docs/product-rebuild/evidence/traces-2026-10-20/results.json
           if-no-files-found: ignore
           retention-days: 7

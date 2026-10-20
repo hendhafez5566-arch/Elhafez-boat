@@ -65,6 +65,19 @@ Actual Chromium captures from the updated application and synthetic fixtures:
 - [Mock draft review](../../evidence/continuation-2026-10-20/mock-draft-review.png)
 - [Desktop](../../evidence/continuation-2026-10-20/studio-1440.png), [mobile](../../evidence/continuation-2026-10-20/studio-390.png), [CSS 200%](../../evidence/continuation-2026-10-20/studio-200-percent.png)
 
+## Conversation diagnostics checkpoint
+
+Checkpoint one is saved remotely at `66031dd20bcb1301a0cb8282e4a2dbc64aa7999c`. The next coherent batch adds execution IDs and step order to new events (migration 0034), preserves old events with explicit unknown order, provides exact microsecond cursor paging, and shows actual conversation traces without answers or message bodies. Bot/tenant scope is verified before events are read. The view shows the pinned revision/current step, saved wait and continuation-job status; selecting a current draft node changes selection only. Logout invalidates pending views. The diagnostic control remains available on mobile and in simple mode.
+
+Targeted validation: 161 Unit tests, 14 actual PostgreSQL scenarios and six Chromium/HTTP scenarios pass. Final combined acceptance is running at this checkpoint; its result will be saved separately. See [TRACE_CHECKPOINT.md](TRACE_CHECKPOINT.md).
+
+- [Actual session list](../../evidence/traces-2026-10-20/actual-session-list.png)
+- [Ordered committed trace](../../evidence/traces-2026-10-20/ordered-conversation-trace.png)
+- [Saved failed-wait diagnostic](../../evidence/traces-2026-10-20/failed-wait-diagnostic.png)
+- [390px RTL trace](../../evidence/traces-2026-10-20/mobile-conversation-trace.png)
+
+**Owner visual note:** a radical visual redesign has not been approved. Existing screenshots were judged a limited visual change. This continuation implements functionality and does not constitute visual sign-off; visual feedback and remaining functional gaps will be combined in a later assignment.
+
 ## Remaining implementation
 
-Integration response mapping/request controls with asynchronous timeout/429/error flow routes; composite button/card/gallery/carousel nodes; broader channel/event triggers and full channel-native presentation/readiness; consent actions/metadata; configurable human availability/pause/resume policies; customer-derived timezones and closed calendars longer than eight days; experiment attribution/funnel overlays/abandonment; ordered per-session failure/correlation exploration; review/comment threads; external-reference remapping; group folding and pinch; physical devices/screen readers/actual browser-UI 200% and sustained memory profiling; durable recovery after closing the tab/browser and cross-tab lease/idempotency. Actual AI generation/rewriting and Meta multi-screen form compilation/reference/approval/live qualification remain external and implementation dependencies.
+Integration response mapping/request controls with asynchronous timeout/429/error flow routes; composite button/card/gallery/carousel nodes; broader channel/event triggers and full channel-native presentation/readiness; consent actions/metadata; configurable human availability/pause/resume policies; customer-derived timezones and closed calendars longer than eight days; experiment attribution/funnel overlays/abandonment; failed-transaction and full inbound/outbound correlation exploration; review/comment threads; external-reference remapping; group folding and pinch; physical devices/screen readers/actual browser-UI 200% and sustained memory profiling; durable recovery after closing the tab/browser and cross-tab lease/idempotency. Actual AI generation/rewriting and Meta multi-screen form compilation/reference/approval/live qualification remain external and implementation dependencies.
