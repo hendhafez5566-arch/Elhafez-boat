@@ -24,7 +24,7 @@ export function initInsights({api,$,el}){
   for(const days of [7,30,90]){const option=el('option','آخر '+days+' يوم');option.value=String(days);period.append(option)}
   period.value=String(periodDays);period.onchange=()=>{periodDays=Number(period.value);void load()};
   const download=el('button','تنزيل النشاط اليومي CSV');download.type='button';download.onclick=()=>{const url=URL.createObjectURL(new Blob([activityCsv(data)],{type:'text/csv;charset=utf-8'}));const link=el('a');link.href=url;link.download='elhafez-activity-'+data.periodDays+'-days.csv';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2500)};host.append(period,download);
-  if(data.range?.startDay)host.append(el('p','الفترة الحالية: '+data.range.startDay+' إلى '+data.range.endDay+' (UTC). السابقة: '+data.previous.startDay+' إلى '+data.previous.endDay+'.','muted'));
+  if(data.range?.startDay){const range=el('p',undefined,'muted'),date=value=>{const item=el('bdi',value);item.dir='ltr';return item};range.append('الفترة الحالية: ',date(data.range.startDay),' إلى ',date(data.range.endDay),' (UTC). السابقة: ',date(data.previous.startDay),' إلى ',date(data.previous.endDay),'.');host.append(range)}
   const comparison=(key,unit='')=>{if(!data.previous)return undefined;const difference=Math.round((Number(data[key])-Number(data.previous[key]))*100)/100;return difference===0?'دون تغير عن الفترة السابقة':(difference>0?'زيادة ':'انخفاض ')+number(Math.abs(difference))+unit+' عن الفترة السابقة'};
   const note=el('p','المحادثات والعملاء والحملات أُنشئت خلال الفترة المختارة. مهام المتابعة تعرض الوضع الحالي لكل الفترات. تسجيل الاهتمام ليس مبيعات أو حجوزات.','muted');
   host.append(note);
