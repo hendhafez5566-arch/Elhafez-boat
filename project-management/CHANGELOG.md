@@ -1,3 +1,7 @@
+## 2026-10-20 — integrated user-facing content/actions/drawing batch
+
+Continued d551ef0 on the same branch/Draft PR #5. CARD/GALLERY composite content, structured editing, native website carousel and supported channel contracts/fallbacks; atomic typed field/tag button effects; group folding/breadcrumbs/path focus; bounded group snap; ordered website messages and save-closure fix. 177 Unit, 5 new PostgreSQL/CRM/website scenarios, existing 14 controls + 19 requests, legacy/bots/CRM/team/RLS and 8 actual Chromium/API checks pass. Full combined acceptance is next before promoting F03/F05/F06/F25/F31; current conservative totals 5/31/0. See INTEGRATED_CHECKPOINT.md. No live providers, merge/deploy or independent redesign.
+
 ## 2026-10-20 — final request lifecycle checkpoint
 
 Saved source cfeb13e passed full CI-equivalent local acceptance (CI_LOCAL_CLOSURE=1), including all Chromium suites and old HMAC test. Latest privacy delta scrubs mapped response fields, cancels pending continuation and retains existing reconciliation-before-erasure policy for in-flight/UNCERTAIN attempts. 171 Unit and 19 durable PostgreSQL scenarios pass; existing setup/media/inbox regressions repeat PASS. See newest CHECKPOINTS.md for exact tested scopes, source hashes, screenshots, logs and actual CI limits. Totals stay 5 PASS / 31 PARTIAL / 0 wholly BLOCKED. Next: audited request-job diagnostics/reconciliation without POST replay, then native connector response continuation. Providers and radical redesign remain unqualified/deferred; no merge/deploy.

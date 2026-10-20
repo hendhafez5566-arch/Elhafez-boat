@@ -1,3 +1,4 @@
+import {galleryFallback,contentMedia} from './flow-content.js';
 import {mapRequestResponse,type RequestMock} from './flow-request.js';
 import {flowChannelIssues} from './flow-capabilities.js';
 import {flowStorage} from './flow-storage.js';
@@ -57,7 +58,7 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor,botId?:string){
  if(triggers.rows.some(t=>!definition.nodes.some(n=>n.id===t.target_node)))throw new HttpFailure(400,'An active trigger references a removed node; update triggers before publishing');
  for(const node of definition.nodes){
   if(node.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,node.url,node.mediaKind);
-  if(node.type==='TEXT')for(const block of node.blocks||[])if(block.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,block.url,block.mediaKind);
+  if(node.type==='TEXT'||node.type==='BUTTONS'){for(const block of node.blocks||[])if(block.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,block.url,block.mediaKind);for(const url of contentMedia([{type:node.type,blocks:(node.blocks||[]).filter(b=>b.type==='CARD'||b.type==='GALLERY')}]))await validateManagedMedia(db,actor.tenantId,url,'image')}
  }
  for(const node of definition.nodes)if(node.type==='CRM_ACTION'&&node.operation==='ASSIGN'){const member=await db.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role IN ('OWNER','MANAGER','AGENT')",[actor.tenantId,node.value]);if(!member.rowCount)throw new HttpFailure(400,'CRM assignee is not an eligible member of this company')}
  for(const node of definition.nodes)if(node.type==='CONNECTOR'){const c=await db.query('SELECT 1 FROM chatbot_connectors WHERE tenant_id=$1 AND id=$2 AND enabled=true AND credentials_encrypted IS NOT NULL',[actor.tenantId,node.connectorId]);if(!c.rowCount)throw new HttpFailure(400,'Flow connector is not connected');}
@@ -180,12 +181,13 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
   await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify({...contactAnswers,lead_tags:result.state.tags.join(', ')})]);
   await readyForAgent(db,tenantId,leadId,conversationId,null);
  }
- return {payloads:renderFlowMessages(flow,result.state.at,result.messages),handedOff:result.handoff};
+ return {payloads:renderFlowMessages(flow,result.state.at,result.messages,String(channel)),handedOff:result.handoff};
 }
 /** Render choices with stable node identity: no untrusted titles used as routing IDs. */
-export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:FlowMessage[]):Record<string,unknown>[]{
+export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:FlowMessage[],channel='WHATSAPP'):Record<string,unknown>[]{
  const node=flow.nodes.find(n=>n.id===at);
- return messages.map(message=>{
+ const payloads:Record<string,unknown>[]=messages.map(message=>{
+  if(message.type==='GALLERY')return {type:'elhafez_gallery',cards:message.cards};
   if(message.type==='TEXT')return {messaging_product:'whatsapp',type:'text',text:{preview_url:false,body:message.text}};
   if(message.type==='MEDIA'){
     const attachment:Record<string,unknown>={link:message.url};
@@ -198,7 +200,7 @@ export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:F
   const choices=message.choices.map(c=>({id:`flow:${node.id}:${c.id}`,title:c.title,description:c.description||'',...(c.action==='URL'?{url:c.url}:{})}));
   if(message.type==='BUTTONS')return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'button',body:{text:message.text},action:{buttons:choices.map(c=>c.url?{type:'url',url:c.url,title:c.title}:{type:'reply',reply:{id:c.id,title:c.title}})}}};
   return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'list',body:{text:message.text},action:{button:message.buttonText||'اختار',sections:[{title:'القائمة',rows:choices}]}}};
- });
+ });return channel==='WHATSAPP'?payloads.flatMap(p=>p.type==='elhafez_gallery'?galleryFallback(p.cards as import('./flow-content.js').FlowCard[]):[p]):payloads;
 }
 /** Rollback creates a new immutable live revision; existing sessions remain pinned. */
 export async function rollbackFlow(db:SqlClient,actor:Actor,version:string,botId?:string){

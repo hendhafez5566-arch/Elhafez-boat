@@ -4,7 +4,7 @@ import {openIntegrationSecret,sealIntegrationSecret} from './integration-secrets
 import {providerHTTP,ProviderFailure} from './provider-http.js';
 import {publicTenant} from './public-tenant.js';
 import {respondToFlow} from './flow-service.js';
-import {deliverConversation,websitePayload} from './channels.js';
+import {galleryFallback,deliverConversation,websitePayload} from './channels.js';
 import {consumeUsage,requireActiveTenant} from './usage.js';
 export const socialChannels=['MESSENGER','INSTAGRAM','TELEGRAM'];
 const graphVersion=()=>{const v=process.env.META_GRAPH_VERSION||'';if(!/^v\d{1,2}\.\d{1,2}$/.test(v))throw new HttpFailure(503,'META_GRAPH_VERSION required');return v};
@@ -70,6 +70,7 @@ async function receive(db:SqlClient,t:string,account:string,channel:string,m:Inc
 /** Convert internal neutral messages to provider-supported formats. Large Telegram callbacks
  * use opaque 24-byte action references rather than exceeding its 64-byte limit. */
 export function socialPayload(channel:string,recipient:string,message:ReturnType<typeof websitePayload>,actions:{id:string;title:string;url?:string}[]=[]):{method:string;body:Record<string,unknown>}[]{
+ if(message.type==='GALLERY'){if(channel==='TELEGRAM')return galleryFallback(message.cards||[]).flatMap(p=>socialPayload(channel,recipient,websitePayload(p)));return [{method:'messages',body:{recipient:{id:recipient},...(channel==='MESSENGER'?{messaging_type:'RESPONSE'}:{}),message:{attachment:{type:'template',payload:{template_type:'generic',elements:(message.cards||[]).map(c=>({title:c.title,...(c.subtitle?{subtitle:c.subtitle}:{}),...(c.imageUrl?{image_url:c.imageUrl}:{}),...(c.actions?.length?{buttons:c.actions.map(a=>({type:'web_url',title:a.title,url:a.url}))}:{})}))}}}}}]}
  if(channel==='TELEGRAM'){
  if(message.type==='MEDIA'){const kind=String(message.kind),method=({image:'sendPhoto',video:'sendVideo',audio:'sendAudio',document:'sendDocument'} as Record<string,string>)[kind],field=kind==='image'?'photo':kind;return [{method,body:{chat_id:recipient,[field]:message.url,...(message.caption?{caption:message.caption}:{})}}]}
  return [{method:'sendMessage',body:{chat_id:recipient,text:message.text,...(actions.length?{reply_markup:{inline_keyboard:actions.map(a=>[{text:a.title,...(a.url?{url:a.url}:{callback_data:a.id})}])}}:{})}}];

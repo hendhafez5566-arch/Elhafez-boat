@@ -1,3 +1,4 @@
+import {mountCards,mountEffects,renderGallery} from './flow-content-controls.js';
 import {mountRequestControls} from './flow-request-controls.js';
 import {mountFlowDiagnostics} from './flow-diagnostics.js';
 import {mountFlowLabs} from './flow-labs.js';
@@ -16,7 +17,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
  const idPattern=/^[a-z][a-z0-9_-]{0,31}$/;
- const types={CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
+ const types={CARD:'بطاقة محتوى',GALLERY:'معرض بطاقات',CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
  const deep=v=>JSON.parse(JSON.stringify(v));
  const preset=(industry='general')=>{
    const cards={general:['الخدمات','العروض'],shop:['المنتجات','الأسعار والمقاسات'],tourism:['البرامج','الأسعار والمواعيد'],clinic:['خدمات العيادة','ساعات العمل'],restaurant:['المنيو','فروع المطعم'],realestate:['العقارات','استفسار عن زيارة'],education:['الكورسات','مواعيد التسجيل']};
@@ -272,7 +273,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const pickerGrid=el('div',undefined,'builder-picker-grid');picker.append(pickerHead,pickerSearch,pickerGrid);document.body.append(picker);
  let insertAnchor=null;
  function paintPicker(){pickerGrid.replaceChildren();const q=pickerSearch.value.trim().toLowerCase();
-   for(const [kind] of kinds.concat([['CRM_ACTION'],['BUSINESS_HOURS'],['GOAL'],['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
+   for(const [kind] of kinds.concat([['CARD'],['GALLERY'],['CRM_ACTION'],['BUSINESS_HOURS'],['GOAL'],['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
      if(!types[kind].toLowerCase().includes(q)&&!kind.toLowerCase().includes(q))continue;
      pickerGrid.append(button(types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)},'builder-picker-item'));
    }
@@ -394,9 +395,9 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
 
    if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true)));
-   if(node.type==='TEXT'){
+   if(node.type==='TEXT'||node.type==='BUTTONS'){
     const section=el('fieldset',undefined,'builder-validation');section.append(el('legend','محتويات الرسالة بالترتيب'));
-    for(const [i,block]of (node.blocks||[]).entries()){
+    for(const [i,block]of (node.blocks||[]).entries()){if(block.type==='CARD'||block.type==='GALLERY')continue;
      const row=el('div',undefined,'builder-choice');row.append(el('strong',block.type==='TEXT'?'نص إضافي':block.type==='LINK'?'رابط':'وسائط'));
      if(block.type==='TEXT'||block.type==='LINK')row.append(label('النص',control(block.text,v=>{block.text=v},true)));
      if(block.type!=='TEXT')row.append(label('رابط HTTPS',control(block.url,v=>{block.url=v})));
@@ -405,6 +406,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     }
     for(const [type,title]of [['TEXT','إضافة نص'],['MEDIA','إضافة وسائط'],['LINK','إضافة رابط']])section.append(button(title,()=>{node.blocks??=[];if(node.blocks.length>=10){notify('الحد الأقصى 10 محتويات إضافية','error');return}node.blocks.push(type==='TEXT'?{type,text:'رسالة إضافية'}:type==='LINK'?{type,text:'تفاصيل',url:'https://example.com'}:{type,mediaKind:'image',url:'https://example.com/image.jpg',caption:''});markDirty();renderEditor()}));host.append(section);
    }
+   mountCards(node,{host,el,label,control,button,changed:markDirty,render:renderEditor});
    if('field'in node&&!(node.type==='CONDITION'&&node.rules)){
     const fields=el('select'),common={customer_name:'اسم العميل',customer_phone:'رقم الهاتف',customer_email:'البريد الإلكتروني',customer_city:'المدينة',customer_need:'احتياج العميل'};
     for(const v of flow.variables||[])common[v.key]=v.label;
@@ -460,10 +462,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
        advancedChoice.append(label('معرّف الاختيار',control(choice.id,value=>{choice.id=value})));
        if(node.type==='LIST'){const description=control(choice.description||'',value=>{choice.description=value});description.maxLength=72;block.append(label('وصف قصير',description));}
        if(node.type==='BUTTONS'){
-        block.append(label('وظيفة الزر',runtimeControls.select(choice.action||'NODE',[['NODE','انتقال إلى خطوة'],['URL','فتح رابط HTTPS دون تغيير المسار']],v=>{choice.action=v;if(v==='URL')choice.url??='https://example.com';renderEditor();canvas.draw()})));
+        block.append(label('وظيفة الزر',runtimeControls.select(choice.action||'NODE',[['NODE','انتقال إلى خطوة'],['URL','فتح رابط HTTPS دون تغيير المسار']],v=>{choice.action=v;if(v==='URL'){choice.url??='https://example.com';delete choice.effects;delete choice.assign}renderEditor();canvas.draw()})));
         if(choice.action==='URL')block.append(label('رابط الزر',control(choice.url||'',v=>choice.url=v)));
         else{advancedChoice.append(label('تعيين حقل عند الضغط (اختياري)',control(choice.assign?.field||'',v=>{if(v)choice.assign={field:v,value:choice.assign?.value||''};else delete choice.assign})),label('قيمة الحقل',control(choice.assign?.value||'',v=>{if(choice.assign)choice.assign.value=v})));}
        }
+       if(node.type==='BUTTONS')mountEffects(choice,{host:advancedChoice,el,label,control,button,changed:markDirty,render:renderEditor});
        if(choice.action!=='URL')advancedChoice.append(label('عند الضغط ينتقل إلى',target(choice.next,value=>{choice.next=value})));
        if(choice.action!=='URL')block.append(button('إضافة رد لهذا الاختيار',()=>openInsert({nodeId:node.id,key:'choice:'+choice.id})));block.append(advancedChoice);
        const moveChoice=(offset)=>{
@@ -493,7 +496,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const paint=()=>{
      sample.replaceChildren(el('h4',['SET_FIELD','RANDOMIZER','CONDITION','TAG','DELAY','START'].includes(node.type)?'سلوك خطوة داخلية — لا تُرسل كرسالة':'شكل الرسالة للعميل'),el('p','معاينة تصميمية؛ ليست رسالة واتساب فعلية.','builder-sample-caption'));
      const screen=el('div',undefined,'builder-sample-screen');
-     screen.append(el('div',String(node.text||node.caption||types[node.type]||'').trim(),'builder-sample-bubble'));for(const block of node.blocks||[])screen.append(el('div',block.text||('['+block.mediaKind+'] '+block.url),'builder-sample-bubble'));
+     screen.append(el('div',String(node.text||node.caption||types[node.type]||'').trim(),'builder-sample-bubble'));for(const block of node.blocks||[])screen.append(block.type==='CARD'||block.type==='GALLERY'?renderGallery(block.type==='CARD'?[block.card]:block.cards):el('div',block.text||('['+block.mediaKind+'] '+block.url),'builder-sample-bubble'));
      if(node.type==='BUTTONS'||node.type==='LIST'){
        const choices=el('div',undefined,'builder-sample-choices');
        if(node.type==='LIST')choices.append(el('strong',node.buttonText||'عرض القائمة'));
@@ -556,6 +559,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    else if(type==='INPUT'||type==='QUESTION')flow.nodes.push({id,type,text:'اكتب إجابتك من فضلك',field:'answer_'+n,next});
    else if(type==='CONDITION')flow.nodes.push({id,type,field:'answer_'+n,operator:'exists',yes:next,no:next});
    else if(type==='TAG')flow.nodes.push({id,type,tag:'interested',next});
+   else if(type==='CARD'||type==='GALLERY')flow.nodes.push({id,type:'TEXT',label:types[type],text:'اختر من المحتوى المعتمد',next,blocks:[type==='CARD'?{type,card:{title:'بطاقة جديدة',subtitle:''}}:{type,cards:[{title:'البطاقة الأولى',subtitle:''},{title:'البطاقة الثانية',subtitle:''}]}]});
    else if(type==='MEDIA')flow.nodes.push({id,type,mediaKind:'image',url:'https://example.com/image.jpg',caption:'',next});
    else if(type==='LINK')flow.nodes.push({id,type,text:'اعرف التفاصيل من الرابط',url:'https://example.com',next});
    else if(type==='HANDOFF'||type==='END')flow.nodes.push({id,type,text:type==='HANDOFF'?'هحوّل كلامك لموظف يساعدك.':'شكرًا لتواصلك معانا.'});
@@ -602,7 +606,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    for(const entry of r.trace||[]){const item=el('li',entry.nodeId+' · '+entry.type+' · '+entry.outcome);item.onclick=()=>{simulatorDialog.close();canvas.focus(entry.nodeId)};traceHost.append(item)}valuesHost.textContent=JSON.stringify(r.state.answers,null,2);canvas.highlight(r.state.at);
    preview=r.state;previewRuntimeNodes=r.runtimeNodes;$('builder-preview-options').replaceChildren();
    for(const message of r.messages){
-    bubble(message.text||('['+message.mediaKind+'] '+message.url));
+    if(message.type==='GALLERY'){if(['WHATSAPP','TELEGRAM'].includes(flow.channel||'WHATSAPP')){for(const c of message.cards){if(c.imageUrl)bubble('[صورة] '+c.imageUrl);bubble([c.title,c.subtitle,...(c.actions||[]).map(a=>a.title+': '+a.url)].filter(Boolean).join('\n'))}}else $('builder-preview').append(renderGallery(message.cards))}else bubble(message.text||('['+message.mediaKind+'] '+message.url));
     if(message.choices)for(const c of message.choices){if(c.action==='URL'){const link=el('a',c.title,'builder-option');link.href=c.url;link.target='_blank';link.rel='noopener noreferrer';$('builder-preview-options').append(link)}else $('builder-preview-options').append(button(c.title,()=>execute(()=>serverPreview(c.id,atInputSkip(c)?'SKIP':undefined)),'builder-option'));}
    }
    if(r.waiting){const w=r.waiting;const isInput=w.kind==='INPUT'||w.kind==='CHOICE';bubble((isInput?'مهلة رد: ':'انتظار: ')+w.seconds+' ثانية — ساعة محاكاة');$('builder-preview-options').append(button(isInput?'محاكاة انتهاء المهلة':'استكمال التأخير في المعاينة',()=>{simulationNow=w.expiresAt||simulationNow+w.seconds*1000;if(isInput)execute(()=>serverPreview(w.token,'TIMEOUT'));else{preview.at=w.next;if(preview.runtime)delete preview.runtime.wait;execute(()=>serverPreview())}},'secondary'))}
@@ -814,7 +818,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     const r=await api('/flows/draft',{method:'PUT',body:{...snapshot,expectedRevision:draftRevision}});
     if(scope.tenant!==state.tenantId||scope.bot!==state.botId)return;
     draftRevision=r.draftRevision;mergeBase=deep(r.definition);
-    if(JSON.stringify(flow)===serialized){flow=deep(r.definition);dirty=false;const key=recoveryKey();if(key)sessionStorage.removeItem(key)}else storeRecovery();
+    if(JSON.stringify(flow)===serialized){flow=deep(r.definition);dirty=false;const key=recoveryKey();if(key)sessionStorage.removeItem(key);renderAll()}else storeRecovery();
     saveState=dirty?'تعديلات أحدث تنتظر الحفظ':'تم الحفظ على الخادم';if(!automatic)notify(dirty?saveState:'تم حفظ مسودة المحادثة');
    }catch(error){saveState=error.status===409?'تعارض: راجع النسختين':'تعذر الحفظ؛ تعديلاتك باقية — أعد المحاولة';storeRecovery();if(error.status===409){clearTimeout(autosaveTimer);autosave.checked=false;await showDraftConflict()}else if(!automatic)notify(saveState+' · '+error.message,'error')}
    finally{saving=false;renderStatus();if(autosave.checked&&dirty&&saveState==='تعديلات أحدث تنتظر الحفظ')autosaveTimer=setTimeout(()=>void saveDraft(true),1200)}

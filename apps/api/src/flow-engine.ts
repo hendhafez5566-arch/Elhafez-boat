@@ -1,3 +1,4 @@
+import {validateRichBlock,validateEffects,type RichBlock,type FlowCard,type ChoiceEffect} from './flow-content.js';
 import {validateFlowRequest,type FlowRequest} from './flow-request.js';
 import {isUuid} from './services.js';
 import {validateFormDrafts,type FlowFormDraft} from './flow-forms.js';
@@ -11,8 +12,8 @@ export type FlowVariable={key:string;label:string;type:InputValidation['type']|'
 export type FlowRuntime={attempts:Record<string,number>;wait?:{nodeId:string;expiresAt:number;token:string};experiments?:Record<string,string>};
 export type FlowInput={kind:'TEXT'|'CHOICE'|'SKIP'|'TIMEOUT';value:string};
 export type InputValidation={type:'text'|'email'|'phone'|'number'|'date'|'datetime'|'location';min?:number;max?:number;errorText?:string};
-export type MessageBlock={type:'TEXT';text:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string}|{type:'LINK';text:string;url:string};
-export type Choice = {id:string;title:string;description?:string;next:string;action?:'NODE'|'URL';url?:string;assign?:{field:string;value:string}};
+export type MessageBlock=RichBlock|{type:'TEXT';text:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string}|{type:'LINK';text:string;url:string};
+export type Choice = {id:string;title:string;description?:string;next:string;action?:'NODE'|'URL';url?:string;assign?:{field:string;value:string};effects?:ChoiceEffect[]};
 export type FlowNode = (
  | {id:string;type:'SUBFLOW';subflowId:string;version:number;bindings?:Record<string,string>;next:string}
  | {id:string;type:'CONNECTOR';connectorId:string;next:string}
@@ -29,7 +30,7 @@ export type FlowNode = (
  | {id:string;type:'KEYWORD';keywords:string[];yes:string;no:string}
  | {id:string;type:'QUESTION';text:string;field:string;next:string}
  | {id:string;type:'TEXT';text:string;next:string;blocks?:MessageBlock[]}
- | {id:string;type:'BUTTONS';text:string;choices:Choice[];policy?:WaitPolicy}
+ | {id:string;type:'BUTTONS';text:string;choices:Choice[];policy?:WaitPolicy;blocks?:MessageBlock[]}
  | {id:string;type:'LIST';text:string;buttonText?:string;choices:Choice[];policy?:WaitPolicy}
  | {id:string;type:'INPUT';text:string;field:string;next:string;validation?:InputValidation;policy?:WaitPolicy}
  | {id:string;type:'CONDITION';field:string;operator:'equals'|'contains'|'exists';value?:string;yes:string;no:string;match?:'all'|'any';rules?:ConditionRule[]}
@@ -38,12 +39,12 @@ export type FlowNode = (
  | {id:string;type:'LINK';text:string;url:string;next:string}
  | {id:string;type:'HANDOFF';text:string}
  | {id:string;type:'END';text:string}) & {label?:string;note?:string};
-export type FlowGroup={id:string;title:string;nodeIds:string[]};
+export type FlowGroup={id:string;title:string;nodeIds:string[];collapsed?:boolean};
 export type DraftTrigger={kind:'KEYWORD'|'FIRST_MESSAGE';phrase:string;matchMode:'EXACT'|'CONTAINS';targetNode:string;priority:number;enabled:boolean};
 export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>;groups?:FlowGroup[];variables?:FlowVariable[];channel?:FlowChannel;triggers?:DraftTrigger[];forms?:FlowFormDraft[]};
 export type FlowChannel='WHATSAPP'|'WEBSITE'|'MESSENGER'|'INSTAGRAM'|'TELEGRAM';
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[];runtime?:FlowRuntime};
-export type FlowMessage={type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
+export type FlowMessage={type:'GALLERY';cards:FlowCard[]}|{type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
 export type FlowTrace={nodeId:string;type:string;outcome:string;elapsedMs?:number};
 export type FlowAdvance={trace?:FlowTrace[];state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;waiting?:{seconds:number;next:string;kind?:'INPUT'|'CHOICE'|'DELAY'|'INTEGRATION';expiresAt?:number;token?:string}};
 const key=/^[a-z][a-z0-9_]{0,39}$/;
@@ -151,10 +152,12 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
     requireTrue(typeof raw.field==='string'&&key.test(raw.field),'Custom field must be an alphanumeric key');
     if(type==='INPUT')fields.add(raw.field);
   }
-  if(type==='TEXT'&&raw.blocks!==undefined){
+  if((type==='TEXT'||type==='BUTTONS')&&raw.blocks!==undefined){
    requireTrue(Array.isArray(raw.blocks)&&raw.blocks.length<=10,'Message supports up to 10 content blocks');
+   requireTrue(raw.blocks.reduce((n,b)=>n+(plain(b)&&b.type==='CARD'?1:plain(b)&&b.type==='GALLERY'&&Array.isArray(b.cards)?b.cards.length:0),0)<=10,'Message allows at most 10 cards in total');
    for(const block of raw.blocks){
-    requireTrue(plain(block)&&['TEXT','MEDIA','LINK'].includes(String(block.type)),'Invalid message block');
+    requireTrue(plain(block)&&['TEXT','MEDIA','LINK','CARD','GALLERY'].includes(String(block.type)),'Invalid message block');
+    if(block.type==='CARD'||block.type==='GALLERY'){validateRichBlock(block);continue}
     // Reuse existing public-resource and content limits without changing the stored legacy node.
     requireTrue(!('blocks'in block),'Nested content blocks are not allowed');
     validateFlow({name:'Content block',startId:'block_start',nodes:[{id:'block_start',type:'START',next:'block_body'},{...block,id:'block_body',next:'block_end'},{id:'block_end',type:'END',text:'Done'}]});
@@ -203,6 +206,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
       choices.add(choice.id);
       requireTrue(bounded(choice.title,type==='BUTTONS'?20:24),'Choice title exceeds WhatsApp limit');
       if(choice.description!==undefined)requireTrue(bounded(choice.description,72,0),'Choice description exceeds limit');
+      if(choice.effects!==undefined){validateEffects(choice.effects);requireTrue(type==='BUTTONS'&&!(choice.action==='URL'&&(choice.effects as unknown[]).length),'Only reply buttons execute effects')}
       if(choice.action!==undefined)requireTrue(type==='BUTTONS'&&['NODE','URL'].includes(String(choice.action)),'Invalid button action');
       if(choice.action==='URL'){
        requireTrue(bounded(choice.url,2048),'URL button needs HTTPS');let u;try{u=new URL(choice.url as string)}catch{throw Error('Invalid button URL')}
@@ -252,7 +256,8 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
     requireTrue(typeof nodeId==='string'&&seen.has(nodeId)&&!members.has(nodeId),'Overlapping or unknown grouped step');
     members.add(nodeId);nodeIds.push(nodeId);
    }
-   groups.push({id:rawGroup.id,title:rawGroup.title.trim(),nodeIds});
+   if(rawGroup.collapsed!==undefined)requireTrue(typeof rawGroup.collapsed==='boolean','Invalid collapsed group');
+   groups.push({id:rawGroup.id,title:rawGroup.title.trim(),nodeIds,...(rawGroup.collapsed!==undefined?{collapsed:rawGroup.collapsed as boolean}:{})});
   }
  }
  if(input.forms!==undefined)validateFormDrafts(input.forms);
@@ -278,7 +283,9 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   const r=ensureRuntime();if(!r.wait||r.wait.nodeId!==node.id)r.wait={nodeId:node.id,expiresAt:now+seconds*1000,token:crypto.randomUUID()};
   return {seconds:Math.max(0,Math.ceil((r.wait.expiresAt-now)/1000)),next,kind,expiresAt:r.wait.expiresAt,token:r.wait.token};
  };
+ const emitBlocks=(blocks:MessageBlock[]=[])=>{for(const block of blocks){if(block.type==='CARD'||block.type==='GALLERY'){const cards=block.type==='CARD'?[block.card]:block.cards;messages.push({type:'GALLERY',cards:cards.map(c=>({...c,title:renderFlowText(c.title,answers,80),subtitle:renderFlowText(c.subtitle||'',answers,160)}))})}else messages.push(block.type==='MEDIA'?{...block,caption:renderFlowText(block.caption||'',answers,1024)}:{type:'TEXT',text:renderFlowText(block.type==='LINK'?block.text+'\n'+block.url:block.text,answers)})}};
  const prompt=(node:Extract<FlowNode,{type:'INPUT'|'QUESTION'|'BUTTONS'|'LIST'}>)=>{
+  if(node.type==='BUTTONS'&&node.blocks)emitBlocks(node.blocks);
   if(node.type==='BUTTONS'||node.type==='LIST')messages.push({type:node.type,text:renderFlowText(node.text,answers,1024),choices:node.choices,buttonText:node.type==='LIST'?node.buttonText:undefined});
   else if(node.type==='INPUT'&&node.policy?.skipNext)messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024),choices:[{id:'skip',title:'تخطي',next:node.policy.skipNext}]});
   else messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});
@@ -295,7 +302,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
     let valid=false,error='اختر إجابة من الخيارات المتاحة.';
     if(current.type==='BUTTONS'||current.type==='LIST'){
      const prefix='flow:'+current.id+':',choice=input?.kind==='CHOICE'&&input.value.startsWith(prefix)?current.choices.find(c=>c.action!=='URL'&&c.id===input.value.slice(prefix.length)):undefined;
-     if(choice){if(choice.assign){const value=renderFlowText(choice.assign.value,answers,500);if(!validVariableValue(flow.variables?.find(v=>v.key===choice.assign!.field),value))throw Error('Choice assignment does not match the typed variable');answers[choice.assign.field]=value;}answers['choice_'+current.id]=choice.title;answers['pick_'+current.id]=choice.id;at=choice.next;valid=true;entry.outcome='choice:'+choice.id}
+     if(choice){const effects:ChoiceEffect[]=[...(choice.assign?[{type:'SET_FIELD' as const,...choice.assign}]:[]),...(choice.effects||[])],staged={...answers};let effectsValid=true;for(const effect of effects)if(effect.type==='SET_FIELD'){const value=renderFlowText(effect.value,staged,500);if(!validVariableValue(flow.variables?.find(v=>v.key===effect.field),value))effectsValid=false;staged[effect.field]=value}if(effectsValid){Object.assign(answers,staged);for(const effect of effects)if(effect.type==='TAG'){const i=tags.indexOf(effect.tag);if(effect.mode==='ADD'&&i<0)tags.push(effect.tag);if(effect.mode==='REMOVE'&&i>=0)tags.splice(i,1)}answers['choice_'+current.id]=choice.title;answers['pick_'+current.id]=choice.id;at=choice.next;valid=true;entry.outcome='choice:'+choice.id}else entry.outcome='effect_invalid'}
     }else{
      if(input?.kind==='TEXT'){
       const variable=flow.variables?.find(v=>v.key===current.field),validation=current.type==='INPUT'?current.validation:undefined;
@@ -331,7 +338,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
    entry.outcome=branch.id;at=branch.next;continue;
   }
   if(node.type==='START'){at=node.next;continue}
-  if(node.type==='TEXT'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});for(const block of node.blocks||[])messages.push(block.type==='MEDIA'?{...block,caption:renderFlowText(block.caption||'',answers,1024)}:{type:'TEXT',text:renderFlowText(block.type==='LINK'?block.text+'\n'+block.url:block.text,answers)});at=node.next;continue}
+  if(node.type==='TEXT'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});emitBlocks(node.blocks);at=node.next;continue}
   if(node.type==='LINK'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers)+'\n'+node.url});at=node.next;continue}
   if(node.type==='MEDIA'){messages.push({type:'MEDIA',mediaKind:node.mediaKind,url:node.url,caption:renderFlowText(node.caption||'',answers,1024)});at=node.next;continue}
   if(node.type==='TAG'){if(node.mode==='REMOVE'){const i=tags.indexOf(node.tag);if(i>=0)tags.splice(i,1)}else if(!tags.includes(node.tag))tags.push(node.tag);entry.outcome=node.mode==='REMOVE'?'tag_removed':'tag_added';at=node.next;continue}

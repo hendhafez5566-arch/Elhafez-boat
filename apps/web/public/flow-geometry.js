@@ -73,3 +73,6 @@ export function arrangeFlow(flow){
  }
  return result;
 }
+/** Preserve every selected offset while clamping the whole selection to legal coordinates. */
+export function boundedTranslation(points,dx,dy){if(!points.length)return {dx:0,dy:0};return {dx:Math.max(-Math.min(...points.map(p=>p.x)),Math.min(MAX_POSITION-Math.max(...points.map(p=>p.x)),dx))||0,dy:Math.max(-Math.min(...points.map(p=>p.y)),Math.min(MAX_POSITION-Math.max(...points.map(p=>p.y)),dy))||0}}
+export function pathToNode(flow,target){const queue=[[flow.startId]],seen=new Set();for(let i=0;i<queue.length;i++){const path=queue[i],id=path.at(-1);if(id===target)return path;if(seen.has(id))continue;seen.add(id);for(const e of graphOutputs(flow.nodes.find(n=>n.id===id)))if(e.to&&!seen.has(e.to))queue.push([...path,e.to])}return []}

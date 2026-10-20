@@ -10,6 +10,7 @@ export function flowChannelIssues(flow:FlowDefinition,channel:FlowChannel=flow.c
    if(channel==='MESSENGER'&&urls.length&&node.text.length>640)issues.push({severity:'error',nodeId:node.id,code:'CHANNEL_BUTTON_TEXT',message:'نص رسالة أزرار الروابط في Messenger لا يتجاوز 640 حرفًا.'});
    if(urls.length&&(node.type==='LIST'||urls.length>cap.urlButtons||!cap.mixedUrl&&replies>0))issues.push({severity:'error',nodeId:node.id,code:'CHANNEL_URL_BUTTONS',message:channel+' لا يدعم هذا المزيج من أزرار الروابط والردود.'});
   }
+  if((node.type==='TEXT'||node.type==='BUTTONS')&&node.blocks?.some(b=>b.type==='CARD'||b.type==='GALLERY')&&['WHATSAPP','TELEGRAM'].includes(channel))issues.push({severity:'warning',nodeId:node.id,code:'GALLERY_FALLBACK',message:'البطاقات على '+channel+' تُعرض كصور ونصوص وروابط مرتبة؛ ليست معرضًا أصليًا.'});
   if(node.type==='INPUT'&&node.validation?.type==='location')issues.push({severity:'warning',nodeId:node.id,code:'LOCATION_TEXT_FALLBACK',message:'الموقع يُجمع كإحداثيات نصية؛ لا يوجد طلب موقع أصلي لهذه الخطوة.'});
   if(node.type==='AI')issues.push({severity:'warning',nodeId:node.id,code:'AI_PROVIDER_READINESS',message:'المحاكاة تستخدم Mock؛ جاهزية مزود AI تحتاج فحصًا منفصلًا.'});
  }

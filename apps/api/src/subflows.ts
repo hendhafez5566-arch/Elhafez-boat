@@ -30,7 +30,7 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
    if('text'in n)n.text=template(n.text);
    if(n.type==='MEDIA'&&n.caption)n.caption=template(n.caption);
    if(n.type==='SET_FIELD')n.value=template(n.value);
-   if(n.type==='TEXT'&&n.blocks)n.blocks=n.blocks.map(b=>b.type==='MEDIA'?{...b,caption:template(b.caption||'')}:{...b,text:template(b.text)});
+   if((n.type==='TEXT'||n.type==='BUTTONS')&&n.blocks)n.blocks=n.blocks.map(b=>b.type==='MEDIA'?{...b,caption:template(b.caption||'')}:b.type==='CARD'?{...b,card:{...b.card,title:template(b.card.title),subtitle:template(b.card.subtitle||'')}}:b.type==='GALLERY'?{...b,cards:b.cards.map(c=>({...c,title:template(c.title),subtitle:template(c.subtitle||'')}))}:{...b,text:template(b.text)});
    if('field'in n)n.field=Object.hasOwn(bindings,n.field)?bindings[n.field]:n.field;
    if(n.type==='CONDITION'&&n.rules)n.rules=mapConditionRules(n.rules,field=>Object.hasOwn(bindings,field)?bindings[field]:field);
    if('policy'in n&&n.policy){for(const key of ['invalidNext','timeoutNext','skipNext'] as const)if(n.policy[key])n.policy[key]=map(n.policy[key]!)}
@@ -38,7 +38,7 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
    if('errorNext'in n&&n.errorNext)n.errorNext=map(n.errorNext);
    if(n.type==='DELAY'){if(n.schedule?.mode==='AT'&&n.schedule.field)n.schedule.field=Object.hasOwn(bindings,n.schedule.field)?bindings[n.schedule.field]:n.schedule.field}
    if('next'in n)n.next=map(n.next);
-   if(n.type==='BUTTONS'||n.type==='LIST'||n.type==='RANDOMIZER')n.choices=n.choices.map(c=>({...c,next:c.action==='URL'?c.next:map(c.next),...(c.assign?{assign:{field:Object.hasOwn(bindings,c.assign.field)?bindings[c.assign.field]:c.assign.field,value:template(c.assign.value)}}:{})}));
+   if(n.type==='BUTTONS'||n.type==='LIST'||n.type==='RANDOMIZER')n.choices=n.choices.map(c=>({...c,next:c.action==='URL'?c.next:map(c.next),...(c.effects?{effects:c.effects.map(e=>e.type==='SET_FIELD'?{...e,field:Object.hasOwn(bindings,e.field)?bindings[e.field]:e.field,value:template(e.value)}:e)}:{}),...(c.assign?{assign:{field:Object.hasOwn(bindings,c.assign.field)?bindings[c.assign.field]:c.assign.field,value:template(c.assign.value)}}:{})}));
    if(n.type==='CONDITION'||n.type==='KEYWORD'||n.type==='BUSINESS_HOURS'){n.yes=map(n.yes);n.no=map(n.no)}
    if(n.type==='SUBFLOW'){
     if(stack.includes(n.subflowId)||stack.length>=5)throw new HttpFailure(400,'Recursive or excessively nested subflow');

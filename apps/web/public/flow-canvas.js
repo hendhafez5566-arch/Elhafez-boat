@@ -1,10 +1,10 @@
-import {setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH} from './flow-geometry.js';
+import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH} from './flow-geometry.js';
 /** Dependency-free, RTL-friendly flow canvas. Graph mutations stay in the existing draft editor. */
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
   const ns='http://www.w3.org/2000/svg';
   const titles={CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
   const edges=graphOutputs;
-  let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,connectionGeneration=0,pendingFit=false;
+  let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,pathFocused=false,connectionGeneration=0,pendingFit=false;
   host.tabIndex=0;
   host.classList.add('flow-canvas');host.dir='ltr';host.setAttribute('role','region');
   host.setAttribute('aria-label','مساحة رسم المحادثة؛ Alt مع الأسهم لتحريك الخطوة المحددة؛ Shift يزيد المسافة. استخدم Tab لاختيار المخارج');
@@ -17,6 +17,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   const zoomLabel=btn('100%','canvas-zoom',()=>zoomTo(1));zoomLabel.setAttribute('aria-label','إعادة التكبير إلى 100%');
   nav.append(btn('−','',()=>zoomTo(zoom/1.2)),zoomLabel,btn('+','',()=>zoomTo(zoom*1.2)),btn('ملاءمة','',()=>fit()));host.append(nav);
   const map=document.createElementNS(ns,'svg');map.classList.add('canvas-minimap');map.setAttribute('viewBox','0 0 180 112');map.setAttribute('aria-label','خريطة المخطط؛ اضغط للانتقال');map.setAttribute('role','img');host.append(map);
+  const breadcrumb=mk('nav',undefined,'canvas-breadcrumbs');breadcrumb.setAttribute('aria-label','المسار من البداية إلى الخطوة');host.append(breadcrumb);
   let mapBounds={x:0,y:0,scale:1};
   function paintMap(){
     const f=getFlow(),positions=f.layout||{},pts=f.nodes.map(n=>positions[n.id]).filter(Boolean);if(!pts.length)return;
@@ -43,8 +44,8 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     }
     return positions;
   };
-  function highlight(id){active=id;stage.querySelectorAll('.canvas-node').forEach(n=>n.classList.toggle('selected',getSelection().has(n.dataset.nodeId)||n.dataset.nodeId===id));
-    svg.querySelectorAll('.canvas-edge').forEach(n=>n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id));
+  function highlight(id){active=id;breadcrumb.replaceChildren();const path=pathToNode(getFlow(),id),pathIds=new Set(path);const focusPath=btn('تركيز المسار','',()=>{pathFocused=!pathFocused;highlight(active)});focusPath.setAttribute('aria-pressed',String(pathFocused));focusPath.disabled=!path.length;breadcrumb.append(focusPath);if(!path.length)breadcrumb.append(mk('span','خطوة غير متصلة بالبداية'));for(const step of path){const node=getFlow().nodes.find(n=>n.id===step);breadcrumb.append(btn(node?.label||step,'',()=>{select(step);focus(step)}))}stage.querySelectorAll('.canvas-node').forEach(n=>{n.classList.toggle('selected',getSelection().has(n.dataset.nodeId)||n.dataset.nodeId===id);n.classList.toggle('path-muted',pathFocused&&!pathIds.has(n.dataset.nodeId))});
+    svg.querySelectorAll('.canvas-edge').forEach(n=>{n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id);n.classList.toggle('path-muted',pathFocused&&!path.some((step,i)=>step===n.dataset.from&&path[i+1]===n.dataset.to))});
   }
   function draw(){
     const f=getFlow();f.layout=Object.assign(Object.create(null),f.layout||{});
@@ -53,15 +54,19 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     marker.id='flow-arrow';for(const [k,v] of Object.entries({markerWidth:'9',markerHeight:'9',refX:'8',refY:'3',orient:'auto'}))marker.setAttribute(k,v);
     const arrow=document.createElementNS(ns,'path');arrow.setAttribute('d','M0,0 L8,3 L0,6');arrow.setAttribute('fill','#8272c9');marker.append(arrow);defs.append(marker);svg.append(defs);
     const positions=positionsFor(f);for(const [id,p]of Object.entries(positions))if(!f.layout[id])f.layout[id]=p;const width=NODE_WIDTH,linkRequests=[],cards=new Map();
+    const collapsed=new Map(),proxyPositions=new Map();
     for(const group of f.groups||[]){
       const points=group.nodeIds.map(id=>positions[id]).filter(Boolean);if(points.length<2)continue;
       const a=Math.min(...points.map(p=>p.x)),b=Math.min(...points.map(p=>p.y));
       const box=mk('div',undefined,'canvas-group');box.style.left=Math.max(0,a-22)+'px';box.style.top=Math.max(0,b-45)+'px';
       box.style.width=Math.max(310,Math.max(...points.map(p=>p.x))-a+340)+'px';
       box.style.height=Math.max(230,Math.max(...points.map(p=>p.y))-b+315)+'px';
-      box.append(mk('span',group.title,'canvas-group-title'));stage.append(box);
+      box.append(mk('span',group.title,'canvas-group-title'),btn(group.collapsed?'توسيع المجموعة':'طي المجموعة','canvas-group-toggle',()=>{group.collapsed=!group.collapsed;changed();draw()}));stage.append(box);
+      if(group.collapsed){box.style.width='310px';box.style.height='145px';box.classList.add('canvas-group-folded');box.append(mk('p',group.nodeIds.length+' خطوات — الاتصالات الخارجية محفوظة'));for(const id of group.nodeIds){collapsed.set(id,box);proxyPositions.set(id,{x:Math.max(0,a-22),y:Math.max(0,b-45)})}}
+
     }
     for(const n of f.nodes){
+      if(collapsed.has(n.id)){const proxy=collapsed.get(n.id);cards.set(n.id,proxy);for(const e of edges(n))if(positions[e.to])linkRequests.push({from:n.id,to:e.to,key:e.key,port:proxy});continue}
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
       card.dataset.nodeId=n.id;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
       card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(titles[n.type]||'محادثة'));
@@ -127,7 +132,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       }
       card.append(ports);
       drag.onpointerdown=e=>{
-        if(e.button!==0)return;
+        if(e.button!==0)return;e.preventDefault();
         const start={x:e.clientX,y:e.clientY};let moved=false;drag.setPointerCapture?.(e.pointerId);
         drag.onpointermove=ev=>{
           if(Math.abs(ev.clientX-start.x)+Math.abs(ev.clientY-start.y)>5)moved=true;
@@ -137,7 +142,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
           const size={width:Math.max(...members.map(id=>positions[id].x+cards.get(id).offsetWidth))-left,height:Math.max(...members.map(id=>positions[id].y+cards.get(id).offsetHeight))-top};
           const others=f.nodes.filter(node=>!ids.has(node.id)).map(node=>({...positions[node.id],width:cards.get(node.id)?.offsetWidth||NODE_WIDTH,height:cards.get(node.id)?.offsetHeight||nodeFootprint(node).height}));
           const point=placeWithoutOverlap({x:Math.round((left+(ev.clientX-start.x)/zoom)/10)*10,y:Math.round((top+(ev.clientY-start.y)/zoom)/10)*10},n,others,28,size);
-          const dx=point.x-left,dy=point.y-top;
+          const {dx,dy}=boundedTranslation(members.map(id=>positions[id]),point.x-left,point.y-top);
           for(const id of members){const pos=positions[id],c=cards.get(id),at={x:pos.x+dx,y:pos.y+dy};f.layout[id]=at;c.style.left=at.x+'px';c.style.top=at.y+'px'}
           for(const path of svg.querySelectorAll('.canvas-edge,.canvas-edge-hit')){const a=cards.get(path.dataset.from),b=cards.get(path.dataset.to);if(!a||!b)continue;const x=parseFloat(a.style.left)+NODE_WIDTH,y=parseFloat(a.style.top)+a.offsetHeight-25,tx=parseFloat(b.style.left),ty=parseFloat(b.style.top)+b.offsetHeight-55;path.setAttribute('d',`M${x},${y} C${x+80},${y} ${tx-80},${ty} ${tx},${ty}`)}paintMap();
 
@@ -151,8 +156,8 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     // These routes remain behind all cards and use elevated lanes for backwards/cyclic paths.
     const incoming=new Map();
     for(const edge of linkRequests){
-      const from=positions[edge.from],to=positions[edge.to],origin=cards.get(edge.from),target=cards.get(edge.to);
-      if(!origin||!target)continue;
+      const from=proxyPositions.get(edge.from)||positions[edge.from],to=proxyPositions.get(edge.to)||positions[edge.to],origin=cards.get(edge.from),target=cards.get(edge.to);
+      if(!origin||!target||origin===target)continue;
       const options=[...origin.querySelectorAll('.canvas-port')];
       const slot=Math.max(0,options.indexOf(edge.port));
       const startY=from.y+(edge.port.offsetTop||170)+(edge.port.offsetHeight||35)/2+
@@ -204,7 +209,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const move=ev=>{pan={x:old.x+ev.clientX-start.x,y:old.y+ev.clientY-start.y};transform()};const stop=()=>{host.removeEventListener('pointermove',move);host.removeEventListener('pointerup',stop);host.removeEventListener('pointercancel',stop)};host.addEventListener('pointermove',move);host.addEventListener('pointerup',stop);host.addEventListener('pointercancel',stop);
   },true);
   host.addEventListener('pointerdown',e=>{
-    if(e.button!==0||!(e.target===host||e.target===stage||e.target===svg))return;
+    if(e.button!==0||!(e.target===host||e.target===stage||e.target===svg))return;e.preventDefault();
     const start={x:e.clientX,y:e.clientY},old={...pan};let box=null;
     if(e.shiftKey){box=mk('div',undefined,'canvas-selection-box');host.append(box)}host.setPointerCapture?.(e.pointerId);
     const move=ev=>{if(box){const r=host.getBoundingClientRect();Object.assign(box.style,{left:Math.min(start.x,ev.clientX)-r.left+'px',top:Math.min(start.y,ev.clientY)-r.top+'px',width:Math.abs(ev.clientX-start.x)+'px',height:Math.abs(ev.clientY-start.y)+'px'})}else{pan={x:old.x+ev.clientX-start.x,y:old.y+ev.clientY-start.y};transform()}};
@@ -213,6 +218,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   });
   const resize=new ResizeObserver(()=>{if(pendingFit&&host.clientWidth&&host.clientHeight)fit();else paintMap()});resize.observe(host);
   function focus(id){
+    const group=getFlow().groups?.find(g=>g.collapsed&&g.nodeIds.includes(id));if(group){group.collapsed=false;changed();draw()}
     const p=positionsFor(getFlow())[id];if(!p)return fit();
     const area=host.getBoundingClientRect();zoom=1;
     pan={x:Math.round(area.width/2-(p.x+NODE_WIDTH/2)),y:Math.round(area.height/2-(p.y+155))};transform();
