@@ -1,3 +1,9 @@
+## 2026-10-20 — Premium personal-device draft recovery / PR #5
+
+Added opt-in, identity/tenant/bot-scoped per-tab browser recovery, bounded to three copies/seven days with quota fallback. Actual tab close AND Chromium process/profile restart restore for review without server save/publication. Other-window changes pause optional autosave; another window choosing server does not delete its neighbour; explicit old-revision save produces real 409 and keeps edits. Logout clears persistent/session recovery. Copies are ordinary browser-profile data, not encryption; default remains session-only.
+
+182 Unit/typecheck/build and four actual browser recovery scenarios PASS alongside the five request-operations browser checks. Detailed source, actual screenshots/logs and remaining F36 lease/idempotency gaps: docs/product-rebuild/implementation/premium-2026-10-20/RECOVERY_CHECKPOINT.md. Final full CI-equivalent repeat/remote CI still pending at this checkpoint; same existing branch/PR #5, no merge/Railway/provider activation.
+
 ## 2026-10-20 — Premium request operations / PR #5
 
 New bot-scoped metadata paging/status and explicit audited UNCERTAIN reconciliation on the existing queue. Author/tenant/bot, acknowledgement and stale-attempt checks; concurrent equal retries produce one decision/audit, opposing decisions fail. No new HTTP dispatch, response data entry or flow replay. Migration 0036 only on disposable PostgreSQL. Privacy erasure remains blocked until a real operator-supplied resolution, then scrubs payload/results. Fixed the mobile drawer's parent stacking context exposed by actual logout clicks.

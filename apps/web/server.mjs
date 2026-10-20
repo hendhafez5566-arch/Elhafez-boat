@@ -4,6 +4,7 @@ const port=Number(process.env.WEB_PORT??3000);
 const api=new URL(process.env.API_INTERNAL_ORIGIN??'http://127.0.0.1:4000');
 if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an internal http URL behind trusted network boundaries');
 const assets={
+ '/draft-recovery.js':['draft-recovery.js','text/javascript; charset=utf-8'],
  '/flow-request-ops.js':['flow-request-ops.js','text/javascript; charset=utf-8'],
  '/flow-content-controls.js':['flow-content-controls.js','text/javascript; charset=utf-8'],
  '/flow-request-controls.js':['flow-request-controls.js','text/javascript; charset=utf-8'],
