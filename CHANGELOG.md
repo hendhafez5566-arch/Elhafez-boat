@@ -59,3 +59,6 @@ Embedded Signup with owner/browser/tenant-bound one-use grant, encrypted phone c
 
 
 2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.
+
+
+2026-10-21 — F26 secure incoming assets: existing scanner/storage, authorized provider source queue (OFF by default), private Website upload/typed resume, CRM download and privacy race safety. Matrix 24 PASS / 12 PARTIAL / 0 wholly BLOCKED. See INCOMING_MEDIA_CHECKPOINT.md for bounds, retention and actual offline evidence. Next independent priorities: variables/consent, error policies, bilingual authoring and sustained graph performance.

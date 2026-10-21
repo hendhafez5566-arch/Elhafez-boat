@@ -36,3 +36,6 @@ PR remains Draft/open/unmerged. Protected target feat/stage0-foundation remains 
 ## Current continuation: observability bundle
 
 F27/F35 now close at 24 PASS / 12 PARTIAL / 0 wholly BLOCKED; OBSERVABILITY_CHECKPOINT.md supersedes item 1 above. Local 224 units/typecheck/build, 6 actual analytics PG and 3 Chromium scenarios PASS; previous controls and 19 integration PG regressions PASS. Actual screenshots in ../../evidence/flow-observability-2026-10-21/. Migration0043 is additive. Next package F26: use existing private storage/scanner, session-bound Website uploads and provider contracts. Latest GitHub CI must be checked after this bundle push; no claim of new remote success yet.
+
+
+F26 secure retrieval/Website bundle saved; provider scan-gated exact continuation remains; INCOMING_MEDIA_CHECKPOINT.md supersedes item2. Migrations0044/0045, 231 units, 11 new PG/ClamAV and4 Chromium PASS. Matrix24/12/0. Provider fetch OFF by default; synthetic adapters only. Next: finish scan-gated provider continuation before F11/F14/F19/F34/F33; physical-device and actual provider qualification remain separate. Check newest CI after push; previous observability CI39590460890 failed old schedule browser first-page lookup, corrected in11de652 with actual scheduling PG/browser checks.

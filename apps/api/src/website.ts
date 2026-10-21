@@ -1,3 +1,5 @@
+import {mediaUpload,storeMedia} from './media.js';
+import {nativeAttachment} from './flow-native-input.js';
 import {cancelConversationAutomation} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
 import {randomBytes} from 'node:crypto';
@@ -52,13 +54,14 @@ async function withSession<T>(pool:SqlClient&SqlPool,bearer:string,origin:string
 }
 export async function websiteMessages(pool:SqlClient&SqlPool,bearer:string,origin:string){return withSession(pool,bearer,origin,async(db,tenantId,s)=>({status:s.status,messages:(await db.query(`SELECT id,body,payload,kind,created_at FROM (SELECT id,body,payload,kind,created_at FROM conversation_messages WHERE tenant_id=$1 AND conversation_id=$2 AND kind IN ('INBOUND','OUTBOUND') ORDER BY created_at DESC,id DESC LIMIT 200) m ORDER BY created_at,id`,[tenantId,s.conversation_id])).rows}))}
 export async function websiteSend(pool:SqlClient&SqlPool,bearer:string,origin:string,input:unknown){
- const d=input as {messageId?:unknown;text?:unknown;actionId?:unknown};if(!d||!isUuid(d.messageId)||typeof d.text!=='string'||d.text.length>2000||typeof d.actionId!=='string'||d.actionId.length>200||!d.text.trim()&&!d.actionId)throw new HttpFailure(400,'Invalid visitor message');
- const text=d.text,actionId=d.actionId,messageId=d.messageId;
+ const d=input as {messageId?:unknown;text?:unknown;actionId?:unknown;mediaId?:unknown};if(!d||!isUuid(d.messageId)||typeof d.text!=='string'||d.text.length>2000||typeof d.actionId!=='string'||d.actionId.length>200||!d.text.trim()&&!d.actionId&&!isUuid(d.mediaId))throw new HttpFailure(400,'Invalid visitor message');
+ const text=d.text,actionId=d.actionId,messageId=d.messageId;const mediaId=d.mediaId;
  return withSession(pool,bearer,origin,async(db,tenantId,s)=>{
   const previous=await db.query('SELECT 1 FROM chatbot_web_receipts WHERE tenant_id=$1 AND session_id=$2 AND message_id=$3',[tenantId,s.id,messageId]);if(previous.rowCount)return {received:true,duplicate:true};
+  let nativeInput;if(mediaId!==undefined){if(!isUuid(mediaId))throw new HttpFailure(400,'Invalid media');const asset=await db.query("SELECT mime FROM chatbot_media WHERE tenant_id=$1 AND id=$2 AND conversation_id=$3 AND status='ACTIVE' AND scan_status='CLEAN'",[tenantId,mediaId,s.conversation_id]);if(!asset.rowCount)throw new HttpFailure(409,'Attachment unavailable or still awaiting security scan');const mime=String(asset.rows[0].mime);nativeInput=nativeAttachment('WEBSITE',mime.startsWith('image/')?'image':mime.startsWith('audio/')?'audio':mime.startsWith('video/')?'video':'document',mediaId);}
   const recent=await db.query(`SELECT count(*)::int AS n FROM chatbot_web_receipts WHERE tenant_id=$1 AND session_id=$2 AND created_at>now()-interval '1 minute'`,[tenantId,s.id]);if(Number(recent.rows[0]?.n)>=30&&!/^(stop|unsubscribe|إيقاف الرسائل|إلغاء الرسائل)$/i.test(text.trim()))throw new HttpFailure(429,'Please wait before sending more messages');
   await db.query('INSERT INTO chatbot_web_receipts(tenant_id,session_id,message_id) VALUES($1,$2,$3)',[tenantId,s.id,messageId]);
-  const inbound=await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3) RETURNING id`,[tenantId,s.conversation_id,text.trim()||'اختيار: '+actionId]);
+  const inbound=await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3) RETURNING id`,[tenantId,s.conversation_id,mediaId?'[مرفق خاص تم فحصه]':text.trim()||'اختيار: '+actionId]);
   await db.query(`UPDATE conversations SET last_message_at=now(),last_customer_message_at=now(),status=CASE WHEN status='CLOSED' AND coalesce(bot_control->>'mode','')<>'STOPPED' THEN 'OPEN' ELSE status END WHERE tenant_id=$1 AND id=$2`,[tenantId,s.conversation_id]);
   if(/^(stop|unsubscribe|إيقاف الرسائل|إلغاء الرسائل)$/i.test(text.trim())){
    await recordFlowConsent(db,tenantId,String(s.contact_id),String(s.conversation_id),{purpose:'SERVICE',decision:'WITHDRAW',source:'CUSTOMER_COMMAND'});await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,s.conversation_id]);
@@ -69,7 +72,13 @@ export async function websiteSend(pool:SqlClient&SqlPool,bearer:string,origin:st
   const consent=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[tenantId,s.contact_id]);if(consent.rows[0]?.do_not_contact)return {received:true};
   if(s.status==='CLOSED'&&(s.bot_control as any)?.mode!=='STOPPED'){await cancelConversationAutomation(db,tenantId,String(s.conversation_id));await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,s.conversation_id]);}
   if(s.status!=='HUMAN'){
-   const result=await respondToFlow(db,{tenantId,conversationId:String(s.conversation_id),contactId:String(s.contact_id),inboundMessageId:String(inbound.rows[0].id),actionId:actionId,body:text,fromWhatsApp:false});await deliverConversation(db,tenantId,String(s.conversation_id),result.payloads,{staff:result.handedOff});
+   const result=await respondToFlow(db,{tenantId,conversationId:String(s.conversation_id),contactId:String(s.contact_id),inboundMessageId:String(inbound.rows[0].id),nativeInput,triggerEvent:mediaId?'MEDIA':undefined,actionId:actionId,body:text,fromWhatsApp:false});await deliverConversation(db,tenantId,String(s.conversation_id),result.payloads,{staff:result.handedOff});
   }return {received:true};
  });
 }
+
+export async function websiteUpload(pool:SqlClient&SqlPool,bearer:string,origin:string,input:unknown){const d=mediaUpload(input);return withSession(pool,bearer,origin,async(db,t,s)=>{
+ if(s.status==='CLOSED'||(s.bot_control as any)?.mode==='STOPPED')throw new HttpFailure(409,'Conversation is paused');
+ const rate=await db.query("SELECT count(*) FILTER(WHERE created_at>now()-interval '1 minute')::int AS recent,count(*)::int AS total FROM chatbot_media WHERE tenant_id=$1 AND conversation_id=$2 AND created_at>now()-interval '1 day'",[t,s.conversation_id]);if(Number(rate.rows[0].recent)>=5||Number(rate.rows[0].total)>=20)throw new HttpFailure(429,'Attachment upload limit reached');return storeMedia(db,t,d.name,d.data,String(s.conversation_id));
+})}
+export async function websiteUploadStatus(pool:SqlClient&SqlPool,bearer:string,origin:string,id:string){if(!isUuid(id))throw new HttpFailure(400,'Invalid media');return withSession(pool,bearer,origin,async(db,t,s)=>{const r=await db.query("SELECT id,name,mime,bytes,scan_status AS \"scanStatus\" FROM chatbot_media WHERE tenant_id=$1 AND id=$2 AND conversation_id=$3 AND status='ACTIVE'",[t,id,s.conversation_id]);if(!r.rowCount)throw new HttpFailure(404,'Attachment unavailable');return r.rows[0]})}

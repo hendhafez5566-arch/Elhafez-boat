@@ -1,3 +1,4 @@
+import {conversationMedia} from './incoming-media.js';
 import {flowFunnel,flowDeliveryTrace} from './flow-analytics.js';
 import {flowExperiments} from './flow-experiments.js';
 import {controlledConversations,controlConversation,handoffRoster,updateHandoffAvailability} from './conversation-control.js';
@@ -28,7 +29,7 @@ import {listCommentRules,saveCommentRule,listCommentCandidates,decideComment,rec
 import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
 import {reviewCampaign,listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
-import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages} from './website.js';
+import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages,websiteUpload,websiteUploadStatus} from './website.js';
 import {listMedia,uploadMedia,deleteMedia,publicMedia,privateMedia} from './media.js';
 import {listTriggers,createTrigger,deleteTrigger} from './triggers.js';
 import {usageSummary} from './usage.js';
@@ -89,6 +90,8 @@ const server=createServer(async(req,res)=>{
       if(req.method==='OPTIONS'){res.writeHead(204);res.end();return}
       if(req.method==='POST'&&pathname==='/api/v1/widget/start')return json(res,201,await startWebsiteSession(pool,await body(req),origin));
       if(req.method==='POST'&&pathname==='/api/v1/widget/send')return json(res,200,await websiteSend(pool,req.headers.authorization||'',origin,await body(req)));
+      if(req.method==='POST'&&pathname==='/api/v1/widget/upload')return json(res,201,await websiteUpload(pool,req.headers.authorization||'',origin,await body(req,7500000)));
+      const uploadStatus=/^\/api\/v1\/widget\/uploads\/([^/]+)$/.exec(pathname);if(req.method==='GET'&&uploadStatus)return json(res,200,await websiteUploadStatus(pool,req.headers.authorization||'',origin,uploadStatus[1]));
       if(req.method==='GET'&&pathname==='/api/v1/widget/messages')return json(res,200,await websiteMessages(pool,req.headers.authorization||'',origin));
       throw new HttpFailure(404,'Widget route not found');
     }
@@ -289,6 +292,7 @@ const server=createServer(async(req,res)=>{
     if(campaignReview&&req.method==='GET')return json(res,200,await run(tx=>reviewCampaign(tx,actor,campaignReview[1])));
     const campaignAction=/^\/api\/v1\/campaigns\/([^/]+)\/(launch|cancel)$/.exec(pathname);
     if(req.method==='POST'&&campaignAction)return json(res,200,await run<unknown>(tx=>campaignAction[2]==='launch'?launchCampaign(tx,actor,campaignAction[1]):cancelCampaign(tx,actor,campaignAction[1])));
+    const conversationAssets=/^\/api\/v1\/conversations\/([^/]+)\/media$/.exec(pathname);if(req.method==='GET'&&conversationAssets)return json(res,200,await run(tx=>conversationMedia(tx,actor,conversationAssets[1])));
     const mediaContent=/^\/api\/v1\/media\/([^/]+)\/content$/.exec(pathname);
     if(req.method==='GET'&&mediaContent){const asset=await run(tx=>privateMedia(tx,actor,mediaContent[1]));res.writeHead(200,{'content-type':asset.mime,'cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; sandbox",'content-disposition':'attachment'});return res.end(asset.content)}
     if(req.method==='GET'&&pathname==='/api/v1/workspace')return json(res,200,await run(tx=>workspaceSummary(tx,actor)));

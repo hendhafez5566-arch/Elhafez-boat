@@ -1,3 +1,5 @@
+import {enqueueAttachment} from './incoming-media.js';
+import {attachmentReference} from './flow-native-input.js';
 import {cancelConversationAutomation} from './conversation-control.js';
 import {nativeLocation,nativeAttachment} from './flow-native-input.js';
 import {recordFlowConsent} from './flow-consent.js';
@@ -65,6 +67,7 @@ async function receive(db:SqlClient,t:string,account:string,channel:string,m:Inc
  if(!conv.rowCount){const contact=await db.query("INSERT INTO contacts(tenant_id,full_name,phone,source) VALUES($1,$2,NULL,'IMPORT') RETURNING id",[t,m.name.length>1?m.name:'عميل']);conv=await db.query(`INSERT INTO conversations(tenant_id,contact_id,channel,social_account_id,external_sender_id,last_customer_message_at,last_message_at) VALUES($1,$2,$3,$4,$5,to_timestamp($6/1000.0),now()) RETURNING *`,[t,contact.rows[0].id,channel,account,m.sender,m.timestamp]);}
  const c=conv.rows[0],cid=String(c.id);await db.query('UPDATE conversations SET last_customer_message_at=greatest(last_customer_message_at,to_timestamp($3/1000.0)),last_message_at=now() WHERE tenant_id=$1 AND id=$2',[t,cid,m.timestamp]);
  const inbound=await db.query("INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3) RETURNING id",[t,cid,m.text||'[اختيار تفاعلي]']);
+ if(m.nativeInput?.kind==='ATTACHMENT'){const ref=attachmentReference(m.nativeInput.value);if(ref)await enqueueAttachment(db,t,cid,account,m.eventId,ref);}
  if(/^(stop|\/stop|إلغاء|الغاء|توقف)$/i.test(m.text.trim())){await recordFlowConsent(db,t,String(c.contact_id),cid,{purpose:'SERVICE',decision:'WITHDRAW',source:'CUSTOMER_COMMAND'});await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);await db.query("UPDATE chatbot_social_outbox SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[t,cid]);return;}
  if(/^(start|\/start|ابدأ)$/i.test(m.text.trim()))await recordFlowConsent(db,t,String(c.contact_id),cid,{purpose:'SERVICE',decision:'GRANT',source:'CUSTOMER_COMMAND'});
  const contact=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[t,c.contact_id]);if(contact.rows[0]?.do_not_contact)return;
