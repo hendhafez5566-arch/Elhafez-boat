@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual operator controls pause/resume the persisted pinned conversation through authenticated API",
+    "real scoped consent history and withdrawal controls render on mobile",
+    "saved consent node and all decision ports are editable in actual designer",
+    "real preview endpoint simulates consent acceptance/refusal and staff availability without sending"
+  ],
+  "errors": [],
+  "provider": "NONE; local PostgreSQL and Chromium"
+}

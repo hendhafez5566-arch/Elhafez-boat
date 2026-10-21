@@ -4,6 +4,7 @@ const port=Number(process.env.WEB_PORT??3000);
 const api=new URL(process.env.API_INTERNAL_ORIGIN??'http://127.0.0.1:4000');
 if(api.protocol!=='http:')throw new Error('API_INTERNAL_ORIGIN must be an internal http URL behind trusted network boundaries');
 const assets={
+ '/flow-conversation-controls.js':['flow-conversation-controls.js','text/javascript; charset=utf-8'],
  '/flow-scheduled-ops.js':['flow-scheduled-ops.js','text/javascript; charset=utf-8'],
  '/flow-authoring.js':['flow-authoring.js','text/javascript; charset=utf-8'],
  '/draft-recovery.js':['draft-recovery.js','text/javascript; charset=utf-8'],

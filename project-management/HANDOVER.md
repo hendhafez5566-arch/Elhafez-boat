@@ -1,3 +1,7 @@
+## 2026-10-21 — conversation control / human policies / consent
+
+Implemented and locally verified the integrated ownership/consent package on premium PR #5. Matrix 16 PASS / 20 PARTIAL; F18/F20 close, F12 deliberately retains legacy nonblocking-job attribution gap. 197 unit/typecheck/build, 10 new PostgreSQL and 4 Chromium desktop/mobile scenarios PASS; previous request/native/schedule regressions PASS. See `docs/product-rebuild/implementation/premium-2026-10-20/CONVERSATION_CONTROL_CHECKPOINT.md`. Next integrated package: F36 save idempotency/cross-tab coordination. Remote Actions not yet verified; no merge/deploy/provider use. Visual acceptance remains pending.
+
 # Final integrated continuation — 21 October 2026
 
 Same branch `feat/premium-flow-builder-2026-10-20` / Draft PR #5; accepted source ab042d0 after b01ba79 (readiness/import/reviews), 807aa1c (native durable results) and 35b023e (customer calendar/cancellation). Stable packages were pushed as completed. Matrix **14 PASS / 22 PARTIAL**, newly F16/F17/F21/F28. Whole rebuild and owner visual approval remain incomplete; redesign deferred.

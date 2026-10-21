@@ -1,3 +1,4 @@
+import {validateHandoffPolicy,type HandoffPolicy,type BotAction} from './flow-conversation-policy.js';
 import {validateRichBlock,validateEffects,type RichBlock,type FlowCard,type ChoiceEffect} from './flow-content.js';
 import {validateFlowRequest,type FlowRequest} from './flow-request.js';
 import {isUuid} from './services.js';
@@ -37,7 +38,9 @@ export type FlowNode = (
  | {id:string;type:'TAG';tag:string;next:string;mode?:'ADD'|'REMOVE'}
  | {id:string;type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string;next:string}
  | {id:string;type:'LINK';text:string;url:string;next:string}
- | {id:string;type:'HANDOFF';text:string}
+ | {id:string;type:'CONTROL';operation:BotAction['operation'];next:string;seconds?:number}
+ | {id:string;type:'CONSENT';text:string;purpose:'SERVICE'|'MARKETING';policyVersion:string;acceptNext:string;declineNext:string;withdrawNext?:string}
+ | {id:string;type:'HANDOFF';text:string;handoffPolicy?:HandoffPolicy}
  | {id:string;type:'END';text:string}) & {label?:string;note?:string};
 export type FlowGroup={id:string;title:string;nodeIds:string[];collapsed?:boolean};
 export type DraftTrigger={kind:'KEYWORD'|'FIRST_MESSAGE';phrase:string;matchMode:'EXACT'|'CONTAINS';targetNode:string;priority:number;enabled:boolean};
@@ -46,7 +49,7 @@ export type FlowChannel='WHATSAPP'|'WEBSITE'|'MESSENGER'|'INSTAGRAM'|'TELEGRAM';
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[];runtime?:FlowRuntime};
 export type FlowMessage={type:'GALLERY';cards:FlowCard[]}|{type:'TEXT';text:string}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
 export type FlowTrace={nodeId:string;type:string;outcome:string;elapsedMs?:number};
-export type FlowAdvance={trace?:FlowTrace[];state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;waiting?:{seconds:number;next:string;kind?:'INPUT'|'CHOICE'|'DELAY'|'INTEGRATION';expiresAt?:number;token?:string}};
+export type FlowAdvance={trace?:FlowTrace[];state:FlowState;messages:FlowMessage[];handoff:boolean;finished:boolean;pending?:boolean;botAction?:BotAction;consent?:{purpose:'SERVICE'|'MARKETING';decision:'GRANT'|'DENY'|'WITHDRAW';next:string;nodeId:string;policyVersion:string;notice:string};waiting?:{seconds:number;next:string;kind?:'INPUT'|'CHOICE'|'DELAY'|'INTEGRATION';expiresAt?:number;token?:string}};
 const key=/^[a-z][a-z0-9_]{0,39}$/;
 const ident=/^[a-z][a-z0-9_-]{0,31}$/;
 const own=(o:object,k:string)=>Object.prototype.hasOwnProperty.call(o,k);
@@ -89,7 +92,7 @@ export function validateConditionRules(rules:unknown,depth=0,budget={remaining:6
 }
 export function mapConditionRules(rules:ConditionRule[],map:(field:string)=>string):ConditionRule[]{return rules.map(r=>'rules'in r?{...r,rules:mapConditionRules(r.rules,map)}:{...r,field:map(r.field)})}
 export function flowDestinations(node:FlowNode):string[]{
- const destinations:string[]=[];if('next'in node)destinations.push(node.next);if('yes'in node)destinations.push(node.yes,node.no);if('choices'in node)destinations.push(...node.choices.filter(c=>c.action!=='URL').map(c=>c.next));
+ const destinations:string[]=[];if(node.type==='CONSENT')destinations.push(node.acceptNext,node.declineNext,...(node.withdrawNext?[node.withdrawNext]:[]));if(node.type==='HANDOFF'&&node.handoffPolicy)destinations.push(node.handoffPolicy.unavailableNext,...(node.handoffPolicy.resumeNext?[node.handoffPolicy.resumeNext]:[]));if('next'in node)destinations.push(node.next);if('yes'in node)destinations.push(node.yes,node.no);if('choices'in node)destinations.push(...node.choices.filter(c=>c.action!=='URL').map(c=>c.next));
  if('policy'in node&&node.policy)for(const key of ['invalidNext','skipNext','timeoutNext'] as const)if(node.policy[key])destinations.push(node.policy[key]!);
  if((node.type==='WEBHOOK'||node.type==='CONNECTOR')&&node.request)destinations.push(node.request.errorNext,node.request.timeoutNext);
  if('errorNext'in node&&node.errorNext)destinations.push(node.errorNext);return destinations;
@@ -128,7 +131,10 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   if(raw.label!==undefined)requireTrue(bounded(raw.label,80),'Step label must be 1–80 characters');
   if(raw.note!==undefined)requireTrue(bounded(raw.note,1000,0),'Step note must be at most 1000 characters');
   const type=raw.type;
-  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK','DELAY','SUBFLOW','CONNECTOR','SET_FIELD','RANDOMIZER','BUSINESS_HOURS','GOAL','CRM_ACTION'].includes(String(type)),'Unsupported node type');
+  requireTrue(['START','TEXT','BUTTONS','LIST','INPUT','CONDITION','TAG','MEDIA','LINK','HANDOFF','END','CATALOG','AI','KEYWORD','QUESTION','WEBHOOK','DELAY','SUBFLOW','CONNECTOR','SET_FIELD','RANDOMIZER','BUSINESS_HOURS','GOAL','CRM_ACTION','CONTROL','CONSENT'].includes(String(type)),'Unsupported node type');
+  if(type==='HANDOFF'&&raw.handoffPolicy!==undefined)validateHandoffPolicy(raw.handoffPolicy);
+  if(type==='CONTROL'){requireTrue(['PAUSE','RESUME','STOP'].includes(String(raw.operation)),'Invalid bot control operation');if(raw.seconds!==undefined)requireTrue(raw.operation==='PAUSE'&&Number.isInteger(raw.seconds)&&Number(raw.seconds)>=1&&Number(raw.seconds)<=604800,'Pause timer must be 1–604800 seconds');}
+  if(type==='CONSENT'){requireTrue(bounded(raw.text,1024),'Consent notice must be 1–1024 characters');requireTrue(['SERVICE','MARKETING'].includes(String(raw.purpose))&&bounded(raw.policyVersion,80),'Choose consent purpose and policy version');for(const k of ['acceptNext','declineNext'] as const)requireTrue(typeof raw[k]==='string'&&raw[k].length<=180,'Consent requires accept/decline routes');if(raw.withdrawNext!==undefined)requireTrue(typeof raw.withdrawNext==='string'&&raw.withdrawNext.length<=180,'Invalid consent withdrawal route');}
   if(type==='SUBFLOW'){requireTrue(typeof raw.subflowId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.subflowId)&&Number.isInteger(raw.version)&&Number(raw.version)>0,'Invalid pinned subflow');if(raw.bindings!==undefined)requireTrue(plain(raw.bindings)&&Object.keys(raw.bindings).length<=30&&Object.entries(raw.bindings).every(([k,v])=>key.test(k)&&typeof v==='string'&&key.test(v)),'Invalid field bindings');}
   if(type==='CONNECTOR')requireTrue(typeof raw.connectorId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.connectorId),'Invalid connector');
   if(type==='DELAY')requireTrue(Number.isInteger(raw.seconds)&&Number(raw.seconds)>=1&&Number(raw.seconds)<=604800,'Delay must be 1–604800 seconds');
@@ -145,7 +151,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   if(type==='CATALOG'&&raw.category!==undefined)requireTrue(bounded(raw.category,80,0),'Invalid catalog category');
   if(type==='KEYWORD')requireTrue(Array.isArray(raw.keywords)&&raw.keywords.length>0&&raw.keywords.length<=20&&raw.keywords.every(k=>bounded(k,80)),'Invalid keywords');
 
-  if(['TEXT','BUTTONS','LIST','INPUT','HANDOFF','END','LINK','QUESTION'].includes(String(type))){
+  if(['TEXT','BUTTONS','LIST','INPUT','HANDOFF','END','LINK','QUESTION','CONSENT'].includes(String(type))){
     requireTrue(bounded(raw.text,type==='BUTTONS'||type==='LIST'?1024:4096),'Message text is required (max 4096 characters)');
   }
   if(type==='INPUT'||type==='CONDITION'||type==='AI'||type==='QUESTION'||type==='SET_FIELD'){
@@ -232,7 +238,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   if(visiting.has(id))throw new Error('Flow contains an automatic loop without customer input');
   visiting.add(id);
   const node=nodes.find(n=>n.id===id)!;
-  if(!['BUTTONS','LIST','INPUT','QUESTION','END','HANDOFF','DELAY'].includes(node.type))for(const dest of edges(node))verifyAuto(dest);
+  if(!['BUTTONS','LIST','INPUT','QUESTION','END','HANDOFF','DELAY','CONSENT'].includes(node.type)&&!(node.type==='CONTROL'&&node.operation!=='RESUME'))for(const dest of edges(node))verifyAuto(dest);
   visiting.delete(id);done.add(id);
  };
  for(const n of nodes)verifyAuto(n.id);
@@ -290,8 +296,10 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   else if(node.type==='INPUT'&&node.policy?.skipNext)messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024),choices:[{id:'skip',title:'تخطي',next:node.policy.skipNext}]});
   else messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});
  };
+ const consentPrompt=(node:Extract<FlowNode,{type:'CONSENT'}>)=>messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024),choices:[{id:'accept',title:'أوافق',next:node.acceptNext},{id:'decline',title:'لا أوافق',next:node.declineNext},...(node.withdrawNext?[{id:'withdraw',title:'سحب الموافقة',next:node.withdrawNext}]:[])]});
  const current=nodes.get(at);if(!current)throw Error('Unknown current flow node');
  if(state.at!==null&&!context.enter){
+  if(current.type==='CONSENT'){const prefix='flow:'+current.id+':',id=input?.kind==='CHOICE'&&input.value.startsWith(prefix)?input.value.slice(prefix.length):'';const next=id==='accept'?current.acceptNext:id==='decline'?current.declineNext:id==='withdraw'?current.withdrawNext:undefined;if(next)return result({pending:true,consent:{purpose:current.purpose,decision:id==='accept'?'GRANT':id==='decline'?'DENY':'WITHDRAW',next,nodeId:current.id,policyVersion:current.policyVersion,notice:renderFlowText(current.text,answers,1024)}});consentPrompt(current);return result();}
   if(current.type==='INPUT'||current.type==='QUESTION'||current.type==='BUTTONS'||current.type==='LIST'){
    const policy='policy'in current?current.policy:undefined,entry:FlowTrace={nodeId:current.id,type:current.type,outcome:'resume'};trace.push(entry);
    const timedOut=runtime?.wait?.nodeId===current.id&&now>=runtime.wait.expiresAt;
@@ -320,6 +328,9 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
  }
  for(let hops=0;hops<120;hops++){
   const node=nodes.get(at);if(!node)throw Error('Node destination unavailable');finishStep();const entry:FlowTrace={nodeId:node.id,type:node.type,outcome:'entered',elapsedMs:0};trace.push(entry);
+  if(node.type==='CONSENT'){consentPrompt(node);return result();}
+  if(node.type==='CONTROL'){clearWait();entry.outcome='bot_'+node.operation.toLowerCase();return result({pending:true,botAction:{operation:node.operation,next:node.next,seconds:node.seconds}});}
+  if(node.type==='HANDOFF'&&node.handoffPolicy)return result({pending:true});
   if(node.type==='DELAY'){
    let seconds=node.seconds;try{if(node.schedule)seconds=scheduledDelay(node.schedule,now,answers)}catch(e){if(node.errorNext){at=node.errorNext;entry.outcome='schedule_error';continue}throw e}
    if(!seconds){at=node.next;entry.outcome='schedule_ready';continue}

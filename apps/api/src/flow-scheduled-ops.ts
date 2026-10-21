@@ -9,7 +9,7 @@ async function rows(db:SqlClient,a:Actor,bot:string,scope:string|undefined,statu
  FROM chatbot_delay_jobs j JOIN chatbot_flow_sessions s ON s.tenant_id=j.tenant_id AND s.conversation_id=j.conversation_id JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id
  JOIN ${scope?'chatbot_bot_versions':'chatbot_flow_versions'} v ON v.tenant_id=j.tenant_id AND v.version=j.version${scope?' AND v.bot_id=$2':''}
  JOIN LATERAL jsonb_array_elements(v.definition->'nodes') n ON n->>'id'=j.node_id AND n->>'type'='DELAY'
- WHERE j.tenant_id=$1 AND (s.bot_id=$2 OR ($3::boolean AND s.bot_id IS NULL)) AND ($4='ALL' OR j.status=$4)
+ WHERE j.tenant_id=$1 AND j.purpose='FLOW' AND (s.bot_id=$2 OR ($3::boolean AND s.bot_id IS NULL)) AND ($4='ALL' OR j.status=$4)
  AND ($5::uuid IS NULL OR (j.due_at,j.conversation_id)>(SELECT mark.due_at,mark.conversation_id FROM chatbot_delay_jobs mark WHERE mark.tenant_id=$1 AND mark.conversation_id=$5))
  AND ($6::uuid IS NULL OR j.conversation_id=$6) ORDER BY j.due_at,j.conversation_id LIMIT 21`,[a.tenantId,bot,scope===undefined,status,before??null,id??null]);
 }

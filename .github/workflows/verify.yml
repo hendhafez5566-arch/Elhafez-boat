@@ -117,6 +117,10 @@ jobs:
         run: node tests/flow-connector-db.mjs
       - name: Customer timezone, long calendars and precise wait cancellation
         run: node tests/flow-schedule-db.mjs
+      - name: Conversation ownership, human policies and customer consent
+        run: node tests/conversation-control-db.mjs
+      - name: Conversation controls and consent in Chromium desktop/mobile
+        run: node tests/conversation-control-browser.mjs
       - name: Authoring, native connector and scheduled wait desktop/mobile UI
         run: CI_CONNECTOR_BROWSER=1 CI_SCHEDULE_BROWSER=1 node tests/flow-authoring-browser.mjs
       - name: Real non-owner runtime / web browser acceptance

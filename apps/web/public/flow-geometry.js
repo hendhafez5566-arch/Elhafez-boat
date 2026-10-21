@@ -35,6 +35,8 @@ export function placeWithoutOverlap(point,node,existing=[],gap=GAP,measured=null
 }
 export function graphOutputs(node={}){
  const out=[];
+ if(node.type==='CONSENT')for(const [key,label]of [['acceptNext','الموافقة'],['declineNext','الرفض'],['withdrawNext','سحب الموافقة']])if(node[key])out.push({key,to:node[key],label});
+ if(node.handoffPolicy)for(const [key,label]of [['unavailableNext','لا يوجد موظف'],['resumeNext','استئناف البوت']])if(node.handoffPolicy[key])out.push({key:'handoff:'+key,to:node.handoffPolicy[key],label});
  if(Array.isArray(node.choices))out.push(...node.choices.filter(c=>c.action!=='URL').map(c=>({key:'choice:'+c.id,to:c.next,label:c.title||'اختيار'})));
  else if(['CONDITION','KEYWORD','BUSINESS_HOURS'].includes(node.type))out.push({key:'yes',to:node.yes,label:node.type==='BUSINESS_HOURS'?'مفتوح':'نعم'},{key:'no',to:node.no,label:node.type==='BUSINESS_HOURS'?'مغلق':'لا'});
  else if('next'in node)out.push({key:'next',to:node.next,label:'التالي'});
@@ -42,7 +44,7 @@ export function graphOutputs(node={}){
  if((node.type==='WEBHOOK'||node.type==='CONNECTOR')&&node.request)out.push({key:'request:errorNext',to:node.request.errorNext,label:'فشل الطلب'},{key:'request:timeoutNext',to:node.request.timeoutNext,label:'مهلة الطلب'});
  if(node.errorNext!==undefined)out.push({key:'errorNext',to:node.errorNext,label:'عند الخطأ'});return out;
 }
-export function setGraphOutput(node,key,target){if(key.startsWith('choice:')){const c=node.choices?.find(c=>c.id===key.slice(7));if(c)c.next=target}else if(key.startsWith('request:')){if(node.request)node.request[key.slice(8)]=target}else if(key.startsWith('policy:')){node.policy??={};node.policy[key.slice(7)]=target}else node[key]=target}
+export function setGraphOutput(node,key,target){if(key.startsWith('choice:')){const c=node.choices?.find(c=>c.id===key.slice(7));if(c)c.next=target}else if(key.startsWith('handoff:')){if(node.handoffPolicy)node.handoffPolicy[key.slice(8)]=target}else if(key.startsWith('request:')){if(node.request)node.request[key.slice(8)]=target}else if(key.startsWith('policy:')){node.policy??={};node.policy[key.slice(7)]=target}else node[key]=target}
 export function arrangeFlow(flow){
  const byId=new Map(flow.nodes.map(node=>[node.id,node]));
  const rank=new Map([[flow.startId,0]]),queue=[flow.startId];

@@ -1,11 +1,14 @@
+import {processControlledDeadline} from './conversation-control.js';
 import {respondToFlow} from './flow-service.js';
 import {deliverConversation} from './channels.js';
 import {type SqlClient} from './services.js';
 export async function processDelay(db:SqlClient,tenantId:string){
  // Lock conversation before session/job, matching inbound and staff ownership order.
- const due=await db.query(`SELECT j.conversation_id FROM chatbot_delay_jobs j JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id WHERE j.tenant_id=$1 AND j.status='PENDING' AND j.due_at<=now() ORDER BY j.due_at LIMIT 1 FOR UPDATE OF c SKIP LOCKED`,[tenantId]);
+ const due=await db.query(`SELECT j.conversation_id FROM chatbot_delay_jobs j JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id WHERE j.tenant_id=$1 AND j.status='PENDING' AND j.due_at<=now() ORDER BY j.due_at LIMIT 1`,[tenantId]);
  if(!due.rowCount)return false;const conversationId=String(due.rows[0].conversation_id);
- const job=await db.query(`SELECT j.version,j.node_id,j.wait_token,c.contact_id,c.channel,c.status FROM chatbot_delay_jobs j JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id WHERE j.tenant_id=$1 AND j.conversation_id=$2 AND j.status='PENDING' AND j.due_at<=now() FOR UPDATE OF j`,[tenantId,conversationId]);if(!job.rowCount)return false;const j=job.rows[0];
+ const contact=await db.query('SELECT k.id FROM contacts k JOIN conversations c ON c.tenant_id=k.tenant_id AND c.contact_id=k.id WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF k SKIP LOCKED',[tenantId,conversationId]);if(!contact.rowCount)return false;if(!(await db.query('SELECT id FROM conversations WHERE tenant_id=$1 AND id=$2 FOR UPDATE SKIP LOCKED',[tenantId,conversationId])).rowCount)return false;
+ const job=await db.query(`SELECT j.version,j.node_id,j.wait_token,j.purpose,c.contact_id,c.channel,c.status FROM chatbot_delay_jobs j JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id WHERE j.tenant_id=$1 AND j.conversation_id=$2 AND j.status='PENDING' AND j.due_at<=now() FOR UPDATE OF j`,[tenantId,conversationId]);if(!job.rowCount)return false;const j=job.rows[0];
+ if(j.purpose!=='FLOW'){await processControlledDeadline(db,tenantId,conversationId,j);return true;}
  const active=await db.query(`SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()`,[tenantId]);
  if(!active.rowCount||j.status!=='OPEN'){await db.query(`UPDATE chatbot_delay_jobs SET status='CANCELLED',error='Subscription inactive or bot no longer owns conversation' WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);return true}
  await db.query('SAVEPOINT delay_work');

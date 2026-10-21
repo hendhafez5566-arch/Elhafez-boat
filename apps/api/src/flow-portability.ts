@@ -11,6 +11,7 @@ export function flowReferences(flow:FlowDefinition):Reference[]{
   if(n.type==='CONNECTOR')add('CONNECTOR',n.connectorId,['nodes',i,'connectorId']);
   if(n.type==='SUBFLOW')add('SUBFLOW',n.subflowId,['nodes',i,'subflowId'],n.version);
   if(n.type==='CRM_ACTION'&&n.operation==='ASSIGN')add('ASSIGNEE',n.value,['nodes',i,'value']);
+  if(n.type==='HANDOFF'&&n.handoffPolicy?.strategy==='MEMBER')add('ASSIGNEE',n.handoffPolicy.memberId!,['nodes',i,'handoffPolicy','memberId']);
   // Only media URLs are resource references. Ordinary HTTPS links remain content.
   const media=(v:unknown,path:(string|number)[])=>{if(!v||typeof v!=='object')return;for(const [k,value]of Object.entries(v)){const p=[...path,Array.isArray(v)?Number(k):k];if((k==='imageUrl'||k==='url'&&(v as any).type==='MEDIA'||k==='url'&&n.type==='MEDIA'&&path.length===2)&&typeof value==='string')add('MEDIA',value,p,undefined,k==='imageUrl'?'image':String((v as any).mediaKind||'image'));else if(value&&typeof value==='object')media(value,p)}};
   media(n,['nodes',i]);

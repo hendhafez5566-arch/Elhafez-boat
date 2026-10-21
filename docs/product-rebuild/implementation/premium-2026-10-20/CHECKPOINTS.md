@@ -1,3 +1,7 @@
+## 2026-10-21 — conversation control / human policies / consent
+
+Implemented and locally verified the integrated ownership/consent package on premium PR #5. Matrix 16 PASS / 20 PARTIAL; F18/F20 close, F12 deliberately retains legacy nonblocking-job attribution gap. 197 unit/typecheck/build, 10 new PostgreSQL and 4 Chromium desktop/mobile scenarios PASS; previous request/native/schedule regressions PASS. See `docs/product-rebuild/implementation/premium-2026-10-20/CONVERSATION_CONTROL_CHECKPOINT.md`. Next integrated package: F36 save idempotency/cross-tab coordination. Remote Actions not yet verified; no merge/deploy/provider use. Visual acceptance remains pending.
+
 # Latest verified continuation — 21 October 2026
 
 [COMPLETION_2026-10-21.md](COMPLETION_2026-10-21.md) supersedes the historical checkpoint below: source ab042d0, 14 PASS / 22 PARTIAL, 194 units, 38 migrations, 65 dedicated browser checks, full runtime + restore + latest Node 22/Compose PASS locally. Remote Actions UNVERIFIED (Forbidden); visual approval pending.

@@ -1,3 +1,5 @@
+import {controlledConversations,controlConversation,handoffRoster,updateHandoffAvailability} from './conversation-control.js';
+import {consentHistory,revokeConsent} from './flow-consent.js';
 import {scheduledFlowJobs,cancelScheduledFlow} from './flow-scheduled-ops.js';
 import {flowReleaseReport,releaseDiff} from './flow-release.js';
 import {flowReviewState,changeFlowReview} from './flow-review.js';
@@ -263,6 +265,16 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&waDisconnect)return json(res,200,await run(tx=>disconnectWhatsApp(tx,actor,waDisconnect[1])));
+    if(pathname==='/api/v1/inbox/availability'){
+      if(req.method==='GET')return json(res,200,await run(tx=>handoffRoster(tx,actor)));
+      if(req.method==='PATCH')return json(res,200,await runBody((tx,input)=>updateHandoffAvailability(tx,actor,input)));
+    }
+    const botControl=/^\/api\/v1\/bots\/([^/]+)\/conversation-control(?:\/([^/]+))?$/.exec(pathname);
+    if(botControl&&req.method==='GET'&&!botControl[2])return json(res,200,await run(tx=>controlledConversations(tx,actor,botControl[1])));
+    if(botControl&&req.method==='POST'&&botControl[2])return json(res,200,await runBody((tx,input)=>controlConversation(tx,actor,botControl[1],botControl[2],input)));
+    const consentRoute=/^\/api\/v1\/conversations\/([^/]+)\/consent$/.exec(pathname);
+    if(consentRoute&&req.method==='GET')return json(res,200,await run(tx=>consentHistory(tx,actor,consentRoute[1])));
+    if(consentRoute&&req.method==='POST')return json(res,200,await runBody((tx,input)=>revokeConsent(tx,actor,consentRoute[1],input)));
     if(req.method==='GET'&&pathname==='/api/v1/notifications')return json(res,200,await run(tx=>notifications(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/runtime/jobs')return json(res,200,await run(tx=>runtimeJobs(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/campaigns')return json(res,200,await run(tx=>listCampaigns(tx,actor)));
@@ -314,11 +326,12 @@ const server=createServer(async(req,res)=>{
       if(incoming&&(!['TEXT','CHOICE','SKIP','TIMEOUT'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
       flow=await compileSubflows(tx,actor.tenantId,flow);
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
-      const simulation=d.simulation as {now?:number;seed?:number;requests?:Record<string,RequestMock>}|undefined;
+      const simulation=d.simulation as {now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean}|undefined;
       if(simulation&&(typeof simulation!=='object'||simulation.now!==undefined&&(!Number.isFinite(simulation.now)||simulation.now<0||simulation.now>4102444800000)||simulation.seed!==undefined&&(!Number.isFinite(simulation.seed)||simulation.seed<0||simulation.seed>=1)))throw new HttpFailure(400,'Invalid simulation clock/seed');
+      if(simulation?.staffAvailable!==undefined&&typeof simulation.staffAvailable!=='boolean')throw new HttpFailure(400,'Invalid simulated availability');
       if(simulation?.requests!==undefined){try{validateRequestMocks(simulation.requests)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid request mocks')}}
       if(state?.runtime){const r=state.runtime;if(!r.attempts||typeof r.attempts!=='object'||Array.isArray(r.attempts)||Object.keys(r.attempts).length>100||Object.values(r.attempts).some(v=>!Number.isInteger(v)||v<0||v>10)||r.wait&&(!Number.isFinite(r.wait.expiresAt)||typeof r.wait.token!=='string'||!isUuid(r.wait.token)||typeof r.wait.nodeId!=='string')||r.experiments&&(typeof r.experiments!=='object'||Array.isArray(r.experiments)||Object.keys(r.experiments).length>100||Object.values(r.experiments).some(v=>typeof v!=='string'||v.length>40)))throw new HttpFailure(400,'Invalid simulation runtime state')}
-      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
+      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,botAction:r.botAction,runtimeNodes:r.flow.nodes};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/inspect-draft'){
       allow(actor,['OWNER','MANAGER']);const input=await body(req);

@@ -1,3 +1,4 @@
+import {recordFlowConsent} from './flow-consent.js';
 import {randomBytes} from 'node:crypto';
 import {tokenDigest} from './auth.js';
 import {allow,HttpFailure,isUuid,type Actor,type SqlClient,type SqlPool} from './services.js';
@@ -44,7 +45,7 @@ async function withSession<T>(pool:SqlClient&SqlPool,bearer:string,origin:string
   if(!ref.rowCount)throw new HttpFailure(401,'Visitor session unavailable');
   const contact=await db.query('SELECT status FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,ref.rows[0].contact_id]);
   if(!contact.rowCount||contact.rows[0].status==='ARCHIVED')throw new HttpFailure(401,'Visitor session expired after privacy erasure');
-  const session=await db.query(`SELECT s.id,s.conversation_id,c.contact_id,c.status FROM chatbot_web_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id JOIN chatbot_widget_settings w ON w.tenant_id=s.tenant_id WHERE s.tenant_id=$1 AND s.id=$2 AND s.token_hash=$3 AND s.origin=$4 AND s.expires_at>now() AND w.enabled=true AND w.origins ? $4 FOR UPDATE OF c`,[tenantId,route.rows[0].session_id,hash,origin]);
+  const session=await db.query(`SELECT s.id,s.conversation_id,c.contact_id,c.status,c.bot_control FROM chatbot_web_sessions s JOIN conversations c ON c.tenant_id=s.tenant_id AND c.id=s.conversation_id JOIN chatbot_widget_settings w ON w.tenant_id=s.tenant_id WHERE s.tenant_id=$1 AND s.id=$2 AND s.token_hash=$3 AND s.origin=$4 AND s.expires_at>now() AND w.enabled=true AND w.origins ? $4 FOR UPDATE OF c`,[tenantId,route.rows[0].session_id,hash,origin]);
   if(!session.rowCount)throw new HttpFailure(401,'Visitor session unavailable');return task(db,tenantId,session.rows[0]);
  });
 }
@@ -57,15 +58,15 @@ export async function websiteSend(pool:SqlClient&SqlPool,bearer:string,origin:st
   const recent=await db.query(`SELECT count(*)::int AS n FROM chatbot_web_receipts WHERE tenant_id=$1 AND session_id=$2 AND created_at>now()-interval '1 minute'`,[tenantId,s.id]);if(Number(recent.rows[0]?.n)>=30&&!/^(stop|unsubscribe|إيقاف الرسائل|إلغاء الرسائل)$/i.test(text.trim()))throw new HttpFailure(429,'Please wait before sending more messages');
   await db.query('INSERT INTO chatbot_web_receipts(tenant_id,session_id,message_id) VALUES($1,$2,$3)',[tenantId,s.id,messageId]);
   await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3)`,[tenantId,s.conversation_id,text.trim()||'اختيار: '+actionId]);
-  await db.query(`UPDATE conversations SET last_message_at=now(),last_customer_message_at=now(),status=CASE WHEN status='CLOSED' THEN 'OPEN' ELSE status END WHERE tenant_id=$1 AND id=$2`,[tenantId,s.conversation_id]);
+  await db.query(`UPDATE conversations SET last_message_at=now(),last_customer_message_at=now(),status=CASE WHEN status='CLOSED' AND coalesce(bot_control->>'mode','')<>'STOPPED' THEN 'OPEN' ELSE status END WHERE tenant_id=$1 AND id=$2`,[tenantId,s.conversation_id]);
   if(/^(stop|unsubscribe|إيقاف الرسائل|إلغاء الرسائل)$/i.test(text.trim())){
-   await db.query('UPDATE contacts SET do_not_contact=true WHERE tenant_id=$1 AND id=$2',[tenantId,s.contact_id]);await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,s.conversation_id]);
+   await recordFlowConsent(db,tenantId,String(s.contact_id),String(s.conversation_id),{purpose:'SERVICE',decision:'WITHDRAW',source:'CUSTOMER_COMMAND'});await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,s.conversation_id]);
    await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'OUTBOUND','تم إيقاف الردود الآلية. اكتب START لاستئناف الخدمة.')`,[tenantId,s.conversation_id]);return {received:true};
   }
   try{await consumeUsage(db,tenantId,'inbound')}catch(e){if(e instanceof HttpFailure&&(e.status===403||e.status===429))return {received:true,paused:true};throw e}
-  if(/^(start|ابدأ)$/i.test(text.trim()))await db.query('UPDATE contacts SET do_not_contact=false WHERE tenant_id=$1 AND id=$2',[tenantId,s.contact_id]);
+  if(/^(start|ابدأ)$/i.test(text.trim()))await recordFlowConsent(db,tenantId,String(s.contact_id),String(s.conversation_id),{purpose:'SERVICE',decision:'GRANT',source:'CUSTOMER_COMMAND'});
   const consent=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[tenantId,s.contact_id]);if(consent.rows[0]?.do_not_contact)return {received:true};
-  if(s.status==='CLOSED')await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,s.conversation_id]);
+  if(s.status==='CLOSED'&&(s.bot_control as any)?.mode!=='STOPPED')await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,s.conversation_id]);
   if(s.status!=='HUMAN'){
    const result=await respondToFlow(db,{tenantId,conversationId:String(s.conversation_id),contactId:String(s.contact_id),actionId:actionId,body:text,fromWhatsApp:false});await deliverConversation(db,tenantId,String(s.conversation_id),result.payloads,{staff:result.handedOff});
   }return {received:true};

@@ -13,6 +13,7 @@ export function websitePayload(payload:Record<string,unknown>){
  throw new HttpFailure(400,'Unsupported website payload');
 }
 export async function deliverConversation(db:SqlClient,tenantId:string,conversationId:string,payloads:Record<string,unknown>[],options:{staff?:boolean}={}){
+ if(!payloads.length)return;
  const r=await db.query(`SELECT c.channel,c.status,c.social_account_id,c.external_sender_id,c.whatsapp_account_id,c.last_customer_message_at,k.phone,k.do_not_contact FROM conversations c JOIN contacts k ON k.tenant_id=c.tenant_id AND k.id=c.contact_id WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF c`,[tenantId,conversationId]);
  if(!r.rowCount)throw new HttpFailure(404,'Conversation not found');const c=r.rows[0];
  if(c.do_not_contact)throw new HttpFailure(409,'Contact opted out');
@@ -27,6 +28,7 @@ export async function deliverConversation(db:SqlClient,tenantId:string,conversat
  if(c.channel!=='TELEGRAM'&&(!c.last_customer_message_at||Date.now()-new Date(String(c.last_customer_message_at)).getTime()>86400000))throw new HttpFailure(409,'Channel service window expired');
  await enqueueSocial(db,tenantId,conversationId,String(c.social_account_id),String(c.channel),String(c.external_sender_id),payloads);
  }else throw new HttpFailure(400,'Channel adapter unavailable');
+ if(options.staff)await db.query('UPDATE conversations SET last_message_at=now() WHERE tenant_id=$1 AND id=$2',[tenantId,conversationId]);
 }
 
 

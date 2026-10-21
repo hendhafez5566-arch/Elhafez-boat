@@ -2,7 +2,7 @@ import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutO
 /** Dependency-free, RTL-friendly flow canvas. Graph mutations stay in the existing draft editor. */
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
   const ns='http://www.w3.org/2000/svg';
-  const titles={CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
+  const titles={CONTROL:'تشغيل البوت',CONSENT:'موافقة العميل',CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
   const edges=graphOutputs;
   let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,pathFocused=false,connectionGeneration=0,pendingFit=false;
   host.tabIndex=0;

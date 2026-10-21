@@ -1,3 +1,4 @@
+import {mountConversationControls,mountConversationOperations} from './flow-conversation-controls.js';
 import {mountScheduledOperations} from './flow-scheduled-ops.js';
 import {mountFlowAuthoring} from './flow-authoring.js';
 import {createDraftRecovery} from './draft-recovery.js';
@@ -21,7 +22,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const el=(tag,text,className)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(className)n.className=className;return n};
  const button=(text,action,klass='secondary')=>{const b=el('button',text,klass);b.type='button';b.onclick=action;return b};
  const idPattern=/^[a-z][a-z0-9_-]{0,31}$/;
- const types={CARD:'بطاقة محتوى',GALLERY:'معرض بطاقات',CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
+ const types={CONTROL:'تشغيل وإيقاف البوت',CONSENT:'موافقة العميل',CARD:'بطاقة محتوى',GALLERY:'معرض بطاقات',CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',SUBFLOW:'مسار فرعي مرتبط',CONNECTOR:'مزامنة موصل أصلي',DELAY:'انتظار ثم استكمال',START:'بداية',WEBHOOK:'تكامل Webhook',CATALOG:'كتالوج معتمد',AI:'مساعد ذكي',KEYWORD:'كلمات مفتاحية',QUESTION:'سؤال',TEXT:'رسالة نصية',BUTTONS:'أزرار رد',LIST:'قائمة اختيارات',INPUT:'سؤال وتسجيل إجابة',CONDITION:'شرط',TAG:'تصنيف العميل',MEDIA:'صورة / فيديو / ملف',LINK:'رابط خارجي',HANDOFF:'تحويل لموظف',END:'نهاية'};
  const deep=v=>JSON.parse(JSON.stringify(v));
  const preset=(industry='general')=>{
    const cards={general:['الخدمات','العروض'],shop:['المنتجات','الأسعار والمقاسات'],tourism:['البرامج','الأسعار والمواعيد'],clinic:['خدمات العيادة','ساعات العمل'],restaurant:['المنيو','فروع المطعم'],realestate:['العقارات','استفسار عن زيارة'],education:['الكورسات','مواعيد التسجيل']};
@@ -278,7 +279,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const pickerGrid=el('div',undefined,'builder-picker-grid');picker.append(pickerHead,pickerSearch,pickerGrid);document.body.append(picker);
  let insertAnchor=null;
  function paintPicker(){pickerGrid.replaceChildren();const q=pickerSearch.value.trim().toLowerCase();
-   for(const [kind] of kinds.concat([['CARD'],['GALLERY'],['CRM_ACTION'],['BUSINESS_HOURS'],['GOAL'],['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
+   for(const [kind] of kinds.concat([['CONTROL'],['CONSENT'],['CARD'],['GALLERY'],['CRM_ACTION'],['BUSINESS_HOURS'],['GOAL'],['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
      if(!types[kind].toLowerCase().includes(q)&&!kind.toLowerCase().includes(q))continue;
      pickerGrid.append(button(types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)},'builder-picker-item'));
    }
@@ -326,6 +327,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const requestMocks={};
  const requestControls=mountRequestControls({el,button,label,control,target,changed:()=>{markDirty();canvas.draw()},repaint:()=>renderEditor(),getFlow:()=>flow,getMock:id=>requestMocks[id],setMock:(id,value)=>requestMocks[id]=value});
  const runtimeControls=mountRuntimeControls({el,button,label,control,target,changed:()=>{markDirty();canvas.draw()},repaint:()=>renderEditor(),getFlow:()=>flow});
+ const conversationControls=mountConversationControls({el,button,label,control,target,changed:markDirty,repaint:renderEditor,runtimeControls,api:baseApi,execute});
  const variableHost=el('div');advanced.append(variableHost);runtimeControls.variables(variableHost);
  function renderBlocks(){
    const host=$('builder-nodes');host.replaceChildren();
@@ -391,6 +393,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
        :kind==='BUSINESS_HOURS'?{id:node.id,type:kind,schedule:{timezone:'Africa/Cairo',weekdays:[1,2,3,4,5],open:'09:00',close:'17:00'},yes:next,no:next}
        :kind==='CRM_ACTION'?{id:node.id,type:kind,operation:'SET_STAGE',value:'CONTACTED',next}
        :kind==='GOAL'?{id:node.id,type:kind,goal:'qualified',next}
+       :kind==='CONTROL'?{id:node.id,type:kind,operation:'PAUSE',next}
+       :kind==='CONSENT'?{id:node.id,type:kind,text:'هل توافق على تلقي تحديثاتنا التسويقية؟',purpose:'MARKETING',policyVersion:'v1',acceptNext:next,declineNext:next}
        :kind==='DELAY'?{id:node.id,type:kind,seconds:60,next}
        :kind==='SUBFLOW'?{id:node.id,type:kind,subflowId:'',version:1,bindings:{},next}
        :kind==='CONNECTOR'?{id:node.id,type:kind,connectorId:'',next}
@@ -441,7 +445,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     for(const [key,title]of [['min','أقل قيمة / طول'],['max','أكبر قيمة / طول']]){const c=control(node.validation?.[key]??'',v=>{node.validation??={type:kind.value};if(v==='')delete node.validation[key];else node.validation[key]=Number(v)});c.type='number';section.append(label(title,c))}
     section.append(label('رسالة عند إجابة غير صحيحة',control(node.validation?.errorText||'',v=>{node.validation??={type:kind.value};if(v)node.validation.errorText=v;else delete node.validation.errorText})));host.append(section);
    }
-   runtimeControls.policy(host,node);runtimeControls.schedule(host,node);runtimeControls.triggers(host,node);requestControls.render(host,node);
+   conversationControls(host,node);runtimeControls.policy(host,node);runtimeControls.schedule(host,node);runtimeControls.triggers(host,node);requestControls.render(host,node);
    if(node.type==='CRM_ACTION'){host.append(label('إجراء العميل',runtimeControls.select(node.operation,[['SET_STAGE','تحديث مرحلة العميل'],['ASSIGN','إسناد المحادثة لموظف']],v=>{node.operation=v;node.value=v==='SET_STAGE'?'CONTACTED':'';renderEditor()})));host.append(label(node.operation==='SET_STAGE'?'المرحلة':'معرف الموظف داخل الشركة',node.operation==='SET_STAGE'?runtimeControls.select(node.value,['INTERESTED','CONTACTED','READY_FOR_AGENT','CLOSED'].map(v=>[v,v]),v=>node.value=v):control(node.value,v=>node.value=v)),label('عند فشل الإجراء',target(node.errorNext||'',v=>{if(v)node.errorNext=v;else delete node.errorNext},true)));}
    if(node.type==='SET_FIELD')host.append(label('عند عدم توافق قيمة الحقل',target(node.errorNext||'',v=>{if(v)node.errorNext=v;else delete node.errorNext},true)));
    if(node.type==='GOAL')host.append(label('معرف الهدف',control(node.goal,v=>node.goal=v)));
@@ -561,6 +565,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    next??=flow.startId;
    if(origin&&!nodeById(oldTarget))oldTarget=['END','HANDOFF'].includes(type)?null:next;
    if(type==='BUTTONS'||type==='LIST')flow.nodes.push({id,type,text:'اختار من القائمة:',choices:[{id:'option',title:'اختيار',next}]});
+   else if(type==='CONTROL')flow.nodes.push({id,type,operation:'PAUSE',next});
+   else if(type==='CONSENT')flow.nodes.push({id,type,text:'هل توافق على تلقي تحديثاتنا التسويقية؟',purpose:'MARKETING',policyVersion:'v1',acceptNext:next,declineNext:next});
    else if(type==='CRM_ACTION')flow.nodes.push({id,type,operation:'SET_STAGE',value:'CONTACTED',next});
    else if(type==='SET_FIELD')flow.nodes.push({id,type,field:'lead_status',value:'qualified',next});
    else if(type==='RANDOMIZER')flow.nodes.push({id,type,choices:[{id:'a',title:'A',weight:50,next},{id:'b',title:'B',weight:50,next}]});
@@ -596,6 +602,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  }
  const diagnostics=el('details',undefined,'builder-diagnostics');diagnostics.append(el('summary','مسار التنفيذ والمتغيرات التجريبية'));const traceHost=el('ol'),valuesHost=el('pre');diagnostics.append(traceHost,valuesHost);simulator.append(diagnostics);
  let previewBusy=false,simulationGeneration=0,simulationNow=Date.now();
+ const simulatedStaff=el('select');for(const [value,title]of [['yes','موظف متاح — محاكاة'],['no','لا يوجد موظف — محاكاة']]){const o=el('option',title);o.value=value;simulatedStaff.append(o)}simulatedStaff.setAttribute('aria-label','توافر الموظفين في المحاكاة');const simulatedClock=el('input');simulatedClock.type='datetime-local';simulatedClock.setAttribute('aria-label','وقت المحاكاة');simulatedClock.onchange=()=>{if(simulatedClock.value)simulationNow=new Date(simulatedClock.value).getTime()};simulator.append(label('تجربة التحويل',simulatedStaff),label('وقت المحاكاة المحلي',simulatedClock));
   const isPhoneField=field=>/(^|_)phone$|^customer_phone$/.test(String(field||''));
   const normalizePhone=value=>String(value||'').replace(/[٠-٩۰-۹]/g,ch=>String('٠١٢٣٤٥٦٧٨٩'.indexOf(ch)>=0?'٠١٢٣٤٥٦٧٨٩'.indexOf(ch):'۰۱۲۳۴۵۶۷۸۹'.indexOf(ch))).trim();
   const phoneOk=value=>/^\+?[0-9]{8,15}$/.test(normalizePhone(value));
@@ -615,17 +622,18 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  async function serverPreview(input,eventKind){
   if(previewBusy)return;previewBusy=true;const generation=simulationGeneration;
   try{
-   const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST';
+   const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST'||current?.type==='CONSENT';
    const inbound=eventKind?{kind:eventKind,value:input||''}:input!==undefined?{kind:choice?'CHOICE':'TEXT',value:choice?'flow:'+current.id+':'+input:input}:undefined;
-   const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,simulation:{now:simulationNow,requests:requestMocks},...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
+   const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,simulation:{now:simulationNow,requests:requestMocks,staffAvailable:simulatedStaff.value==='yes'},...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
    if(generation!==simulationGeneration)return;
-   if(input)bubble(choice?current.choices.find(c=>c.id===input)?.title||input:input,'customer');
+   if(input)bubble(choice?current.choices?.find(c=>c.id===input)?.title||input:input,'customer');
    for(const entry of r.trace||[]){const item=el('li',entry.nodeId+' · '+entry.type+' · '+entry.outcome);item.onclick=()=>{simulatorDialog.close();canvas.focus(entry.nodeId)};traceHost.append(item)}valuesHost.textContent=JSON.stringify(r.state.answers,null,2);canvas.highlight(r.state.at);
    preview=r.state;previewRuntimeNodes=r.runtimeNodes;$('builder-preview-options').replaceChildren();
    for(const message of r.messages){
     if(message.type==='GALLERY'){if(['WHATSAPP','TELEGRAM'].includes(flow.channel||'WHATSAPP')){for(const c of message.cards){if(c.imageUrl)bubble('[صورة] '+c.imageUrl);bubble([c.title,c.subtitle,...(c.actions||[]).map(a=>a.title+': '+a.url)].filter(Boolean).join('\n'))}}else $('builder-preview').append(renderGallery(message.cards))}else bubble(message.text||('['+message.mediaKind+'] '+message.url));
     if(message.choices)for(const c of message.choices){if(c.action==='URL'){const link=el('a',c.title,'builder-option');link.href=c.url;link.target='_blank';link.rel='noopener noreferrer';$('builder-preview-options').append(link)}else $('builder-preview-options').append(button(c.title,()=>execute(()=>serverPreview(c.id,atInputSkip(c)?'SKIP':undefined)),'builder-option'));}
    }
+   if(r.botAction){bubble(r.botAction.operation==='STOP'?'انتهى تشغيل البوت.':'البوت متوقف مؤقتًا. الاستئناف هنا تجربة فقط.');if(r.botAction.operation==='PAUSE')$('builder-preview-options').append(button('استئناف التجربة',()=>{preview.at=r.botAction.next;previewRuntimeNodes=null;execute(()=>serverPreview())}));}
    if(r.waiting){const w=r.waiting;const isInput=w.kind==='INPUT'||w.kind==='CHOICE';bubble((isInput?'مهلة رد: ':'انتظار: ')+w.seconds+' ثانية — ساعة محاكاة');$('builder-preview-options').append(button(isInput?'محاكاة انتهاء المهلة':'استكمال التأخير في المعاينة',()=>{simulationNow=w.expiresAt||simulationNow+w.seconds*1000;if(isInput)execute(()=>serverPreview(w.token,'TIMEOUT'));else{preview.at=w.next;if(preview.runtime)delete preview.runtime.wait;execute(()=>serverPreview())}},'secondary'))}
 
    const at=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);
@@ -644,7 +652,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      if(!input)return;
      if(isPhoneField(current.field)&&!phoneOk(input)){bubble('اكتب رقم هاتف صحيح من 8 إلى 15 رقمًا بدون حروف');return}
       preview.answers[current.field]=isPhoneField(current.field)?normalizePhone(input):input;bubble(input,'customer');id=current.next;
-   }else if(preview.at&&(current?.type==='BUTTONS'||current?.type==='LIST')){
+   }else if(preview.at&&(current?.type==='BUTTONS'||current?.type==='LIST'||current?.type==='CONSENT')){
      if(!input)return;
      const choice=current.choices.find(x=>x.id===input);
      if(!choice)return;
@@ -844,6 +852,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  advancedButtons.append(button('تحليلات الخطوات',()=>execute(async()=>{if(!state.botId||state.demo){notify('افتح بوتًا محفوظًا لعرض أحداثه الفعلية');return}const data=await baseApi('/bots/'+encodeURIComponent(state.botId)+'/flow-insights?days=7');const dialog=el('dialog',undefined,'builder-conflict-dialog');dialog.append(el('h3','أحداث التنفيذ الفعلية — 7 أيام'),el('p','العدادات انتقالات فعلية وجلسات محادثة، وليست إيصالات تسليم. المحاكاة مستبعدة.'));const table=el('table');const head=el('tr');for(const t of ['الإصدار','الخطوة','النتيجة','الانتقالات','المحادثات'])head.append(el('th',t));table.append(head);for(const row of data.rows){const tr=el('tr');for(const value of [row.version,row.nodeId,row.outcome,row.events,row.sessions])tr.append(el('td',value));table.append(tr)}dialog.append(data.rows.length?table:el('p','لا توجد أحداث تشغيل فعلية لهذا البوت بعد.'),button('إغلاق',()=>{dialog.close();dialog.remove()}));document.body.append(dialog);dialog.showModal()})));
  const flowAuthoring=mountFlowAuthoring({el,button,api:baseApi,execute,notify,getScope:()=>({tenantId:state.tenantId,userId:state.userId,botId:state.botId,role:state.role,demo:state.demo}),getFlow:()=>flow,getRevision:()=>draftRevision,getSelected:()=>selected,replaceFlow:definition=>{const before=deep(flow);flow=deep(definition);selected=flow.startId;selectedNodes=new Set([selected]);history=[before,deep(flow)];cursor=1;dirty=true;renderAll();resetPreview()},focus:id=>{if(!nodeById(id))return;selected=id;selectedNodes=new Set([id]);renderAll();canvas.focus(id);showInspector()},toolbar:primaryBar});
  const scheduledOps=mountScheduledOperations({el,button,api:baseApi,execute,notify,getScope:()=>({tenantId:state.tenantId,userId:state.userId,botId:state.botId,demo:state.demo}),toolbar:advancedButtons});
+ const conversationOps=mountConversationOperations({el,button,api:baseApi,execute,notify,getScope:()=>({tenantId:state.tenantId,userId:state.userId,botId:state.botId,demo:state.demo,role:state.role}),toolbar:primaryBar});
  const requestOps=mountRequestOperations({el,button,api:baseApi,execute,notify,getScope:()=>({tenantId:state.tenantId,userId:state.userId,botId:state.botId,demo:state.demo}),toolbar:primaryBar});
  const flowDiagnostics=mountFlowDiagnostics({el,button,api:baseApi,execute,notify,getScope:()=>({tenantId:state.tenantId,userId:state.userId,botId:state.botId,demo:state.demo}),toolbar:primaryBar,focusNode:id=>{if(!nodeById(id))return false;selected=id;selectedNodes=new Set([id]);renderAll();canvas.focus(id);showInspector();return true}});
  $('builder-save').onclick=()=>execute(()=>saveDraft());
@@ -870,5 +879,5 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
  });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

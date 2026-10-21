@@ -1,3 +1,4 @@
+import {recordFlowConsent} from './flow-consent.js';
 import {randomBytes,timingSafeEqual} from 'node:crypto';
 import {allow,HttpFailure,isUuid,type Actor,type SqlClient,type SqlPool} from './services.js';
 import {openIntegrationSecret,sealIntegrationSecret} from './integration-secrets.js';
@@ -54,16 +55,17 @@ async function receive(db:SqlClient,t:string,account:string,channel:string,m:Inc
  if(!Number.isFinite(m.timestamp)||m.timestamp<Date.now()-172800000||m.timestamp>Date.now()+300000)return;
  await db.query('SELECT id FROM tenants WHERE id=$1 FOR UPDATE',[t]);const enabled=await db.query('SELECT 1 FROM chatbot_social_accounts WHERE tenant_id=$1 AND id=$2 AND enabled=true',[t,account]);if(!enabled.rowCount)return;
  const receipt=await db.query('INSERT INTO chatbot_social_receipts(tenant_id,account_id,event_id) VALUES($1,$2,$3) ON CONFLICT DO NOTHING RETURNING event_id',[t,account,m.eventId]);if(!receipt.rowCount)return;
+ const existing=await db.query('SELECT contact_id FROM conversations WHERE tenant_id=$1 AND social_account_id=$2 AND external_sender_id=$3',[t,account,m.sender]);if(existing.rowCount)await db.query('SELECT id FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[t,existing.rows[0].contact_id]);
  let conv=await db.query('SELECT * FROM conversations WHERE tenant_id=$1 AND social_account_id=$2 AND external_sender_id=$3 FOR UPDATE',[t,account,m.sender]);
  if(!conv.rowCount){const contact=await db.query("INSERT INTO contacts(tenant_id,full_name,phone,source) VALUES($1,$2,NULL,'IMPORT') RETURNING id",[t,m.name.length>1?m.name:'عميل']);conv=await db.query(`INSERT INTO conversations(tenant_id,contact_id,channel,social_account_id,external_sender_id,last_customer_message_at,last_message_at) VALUES($1,$2,$3,$4,$5,to_timestamp($6/1000.0),now()) RETURNING *`,[t,contact.rows[0].id,channel,account,m.sender,m.timestamp]);}
  const c=conv.rows[0],cid=String(c.id);await db.query('UPDATE conversations SET last_customer_message_at=greatest(last_customer_message_at,to_timestamp($3/1000.0)),last_message_at=now() WHERE tenant_id=$1 AND id=$2',[t,cid,m.timestamp]);
  await db.query("INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3)",[t,cid,m.text||'[اختيار تفاعلي]']);
- if(/^(stop|\/stop|إلغاء|الغاء|توقف)$/i.test(m.text.trim())){await db.query('UPDATE contacts SET do_not_contact=true,marketing_opt_in=false WHERE tenant_id=$1 AND id=$2',[t,c.contact_id]);await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);await db.query("UPDATE chatbot_social_outbox SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[t,cid]);return;}
- if(/^(start|\/start|ابدأ)$/i.test(m.text.trim()))await db.query('UPDATE contacts SET do_not_contact=false WHERE tenant_id=$1 AND id=$2',[t,c.contact_id]);
+ if(/^(stop|\/stop|إلغاء|الغاء|توقف)$/i.test(m.text.trim())){await recordFlowConsent(db,t,String(c.contact_id),cid,{purpose:'SERVICE',decision:'WITHDRAW',source:'CUSTOMER_COMMAND'});await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);await db.query("UPDATE chatbot_social_outbox SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[t,cid]);return;}
+ if(/^(start|\/start|ابدأ)$/i.test(m.text.trim()))await recordFlowConsent(db,t,String(c.contact_id),cid,{purpose:'SERVICE',decision:'GRANT',source:'CUSTOMER_COMMAND'});
  const contact=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[t,c.contact_id]);if(contact.rows[0]?.do_not_contact)return;
  await db.query('SAVEPOINT social_budget');try{await consumeUsage(db,t,'inbound')}catch{await db.query('ROLLBACK TO SAVEPOINT social_budget');return;}
  if(c.status==='HUMAN')return;
- if(c.status==='CLOSED'){await db.query("UPDATE conversations SET status='OPEN',assigned_user_id=NULL WHERE tenant_id=$1 AND id=$2",[t,cid]);await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);}
+ if(c.status==='CLOSED'&&(c.bot_control as any)?.mode!=='STOPPED'){await db.query("UPDATE conversations SET status='OPEN',assigned_user_id=NULL WHERE tenant_id=$1 AND id=$2",[t,cid]);await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);}
  let action='';if(m.action){const found=await db.query('SELECT action_id FROM chatbot_social_actions WHERE tenant_id=$1 AND conversation_id=$2 AND token=$3 AND created_at>now()-interval \'7 days\'',[t,cid,m.action]);if(found.rowCount)action=String(found.rows[0].action_id);}
  const result=await respondToFlow(db,{tenantId:t,conversationId:cid,contactId:String(c.contact_id),actionId:action,body:m.text,fromWhatsApp:false});await deliverConversation(db,t,cid,result.payloads,{staff:result.handedOff});
 }

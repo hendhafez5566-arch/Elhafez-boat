@@ -38,6 +38,7 @@ export async function flowReadiness(db:SqlClient,actor:Actor,input:unknown,botId
    const media=n.type==='MEDIA'?[{url:n.url,kind:n.mediaKind}]:[...(n.blocks||[]).filter(b=>b.type==='MEDIA').map(b=>({url:b.url,kind:b.mediaKind})),...contentMedia([{type:n.type,blocks:(n.blocks||[]).filter(b=>b.type==='CARD'||b.type==='GALLERY')}]).map(url=>({url,kind:'image' as const}))];
    for(const m of media)try{await validateManagedMedia(db,actor.tenantId,m.url,m.kind)}catch{fail('MEDIA_UNAVAILABLE','الملف غير متاح أو لم يجتز الفحص لهذه الشركة.')}
   }
+  if(n.type==='HANDOFF'&&n.handoffPolicy?.strategy==='MEMBER'){const r=await db.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role IN ('OWNER','MANAGER','AGENT')",[actor.tenantId,n.handoffPolicy.memberId]);if(!r.rowCount)fail('ASSIGNEE_UNAVAILABLE','اختر موظفًا مؤهلًا من هذه الشركة.');}
   if(n.type==='CRM_ACTION'&&n.operation==='ASSIGN'){
    const r=await db.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role IN ('OWNER','MANAGER','AGENT')",[actor.tenantId,n.value]);if(!r.rowCount)fail('ASSIGNEE_UNAVAILABLE','اختر موظفًا مؤهلًا من هذه الشركة.');
   }
