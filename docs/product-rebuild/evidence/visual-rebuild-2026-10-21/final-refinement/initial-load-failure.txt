@@ -1,0 +1,39 @@
+Initial combined run; concurrent verification, unchanged30-second load threshold. Later unchanged-limit retry is separately recorded.
+ACCEPTANCE FAILURE: AssertionError [ERR_ASSERTION]: Workers must drain all initial delays during sustained workload
+
+10 !== 0
+
+    at localClosure (file:///workspace/Elhafez-boat/tests/local-closure.mjs:88:9)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async file:///workspace/Elhafez-boat/tests/runtime-acceptance.mjs:290:60 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 10,
+  expected: 0,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+api-replica: Elhafez Boat API listening on 4001
+
+worker-2: WhatsApp outbox worker started
+
+api-restarted: Elhafez Boat API listening on 4000
+
+worker-2: Worker client connection lost { code: '57P01' }
+
+api-replica: API database connection lost { code: '57P01' }
+
+api-restarted: API database connection lost { code: '57P01' }
+
+api-restarted: Platform database connection lost { code: '57P01' }
+
+worker-restarted: WhatsApp outbox worker started
+
+worker-2: WhatsApp worker stopped
+
+worker-restarted: WhatsApp worker stopped
+
+mixed-worker-2: WhatsApp outbox worker started
+
+mixed-worker-1: WhatsApp outbox worker started
+

@@ -290,12 +290,12 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
 .builder-studio.inspector-open .builder-palette { display: none; }
 .studio-header .builder-status { max-width: 120px; }
 .studio-header #builder-name { font-size: 13px; }
-.studio-header .bot-studio-back { font-size: 0px; }
+#flow-builder .studio-header .bot-studio-back { font-size: 0px; min-width: 44px; min-height: 44px; }
 .studio-header .studio-brand-mark { font-size: 22px; }
 }
 @media (max-width: 800px) {
 #flow-builder > .studio-header { padding: 10px; display: grid; grid-template-columns: auto minmax(0px, 1fr) auto auto; gap: 8px; }
-.studio-header .bot-studio-back { font-size: 0px; }
+#flow-builder .studio-header .bot-studio-back { font-size: 0px; min-width: 44px; min-height: 44px; }
 .studio-header .studio-brand-mark { font-size: 22px; margin: 0px; }
 .studio-header > label:has(#builder-name) { grid-area: 1 / 2; max-width: none; width: 100%; }
 .studio-header > label:has(select) { grid-area: 2 / 2; }

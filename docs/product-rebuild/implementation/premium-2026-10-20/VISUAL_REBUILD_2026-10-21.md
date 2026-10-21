@@ -52,3 +52,21 @@ CI39623322985 passed all feature-specific groups and reached the real non-owner 
 ### Fresh mobile and linear-mode acceptance
 
 Fresh mobile canvas loads now keep the library drawer closed; linear steps are excluded from absolute drawer positioning and do not expose a close action that could hide the essential step list. A new actual390px reload/switch check on the saved500-node graph passes. Eight visual/tourism checks,56 local Chromium checks total; no runtime/data changes.
+
+## Final authoring and release candidate — 21 October 2026
+
+Previous correction654c90c8444251ce3338389f3e232dc7b3d52ec1 is fully GREEN on both push39634848979 and PR39634857704, including backup/restore, packaged Docker and isolated Compose/database-outage recovery. The next candidate must obtain its own green runs; these results do not certify later source.
+
+Visible UI acceptance now creates an independent blank tourism bot through Bot Manager, authors welcome/three buttons/two gallery cards/name input/condition/employee handoff and an offers branch through Library/Inspector, connects every route through actual selects, deletes the unused generated finish step after confirmation, saves and reloads every setting, and runs the actual shared-engine simulation through gallery/input/condition/handoff. No graph writes are injected through API in this authoring scenario. API reads verify exact persistence. Synthetic definition and two additional screenshots are in after/authored-tourism.json and after/11–12.
+
+Actual500-node library-drop rejection now proves that the501st drop neither adds a node nor moves the selected existing node. Mobile/tablet unobstructed Canvas captures13–14 supplement the original10 matched sections. Original Before bytes remain unchanged; IDs across disposable sessions differ as documented.
+
+A real initial-create success notice blocked a low Inspector disclosure. The original notice CSS now lets pointer events pass through informational text while its close button retains pointer access. No timers or announcement behavior changed. Named test navigation prefers an already accessible visible action over hidden duplicates before revealing progressive disclosures.
+
+Final image review found Fit's positive Y clamp could clip lower rows. Fit now centers using the true graph origin with explicit breadcrumb/navigation insets; an actual browser assertion requires every authored card to remain inside Canvas. The matched100% comparison remains unchanged in zoom/layout.
+
+CI211b0e5 exposed a separate shared-host test counter race (2 versus1 POST). Earlier PG fixtures and workers use the same synthetic host across tenants. The original once-only continuation and POST assertions remain, now scoped by a unique fixture marker and persisted job idempotency key, with an added durable attempts=1 assertion. An explicit independent request exercises unrelated traffic on that same loopback host. No runtime/worker/API/database logic was changed.
+
+Matrix remains30 PASS/6 PARTIAL: F01,F23,F24,F29,F30,F32. Remaining qualification: owner visual acceptance; physical-device/screen-reader/exhaustive contrast acceptance; live provider/Meta validation and production crash/load qualification; actual paid/external AI remains disabled. No merge, new branch/PR, Railway deployment, production migration, real provider activation or customer send.
+
+Exact continuation: stay on feat/premium-flow-builder-2026-10-20 / Draft PR#5. Read this file, the final-refinement logs, after/results.json and PR#5's updated release evidence. Recheck remote HEAD and its push/PR runs before further changes. The final response/PR records the exact candidate SHA and observed CI result without creating another source commit solely to restate an already observed check.

@@ -210,8 +210,8 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const nodes=f.nodes,positions=positionsFor(f);
     const rendered=new Map([...stage.querySelectorAll('.canvas-node')].map(card=>[card.dataset.nodeId,card]));
     const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+Math.max(rendered.get(n.id)?.offsetWidth||0,nodeFootprint(n).width))),bottom=Math.max(...nodes.map(n=>positions[n.id].y+Math.max(rendered.get(n.id)?.offsetHeight||0,nodeFootprint(n).height)));
-    const rect=host.getBoundingClientRect();zoom=Math.max(.01,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
-    pan={x:(rect.width-(right-left)*zoom)/2-left*zoom,y:Math.max(25,(rect.height-(bottom-top)*zoom)/2-top*zoom)};transform();
+    const rect=host.getBoundingClientRect(),topInset=56,bottomInset=72,availableHeight=Math.max(1,rect.height-topInset-bottomInset);zoom=Math.max(.01,Math.min(1.2,Math.min((rect.width-70)/(right-left),availableHeight/(bottom-top))));
+    pan={x:(rect.width-(right-left)*zoom)/2-left*zoom,y:topInset+(availableHeight-(bottom-top)*zoom)/2-top*zoom};transform();
   }
   function reset(){zoom=1;pan={x:36,y:36};transform()}
   function autoLayout(){const f=getFlow();f.layout=Object.assign(Object.create(null),arrangeFlow(f));changed();draw()}

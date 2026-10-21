@@ -22,3 +22,13 @@ Same synthetic bot ID is recorded in both results.json files. Same11-node touris
 Node/connector crops show the same full canvas independently. `package-a`/`package-c`/`package-d` are intermediate presentation-only captures with a6-node preset, not final matched/runtime evidence. `attempts/` retains a failed pre-fix capture. Final real API suites: regression-premium28; after8; regression-scale4; regression-context3; regression-authoring5; regression-offline2 + regression-replay6 =56 Chromium checks, no page errors. PostgreSQL suites:3 scale +10 authoring +4 context +3 governance =20 scenarios. TypeScript/build246 unit tests PASS. See individual logs and results files; physical touch/screen readers/live providers remain unqualified.
 
 CI first checkpoint c00abfe: checks succeeded; browser job failed because the old offline test clicked a newly nested summary without opening its menu. Navigation helper now opens actual disclosure controls and preserves all original assertions. Rerun of the complete failed offline suite passes locally; latest source CI must be assessed independently.
+
+## Additional actual authoring and responsive evidence
+
+- [UI-authored tourism simulation](after/11-authored-tourism-preview.png)
+- [UI-authored tourism graph after Fit](after/12-authored-tourism-workspace.png)
+- [Unobstructed mobile Canvas](after/13-mobile-canvas.png)
+- [Tablet Canvas](after/14-tablet-canvas.png)
+- [Actual saved synthetic definition](after/authored-tourism.json)
+
+The17 checks in after/results.json include real authoring, persistence, simulation,501st-drop rejection, drag/Undo/Redo, connector geometry, and responsive controls. Physical-device and owner acceptance remain separate.

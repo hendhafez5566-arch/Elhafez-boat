@@ -19,4 +19,4 @@ export async function revealStudioControl(page,locator){
   if(!opened)throw Error('No visible disclosure can reveal the requested studio control');
  }
 }
-export async function studioClick(page,name){const target=page.getByRole('button',{name,exact:true,includeHidden:true}).first();await revealStudioControl(page,target);await target.click();}
+export async function studioClick(page,name){const visible=page.getByRole('button',{name,exact:true}).first();const target=await visible.count()?visible:page.getByRole('button',{name,exact:true,includeHidden:true}).first();await revealStudioControl(page,target);await target.click();}
