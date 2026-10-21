@@ -270,7 +270,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
  const phoneShell=el('div',undefined,'builder-phone-shell');
  const phoneBar=el('div','Elhafez Boat · محادثة تجريبية','builder-phone-bar');
- phoneShell.append(phoneBar,simulator);
+ const previewStatus=el('p','','builder-preview-status');previewStatus.setAttribute('role','status');previewStatus.setAttribute('aria-live','polite');$('builder-preview').setAttribute('role','log');$('builder-preview').setAttribute('aria-live','polite');
+ phoneShell.append(phoneBar,previewStatus,simulator);
  simulatorDialog.append(simulatorHead,phoneShell);document.body.append(simulatorDialog);
  simulatorDialog.addEventListener('click',e=>{if(e.target===simulatorDialog)simulatorDialog.close()});
  function previewProblems(){
@@ -651,7 +652,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     $('builder-preview-options').append(button('التحدث مع موظف',previewEmployee,'secondary'));
   }
  async function serverPreview(input,eventKind,replayStep){
-  if(previewBusy||replaying&&!replayStep)return;previewBusy=true;const generation=simulationGeneration;
+  if(previewBusy||replaying&&!replayStep)return;previewBusy=true;const generation=simulationGeneration;previewStatus.textContent='جارٍ تجهيز المحادثة…';delete previewStatus.dataset.state;simulatorDialog.setAttribute('aria-busy','true');
   try{
    const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST'||current?.type==='CONSENT';
    const inbound=eventKind?{kind:eventKind,value:input||''}:input!==undefined?{kind:choice?'CHOICE':'TEXT',value:choice?(current.type==='CONSENT'?input:'flow:'+current.id+':'+input):input}:undefined;
@@ -678,7 +679,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if(at?.type==='INPUT'||at?.type==='QUESTION'){
     const form=el('form',undefined,'builder-preview-input'),inp=el('input'),send=el('button','إرسال','primary');inp.required=at.policy?.required!==false;send.type='submit';form.append(inp,send);form.onsubmit=e=>{e.preventDefault();execute(()=>serverPreview(isPhoneField(at.field)?normalizePhone(inp.value):inp.value.trim()))};$('builder-preview-options').append(form);inputWithHandoff(form,at.field);
    }
-  }catch(e){if(generation!==simulationGeneration)return;if(replayStep)throw e;notify(e.message,'error')}finally{if(generation===simulationGeneration)previewBusy=false}
+  }catch(e){if(generation!==simulationGeneration)return;if(replayStep)throw e;previewStatus.dataset.state='error';previewStatus.textContent='تعذر استكمال التجربة: '+e.message;notify(e.message,'error')}finally{if(generation===simulationGeneration){previewBusy=false;simulatorDialog.setAttribute('aria-busy','false');if(previewStatus.dataset.state!=='error')previewStatus.textContent=''}}
  }
  function previewAdvance(input){
    if(!state.demo){void serverPreview(input);return}
@@ -962,5 +963,5 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  simulatorHead.querySelector('strong').textContent='تجربة المحادثة';
  phoneBar.replaceChildren(el('span','✦','builder-chat-avatar'),el('strong','مساعد العملاء'),el('small','محادثة تجريبية · لا يوجد إرسال فعلي'));
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){clearTimeout(textEditTimer);variableSuggestions.reset();forgetScenario();scenarioOwner='';forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;flowFunnel.reset();experiments.reset();conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){clearTimeout(textEditTimer);variableSuggestions.reset();forgetScenario();previewStatus.textContent='';simulatorDialog.setAttribute('aria-busy','false');scenarioOwner='';forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;flowFunnel.reset();experiments.reset();conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

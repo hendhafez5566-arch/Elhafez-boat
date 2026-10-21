@@ -1,3 +1,7 @@
+## Bold transformation / Package D
+
+Messenger preview now has a dark branded phone header, readable15px bubbles, distinct violet customer replies, outlined service actions and structured gallery cards. Technical simulation remains a separate panel. Mobile uses one full-width conversation column and44px controls. Loading/error status is announced and tested with a delayed synthetic503, followed by successful real API recovery. Production CSS contrast:183 pairs PASS;27 distinct SVGs/descriptions. Premium28 PASS; visual/mobile/authoring19 PASS. CI revealed an existing asynchronous Mock-review test race: wait for actual review completion, retain4-node/5-node Undo assertions. No engine/schema change. Next E: complete broad qualification, final matched captures and owner review.
+
 ## Bold transformation / Package C
 
 Library tiles now have42px semantic icons,14px titles,12px descriptions,strong search and category headers. Inspector uses a semantic42px heading,14–15px content fields,clear action groups and amber condition groups. Found and fixed Vessel selector collisions that weakened field boundaries and squeezed the mobile channel; production-CSS contrast fixture includes the actual app ancestor.17 authoring/mobile checks PASS; rendered contrast and boundary checks PASS. Next D: messenger preview/responsive surfaces. No functionality removed.

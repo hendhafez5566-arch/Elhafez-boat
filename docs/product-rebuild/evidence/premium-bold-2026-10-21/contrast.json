@@ -1,5 +1,5 @@
 {
-  "checks": 175,
+  "checks": 183,
   "minimum": 3.6997429800452992,
   "cases": [
     {
@@ -1027,6 +1027,46 @@
     {
       "selector": "",
       "ratio": 13.683844052444647,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "ratio": 16.84241298092411,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "ratio": 12.07702093857847,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-bubble",
+      "ratio": 16.610687602750314,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-bubble customer",
+      "ratio": 8.98260576557149,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-option",
+      "ratio": 8.98260576557149,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-preview-warning",
+      "ratio": 6.9935871790172595,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-preview-status",
+      "ratio": 9.240046340528997,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-simulator-note",
+      "ratio": 9.240046340528997,
       "required": 4.5
     },
     {
