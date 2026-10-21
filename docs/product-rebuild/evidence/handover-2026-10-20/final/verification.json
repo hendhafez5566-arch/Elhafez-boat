@@ -1,0 +1,134 @@
+{
+  "date": "2026-10-20",
+  "applicationCommit": "2be26d274cec0ed6a3752f2ce49173b33c56767b",
+  "branch": "feat/premium-flow-builder-2026-10-20",
+  "pr": 5,
+  "acceptedUnit": {
+    "pass": 182,
+    "fail": 0,
+    "skip": 0
+  },
+  "freshPostgresGate": "EXIT 0: migrations 0001–0036, forced RLS, bots/legacy/CRM/team/reporting, controls 14, requests 19, rich 5, operator operations 7, completion/scanner cases",
+  "fullRuntime": "EXIT 0 with CI_LOCAL_CLOSURE=1 CI_TRACE_BROWSER=1 CI_INTEGRATED_BROWSER=1 CI_OPS_BROWSER=1 CI_DRAFT_RECOVERY=1",
+  "runtimeCommand": "CLAMAV_SOCKET=<local real scanner> MIGRATION_DATABASE_URL=<fresh disposable elhafez_ci> CI_RUNTIME_ACCEPTANCE=1 CI_ACCEPTANCE_DISPOSABLE_DB=YES CI_LOCAL_CLOSURE=1 CI_TRACE_BROWSER=1 CI_INTEGRATED_BROWSER=1 CI_OPS_BROWSER=1 CI_DRAFT_RECOVERY=1 CHROME_BIN=/usr/bin/chromium node tests/runtime-acceptance.mjs",
+  "dedicatedBrowserChecks": {
+    "premium": 28,
+    "integrated": 8,
+    "requests": 3,
+    "traces": 6,
+    "operations": 5,
+    "recovery": 4
+  },
+  "browserCheckTotal": 54,
+  "mixedWorkload": {
+    "durationMs": 35938.738981999995,
+    "companies": 4,
+    "visitors": 200,
+    "persistedMessages": 1640,
+    "operations": 7139,
+    "statusCounts": {
+      "200": 6751,
+      "429": 188
+    },
+    "operationsPerSecond": 198.64358634218038,
+    "p50Ms": 5.555425999998988,
+    "p95Ms": 14.804820000004838,
+    "p99Ms": 64.3062460000001,
+    "clientCpuMicroseconds": {
+      "user": 2124113,
+      "system": 686083
+    },
+    "clientRssBytes": 275611648,
+    "pendingDelayJobs": 0,
+    "queueLagSeconds": 0,
+    "peakQueueLagSeconds": 5.481527,
+    "serverResources": [
+      {
+        "process": "api-0",
+        "cpuMs": 3140,
+        "peakSampledRssBytes": 124452864
+      },
+      {
+        "process": "api-1",
+        "cpuMs": 10,
+        "peakSampledRssBytes": 62701568
+      },
+      {
+        "process": "worker-0",
+        "cpuMs": 910,
+        "peakSampledRssBytes": 85893120
+      },
+      {
+        "process": "worker-1",
+        "cpuMs": 930,
+        "peakSampledRssBytes": 87035904
+      }
+    ]
+  },
+  "localClosureChecks": [
+    "30-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE",
+    "actual API roles OWNER/MANAGER/AGENT/VIEWER and cross-tenant write denial",
+    "production Google PKCE/OAuth single-use state/refresh/RAW Sheets and HubSpot/Shopify/WooCommerce deduplicated contact sync",
+    "production provider 401/403/429/500/reset matrix, mixed/private DNS rejection, webhook HMAC/stable keys and grounded AI fallback",
+    "production Messenger/Instagram/Telegram account validation and competing dispatch",
+    "WhatsApp disconnect/reconnect preserves identity and routing; provider diagnostic explicitly excludes live acceptance",
+    "actual worker accepted-send SIGKILL -> PROCESSING -> UNCERTAIN -> correlated SENT; one send; duplicate/out-of-order receipt preserves read",
+    "real ClamAV CLEAN/EICAR QUARANTINED, pending inaccessible, tenant media denial, deleted link revoked, fake MIME denied, offline/recovery",
+    "concurrent customer message and owner erasure: no resurrected contact or retained message content",
+    "retention preserves scheduled work, owner export/anonymization cancels jobs; seeded media/ciphertext/audit/pending queue for restore"
+  ],
+  "backupRestore": "EXIT 0: exact fingerprints every public table, 36 migrations; isolated truncated restore expected to fail; real least-privilege restored work exactly once",
+  "packagedImage": "Node 22 / UID 1000; real authenticated web/API/DB and new module routes PASS; CA secret and private env absent from final image",
+  "buildTrustScope": "Cloud proxy CA injected only through a temporary Dockerfile RUN secret mount; no verification disabled; repository Dockerfile unchanged",
+  "remoteCi": "UNVERIFIED: GitHub Actions API Forbidden, not inferred from local acceptance",
+  "notRun": [
+    "native browser UI 200% zoom and physical pinch/touch",
+    "full screen-reader/contrast certification and owner visual approval",
+    "live provider activation, paid AI and real messages",
+    "local Compose replica suite; existing CI workflow retains it"
+  ],
+  "protectedRefs": {
+    "target": "cc702b795f1c7aa0d0b75fec6655574f4f2ec57b",
+    "main": "c8acec40d44803417e9e21a381d7e7f9b0d41fe0"
+  },
+  "testedSourceSha256": {
+    "apps/api/src/flow-request-ops.ts": "7eb944d3405a1282e511a318d6c23bea3cc48d954f3002a7779bbee2c9bf8366",
+    "apps/web/public/flow-request-ops.js": "00b5f30301f05d421c985f7881d916fed4dc3d49d57a9e6d614882fffdd47682",
+    "apps/web/public/draft-recovery.js": "6019e1a97bc2d34680c69cfc0fe4d69911d95e76566bfac5b4a0c5eaa6921dcd",
+    "apps/web/public/flow-builder.js": "4153a015d975f5cac5acf48e279370cba5d1a5093ae43449b151e1bbb8bb6c2e",
+    "apps/web/public/flow-canvas.js": "a18d01f54a6b21245b669b2fae46cd5576f8b986907ca6ce99f2e4d989216234",
+    "apps/web/public/vessel.js": "789b717a4ea2ca71739cec13b131f431df427df16885f467727d8fdcc0c4b534",
+    "apps/web/server.mjs": "9194e635e6e0bd1b3710f29c81820d2c437c3df99557b7e99c306e7f9315522f",
+    "apps/api/src/server.ts": "937a7ee3da76f601f5c3e952b72246e856648870438f6b34f7af66480be2a380",
+    "packages/database/migrations/0036_flow_request_reconciliation.sql": "cb9914045a5d1b4368ae4de9cce2035fb31460cad0a8dbfb3fa8fe029c48f02f",
+    "tests/browser-acceptance.mjs": "3ce53aef9e3024947fb7faf5331a224e71c2071599f9363253936781859a5c3c",
+    "tests/runtime-acceptance.mjs": "fe5715af7644e026689383ae3e78a098bcd3e1714578e1b6eccb667c63ae6013",
+    "tests/flow-request-ops-browser.mjs": "ad837c57dfc6bd1cf12222a57584346cdec8f5e4500c7522aa7e12c8c4dc0472",
+    "tests/flow-recovery-browser.mjs": "07c314d6ddc15da9c22885222530ee6e9921ac08c8b8af328285a5bf7fb03330",
+    "tests/flow-request-ops-db.mjs": "f6c56505e3fd2fb917d01cb961735c2536d2fa47f13a5dffc3ca446adecc4966",
+    "scripts/ci-backup-restore.sh": "df8ba7fd33f33847c77a590bca0fd4a55a1b3a65a4ed2f2692c8462ed5f52692",
+    ".github/workflows/verify.yml": "d3da2333f3438adacd05c886746c4f49b9f3968091257a2c950b3c1fb8965c35"
+  },
+  "screenshotsSha256": {
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/native-collision-guard.png": "09baafd3c09f1715e0c9181f7665fea18acd3867fabe0ca2056103561c098307",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/premium/revision-conflict.png": "377c5cf4b2a64644f52b4c428c14db43a179737b0affc74174f1fd6230c9204a",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/premium/canvas-100-nodes.png": "567e1e3f6b6594f7be87ef51166937b6bf75cab75a2b0ad39e1c84aec58a5c33",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/integrated/mobile-route-tools.png": "8ea85d6aa67fda6ac42f84d136d7f30c37b10d0c6fb9e49ab8e6964e0958f6f2",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/integrated/card-gallery-editor.png": "7e7b58e133d4258135d500c6d7a7ae92ed3f249109715dcce153aa5fbccef43a",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/integrated/live-mobile-gallery.png": "c7049a1a0b2491857d236200f1d9495cb5b462a74b387a304081dc376ffd343b",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/integrated/folded-route.png": "5ce4da5891228a8f181978194cc02ed6298e161affb21f5720552f216f241603",
+    "docs/product-rebuild/evidence/handover-2026-10-20/final/traces/ordered-conversation-trace.png": "8f01cfbb5d8b67abf18f5e046230436ef48e8bb3b0b60538d6c7013afef3ca49",
+    "docs/product-rebuild/evidence/operations-2026-10-20/uncertain-request-desktop.png": "e06d8598d18d8d7ce96aaa62388cb06d1b655a32706803c78c7f8f2e3dfaa669",
+    "docs/product-rebuild/evidence/operations-2026-10-20/mobile-drawer-after-fix.png": "892f8617c0a617452976aa515ecdf3cf41d63dc762f345dc0a7ea6bbd15fe0a8",
+    "docs/product-rebuild/evidence/operations-2026-10-20/reconciled-request-390.png": "50c9d238cf659bf47b40b30ab2947ba8296014460a9b63926fa2ff7a56c98f65",
+    "docs/product-rebuild/evidence/operations-2026-10-20/mobile-drawer-before-fix.png": "9c7c3a699e69c0081593f288a36450d12c1c7c7deef2c3de7d7007238d4b43e2",
+    "docs/product-rebuild/evidence/operations-2026-10-20/reconciled-request-1366.png": "f3f462264bfd1084c37966200a42fea98adc6fcb44825c97d5a89b6e95d777a3",
+    "docs/product-rebuild/evidence/operations-2026-10-20/request-retry-mobile.png": "41ec7de0bcd889c57daadedcb8e7cbd4753cf42dcb076150330d23ba17aceb60",
+    "docs/product-rebuild/evidence/recovery-2026-10-20/cross-tab-conflict-protected.png": "43c6797c59b4976bf7f34963e9c74ad2b509c41b6ed1432e6afcc23e150a3096",
+    "docs/product-rebuild/evidence/recovery-2026-10-20/cross-tab-autosave-paused.png": "9d3beb09996532dc64f213c28d4d1a6fa711bd97fb6d2ecd6aab5baf4d88fa16",
+    "docs/product-rebuild/evidence/recovery-2026-10-20/browser-reopened-390.png": "b87132ebaf2411e4495e558b6833ec65fd9180bfeedee88da84b767426069860",
+    "docs/product-rebuild/evidence/recovery-2026-10-20/closed-tab-recovery.png": "68ba08ce1da9075aa1181025d9b91485f4fc44a6a12e091e1e1184196adb091a",
+    "docs/product-rebuild/evidence/recovery-2026-10-20/browser-reopened-1366.png": "950730e8c33b67b6ae837c7aa235f39aa50396d98479d8a0e10488427b25706b",
+    "docs/product-rebuild/evidence/recovery-2026-10-20/restore-before-render-order-fix.png": "63f0eda13de4755e3c04e69d171d2e429c00da647a305b0cf2445c981701d3f5"
+  }
+}

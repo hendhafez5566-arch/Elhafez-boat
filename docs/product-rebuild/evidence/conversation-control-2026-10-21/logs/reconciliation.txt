@@ -1,0 +1,8 @@
+PASS real Website Chat -> published request -> committed ambiguous worker outcome and timeout continuation
+PASS metadata diagnostics exclude body, mapped values, endpoint, credentials and customer content
+PASS author-only diagnostics/reconciliation; forced RLS, tenant and same-tenant wrong-bot guards
+PASS explicit evidence/stale-attempt guard; competing retries produce one audited resolution and no HTTP/flow/CRM replay
+PASS PENDING/PROCESSING/unsettled completion cannot be overridden; verified not-delivered is terminal without resend
+PASS real bounded cursor pagination, no repeated rows, literal status filters and safe error-code projection
+PASS verified reconciliation allows existing owner erasure; private payload/response scrubbed while operational decision remains
+PASS 7 real request-operations PostgreSQL scenarios

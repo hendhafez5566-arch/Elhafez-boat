@@ -1,6 +1,6 @@
 /** Pure canvas geometry. Coordinates affect the draft layout only, never the bot engine. */
 export const NODE_WIDTH=286;
-export const MAX_POSITION=9600;
+export const MAX_POSITION=48000;
 export const GAP=28;
 export function nodeFootprint(node={}){
  const options=Array.isArray(node.choices)?node.choices.length:0;
@@ -34,10 +34,17 @@ export function placeWithoutOverlap(point,node,existing=[],gap=GAP,measured=null
  return {x:base.x,y:base.y}; // Only reachable if all legal canvas coordinates are occupied.
 }
 export function graphOutputs(node={}){
- if(Array.isArray(node.choices))return node.choices.map((c,i)=>({key:'choice:'+i,to:c.next,label:c.title||'اختيار'}));
- if(node.type==='CONDITION'||node.type==='KEYWORD')return [{key:'yes',to:node.yes,label:'نعم'},{key:'no',to:node.no,label:'لا'}];
- return 'next'in node?[{key:'next',to:node.next,label:'التالي'}]:[];
+ const out=[];if(node.type==='INPUT'&&node.acquisition)out.push({key:'acquisition:unsupportedNext',to:node.acquisition.unsupportedNext,label:'القناة لا تدعم المكوّن'});
+ if(node.type==='CONSENT')for(const [key,label]of [['acceptNext','الموافقة'],['declineNext','الرفض'],['withdrawNext','سحب الموافقة']])if(node[key])out.push({key,to:node[key],label});
+ if(node.handoffPolicy)for(const [key,label]of [['unavailableNext','لا يوجد موظف'],['resumeNext','استئناف البوت']])if(node.handoffPolicy[key])out.push({key:'handoff:'+key,to:node.handoffPolicy[key],label});
+ if(Array.isArray(node.choices))out.push(...node.choices.filter(c=>c.action!=='URL').map(c=>({key:'choice:'+c.id,to:c.next,label:c.title||'اختيار'})));
+ else if(['CONDITION','KEYWORD','BUSINESS_HOURS'].includes(node.type))out.push({key:'yes',to:node.yes,label:node.type==='BUSINESS_HOURS'?'مفتوح':'نعم'},{key:'no',to:node.no,label:node.type==='BUSINESS_HOURS'?'مغلق':'لا'});
+ else if('next'in node)out.push({key:'next',to:node.next,label:'التالي'});
+ for(const [key,label] of [['invalidNext','بعد نفاد المحاولات'],['skipNext','تخطي'],['timeoutNext','انتهاء المهلة']])if(node.policy?.[key]!==undefined)out.push({key:'policy:'+key,to:node.policy[key],label});
+ if((node.type==='WEBHOOK'||node.type==='CONNECTOR')&&node.request)out.push({key:'request:errorNext',to:node.request.errorNext,label:'فشل الطلب'},{key:'request:timeoutNext',to:node.request.timeoutNext,label:'مهلة الطلب'});
+ if(node.errorNext!==undefined)out.push({key:'errorNext',to:node.errorNext,label:'عند الخطأ'});return out;
 }
+export function setGraphOutput(node,key,target){if(key.startsWith('acquisition:')){if(node.acquisition)node.acquisition[key.slice(12)]=target}else if(key.startsWith('choice:')){const c=node.choices?.find(c=>c.id===key.slice(7));if(c)c.next=target}else if(key.startsWith('handoff:')){if(node.handoffPolicy)node.handoffPolicy[key.slice(8)]=target}else if(key.startsWith('request:')){if(node.request)node.request[key.slice(8)]=target}else if(key.startsWith('policy:')){node.policy??={};node.policy[key.slice(7)]=target}else node[key]=target}
 export function arrangeFlow(flow){
  const byId=new Map(flow.nodes.map(node=>[node.id,node]));
  const rank=new Map([[flow.startId,0]]),queue=[flow.startId];
@@ -53,6 +60,7 @@ export function arrangeFlow(flow){
  for(const node of flow.nodes)if(!rank.has(node.id))rank.set(node.id,orphanRank);
  const layers=new Map();
  for(const node of flow.nodes){const level=rank.get(node.id);if(!layers.has(level))layers.set(level,[]);layers.get(level).push(node)}
+ if(flow.nodes.length>100){const result=Object.create(null),ordered=[...flow.nodes].sort((a,b)=>rank.get(a.id)-rank.get(b.id)),columns=Math.min(24,Math.ceil(Math.sqrt(ordered.length)));let y=70;for(let i=0;i<ordered.length;i+=columns){const row=ordered.slice(i,i+columns),height=Math.max(...row.map(n=>nodeFootprint(n).height));for(const [column,node]of row.entries())result[node.id]={x:64+column*(NODE_WIDTH+105),y:Math.min(MAX_POSITION,y)};y+=height+112;}return result;}
  const result=Object.create(null),occupied=[];let y=70;
  for(const [,nodes] of [...layers].sort((a,b)=>a[0]-b[0])){
   // Maximum four cards per row. The tallest rendered footprint governs the row gap.
@@ -68,3 +76,6 @@ export function arrangeFlow(flow){
  }
  return result;
 }
+/** Preserve every selected offset while clamping the whole selection to legal coordinates. */
+export function boundedTranslation(points,dx,dy){if(!points.length)return {dx:0,dy:0};return {dx:Math.max(-Math.min(...points.map(p=>p.x)),Math.min(MAX_POSITION-Math.max(...points.map(p=>p.x)),dx))||0,dy:Math.max(-Math.min(...points.map(p=>p.y)),Math.min(MAX_POSITION-Math.max(...points.map(p=>p.y)),dy))||0}}
+export function pathToNode(flow,target){const queue=[[flow.startId]],seen=new Set();for(let i=0;i<queue.length;i++){const path=queue[i],id=path.at(-1);if(id===target)return path;if(seen.has(id))continue;seen.add(id);for(const e of graphOutputs(flow.nodes.find(n=>n.id===id)))if(e.to&&!seen.has(e.to))queue.push([...path,e.to])}return []}

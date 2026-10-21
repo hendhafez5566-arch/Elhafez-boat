@@ -1,0 +1,12 @@
+PASS real session-bound Website upload remains private until actual ClamAV CLEAN, then resumes typed engine exactly once
+PASS real origin, visitor-conversation ownership, tenant RLS and private download prevent cross-session/company access
+PASS real antivirus rejects EICAR; HTML, oversized files and quarantined sends never become trusted assets
+PASS offline provider contract binds account/reference, idempotently downloads bounded bytes and reuses real quarantine/scanner
+PASS source traversal rejected before download; provider timeout and invalid type have explicit terminal safe outcomes
+PASS all four provider adapters use authorized source contracts; WhatsApp credentials stay on official hosts and social CDN gets no token
+PASS visitor rate cap rejects excessive uploads independently of tenant storage quota
+PASS concurrent uploads from separate visitors obey one tenant quota with no overshoot
+PASS scanner outage fails closed and durable pending asset resumes safely after scanner restart
+PASS deterministic concurrent real visitor upload/privacy erasure avoids FK lock deadlock and erases the racing bytes
+PASS actual privacy erasure clears incoming bytes, references and visitor authorization; pending retrieval cannot resurrect data
+PASS 11 secure incoming media PostgreSQL/scanner scenarios

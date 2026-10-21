@@ -1,0 +1,24 @@
+{
+  "phase": "before",
+  "checks": [
+    "ten actual matched Chromium screenshots; real stored 11-node tourism graph, Arabic,100% zoom,1440x1000 and390x844",
+    "actual500-node save/reopen and499 connectors at matching fixed zoom"
+  ],
+  "errors": [],
+  "fixture": {
+    "botId": "ff0604a3-0bb6-4a7f-99f9-4a844ed01bac",
+    "nodes": 11,
+    "language": "ar",
+    "zoom": "100%",
+    "selected": "welcome",
+    "viewport": [
+      1440,
+      1000
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "provider": "NONE; actual PostgreSQL/API/Chromium"
+}

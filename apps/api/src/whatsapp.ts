@@ -1,3 +1,10 @@
+import {enqueueAttachment} from './incoming-media.js';
+import {attachmentReference} from './flow-native-input.js';
+import {persistFlowFailure,forgetFlow} from './flow-observation.js';
+import {nativeLocation,nativeAttachment} from './flow-native-input.js';
+import {resolveConversationBot} from './bot-routing.js';
+import {cancelConversationAutomation,resumeControlledConversation} from './conversation-control.js';
+import {recordFlowConsent} from './flow-consent.js';
 import {coexistenceEvent,eventTime} from './whatsapp-coexistence.js';
 import {recordCommerceInterest} from './commerce.js';
 import {consumeUsage} from './usage.js';
@@ -136,7 +143,7 @@ async function queue(db:SqlClient,tenantId:string,accountId:string,conversationI
  await db.query(`INSERT INTO whatsapp_outbox(tenant_id,account_id,conversation_id,recipient_phone,payload) VALUES($1,$2,$3,$4,$5::jsonb)`,[tenantId,accountId,conversationId,to,JSON.stringify(payload)]);
 }
 async function scoped<T>(pool:SqlPool,tenantId:string,action:(tx:SqlClient)=>Promise<T>):Promise<T>{
- const client=await pool.connect();let started=false;try{await client.query('BEGIN');started=true;await client.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const r=await action(client);await client.query('COMMIT');return r;}catch(e){if(started)await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}
+ const client=await pool.connect();let started=false;try{await client.query('BEGIN');started=true;await client.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const r=await action(client);await client.query('COMMIT');forgetFlow(client);return r;}catch(e){if(started)await client.query('ROLLBACK').catch(()=>{});await persistFlowFailure(client,e);throw e;}finally{client.release();}
 }
 /** Meta permits one-character profile names; our contacts table requires at least two characters. */
 export function whatsappContactName(value:unknown):string {
@@ -155,24 +162,26 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const contact=await db.query(`INSERT INTO contacts(tenant_id,full_name,phone,source) VALUES($1,$2,$3,'WHATSAPP')
   ON CONFLICT(tenant_id,phone) DO UPDATE SET updated_at=now() RETURNING id,do_not_contact`,[tenantId,name,from]);
  const contactId=String(contact.rows[0].id);
- const closed=await db.query("SELECT id FROM conversations WHERE tenant_id=$1 AND contact_id=$2 AND channel='WHATSAPP' AND status='CLOSED' FOR UPDATE",[tenantId,contactId]);
- if(closed.rowCount)await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,closed.rows[0].id]);
+ const closed=await db.query("SELECT id FROM conversations WHERE tenant_id=$1 AND contact_id=$2 AND channel='WHATSAPP' AND status='CLOSED' AND coalesce(bot_control->>'mode','')<>'STOPPED' FOR UPDATE",[tenantId,contactId]);
+ if(closed.rowCount){await cancelConversationAutomation(db,tenantId,String(closed.rows[0].id));await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,closed.rows[0].id]);}
  const conversation=await db.query(`INSERT INTO conversations(tenant_id,contact_id,channel,last_message_at,last_customer_message_at,whatsapp_account_id) VALUES($1,$2,'WHATSAPP',$4,$4,$3)
   ON CONFLICT(tenant_id,contact_id,channel) WHERE channel='WHATSAPP'
-  DO UPDATE SET last_message_at=greatest(conversations.last_message_at,$4::timestamptz),last_customer_message_at=greatest(conversations.last_customer_message_at,$4::timestamptz),whatsapp_account_id=$3,status=CASE WHEN conversations.status='CLOSED' THEN 'OPEN' ELSE conversations.status END RETURNING id,status,last_customer_message_at`,[tenantId,contactId,accountId,receivedAt]);
+  DO UPDATE SET last_message_at=greatest(conversations.last_message_at,$4::timestamptz),last_customer_message_at=greatest(conversations.last_customer_message_at,$4::timestamptz),whatsapp_account_id=$3,status=CASE WHEN conversations.status='CLOSED' AND coalesce(conversations.bot_control->>'mode','')<>'STOPPED' THEN 'OPEN' ELSE conversations.status END RETURNING id,status,last_customer_message_at`,[tenantId,contactId,accountId,receivedAt]);
  const conversationId=String(conversation.rows[0].id),status=str(conversation.rows[0].status);
  const interactive=asObject(message.interactive),reply=asObject(interactive.list_reply||interactive.button_reply);
  const action=limited(reply.id||asObject(message.button).payload,200);
+ const nativeInput=message.type==='location'?nativeLocation(asObject(message.location).latitude,asObject(message.location).longitude):['image','video','audio','document'].includes(str(message.type))?nativeAttachment('WHATSAPP',str(message.type),asObject(message[str(message.type)]).id):undefined;
+ const triggerEvent=message.type==='location'?'LOCATION' as const:['image','video','audio','document','sticker'].includes(str(message.type))?'MEDIA' as const:action?'POSTBACK' as const:'MESSAGE' as const;
  const msgType=str(message.type),body=msgType==='order'?'[اهتمام بمنتجات كتالوج Meta — يحتاج مراجعة موظف]':msgType==='text'?limited(asObject(message.text).body,4000):msgType==='button'?limited(asObject(message.button).text,4000):action?'اختيار: '+action:'[رسالة واتساب غير نصية]';
- await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,message_source,provider_at)
-  VALUES($1,$2,'INBOUND',$3,$4,'CUSTOMER',$5)`,[tenantId,conversationId,body,messageId,receivedAt]);
+ const inbound=await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,message_source,provider_at)
+  VALUES($1,$2,'INBOUND',$3,$4,'CUSTOMER',$5) RETURNING id`,[tenantId,conversationId,body,messageId,receivedAt]);
+ let attachmentIntakeId:string|undefined;if(nativeInput?.kind==='ATTACHMENT'){const ref=attachmentReference(nativeInput.value);if(ref)attachmentIntakeId=await enqueueAttachment(db,tenantId,conversationId,accountId,messageId,ref);}
  await db.query(`INSERT INTO whatsapp_conversation_states(tenant_id,conversation_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,[tenantId,conversationId]);
  const row=(await db.query(`SELECT * FROM whatsapp_conversation_states WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId])).rows[0];
  if(new Date(String(conversation.rows[0].last_customer_message_at)).getTime()>receivedAt.getTime())return; // Store late message, never rewind the bot.
  const respond=(payload:Record<string,unknown>)=>queue(db,tenantId,accountId,conversationId,from,payload);
  if(/^(stop|unsubscribe|إلغاء الرسائل|إيقاف الرسائل)$/i.test(body.trim())){
-   await db.query('UPDATE contacts SET do_not_contact=true,marketing_opt_in=false,marketing_opt_in_at=NULL WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
-   await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',false,'Customer sent opt-out message')`,[tenantId,contactId]);
+   await recordFlowConsent(db,tenantId,contactId,conversationId,{purpose:'SERVICE',decision:'WITHDRAW',source:'CUSTOMER_COMMAND'});
    await respond(textPayload('تم إيقاف الرسائل الآلية. تقدر تكتب START لتفعيل الردود الخدمية مرة تانية.'));
    return;
  }
@@ -180,12 +189,11 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
   if(e instanceof HttpFailure&&(e.status===403||e.status===429)){await db.query(`INSERT INTO audit_events(tenant_id,action,entity_type,entity_id) VALUES($1,'BOT_USAGE_BLOCKED','conversation',$2)`,[tenantId,conversationId]);return}throw e;
  }
  if(/^(start|اشترك|تفعيل الرسائل)$/i.test(body.trim())){
-   await db.query('UPDATE contacts SET do_not_contact=false WHERE tenant_id=$1 AND id=$2',[tenantId,contactId]);
-   await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',true,'Customer requested service-message resumption only')`,[tenantId,contactId]);
+   await recordFlowConsent(db,tenantId,contactId,conversationId,{purpose:'SERVICE',decision:'GRANT',source:'CUSTOMER_COMMAND'});
    if(status==='HUMAN'){
      await respond(textPayload('تم تفعيل الردود الخدمية. الموظف المسؤول هيتابع محادثتك.'));return;
    }
-   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true});
+   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,inboundMessageId:String(inbound.rows[0].id),attachmentIntakeId,actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true,triggerEvent});
    for(const payload of restarted.payloads)await respond(payload);
    return;
  }
@@ -206,10 +214,11 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
 
  // Generic published workflows take priority over old tourism-specific navigation.
  // Approved answers are permitted only when the exact company-approved question matches.
- const waiting=await db.query(`SELECT 1 FROM chatbot_flow_sessions s JOIN chatbot_flow_versions v ON v.tenant_id=s.tenant_id AND v.version=s.version CROSS JOIN LATERAL jsonb_array_elements(v.definition->'nodes') node WHERE s.tenant_id=$1 AND s.conversation_id=$2 AND node->>'id'=s.node_id AND node->>'type' IN ('INPUT','QUESTION') LIMIT 1`,[tenantId,conversationId]);
+ const waiting=await db.query(`SELECT 1 FROM chatbot_flow_sessions s LEFT JOIN chatbot_bot_versions b ON b.tenant_id=s.tenant_id AND b.bot_id=s.bot_id AND b.version=s.version LEFT JOIN chatbot_flow_versions v ON v.tenant_id=s.tenant_id AND v.version=s.version AND s.bot_id IS NULL CROSS JOIN LATERAL jsonb_array_elements(coalesce(b.definition,v.definition)->'nodes') node WHERE s.tenant_id=$1 AND s.conversation_id=$2 AND node->>'id'=s.node_id AND node->>'type' IN ('INPUT','QUESTION') LIMIT 1`,[tenantId,conversationId]);
  const explicitHandoff=/^(موظف|عايز موظف|عاوز موظف|خدمة العملاء|كلموني|عايز حد|عاوز حد|human|agent)$/i.test(body.trim());
- const hasFlowSession=await db.query('SELECT 1 FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,conversationId]);
- const triggered=msgType==='text'||msgType==='button'?await matchTrigger(db,tenantId,body,!hasFlowSession.rowCount):undefined;
+ const hasFlowSession=await db.query('SELECT bot_id FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,conversationId]);
+ const routedBot=hasFlowSession.rowCount&&!hasFlowSession.rows[0].bot_id?null:await resolveConversationBot(db,tenantId,conversationId,hasFlowSession.rows[0]?.bot_id);
+ const triggered=msgType==='text'||msgType==='button'?await matchTrigger(db,tenantId,body,!hasFlowSession.rowCount,routedBot&&!routedBot.legacy_default?String(routedBot.id):undefined,{channel:'WHATSAPP',event:triggerEvent}):undefined;
  if(msgType==='text'&&!action&&!waiting.rowCount&&!explicitHandoff&&!triggered){
   const answer=await findApprovedAnswer(db,tenantId,body);
   if(answer){await respond(textPayload(answer));return;}
@@ -225,7 +234,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const flowOutput=await respondToFlow(db,{
    tenantId,conversationId,contactId,
    actionId:action==='home'?'flow:restart':action,
-   body,fromWhatsApp:true
+   body,inboundMessageId:String(inbound.rows[0].id),fromWhatsApp:true,triggerEvent,nativeInput,attachmentIntakeId
  });
  for(const payload of flowOutput.payloads)await respond(payload);
  return;
@@ -305,9 +314,11 @@ export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,inpu
  const d=asObject(input);
  if(d.status!=='HUMAN'&&d.status!=='OPEN'&&d.status!=='CLOSED')throw new HttpFailure(400,'Invalid handoff status');
  // The conversation lock prevents two agents from simultaneously taking ownership.
- const previous=await db.query(`SELECT status,assigned_user_id FROM conversations
+ await db.query('SELECT k.id FROM contacts k JOIN conversations c ON c.tenant_id=k.tenant_id AND c.contact_id=k.id WHERE c.tenant_id=$1 AND c.id=$2 FOR UPDATE OF k',[actor.tenantId,id]);
+ const previous=await db.query(`SELECT status,assigned_user_id,bot_control FROM conversations
    WHERE tenant_id=$1 AND id=$2 AND channel IN ('WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM') FOR UPDATE`,[actor.tenantId,id]);
  if(previous.rowCount!==1)throw new HttpFailure(404,'Conversation not found');
+ if(d.status==='OPEN'){const consent=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=(SELECT contact_id FROM conversations WHERE tenant_id=$1 AND id=$2)',[actor.tenantId,id]);if(consent.rows[0]?.do_not_contact||(previous.rows[0].bot_control as any)?.mode==='STOPPED')throw new HttpFailure(409,'Customer consent or explicit stopped control prevents inbox release');}
  const current=previous.rows[0],myAssignment=String(current.assigned_user_id||'')===actor.userId;
  if(actor.role==='AGENT'&&current.status==='HUMAN'&&current.assigned_user_id&&!myAssignment)
    throw new HttpFailure(409,'Conversation already assigned to another agent');
@@ -319,6 +330,9 @@ export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,inpu
   const member=await db.query(`SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2`,[actor.tenantId,assigned]);
   if(member.rowCount!==1||member.rows[0].role==='VIEWER')throw new HttpFailure(404,'Active staff assignee not found');
  }
+ if(d.status==='OPEN'&&['PAUSED','HANDOFF'].includes(String((current.bot_control as any)?.mode))){await resumeControlledConversation(db,actor.tenantId,id);await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_HANDOFF_CHANGED','conversation',$3)",[actor.tenantId,actor.userId,id]);return (await db.query('SELECT id,status,assigned_user_id FROM conversations WHERE tenant_id=$1 AND id=$2',[actor.tenantId,id])).rows[0];}
+ await cancelConversationAutomation(db,actor.tenantId,id);
+ await db.query("UPDATE conversations SET bot_control='{}',bot_revision=bot_revision+1 WHERE tenant_id=$1 AND id=$2",[actor.tenantId,id]);
  if(d.status!=='OPEN')await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[actor.tenantId,id]);
  else await db.query('UPDATE chatbot_flow_sessions SET node_id=NULL,runtime_nodes=NULL WHERE tenant_id=$1 AND conversation_id=$2',[actor.tenantId,id]);
  const r=await db.query(`UPDATE conversations SET status=$3,assigned_user_id=$4
@@ -346,12 +360,15 @@ export async function replyWhatsApp(db:SqlClient,actor:Actor,id:string,input:unk
  if(!row.last_customer_message_at||Date.now()-new Date(String(row.last_customer_message_at)).getTime()>24*3600_000)
   throw new HttpFailure(409,'Outside 24-hour service window. Use an approved template.');
  await queue(db,actor.tenantId,String(row.account_id),id,String(row.phone).replace('+',''),textPayload(body));
+ await db.query('UPDATE conversations SET last_message_at=now() WHERE tenant_id=$1 AND id=$2',[actor.tenantId,id]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_REPLY_QUEUED','conversation',$3)`,[actor.tenantId,actor.userId,id]);
  return {queued:true,notDelivered:true};
 }
 export async function optOutWhatsApp(db:SqlClient,actor:Actor,contactId:string,input:unknown){
  allow(actor,['OWNER','MANAGER','AGENT']);if(!isUuid(contactId))throw new HttpFailure(400,'Invalid customer');
  const blocked=asObject(input).doNotContact;if(typeof blocked!=='boolean')throw new HttpFailure(400,'doNotContact must be boolean');
+ if(!blocked){const consent=await db.query("SELECT decision FROM contact_consent_events WHERE tenant_id=$1 AND contact_id=$2 AND purpose='SERVICE' ORDER BY occurred_at DESC,id DESC LIMIT 1",[actor.tenantId,contactId]);if(['DENY','WITHDRAW'].includes(String(consent.rows[0]?.decision)))throw new HttpFailure(409,'Only the customer can restore withdrawn service consent');}
+ if(blocked){const c=await db.query('SELECT id FROM conversations WHERE tenant_id=$1 AND contact_id=$2 ORDER BY id LIMIT 1',[actor.tenantId,contactId]);if(c.rowCount){await recordFlowConsent(db,actor.tenantId,contactId,String(c.rows[0].id),{purpose:'SERVICE',decision:'WITHDRAW',source:'STAFF',actorId:actor.userId});return {id:contactId,do_not_contact:true}}}
  const r=await db.query(`UPDATE contacts SET do_not_contact=$3 WHERE tenant_id=$1 AND id=$2 RETURNING id,do_not_contact`,[actor.tenantId,contactId,blocked]);
  if(r.rowCount!==1)throw new HttpFailure(404,'Customer not found');
  await db.query(`INSERT INTO contact_consent_events(tenant_id,contact_id,channel,granted,evidence) VALUES($1,$2,'WHATSAPP',$3,'Staff recorded opt status')`,[actor.tenantId,contactId,!blocked]);
@@ -363,8 +380,8 @@ export async function reconcileWhatsAppReceipt(db:SqlClient,tenantId:string,acco
  const providerId=limited(s.id,256),status=str(s.status),opaque=str(s.biz_opaque_callback_data),recipient=str(s.recipient_id);
  if(!providerId||!['sent','delivered','read','failed'].includes(status))return;
  if(isUuid(opaque)&&customerPhonePattern.test(recipient)){
-  const recovered=await db.query(`UPDATE whatsapp_outbox SET status=CASE WHEN $6='failed' THEN 'FAILED' ELSE 'SENT' END,provider_message_id=$4,locked_at=NULL,dispatched_at=coalesce(dispatched_at,now()),last_error=CASE WHEN $6='failed' THEN 'Provider delivery failed' ELSE NULL END WHERE tenant_id=$1 AND account_id=$2 AND id=$3 AND recipient_phone=$5 AND status IN ('PROCESSING','UNCERTAIN') AND (provider_message_id IS NULL OR provider_message_id=$4) RETURNING conversation_id,payload`,[tenantId,accountId,opaque,providerId,recipient,status]);
-  if(recovered.rowCount){const j=recovered.rows[0],payload=j.payload as {text?:{body?:string};type?:string};await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,delivery_status) VALUES($1,$2,'OUTBOUND',$3,$4,$5) ON CONFLICT DO NOTHING`,[tenantId,j.conversation_id,payload.text?.body||'[رسالة تمت تسويتها بإيصال المزود]',providerId,status]);}
+  const recovered=await db.query(`UPDATE whatsapp_outbox SET status=CASE WHEN $6='failed' THEN 'FAILED' ELSE 'SENT' END,provider_message_id=$4,locked_at=NULL,dispatched_at=coalesce(dispatched_at,now()),last_error=CASE WHEN $6='failed' THEN 'Provider delivery failed' ELSE NULL END WHERE tenant_id=$1 AND account_id=$2 AND id=$3 AND recipient_phone=$5 AND status IN ('PROCESSING','UNCERTAIN') AND (provider_message_id IS NULL OR provider_message_id=$4) RETURNING conversation_id,payload,execution_id`,[tenantId,accountId,opaque,providerId,recipient,status]);
+  if(recovered.rowCount){const j=recovered.rows[0],payload=j.payload as {text?:{body?:string};type?:string};await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,delivery_status,execution_id) VALUES($1,$2,'OUTBOUND',$3,$4,$5,$6) ON CONFLICT DO NOTHING`,[tenantId,j.conversation_id,payload.text?.body||'[رسالة تمت تسويتها بإيصال المزود]',providerId,status,j.execution_id]);}
  }
  // Out-of-order/replayed receipts must never downgrade delivered/read to sent/failed.
  await db.query(`UPDATE conversation_messages m SET delivery_status=$3 FROM conversations c WHERE m.tenant_id=$1 AND m.whatsapp_message_id=$2 AND c.tenant_id=m.tenant_id AND c.id=m.conversation_id AND c.whatsapp_account_id=$4 AND CASE WHEN m.delivery_status='read' THEN false WHEN m.delivery_status='delivered' THEN $3='read' ELSE true END`,[tenantId,providerId,status,accountId]);

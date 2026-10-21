@@ -18,6 +18,7 @@ async function waitForPort(){for(let i=0;i<120;i++){if(child.exitCode!==null)thr
  const info=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).trim().split('\n');return Number(info[0]);
  }catch{}await sleep(150)}throw new Error('Chrome DevTools port unavailable')}
 async function evaluate(expression){const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text);return result.result.value}
+async function studioView(title){await evaluate(`(()=>{const menu=document.querySelector('.builder-display-menu');if(!menu.open)menu.querySelector(':scope>summary').click();const button=[...menu.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(title)});if(!button)throw Error('Missing studio display action '+${JSON.stringify(title)});button.click()})()`)}
 function send(method,params={}){const id=++commandId;return new Promise((resolve,reject)=>{
  const timeout=setTimeout(()=>{pending.delete(id);reject(new Error('Chrome CDP timeout: '+method))},12000);
  pending.set(id,{resolve:result=>{clearTimeout(timeout);resolve(result)},reject:error=>{clearTimeout(timeout);reject(error)}});
@@ -86,8 +87,8 @@ try{
  // Real business-user choice editor: 3 WhatsApp buttons, 10 WhatsApp list items.
  await evaluate("(()=>{const host=document.getElementById('builder-editor');const add=()=>[...host.querySelectorAll('button')].find(b=>b.textContent.trim()==='إضافة اختيار').click();add();add()})()");
  assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),3,'WhatsApp buttons cap is 3');
- await evaluate("(()=>{const input=document.querySelector('#builder-editor .builder-choice input[aria-label]');input.value='استفسار سريع';input.dispatchEvent(new Event('input',{bubbles:true}));const move=document.querySelector('#builder-editor .builder-choice-actions button:nth-child(2)');move.click()})()");
- assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice input[aria-label]')[1].value"),'استفسار سريع','Choice reorder must preserve its title');
+ await evaluate("(()=>{const input=document.querySelector('#builder-editor .builder-choice input[aria-label^=\"عنوان الاختيار \"]');input.value='استفسار سريع';input.dispatchEvent(new Event('input',{bubbles:true}));const move=document.querySelector('#builder-editor .builder-choice-actions button:nth-child(2)');move.click()})()");
+ assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice input[aria-label^=\"عنوان الاختيار \"]')[1].value"),'استفسار سريع','Choice reorder must preserve its title');
  await evaluate("(()=>{const btn=[...document.querySelectorAll('#builder-editor button')].find(b=>b.textContent.trim()==='إضافة اختيار');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('#builder-editor .builder-choice').length"),3,'Fourth WhatsApp button must be rejected');
  await evaluate("document.querySelector('.builder-quick-item[aria-label=\"إضافة قائمة اختيارات\"]').click()");
@@ -119,26 +120,26 @@ try{
  await evaluate("document.querySelector('.builder-properties > button').click()");
  assert.equal(await evaluate("document.querySelector('.builder-inspector').hidden"),true,'Inspector closes without losing draft');
  const viewBefore=await evaluate("document.querySelector('.flow-stage').style.transform");
- await evaluate("document.querySelector('.builder-view-actions button:nth-child(3)').click()");
+ await evaluate("document.querySelector('.canvas-navigation button:nth-child(3)').click()");
  assert.notEqual(await evaluate("document.querySelector('.flow-stage').style.transform"),viewBefore,'Zoom toolbar updates canvas');
- await evaluate("document.querySelector('.builder-view-actions button:nth-child(4)').click()");
+ await evaluate("document.querySelector('.canvas-navigation button:last-child').click()");
  await screenshot('premium-full-canvas-desktop.png');
  await evaluate("document.querySelector('.builder-view-actions button.primary').click()");
  await until("Boolean(document.querySelector('.builder-preview-dialog[open]'))",'phone simulator dialog');
  await sleep(450);await screenshot('premium-phone-simulator-desktop.png');
  await evaluate("document.querySelector('.builder-preview-dialog .builder-dialog-header button').click()");
- await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
+ await studioView('ملء الشاشة');
  assert.equal(await evaluate("document.body.classList.contains('studio-focus')"),true,'Full-screen studio hides navigation');
  await sleep(200);
  assert.equal(await evaluate("(()=>{const r=document.querySelector('.flow-canvas').getBoundingClientRect();return r.top<innerHeight&&r.bottom>70&&r.width>600})()"),true,'Focus mode must actually show a usable canvas in viewport');
  await screenshot('premium-studio-focus-desktop.png');
- await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
+ await studioView('إنهاء ملء الشاشة');
  console.log('PASS contextual add step, graph insertion, live inspector update, zoom, phone modal and full-screen');
 
 
  // Exercise the real guided builder in Chrome, without saving/publishing or connecting accounts.
  assert.equal(await evaluate("Boolean(document.querySelector('.boat-guide-hero button'))"),true,'Guided bot creator must be on Flow Builder');
- await evaluate("document.querySelector('.boat-guide-hero button').click()");
+ await evaluate("document.querySelector('.studio-operations-button').click();const guide=document.querySelector('.builder-guide-disclosure');if(!guide.open)guide.querySelector(':scope>summary').click();document.querySelector('.boat-guide-hero button').click()");
  await until("!document.querySelector('.boat-guide-panel').hidden",'guided bot setup');
  await screenshot('guided-bot-01-goal-desktop.png');
  await evaluate("(()=>{const a=document.querySelector('.boat-guide-quick textarea');a.value='شركة سياحة تعرض برامج العمرة والأسعار';a.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.boat-guide-quick button').click()})()");
@@ -151,6 +152,7 @@ try{
  await evaluate("document.querySelector('.boat-guide-actions .primary').click()");
  await until("document.getElementById('builder-name').value.includes('شركة رواد السياحة التجريبية')",'actual editable draft created by guide');
  assert.equal(await evaluate("document.getElementById('builder-unsaved').textContent"),'تعديلات غير محفوظة');
+ assert.equal(await evaluate("document.querySelector('.builder-operations-dialog').open"),false,'Wizard completion returns to the actual canvas');
  await screenshot('guided-bot-04-generated-draft-desktop.png');
  // A business owner will often leave the builder to fill the catalog first.
  // Switching sections must not erase the bot that was just generated.
@@ -174,13 +176,20 @@ try{
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+5,'Undo must remove last branch step');
  await evaluate("(()=>{const bar=document.querySelector('.builder-stage-extras>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Redo must restore last branch step');
- await evaluate("(()=>{const btn=[...document.querySelectorAll('.builder-view-actions button')].find(b=>b.textContent==='ترتيب تلقائي');btn.click()})()");
+ await studioView('ترتيب تلقائي');
  const overlaps=await evaluate("(()=>{const r=[...document.querySelectorAll('.canvas-node')].map(n=>({id:n.dataset.nodeId,b:n.getBoundingClientRect()}));let count=0;for(let i=0;i<r.length;i++)for(let j=0;j<i;j++){const a=r[i].b,b=r[j].b;if(a.left<b.right-3&&a.right>b.left+3&&a.top<b.bottom-3&&a.bottom>b.top+3)count++}return count})()");
  assert.equal(overlaps,0,'Actual DOM canvas cards cannot overlap after auto-layout');
  await evaluate("document.querySelector('.builder-stage').scrollIntoView({block:'start'})");
  await screenshot('premium-large-branching-flow-desktop.png');
  // Real DOM pointer handlers: attempt to drag a card directly onto an occupied card.
- const collideDrag=await evaluate("(()=>{const nodes=[...document.querySelectorAll('.canvas-node')];const a=nodes.find(n=>n.dataset.nodeId==='welcome'),b=nodes.find(n=>n.classList.contains('canvas-text')&&n.dataset.nodeId!=='welcome');if(!a||!b)throw Error('drag nodes unavailable');const drag=b.querySelector('.canvas-title');drag.setPointerCapture=()=>{};const from=b.getBoundingClientRect(),to=a.getBoundingClientRect();const x=from.left+30,y=from.top+20;drag.onpointerdown({button:0,pointerId:41,clientX:x,clientY:y});drag.onpointermove({clientX:x+to.left-from.left,clientY:y+to.top-from.top});drag.onpointerup({});const aa=document.querySelector('.canvas-node[data-node-id=welcome]').getBoundingClientRect();const bb=document.querySelector('.canvas-node[data-node-id='+b.dataset.nodeId+']').getBoundingClientRect();return {overlap:aa.left<bb.right-3&&aa.right>bb.left+3&&aa.top<bb.bottom-3&&aa.bottom>bb.top+3}})()");
+ await evaluate("document.querySelector('.builder-properties > button')?.click()");await studioView('ملاءمة المخطط');await evaluate("document.querySelector('.flow-canvas').scrollIntoView({block:'center'})");await sleep(180);
+ const dragTarget=await evaluate("(()=>{const nodes=[...document.querySelectorAll('.canvas-node')],a=nodes.find(n=>n.dataset.nodeId==='welcome'),b=nodes.find(n=>{if(!n.classList.contains('canvas-text')||n.dataset.nodeId==='welcome')return false;const title=n.querySelector('.canvas-title'),r=title.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('.canvas-title')===title});if(!a||!b)throw Error('drag nodes unavailable');const title=b.querySelector('.canvas-title'),from=b.getBoundingClientRect(),to=a.getBoundingClientRect(),r=title.getBoundingClientRect();window.collisionDraggedId=b.dataset.nodeId;window.collisionTrustedEvents=0;title.addEventListener('pointerdown',e=>{if(e.isTrusted)window.collisionTrustedEvents++},{once:true});const x=r.left+r.width/2,y=r.top+r.height/2;return {x,y,toX:x+to.left-from.left,toY:y+to.top-from.top}})()");
+ await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:dragTarget.x,y:dragTarget.y});
+ await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',buttons:1,clickCount:1,x:dragTarget.x,y:dragTarget.y});
+ for(let step=1;step<=6;step++)await send('Input.dispatchMouseEvent',{type:'mouseMoved',button:'left',buttons:1,x:dragTarget.x+(dragTarget.toX-dragTarget.x)*step/6,y:dragTarget.y+(dragTarget.toY-dragTarget.y)*step/6});
+ await send('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',buttons:0,clickCount:1,x:dragTarget.toX,y:dragTarget.toY});
+ const collideDrag=await evaluate("(()=>{const aa=document.querySelector('.canvas-node[data-node-id=welcome]').getBoundingClientRect(),bb=[...document.querySelectorAll('.canvas-node')].find(n=>n.dataset.nodeId===window.collisionDraggedId).getBoundingClientRect();return {trusted:window.collisionTrustedEvents,overlap:aa.left<bb.right-3&&aa.right>bb.left+3&&aa.top<bb.bottom-3&&aa.bottom>bb.top+3}})()");
+ assert.equal(collideDrag.trusted,1,'Collision check must exercise a real browser pointer gesture');
  assert.equal(collideDrag.overlap,false,'Manual pointer drag must refuse placement on top of an occupied card');
  await screenshot('premium-drag-collision-guard-desktop.png');
  await evaluate("document.querySelector('.builder-properties > button')?.click()");
@@ -344,6 +353,9 @@ try{
   await screenshot('platform-admin-authenticated.png');
   await evaluate(`(()=>{const f=document.getElementById('platform-create-form');f.elements.name.value='Browser company fixture';window.createdFixtureSlug='browser-'+Date.now();f.elements.slug.value=window.createdFixtureSlug;f.elements.ownerEmail.value='browser-owner@example.invalid';f.requestSubmit()})()`);
   await until("!document.getElementById('platform-invite-result').hidden && document.getElementById('platform-invite-link').value.includes('#owner.')",'platform company create');
+  // Invite availability precedes the asynchronous tenant-list reload. Wait for the
+  // created row itself before testing the synchronous search filter.
+  await until("[...document.querySelectorAll('#platform-tenants [data-tenant-search]')].some(card=>card.dataset.tenantSearch.includes(window.createdFixtureSlug))",'newly created company rendered');
   await evaluate("document.getElementById('platform-invite-link').value='';document.getElementById('platform-invite-result').hidden=true;const input=document.querySelector('[aria-label=\"البحث في الشركات\"]');input.value=window.createdFixtureSlug;input.dispatchEvent(new Event('input'))");
   assert.equal(await evaluate("document.querySelectorAll('#platform-tenants [data-tenant-id]:not([hidden])').length"),1,'real company search');
   await evaluate("(()=>{const card=document.querySelector('#platform-tenants [data-tenant-id]:not([hidden])');card.querySelectorAll('select')[1].value='SUSPENDED';[...card.querySelectorAll('button')].find(b=>b.textContent==='حفظ الاشتراك').click()})()");await until("document.getElementById('platform-notice').textContent.includes('تم تحديث اشتراك') && document.querySelector('#platform-tenants [data-tenant-id]:not([hidden]) select[aria-label^=حالة]')?.value==='SUSPENDED'",'actual subscription persisted');

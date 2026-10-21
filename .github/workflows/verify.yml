@@ -27,12 +27,16 @@ jobs:
         with:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Browser acceptance module syntax
+        run: for file in tests/*.mjs tests/support/*.mjs; do node --check "$file" || exit 1; done
       - run: npm run check
       - run: node tests/flow-load.mjs
       - run: npm run db:migrate
       - run: CI_DB_INTEGRATION=1 node tests/db-integration.mjs
       - name: Independent bots, legacy backfill and channel isolation
         run: node tests/bots-db.mjs
+      - name: Durable flow policies, CRM scopes and transition telemetry
+        run: node tests/flow-controls-db.mjs
 
   acceptance-runtime:
     name: Disposable PostgreSQL and headless browser acceptance
@@ -57,6 +61,11 @@ jobs:
       MIGRATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/elhafez_ci
       CI_RUNTIME_ACCEPTANCE: '1'
       CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
+      CI_TRACE_BROWSER: '1'
+      CI_INTEGRATED_BROWSER: '1'
+      CI_OPS_BROWSER: '1'
+      CI_DRAFT_RECOVERY: '1'
+      PREMIUM_EVIDENCE_DIR: docs/product-rebuild/evidence/continuation-2026-10-20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -96,6 +105,70 @@ jobs:
           echo 'CI_LOCAL_CLOSURE=1' >> "$GITHUB_ENV"
       - name: Atomic company setup, media safety, inbox concurrency and platform isolation
         run: node tests/completion-db.mjs
+      - name: Ordered conversation traces and isolated browser fixture
+        run: TRACE_BROWSER_FIXTURE=1 node tests/flow-controls-db.mjs
+      - name: Durable integration claims, continuations and tenant isolation
+        run: node tests/flow-integration-db.mjs
+      - name: Rich messages, button actions and isolated widget fixture
+        run: RICH_BROWSER_FIXTURE=1 node tests/rich-flow-db.mjs
+      - name: Audited request reconciliation, scope and no replay
+        run: OPS_BROWSER_FIXTURE=1 node tests/flow-request-ops-db.mjs
+      - name: Scoped authoring readiness, portability and independent reviews
+        run: node tests/flow-authoring-db.mjs
+      - name: Native connector waits, normalized results, no replay and privacy
+        run: node tests/flow-connector-db.mjs
+      - name: Customer timezone, long calendars and precise wait cancellation
+        run: node tests/flow-schedule-db.mjs
+      - name: Offline HTTP formats, form compilation and audited Mock proposals
+        run: |
+          node tests/offline-contract-db.mjs
+          node tests/offline-contract-browser.mjs
+      - name: Bilingual content, 200/500 graph performance and emulated touch
+        run: |
+          node tests/flow-scale-locale-db.mjs
+          node tests/flow-scale-locale-browser.mjs
+          node tests/studio-contrast.mjs
+          node tests/visual-rebuild-browser.mjs
+      - name: Context variables, consent metadata, sensitive errors and component contracts
+        run: |
+          node tests/flow-context-policy-db.mjs
+          node tests/flow-context-policy-browser.mjs
+      - name: Committed funnels, rollback diagnostics and Canvas observability
+        run: |
+          node tests/flow-analytics-db.mjs
+          node tests/flow-analytics-browser.mjs
+      - name: Private incoming files, authorized provider contracts and real ClamAV
+        run: |
+          node tests/incoming-media-db.mjs
+          node tests/incoming-media-continuation-db.mjs
+          node tests/incoming-media-browser.mjs
+      - name: Native data requests, quick replies and unsupported channel routes
+        run: |
+          node tests/flow-native-input-db.mjs
+          node tests/flow-native-input-browser.mjs
+          node tests/flow-scenario-browser.mjs
+      - name: Exact nonblocking job ownership and safe conversation cancellation
+        run: |
+          node tests/flow-job-origin-db.mjs
+          node tests/flow-job-origin-browser.mjs
+      - name: Channel events, priority conflicts and native event provenance
+        run: |
+          node tests/flow-channel-events-db.mjs
+          node tests/flow-channel-events-browser.mjs
+      - name: Conversation ownership, human policies and customer consent
+        run: node tests/conversation-control-db.mjs
+      - name: Conversation controls and consent in Chromium desktop/mobile
+        run: node tests/conversation-control-browser.mjs
+      - name: Idempotent saves, forced RLS and real cross-tab browser leases
+        run: |
+          node tests/flow-save-db.mjs
+          node tests/flow-save-browser.mjs
+      - name: Real first-exposure experiment cohorts and desktop/mobile comparison
+        run: |
+          node tests/flow-experiments-db.mjs
+          node tests/flow-experiments-browser.mjs
+      - name: Authoring, native connector and scheduled wait desktop/mobile UI
+        run: CI_CONNECTOR_BROWSER=1 CI_SCHEDULE_BROWSER=1 node tests/flow-authoring-browser.mjs
       - name: Real non-owner runtime / web browser acceptance
         run: node tests/runtime-acceptance.mjs
       - name: Backup and restore disposable PostgreSQL data
@@ -177,5 +250,22 @@ jobs:
             acceptance-evidence/http-load.json
             acceptance-evidence/browser-pages.json
             acceptance-evidence/local-closure.json
+            docs/product-rebuild/evidence/continuation-2026-10-20/*.png
+            docs/product-rebuild/evidence/continuation-2026-10-20/results.json
+            docs/product-rebuild/evidence/traces-2026-10-20/*.png
+            docs/product-rebuild/evidence/traces-2026-10-20/results.json
+            docs/product-rebuild/evidence/requests-2026-10-20/*.png
+            docs/product-rebuild/evidence/requests-2026-10-20/results.json
+            docs/product-rebuild/evidence/integrated-2026-10-20/*.png
+            docs/product-rebuild/evidence/integrated-2026-10-20/results.json
+            docs/product-rebuild/evidence/flow-observability-2026-10-21/*.png
+            docs/product-rebuild/evidence/flow-observability-2026-10-21/results.json
+            docs/product-rebuild/evidence/incoming-media-2026-10-21/*.png
+            docs/product-rebuild/evidence/incoming-media-2026-10-21/results.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/*.png
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/results.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/authored-tourism.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/contrast.json
+            docs/product-rebuild/evidence/scale-locale-2026-10-21/performance.json
           if-no-files-found: ignore
           retention-days: 7

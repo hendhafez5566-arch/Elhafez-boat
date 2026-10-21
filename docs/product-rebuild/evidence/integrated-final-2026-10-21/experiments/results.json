@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual published latest-version zero-sample comparison uses no fixture/simulator counters",
+    "actual UI switches pinned version and displays real cohort/conversion/unknown-order counts",
+    "mobile comparison remains scrollable/accessibly labelled and invalid published goal is denied by real API"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL/Chromium"
+}

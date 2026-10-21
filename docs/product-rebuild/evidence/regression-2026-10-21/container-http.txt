@@ -1,0 +1,1 @@
+PASS local Node 22 non-root image: packaged new modules, actual web/API health, owner login, scoped bot/request endpoints, no private env or build CA retained

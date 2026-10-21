@@ -1,0 +1,12 @@
+{
+  "checks": [
+    "real bot-scoped HTTP metadata and bounded older-page navigation render the saved request queue",
+    "actual uncertain state explains external verification; server rejects missing confirmation and excludes request/response content",
+    "real form saves one verified resolution, idempotent HTTP retry, no extra attempt and identical flow snapshot/committed trace",
+    "desktop/mobile real operations, retained-data failure and actual retry; no unsafe resend control",
+    "logout clears operation dialogs and authenticated access"
+  ],
+  "errors": [],
+  "chromium": "154.0.8037.57",
+  "date": "2026-10-20T20:39:27.677Z"
+}

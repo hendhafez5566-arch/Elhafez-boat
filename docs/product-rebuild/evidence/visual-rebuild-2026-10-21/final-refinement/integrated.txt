@@ -1,0 +1,11 @@
+Elhafez Boat dashboard http://127.0.0.1:3100
+Elhafez Boat API listening on 4100
+PASS persisted group folding hides internals, keeps external edges and expands to editable nodes with path breadcrumbs
+PASS structured card title/action/gallery reorder editor saves through real API and PostgreSQL without JSON editing
+PASS shared-engine simulator renders real card galleries/composite buttons and executes field/tag effects before downstream message
+PASS real preflight/publication accepts validated content and rejects unsafe card action URLs
+PASS real mobile Website Chat fetches published galleries, follows real button callback and displays persisted typed-action result; no external provider
+PASS named settings disclosure exposes vertical alignment/distribution; saved coordinates and two Undo operations preserve original layout
+PASS real Shift multi-selection alignment and distribution persist correct coordinates through API
+PASS actual Shift rectangle selects three nodes and pointer group drag preserves every relative offset
+PASS group creation/fold save, search expansion, breadcrumbs and path focus preserve graph connections

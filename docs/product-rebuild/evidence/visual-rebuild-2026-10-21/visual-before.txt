@@ -1,0 +1,2 @@
+PASS ten actual matched Chromium screenshots; real stored 11-node tourism graph, Arabic,100% zoom,1440x1000 and390x844
+PASS actual500-node save/reopen and499 connectors at matching fixed zoom

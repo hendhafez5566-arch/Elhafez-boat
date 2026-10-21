@@ -1,0 +1,37 @@
+Unit/typecheck/build — EXIT 0
+ℹ tests 161
+ℹ suites 0
+ℹ pass 161
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2551.772827
+
+PostgreSQL controls and traces — EXIT 0
+PASS draft trigger inert until atomic publication
+PASS retry count and immutable deadline survive separate real transactions; exhausted route cancels job
+PASS optional skip uses current node callback and never writes missing answer
+PASS durable timeout resumes through actual worker exactly once and premature clocks requeue
+PASS same-node re-entry rejects stale token and late answer follows timeout
+PASS reply/worker race serializes one timeout transition under real conversation lock
+PASS real CRM stage/assignee changes and session-only fields stay out of CRM including human-keyword handoff
+PASS persisted timing/goals, preview excluded, value-free analytics and real RLS isolation
+PASS foreign-company CRM assignee cannot publish; pinned version and active triggers remain unchanged
+PASS legacy null-bot pinned session is retained and included only in legacy-bot analytics
+PASS ordered execution IDs and exact cursor pagination retain every real transition without customer values
+PASS conversation trace rejects cross-company and same-company wrong-bot identifiers
+PASS historical events remain visible with explicit unknown order and legacy scope
+PASS diagnostics expose saved failed-continuation status and pinned node without raw error payloads
+PASS 14 PostgreSQL control scenarios; no external provider calls
+
+PostgreSQL RLS — EXIT 0
+PASS PostgreSQL catalog isolation, cross-tenant read/update/insert denial, and RLS/FORCE flags for all new tenant tables
+
+Trace HTTP/Chromium — EXIT 0
+PASS real HTTP trace cursor paging rejects forged cursors and retains historical uncertainty
+PASS actual committed path, execution correlation, pinned revision and timings display without answers
+PASS trace node opens current draft step without modifying or replacing the draft
+PASS saved FAILED continuation is visible with pinned node and no raw failure payload
+PASS 390px RTL trace dialog keeps outcomes and timings inside viewport
+PASS logout removes diagnostics and delayed authenticated response cannot restore them

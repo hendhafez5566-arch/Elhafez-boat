@@ -1,3 +1,249 @@
+## Bold premium candidate / final evidence handover
+
+Application sourcea81df48 is pushed and GREEN on push39654253209 /PR39654262034. Final clean qualification:246 unit/TypeScript/build,all35 feature/PostgreSQL/RLS/runtime commands,19 actual visual/authoring/mobile checks,4 scale checks,28 premium and9 integrated Canvas checks PASS.183 contrast pairs and27 SVG/descriptions PASS.20 real After views and15 matched archivedadc939b views are available under docs/product-rebuild/evidence/premium-bold-2026-10-21; originals unchanged. Source/capture hashes bind evidence. CI now uploads the new captures/results for each exact HEAD. This evidence commit needs its own CI result; final observation is recorded in PR5. Owner visual approval remains PENDING; advisory86/100. F01–F36 remain30 PASS /6 PARTIAL (F01,F23,F24,F29,F30,F32). See FINAL_REPORT.md and VISUAL_ACCEPTANCE.md under implementation/premium-bold-2026-10-21. Continue only this branch/PR; no merge/deployment/live providers. Remaining: owner feedback and explicitly partial external/device scopes.
+
+## Visual review correction / semantic editor identity
+
+Actual gallery screenshot review found a misleading generic TEXT Inspector heading. Canvas and Inspector now share presentationKind() for cards/gallery, retaining the stored TEXT engine contract. The genuine browser suite asserts the gallery heading before capture.183 contrast pairs pass. Broad qualification completed feature/PG/mobile/scale cases and mixed load; its first runtime attempt then hit a fixed-phone fixture left by prior reuse of the disposable DB. A fresh named disposable database with all47 unchanged migrations is prepared for a complete clean run; no ownership assertion or engine rule is weakened.
+
+## Bold transformation / final source candidate
+
+All five visual areas are implemented; final pointer-hover review caught a shared legacy teal hover on the simulator Send action and scoped it to Orbit violet.19 actual visual/mobile/authoring checks and183 rendered contrast pairs PASS;246 unit/TypeScript/build PASS. Final broad PostgreSQL/RLS/runtime/Chromium qualification and matched screenshots follow this source commit. Owner visual approval remains pending. No engine/schema/provider change.
+
+## Bold transformation / Package D
+
+Messenger preview now has a dark branded phone header, readable15px bubbles, distinct violet customer replies, outlined service actions and structured gallery cards. Technical simulation remains a separate panel. Mobile uses one full-width conversation column and44px controls. Loading/error status is announced and tested with a delayed synthetic503, followed by successful real API recovery. Production CSS contrast:183 pairs PASS;27 distinct SVGs/descriptions. Premium28 PASS; visual/mobile/authoring19 PASS. CI revealed an existing asynchronous Mock-review test race: wait for actual review completion, retain4-node/5-node Undo assertions. No engine/schema change. Next E: complete broad qualification, final matched captures and owner review.
+
+## Bold transformation / Package C
+
+Library tiles now have42px semantic icons,14px titles,12px descriptions,strong search and category headers. Inspector uses a semantic42px heading,14–15px content fields,clear action groups and amber condition groups. Found and fixed Vessel selector collisions that weakened field boundaries and squeezed the mobile channel; production-CSS contrast fixture includes the actual app ancestor.17 authoring/mobile checks PASS; rendered contrast and boundary checks PASS. Next D: messenger preview/responsive surfaces. No functionality removed.
+
+## Bold transformation / Package B
+
+Semantic full node headers,44px original icons,16px titles,readable bubbles,gallery miniatures,input affordances,clear selection and actual disconnected-route badges now replace the thin-strip white cards. Graph position/storage remains unchanged; missing-target lookup is a Set to preserve bounded500-node work.17 actual visual/authoring checks and4 scale/LTR/pinch checks PASS. Rendered contrast and complete icon/copy vocabulary are checked by tests/studio-contrast.mjs. Next C: library/Inspector. Owner acceptance remains open.
+
+## Bold visual transformation / Package A
+
+Owner rejected the previous visual presentation. Continue same branch/PR5 from verifiedadc939b. Central Orbit tokens, deep plum command header, stronger primary action, readable shared typography and complete original SVG/descriptions are implemented. Authenticated17-check baseline/authoring suite passes with the new foundation. This is packageA only; nodes/library/Inspector/preview and final contrast/visual acceptance remain next. No engine/schema/provider changes. See docs/product-rebuild/implementation/premium-bold-2026-10-21/DESIGN_DECISIONS.md.
+
+## Completed local release qualification
+
+The unchanged-limit runtime retry completed successfully through all broad Chromium/CDP/company tests,28 premium checks,9 integrated Canvas/widget checks,request operations,actual persistent-profile restart/cross-tab recovery and logout. It includes the real30-second mixed workload, HTTP load, process crashes/restarts,private media/real ClamAV,RLS,legacy bots and tenant boundaries. No assertions or execution flags were removed to obtain this result. The initial failed mixed-load run remains preserved separately. See final-refinement/final-runtime.txt.
+
+All35 feature/runtime workflow commands have now completed successfully across the feature run plus the successful runtime retry;246 unit/TS/build and final17 visual/real-authoring +4 scale checks also pass. This evidence commit follows source candidatec6093f5aeb10ce09f92b210ec88c16ac6b558a51 without further application changes. The newest GitHub commit still requires both push/PR runs to complete; final observed SHA/results are recorded in PR#5.
+
+## Final authoring and release candidate — 21 October 2026
+
+Previous correction654c90c8444251ce3338389f3e232dc7b3d52ec1 is fully GREEN on both push39634848979 and PR39634857704, including backup/restore, packaged Docker and isolated Compose/database-outage recovery. The next candidate must obtain its own green runs; these results do not certify later source.
+
+Visible UI acceptance now creates an independent blank tourism bot through Bot Manager, authors welcome/three buttons/two gallery cards/name input/condition/employee handoff and an offers branch through Library/Inspector, connects every route through actual selects, deletes the unused generated finish step after confirmation, saves and reloads every setting, and runs the actual shared-engine simulation through gallery/input/condition/handoff. No graph writes are injected through API in this authoring scenario. API reads verify exact persistence. Synthetic definition and two additional screenshots are in after/authored-tourism.json and after/11–12.
+
+Actual500-node library-drop rejection now proves that the501st drop neither adds a node nor moves the selected existing node. Mobile/tablet unobstructed Canvas captures13–14 supplement the original10 matched sections. Original Before bytes remain unchanged; IDs across disposable sessions differ as documented.
+
+A real initial-create success notice blocked a low Inspector disclosure. The original notice CSS now lets pointer events pass through informational text while its close button retains pointer access. No timers or announcement behavior changed. Named test navigation prefers an already accessible visible action over hidden duplicates before revealing progressive disclosures.
+
+Final image review found Fit's positive Y clamp could clip lower rows. Fit now centers using the true graph origin with explicit breadcrumb/navigation insets; an actual browser assertion requires every authored card to remain inside Canvas. The matched100% comparison remains unchanged in zoom/layout.
+
+CI211b0e5 exposed a separate shared-host test counter race (2 versus1 POST). Earlier PG fixtures and workers use the same synthetic host across tenants. The original once-only continuation and POST assertions remain, now scoped by a unique fixture marker and persisted job idempotency key, with an added durable attempts=1 assertion. An explicit independent request exercises unrelated traffic on that same loopback host. No runtime/worker/API/database logic was changed.
+
+Matrix remains30 PASS/6 PARTIAL: F01,F23,F24,F29,F30,F32. Remaining qualification: owner visual acceptance; physical-device/screen-reader/exhaustive contrast acceptance; live provider/Meta validation and production crash/load qualification; actual paid/external AI remains disabled. No merge, new branch/PR, Railway deployment, production migration, real provider activation or customer send.
+
+Exact continuation: stay on feat/premium-flow-builder-2026-10-20 / Draft PR#5. Read this file, the final-refinement logs, after/results.json and PR#5's updated release evidence. Recheck remote HEAD and its push/PR runs before further changes. The final response/PR records the exact candidate SHA and observed CI result without creating another source commit solely to restate an already observed check.
+
+## Recovery navigation correction after full CI
+
+CI39633357324 on0ac38b4 passed the integrated Canvas suite, then exposed the same legacy disclosure assumption in flow-recovery-browser.mjs. It now reveals the actual named save setting through studio-navigation and closes the operations dialog before editing/saving. All original recovery assertions retained. Actual local7 request-operations PG cases,6 operations Chromium and4 persistent-profile restart/cross-tab/logout Chromium cases PASS. Full remote CI on this correction is pending. No application/data changes in this correction.
+
+## Visual/interaction refinement checkpoint
+
+- Expanded Canvas area through shared238/336px library/inspector tokens; reduced toolbar padding; improved library/card type/message readability while retaining286px graph geometry and original identity.
+- Message/card creation actions now use scoped wrapping groups; cards have bounded fieldsets; explanatory copy is a separate readable block.
+- Fixed mobile minimap rules being overridden by later desktop rules; actual390/768/1024 Zoom/Fit and overlap/overflow assertions pass. Added clear accessible names to Zoom controls and operations-dialog keyboard focus.
+- Display/tools menu now links directly to existing selection arrangement tools.
+- Real pointer-drag acceptance uncovered two history checkpoints per library drop and a rejected500-node drop potentially moving the current selection. Position is now passed into the existing addNode operation before its single checkpoint. Click addition and original handlers are preserved.
+- Initial hidden Canvas rendering used zero-size cards and stale fallback port positions. A pending-geometry flag now remeasures once the Canvas becomes visible; measured endpoint regression passes and paths stay in the actual gaps. No layout, engine or database format changes.
+
+Local:246 units/TS/build;28 existing premium Chromium checks;12 matched tourism/Canvas/mobile/large-graph checks;4 scale/LTR/pinch checks. Independent9 integrated rich/widget/selection checks also run. Current source remote full CI remains a separate gate. Before images preserved; After captures refreshed from authenticated real PostgreSQL/API/Chromium with the same logical11-node fixture, saved layout,Arabic100%,1440x1000 and390x844. Synthetic IDs differ from the previous session's disposable database; no same-ID claim across sessions.
+
+
+## 2026-10-21 — Canvas CI navigation repaired and exercised
+
+Continues verified `8b08b38d6b9f44a1c60f8ab8f6c8ba32ba475da2`, same branch and Draft PR #5. Read both failed run jobs39627663985/39627652504 and actual logs: integrated test tried to click a hidden advanced-tools summary inside the closed operations dialog. Reproduced original Timeout in local Chromium against real isolated PostgreSQL/API. Reused existing named `studioClick` navigation to open the actual settings dialog before disclosure/action; no forced clicks or deleted assertions. Added persisted vertical alignment/distribution and two-Undo coordinate restoration assertions. All9 integrated Chromium checks now PASS, including horizontal layout, rectangle/group drag, collapse/search/path focus, actual widget/card/gallery and simulation. TypeScript/build246 units PASS;47 migrations,3 scale/RLS/bilingual PG and5 rich-content PG PASS. Remote full CI remains pending the correction push. Matrix30 PASS/6 PARTIAL retained. Next: verify this commit's Actions, finish reviewed visual refinements and refresh matched evidence; physical-device/screen-reader/provider/owner review remain open. No merge/deploy/customer send.
+
+## 2026-10-21 — backup file selector follows relocated control
+
+Same branch/PR #5; verified current348186b4ab0da01833cf69c9d19b90778ef79ff8. Previous CI1bf2fb1 passed broad CDP, independent bot creation, captures/handoff, management, typed branches and concurrent draft review; novice backup test then used the former #flow-builder parent for the file input now mounted in settings. Updated only its selector to the existing exact accessible label; malformed/valid/incomplete import, revision, publish rejection and keyboard/data checks are retained. Product bytes and56 local Chromium checks unchanged. Next: latest full CI through remaining novice/team, integrated and packaging/recovery gates. No merge/deploy/provider send.
+
+## 2026-10-21 — fresh mobile canvas and linear-step surfaces
+
+Same branch/PR #5; verified prior test checkpoint1bf2fb1b962b8f9c12b1961f75eee64a9c78b85c. Fixed two real responsive composition issues: a fresh mobile load now keeps the component drawer closed in canvas mode, and linear mode is excluded from drawer positioning/dismissal rules. New real browser check reloads a saved500-node graph at390px, verifies a clear canvas, switches to linear steps and verifies the palette remains a normal non-dismissable surface. All8 visual/tourism checks PASS; local Chromium total56. Runtime/schema/worker unchanged, source/screenshot hashes refreshed, all test modules parse. Full latest CI still required; previous full run passed broad CDP and failed only obsolete novice exact-text selection, now corrected. Next: full latest CI through novice/team and packaged/recovery gates; owner visual/physical-device/screen-reader review remains.
+
+## 2026-10-21 — accessible component names in novice CDP suite
+
+Same branch/PR #5; verified current source5b6214c02c27bf4bed6b4b1f2ea9da94c47edb34, product tree identical toa7793da. Full CI39625128889 passed feature-specific suites and the broad company/CDP browser acceptance, then the novice suite exposed exact full-text matching against component tiles that now include descriptions. Its click helper now accepts exact accessible names (including the existing «إضافة …» label) rather than concatenated descriptive text. No assertions or product code changed. All test modules parse;55 prior local Chromium checks and20 PostgreSQL cases retained. Next: run latest full CI through novice/team, premium/integrated, packaging and recovery gates. No merge/deploy/real messages.
+
+## 2026-10-21 — contextual picker/CDP acceptance compatibility
+
+Same branch/PR #5; verified previous source88db6d8a464b6de1c0065535feda6c495f6213e0. Full CI39623322985 passed units and all feature-specific DB/browser groups, then caught the older broad CDP suite using the previous picker class and positional toolbar selectors. Restored the picker compatibility class with proper shared tile styling; updated CDP checks to actual canvas Zoom/Fit and named display-menu actions, retaining assertions. Guided creation now closes its containing settings dialog and returns to the visible canvas; added an explicit assertion. Early syntax gate covers all top-level/support test modules. Seven matched-tourism checks rerun successfully; source/screenshot hashes refreshed. Next: observe latest full CI, including broad CDP, novice bots, packaged/restore acceptance. No runtime/database/worker change, merge, deploy or provider send.
+
+## 2026-10-21 — novice CDP display-menu navigation
+
+Same branch/PR #5; verified prior test checkpoint4e67472cf3194ec9a897db9062aa906b59419e1e. Updated the older novice CDP suite to open the new display menu before switching between linear/canvas modes; original assertions remain. This completes the remaining static selector audit for moved view controls. All browser/support modules parse. Product/source screenshot hashes unchanged. Next: observe full latest-source CI; no merge, deploy or real send.
+
+## 2026-10-21 — replay regression and syntax gate
+
+Same branch/PR #5; verified prior source0fc7e9cbe9b87e5d043be49eb87647a5ea4e2ba6. CI39621417082 exposed a syntax mistake in the adapted replay test; product source was unchanged. Corrected it, preserved logout/trace/revision assertions, and ran all6 replay checks against real API/PostgreSQL/Chromium: PASS. Local Chromium total55;20 PostgreSQL and246 units/typecheck/build remain recorded. All browser/support modules parse; added early CI syntax gate. Latest full CI pending. Next: observe latest-head CI and fix remaining actual failures; no merge/deploy/live messages. Optional extra native DB run locally reached attachment scan and could not complete without local ClamAV; no passing claim for that extra run; remote CI supplies actual ClamAV.
+
+## 2026-10-21 — composite content identity and final mobile checks
+
+Same branch / Draft PR #5, verified remote checkpoint781bfc87815aff5dda4fc933d7dcff7a3c06028d. Composite TEXT nodes now retain their original runtime representation while showing distinct CARD/GALLERY icons and content counts; conditional summaries reflect actual AND/OR and scheduled waits avoid a misleading zero-second label. New actual UI assertions cover gallery identity/condition summary. All7 matched-tourism checks pass; prior28 premium/4 scale/3 context/5 authoring/2 governance Chromium checks and246 units remain recorded. Source/screenshot hashes refreshed. CI39620615655 for781bfc8 is in progress and has reached final runtime acceptance; do not infer latest-source green from it. Next: observe corrected latest-source CI to completion, then owner visual acceptance and remaining physical/screen-reader qualification. No runtime/database/worker source changes, merge, deploy or real messages.
+
+## 2026-10-21 — visual rebuild local acceptance complete
+
+Same premium branch / Draft PR #5; initial source2f0f77c, first uploaded checkpointc00abfe. A–E presentation work integrated: compact workspace,27 categorized searchable components with real channel hints, semantic cards/edges, reorganized inspector and separate chat/Mock lab.49 actual Chromium checks and20 PostgreSQL scenarios PASS;246 unit tests/TypeScript/build PASS;47 fresh migrations. Same-bot matched Before/After10 pairs and source/screenshot hashes committed. API/runtime/database/worker source unchanged; matrix remains30 PASS/6 PARTIAL. Latest source CI must be observed after push; initial c00abfe CI exposed old hidden-summary test navigation, now fixed and rerun locally. Next: inspect latest-head CI to completion, fix any remaining navigation regression, then owner visual/physical-device/screen-reader review. No merge/deploy/live provider. See VISUAL_REBUILD_2026-10-21.md and evidence/visual-rebuild-2026-10-21/README.md.
+
+## 2026-10-21 — premium visual workspace checkpoint
+
+Same premium branch / Draft PR #5; verified starting HEAD2f0f77c. Integrated workspace/library/cards/inspector/simulator presentation rebuild on original engine. TypeScript/build246 unit tests PASS; fresh PostgreSQL migrations and3 scale/localization cases PASS;4 real Chromium scale/LTR/touch cases PASS. Matched Before from original HEAD recorded; final After and deeper interaction regression in progress. See docs/product-rebuild/implementation/premium-2026-10-20/VISUAL_REBUILD_2026-10-21.md. Next: finish actual visual/interaction acceptance and inspect remote CI. No merge/deploy/live provider or blanket30-contract requalification claim.
+
+## 2026-10-21 — complete shared-engine Mock scenario replay / F15
+
+Same premium branch / Draft PR #5 after 2684a97. Typed persona, deterministic seed, clock/channel/provider/delivery mocks and bounded memory-only full replay. Fresh consent/timeout tokens rebound symbolically, delay/pause terminal continuations enter correctly, changed source/result rejected; logout/bot/user changes invalidate and clear transient scenario data. No persisted session/provider call. 221 units/typecheck/build and six actual desktop/mobile Chromium/API replay/lifecycle checks PASS. Matrix 22 PASS / 14 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/SCENARIO_REPLAY_CHECKPOINT.md. Next large package: F35/F27 existing message/outbox correlation, failed-transaction observation and persisted funnel/abandonment analytics. F26 content download/scan/widget upload remains explicit. No merge/deploy/live send; visual approval pending.
+
+## 2026-10-21 — native inputs / quick replies
+
+Same branch / Draft PR #5 after 0e7f905. F07 closes: text + native Messenger phone/email, typed collection and explicit unsupported-channel paths. F26 improves: real WhatsApp/Telegram location contracts and source-bound attachment references; content download/scan/Website upload remain PARTIAL. Shared native Mock/editor/graph/subflow/capabilities, unsupported-cycle guards and precise same-version restart cancellation delivered. 217 units/typecheck/build, five new PG, three native Chromium checks PASS; F12 now nine PG, prior regression gates pass. Matrix 21 PASS / 15 PARTIAL / 0 BLOCKED; 42 migrations. Details: docs/product-rebuild/implementation/premium-2026-10-20/NATIVE_INPUT_CHECKPOINT.md. F10 and F12/search-repair remote CI fully SUCCESS; latest native CI separate. Next: persona/scenario replay, then funnel/delivery correlation. No merge/deploy/live sends; visual acceptance pending.
+
+## 2026-10-21 — precise nonblocking job ownership / F12
+
+Same premium branch / Draft PR #5 after 27c7829. New legacy no-wait jobs carry exact conversation/contact/version/step; pause/stop cancels only owned pending work. Both workers recheck bot ownership/consent/version under contact-before-conversation locks. Historical unknown jobs and other same-contact conversations are preserved and explained in role-scoped UI. Migration 0042 additive, no backfill. 207 units/typecheck/build, eight new PG (including real lock race), three new desktop/mobile Chromium and existing DB regressions PASS. Matrix 20 PASS / 16 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/JOB_ORIGIN_CHECKPOINT.md. Next: supported native input/quick reply and channel fallback paths. No providers/deploy/merge; visual acceptance pending.
+
+## 2026-10-21 — channel events / F10
+
+Same branch and Draft PR #5 after 62ed60c. F10 closes: channel-scoped native events, exact current-node callback provenance, ambiguous priority publish guards, trigger-only graph roots, WhatsApp actual bot precedence and shared channel/event simulator. Migration 0041 additive; 207 units/typecheck/build, six new PG, three actual desktop/mobile Chromium and existing RLS/bot/control/request/authoring/native DB regressions PASS. Matrix 19 PASS / 17 PARTIAL / 0 BLOCKED. Save-repair remote CI fully SUCCESS; this feature's CI must be observed separately. Details: docs/product-rebuild/implementation/premium-2026-10-20/CHANNEL_EVENTS_CHECKPOINT.md. Next: precise nonblocking job ownership/F12, preserving unknown old jobs. No providers/deploy/merge; visual approval pending.
+
+## 2026-10-21 — save lease CI repair
+
+Same premium branch / Draft PR #5; verified initial HEAD 0e4baf5. Actual successful/failed Actions inspected. Tab-close assertion now waits for actual bounded lock acquisition and verifies exclusion before close; application/CAS unchanged. 201 units/typecheck/build, fresh 40 migrations, 11 control + 6 save PostgreSQL scenarios and two four-scenario real Chromium runs PASS. Canonical matrix bottom corrected: 18 PASS / 18 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/SAVE_CI_REPAIR.md. Next: channel events/priority conflicts and native input contracts. No merge/deploy/providers; visual acceptance pending.
+
+## 2026-10-21 — consent replay and old inbox resume hardening
+
+Persisted per-prompt consent challenges reject old/cross-conversation/version callbacks; old inbox release uses the existing controlled pinned resume path. Mobile experiment columns remain readable in a horizontal scroller. 201 units/typecheck/build; 11 actual control PG scenarios and rerun 11 new desktop/mobile browser checks PASS. Cumulative new PG scenarios: 25. Matrix remains 18 PASS / 18 PARTIAL. See HARDENING_CHECKPOINT.md; final closure uses a new disposable PostgreSQL instance and explicit installed Chromium, preserving earlier failed attempt evidence. No external provider/merge/deploy or visual/remote-CI acceptance claim.
+
+## 2026-10-21 — real experiment conversion cohorts
+
+F22 PASS: published-version first-exposure cohorts, subsequent seven-day goal attribution, distinct conversions, old/repeated/unknown-order exclusions, maturity/mixed exposure and real Arabic desktop/mobile comparison. 200 units/TypeScript/build, 8 new PostgreSQL and 3 Chromium scenarios PASS. Cumulative batch: 18 PASS / 18 PARTIAL; four closures F18/F20/F22/F36, 24 new PG and 11 new browser scenarios. `EXPERIMENT_CHECKPOINT.md` contains exact metric definitions and evidence. F12 legacy nonblocking job attribution, F27 funnels/abandonment and F35 failed-transaction/outbound correlation remain real gaps. Full fresh acceptance rerun explicitly uses installed Chromium; no merge/deploy/real provider use, no visual approval and no verified remote Actions claim.
+
+## 2026-10-21 — retry-safe draft saves and atomic browser leases
+
+F36 now PASS: one committed draft revision across duplicate/lost-ack requests, scoped metadata-only receipts, superseded replay review, actual Web Locks cross-tab lease and automatic tab-close release. 199 units/TypeScript/build, 6 real PostgreSQL and 4 Chromium desktop/mobile scenarios PASS; fresh migrations 0001–0040 and forced RLS/bot compatibility PASS. Matrix 17 PASS / 19 PARTIAL; see `docs/product-rebuild/implementation/premium-2026-10-20/SAVE_COORDINATION_CHECKPOINT.md`. Continue full fresh database/API/worker/Chromium/backup acceptance. Remaining F12 old uncorrelated jobs and other partial items remain explicit. GitHub API Forbidden; no merge/deploy/provider use; design unapproved.
+
+## 2026-10-21 — conversation control / human policies / consent
+
+Implemented and locally verified the integrated ownership/consent package on premium PR #5. Matrix 16 PASS / 20 PARTIAL; F18/F20 close, F12 deliberately retains legacy nonblocking-job attribution gap. 197 unit/typecheck/build, 10 new PostgreSQL and 4 Chromium desktop/mobile scenarios PASS; previous request/native/schedule regressions PASS. See `docs/product-rebuild/implementation/premium-2026-10-20/CONVERSATION_CONTROL_CHECKPOINT.md`. Next integrated package: F36 save idempotency/cross-tab coordination. Remote Actions not yet verified; no merge/deploy/provider use. Visual acceptance remains pending.
+
+# Final integrated continuation — 21 October 2026
+
+Same branch `feat/premium-flow-builder-2026-10-20` / Draft PR #5; accepted source ab042d0 after b01ba79 (readiness/import/reviews), 807aa1c (native durable results) and 35b023e (customer calendar/cancellation). Stable packages were pushed as completed. Matrix **14 PASS / 22 PARTIAL**, newly F16/F17/F21/F28. Whole rebuild and owner visual approval remain incomplete; redesign deferred.
+
+**Verified:** 194 units/typecheck/build, fresh 38-migration PG/RLS + 29 new scenarios, 65 dedicated Chromium checks plus broad/novice UI, complete local runtime with all closure flags, exact all-table backup/restore and isolated failed archive, latest Node 22 non-root image/API and isolated Compose 2 API/2 workers + DB outage/persistence. Actual source fingerprints/photos/logs: `docs/product-rebuild/evidence/regression-2026-10-21/verification.json`. Full report/matrix/next tasks: `docs/product-rebuild/implementation/premium-2026-10-20/COMPLETION_2026-10-21.md` and `F01-F36.md`.
+
+Latest GitHub CI is UNVERIFIED: direct Actions API Forbidden; previous c8cf4cb CI success is owner-provided evidence. Git push/remote SHAs verified. No merge/deploy/Railway/paid AI/real-provider use/customer send; additive 0037/0038 only on disposable databases. Protected target/main unchanged. First full regression exposed owned-backup compatibility; source ab042d0 fixes it without changing novice assertions, second fresh full run exits 0.
+
+**Next concrete package:** F12/F18/F20 conversation-control/consent: existing session/contact/consent/inbox policy for pause/resume/stop, unavailable/outside-hours handoff and consent/unsubscribe branches/audit. Preserve request/native token/one-attempt, cancellation and privacy lock-order guards. Then native triggers/input F10/F26 and attribution/diagnostics F22/F27/F35; F36 exclusive lease/idempotency still remains. Other partial boundaries are the canonical matrix, including live Meta/AI and physical/accessibility qualification; do not relabel Mock as provider-ready.
+
+Private final DB config: ignored `acceptance-evidence/ci-20261021-r2.env` (5437); browser fixtures generated by existing/new DB scripts. All previous databases/Compose volumes retained. Do not print/commit private credentials. Reuse checkout/branch, no worktree. Historical status follows; use this header and canonical final matrix for current decisions.
+
+# Backup compatibility closure — 21 October 2026
+
+Restores with already-valid local references now retain the original explicit-confirm/Undo/local-only journey after portable inspection; unavailable references still require re-mapping. Original novice restore assertions are unchanged and pass within full combined runtime through post-logout invalidation. 194 units and 11 new combined browser scenarios PASS; same branch / Draft PR #5, matrix 14 PASS / 22 PARTIAL. Final backup/evidence confirmation follows. Details: `docs/product-rebuild/implementation/premium-2026-10-20/IMPORT_COMPATIBILITY.md`. No merge, deployment or external provider; visual acceptance pending.
+
+# Customer scheduling package — 21 October 2026
+
+Same branch / Draft PR #5 after 807aa1c. F21 closed: customer-zone field/fallback, bounded one-year holiday/calendar search with DST gap/fold support, existing pinned DELAY job pagination and exact no-send cancellation/human handoff. 194 units, 6 PG, 3 new desktop/mobile checks PASS; all 11 combined authoring/native/schedule browser checks PASS. Matrix 14 PASS / 22 PARTIAL. Details: `docs/product-rebuild/implementation/premium-2026-10-20/SCHEDULE_CHECKPOINT.md`. Next: combined fresh DB/full runtime gate. Remaining scopes stay explicit in canonical matrix; visual acceptance pending. No merge/deploy/real providers.
+
+# Native connector result package — 21 October 2026
+
+Same branch / Draft PR #5, after b01ba79. CONNECTOR optional committed waits/result mapping and success/error/timeout routes now share existing queues/engine. No automatic upsert retry, actual delivery fault recovery without HTTP resend, scoped native reconciliation/privacy and named editor/Mock controls. 189 units, 13 PostgreSQL and 3 new Chromium checks PASS; old authoring 5 and webhook/controls/operations regressions PASS. F23/F14/F15 remain PARTIAL for their explicitly larger scopes; matrix 13 PASS / 23 PARTIAL. Exact evidence/remaining: `docs/product-rebuild/implementation/premium-2026-10-20/CONNECTOR_CHECKPOINT.md`. Next: customer timezone, long closure, scheduled-job inspection/cancellation. Visual approval pending. No merge/deploy/real provider use.
+
+# Premium authoring package — 21 October 2026
+
+Same branch / Draft PR #5. F16/F17/F28 delivered: shared publication readiness + release diff, scoped safe import remapping, persisted comments/independent reviews with optional owner policy. 185 units/typecheck/build, 10 PostgreSQL and 5 real desktop/mobile Chromium scenarios PASS; prior bots/controls/requests regressions PASS. Matrix 13 PASS / 23 PARTIAL. Evidence and exact scope: `docs/product-rebuild/implementation/premium-2026-10-20/AUTHORING_CHECKPOINT.md`. Remaining: native CONNECTOR waits/error routing; conversation/consent/event/input policies; analytics/experiments; F36 lease/idempotency; device/accessibility and external-provider qualification. Design not owner-approved. No merge/deploy/real send.
+
+## Latest accepted handover — 20 October 2026
+
+Same premium branch / Draft PR #5. Saved source: e8edb1e pointer CI repair, b22b9bf request operations, 2be26d2 browser-close recovery. Full final PostgreSQL/API/worker/Chromium CI-equivalent acceptance exits 0 with all LOCAL_CLOSURE/TRACE/INTEGRATED/OPS/RECOVERY flags. 182 units pass; 54 dedicated browser checks across six suites; existing legacy/RLS/team/CRM and 14 control/19 request/5 rich/7 operation DB scenarios pass. Full 36-migration backup/restore fingerprints and isolated failed-restore protection pass. Trusted-proxy-CA local Node 22 non-root image build/authenticated HTTP smoke passes; repository Dockerfile unchanged.
+
+Canonical matrix is now 10 PASS / 26 PARTIAL / 0 wholly BLOCKED: F03/F05/F06/F25/F31 combined contracts accepted, F23/F36 improved but keep explicit connector/lease/idempotency gaps. Live provider/AI subparts remain blocked; physical/native zoom/WCAG/owner visual approval and other row-specific gaps are not claimed. Radical redesign remains deferred. GitHub Actions API Forbidden leaves remote CI unverified. No merge, Railway, provider login or real send.
+
+Full source/commands/diagnoses/limits: docs/product-rebuild/implementation/premium-2026-10-20/CI-CLOSURE.md. Exact source/image hashes, raw logs and refreshed actual regression evidence: docs/product-rebuild/evidence/handover-2026-10-20/final/verification.json. Prior historical images/manifests preserved. Environment install/start draft saved without publication. Protected target/main unchanged. This supersedes earlier pending gates/counts below.
+
+## 2026-10-20 — Premium personal-device draft recovery / PR #5
+
+Added opt-in, identity/tenant/bot-scoped per-tab browser recovery, bounded to three copies/seven days with quota fallback. Actual tab close AND Chromium process/profile restart restore for review without server save/publication. Other-window changes pause optional autosave; another window choosing server does not delete its neighbour; explicit old-revision save produces real 409 and keeps edits. Logout clears persistent/session recovery. Copies are ordinary browser-profile data, not encryption; default remains session-only.
+
+182 Unit/typecheck/build and four actual browser recovery scenarios PASS alongside the five request-operations browser checks. Detailed source, actual screenshots/logs and remaining F36 lease/idempotency gaps: docs/product-rebuild/implementation/premium-2026-10-20/RECOVERY_CHECKPOINT.md. Final full CI-equivalent repeat/remote CI still pending at this checkpoint; same existing branch/PR #5, no merge/Railway/provider activation.
+
+## 2026-10-20 — Premium request operations / PR #5
+
+New bot-scoped metadata paging/status and explicit audited UNCERTAIN reconciliation on the existing queue. Author/tenant/bot, acknowledgement and stale-attempt checks; concurrent equal retries produce one decision/audit, opposing decisions fail. No new HTTP dispatch, response data entry or flow replay. Migration 0036 only on disposable PostgreSQL. Privacy erasure remains blocked until a real operator-supplied resolution, then scrubs payload/results. Fixed the mobile drawer's parent stacking context exposed by actual logout clicks.
+
+181 Unit/typecheck/build, 7 real PostgreSQL and 5 actual Chromium/API cases PASS; evidence and limitations: docs/product-rebuild/implementation/premium-2026-10-20/OPERATIONS_CHECKPOINT.md. F23 remains PARTIAL for native connectors/provider contracts. Storage recovery primitives are tested but their tab-close UI is not delivered at this checkpoint. Full local CI-equivalent repeat and remote CI outcome remain open; GitHub API Forbidden. Same branch/PR only; no merge/deploy/real provider.
+
+## 2026-10-20 — Premium PR #5 handover / Chromium CI repair
+
+Same feature branch feat/premium-flow-builder-2026-10-20, verified remote base b9679ce. Reproduced invalid plain-object PointerEvent in browser-acceptance.mjs; replaced with an actual trusted Chromium drag, visible hit-test target and unchanged collision assertion. Baseline 177 unit/typecheck/build pass; full targeted API/PostgreSQL/broad/novice/premium/trace/request/integrated browser command exits 0. CI_LOCAL_CLOSURE final repeat and remote CI verification remain open. Evidence and exact scope: docs/product-rebuild/implementation/premium-2026-10-20/CI-REPAIR.md. No merge, deployment or real provider action. Next coherent work: scoped request diagnostics and explicit audited UNCERTAIN reconciliation, with no POST replay.
+
+## 2026-10-20 — integrated user-facing content/actions/drawing batch
+
+Continued d551ef0 on the same branch/Draft PR #5. CARD/GALLERY composite content, structured editing, native website carousel and supported channel contracts/fallbacks; atomic typed field/tag button effects; group folding/breadcrumbs/path focus; bounded group snap; ordered website messages and save-closure fix. 177 Unit, 5 new PostgreSQL/CRM/website scenarios, existing 14 controls + 19 requests, legacy/bots/CRM/team/RLS and 8 actual Chromium/API checks pass. Full combined acceptance is next before promoting F03/F05/F06/F25/F31; current conservative totals 5/31/0. See INTEGRATED_CHECKPOINT.md. No live providers, merge/deploy or independent redesign.
+
+## 2026-10-20 — final request lifecycle checkpoint
+
+Saved source cfeb13e passed full CI-equivalent local acceptance (CI_LOCAL_CLOSURE=1), including all Chromium suites and old HMAC test. Latest privacy delta scrubs mapped response fields, cancels pending continuation and retains existing reconciliation-before-erasure policy for in-flight/UNCERTAIN attempts. 171 Unit and 19 durable PostgreSQL scenarios pass; existing setup/media/inbox regressions repeat PASS. See newest CHECKPOINTS.md for exact tested scopes, source hashes, screenshots, logs and actual CI limits. Totals stay 5 PASS / 31 PARTIAL / 0 wholly BLOCKED. Next: audited request-job diagnostics/reconciliation without POST replay, then native connector response continuation. Providers and radical redesign remain unqualified/deferred; no merge/deploy.
+
+## 2026-10-20 — integration concurrency and CI fixture fix
+
+GitHub Verify 966 passed Unit/DB but failed an old HMAC test that counted earlier new fixture calls. Isolated its exact two-call/signature assertion. A CI-equivalent local repeat additionally exposed and fixed a real contact-before-conversation deadlock in the new request worker. 171 Unit and 17 durable PostgreSQL scenarios pass, including deterministic concurrent widget/privacy lock coverage. Full CI-local-closure repeat is pending; see newest CHECKPOINTS.md. Matrix unchanged (5/31/0); provider/redesign restrictions unchanged.
+
+## 2026-10-20 — saved runtime and complete acceptance
+
+Functional checkpoint `6f41af8` is verified on GitHub (same branch/Draft PR #5). Full combined API/worker/broad/novice/premium/trace/request Chromium acceptance exited 0; 171 Unit, 16 new and 14 existing PostgreSQL scenarios passed. Final logs, screenshots, limitations and next CONNECTOR response-contract boundary: docs/product-rebuild/implementation/premium-2026-10-20/CHECKPOINTS.md. Matrix stays 5 PASS / 31 PARTIAL; live providers and radical visual redesign remain unqualified/deferred. Contract CI 964 succeeded; runtime/latest CI status must be inspected separately.
+
+## 2026-10-20 — F23 durable request continuation
+
+Migration 0035 extends the existing queue with pinned wait tokens and durable response completion. One POST attempt; interrupted/ambiguous attempts never auto-resend. Bounded GET retry, typed atomic mapping, explicit success/error/timeout routes, takeover/consent/window/account checks and local delivery recovery without HTTP replay are implemented. Legacy fire-and-forget jobs/versions/RLS remain compatible. 171 Unit, 16 new PostgreSQL scenarios and existing 14 control/trace scenarios pass, plus bots/CRM/team/RLS/media regressions and actual public widget/worker HTTP-boundary local Mock success/failure/timeout. Dedicated/combined browser results and checkpoint SHA are in docs/product-rebuild/implementation/premium-2026-10-20/. Full CI completion is a separate result.
+
+F23 stays PARTIAL; totals 5 PASS / 31 PARTIAL / 0 wholly BLOCKED. Native connector response continuation and real provider qualification remain. No merge, production deployment or external provider activated. Radical visual redesign remains deferred and not approved. Continue from the newest CHECKPOINTS.md entry on the same branch/PR #5.
+
+## 2026-10-20 — F23 request contract checkpoint
+
+Continued from verified a0c227d on the same execution branch/PR #5. Bounded request/mapping authoring and explicit Mock success/error/timeout work through the shared engine, stable graph ports and pinned subflow bindings. POST auto-retry is rejected; no raw credential inputs. New response-waiting nodes are deliberately publish/runtime gated until durable processing is ready; legacy behavior is unchanged. 166 Unit, existing 14 PostgreSQL scenarios and three actual API/PostgreSQL/Chromium checks pass. F23 stays PARTIAL; total 5 PASS / 31 PARTIAL. See REQUEST_CHECKPOINT.md. Baseline GitHub Verify run 962 is success. No external provider, merge or deployment; visual redesign deferred.
+
+## 2026-10-20 — Final acceptance and continuous GitHub checkpoints
+
+Verified remote functional checkpoints on the same branch and Draft PR #5: `66031dd` (durable controls/advanced authoring) and `f7651be` (ordered actual conversation diagnostics). No work remains only in an unpushed functional tree. Current matrix: 5 PASS / 31 PARTIAL / 0 wholly BLOCKED; provider portions of F24/F29/F30 remain blocked.
+
+Final executable source `f7651be`: 161 Unit tests; 14 control/trace PostgreSQL scenarios; RLS and independent-bot/legacy/team/CRM checks; full real API/runtime and broad/novice/premium/trace Chromium acceptance PASS. Zero campaign jobs/outbound messages and post-logout rejection verified. Final syntax and repeat migration checks pass. Source/image hashes, logs, screenshots and next-step details are in `docs/product-rebuild/implementation/premium-2026-10-20/CHECKPOINTS.md`.
+
+Next coherent implementation: F23 request/response mapping and async failure/timeout continuation using existing integration/connector jobs and pinned session guards. Other true remaining gaps are in F01–F36.md. Do not redo saved input/condition/CRM/time/channel/trace work. Radical visual redesign remains NOT approved; collect visual feedback with final functional gaps. No merge, production deploy, real provider activation or customer send occurred. Remote CI completion is not claimed.
+
+## 2026-10-20 — Ordered conversation diagnostics checkpoint
+
+The prior functional batch is safely pushed as `66031dd` on `feat/premium-flow-builder-2026-10-20`, Draft PR #5. New batch: additive migration 0034, execution UUID/ordered steps, exact microsecond cursor paging, bot-scoped session/trace APIs and real conversation trace UI. Displays pinned state, wait/job status and step timing/reasons without answers or message text; old events have explicit unknown order. Selection is read-only; logout invalidates delayed views. Same-company wrong-bot and cross-company access are denied.
+
+161 Unit tests, 14 PostgreSQL scenarios and six dedicated real Chromium/HTTP scenarios pass. Full combined acceptance is running at this checkpoint; do not infer its final result from this entry. F35 advances but remains PARTIAL because failed rolled-back inbound transactions and full delivery correlation are not covered. Totals remain 5 PASS / 31 PARTIAL. Evidence: `docs/product-rebuild/implementation/premium-2026-10-20/TRACE_CHECKPOINT.md` and `docs/product-rebuild/evidence/traces-2026-10-20/`.
+
+Owner has NOT approved a radical visual redesign; previous screenshots showed limited visual change. Keep this note for the later combined visual/functional assignment. No independent redesign, merge, production deploy or real provider/send is performed.
+
+## 2026-10-20 — Premium Flow Builder continuation on Draft PR #5
+
+Branch `feat/premium-flow-builder-2026-10-20`, continued from verified remote `a4ced99`; target `feat/stage0-foundation` unchanged. Durable input/choice retry, fallback, optional skip and no-reply worker paths; wait-token stale/race protection; nested conditions; typed contact/session variables; inline draft START triggers; remove-tag and CRM stage/eligible assignment; zoned smart delays; sticky branches/goals; URL button adapters and channel lint; persisted tenant-scoped transition outcomes/timing and bot analytics. Additive migration 0033 retains old answers/jobs/immutable versions. Internal multi-screen form sandbox and opt-in draft/text review are explicitly MOCK, without AI or Meta calls.
+
+158 unit tests pass. PostgreSQL RLS/integration, independent-bot/legacy/team/CRM tests, and 10 new durable-control scenarios pass with non-BYPASSRLS roles. Combined real API + broad, novice and premium Chromium acceptance passes, including 50/100-node save/reopen, 48/98 edits, offline/revision conflicts, timeout/skip simulation, draft-only triggers, Mock accept/reject/Undo and required/email two-screen sandbox. New screenshots and hashes: `docs/product-rebuild/evidence/continuation-2026-10-20/`; current matrix/test evidence: `docs/product-rebuild/implementation/premium-2026-10-20/`.
+
+Canonical F status: 5 PASS, 31 PARTIAL. F08/F09 now accepted; F24/F29/F30 internal portions are partial and provider portions remain blocked. Remaining: integration responses/error routes, card/gallery nodes, native channel/event/readiness expansion, consent/human policies, cohort/funnel/session failure exploration, reviews/remapping/group folding, tab-close durable recovery and native device/accessibility/performance acceptance. Mock forms are not official Meta Flow JSON; Mock assistant is not AI. Local ClamAV uses CI signatures only. No new branch/PR, merge, production deployment, real provider credentials, campaign launch or real message sending.
+
 ## 2026-10-20 — Company, media, operations and worker batch accepted locally
 
 Same feature branch and Draft PR #4. Executable source daf15cb, final acceptance harness 4791b06. Atomic/idempotent company+bot onboarding; unfinished draft recovery and dense canvas keyboard operations; inbox assignment concurrency; named/media/carousel campaign drafts; actual ClamAV/private media lifecycle and independent-bot deletion protection; integration configuration/secret UX; real plan/usage; owner company search/subscription/limits/admin audit. Worker drains bounded independent delay transactions; mixed workload ends with zero pending delays. No schema change, merge, Railway, real provider login/send or email delivery.
@@ -276,3 +522,33 @@ Do NOT claim live Meta/Google/Shopify/Messenger/Instagram/Telegram/ClamAV/remote
 
 ### Container build evidence
 After `.dockerignore` and Docker smoke were committed, [CI 39105618688](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105618688) passed both jobs. A real Docker build ran; packaged web served dashboard, editor and widget static assets. The root `.env` is excluded from build context and absent from image. Still no actual production Compose/Railway/TLS/provider rollout. Maintain `.dockerignore` to prevent build context secrets.
+
+
+## Premium Flow Studio — 20 October 2026
+
+Continue the same implementation branch/Draft PR targeting staging. Preserve embedded-link JSON compatibility. Read the delivery and canonical matrix. Next: input timeout/retry/skip scheduling, channel capabilities and remaining advanced runtime. This is not full parity.
+
+[Implementation and evidence](../docs/product-rebuild/implementation/premium-2026-10-20/README.md). Unit/build: 142 passed, zero failed/skipped. Exact PostgreSQL/API/Chromium outcomes and limits are recorded there.
+
+
+2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.
+
+
+2026-10-21 — F26 secure incoming assets: existing scanner/storage, authorized provider source queue (OFF by default), private Website upload/typed resume, CRM download and privacy race safety. Matrix 24 PASS / 12 PARTIAL / 0 wholly BLOCKED. See INCOMING_MEDIA_CHECKPOINT.md for bounds, retention and actual offline evidence. Next independent priorities: variables/consent, error policies, bilingual authoring and sustained graph performance.
+
+
+2026-10-21 — F26 closed after scan-gated provider continuation: exact session UUID generation, CLEAN-only managed input, existing retry/error graph, stale/STOP/privacy skip, concurrent once-only outbox and rollback-safe failures. Additional9 PG and provider CRM Chromium evidence; 231 units/build/typecheck. Matrix25 PASS /11 PARTIAL /0 wholly BLOCKED. INCOMING_MEDIA_CHECKPOINT.md is canonical. Next: independent F11/F14/F19/F34/F33; physical devices and live providers still unqualified. CI11de652 is fully successful; inspect newest source CI after push.
+
+
+2026-10-21 final integration:25 PASS/11 PARTIAL/0 wholly BLOCKED;231 units +TS/build,28 new PG/ClamAV and8 actual Chromium scenarios. PAUSE and pending file scans stay waiting rather than terminal/abandoned. Migrations43–47 remain disposable only. First next task F11 consent metadata/autocomplete; full current handover at docs/product-rebuild/implementation/premium-2026-10-20/CONTINUATION_HANDOVER_2026-10-21.md. Latest CI must be read for newest HEAD; dcd5c04 ancestor fully succeeded.
+
+
+2026-10-21 latest bundle A: F11/F14/F19 close at28 PASS/8 PARTIAL/0 wholly BLOCKED.237 units +TS/build;4 PostgreSQL/3 actual Chromium checks plus controls/integration regressions. CONTEXT_POLICY_CHECKPOINT.md is canonical. No migration/live provider; next bilingual Canvas scale/touch/keyboard, then offline request/form/AI contracts and visual rebuild. Verify newest CI after push.
+
+
+2026-10-21 latest B/C bundle: F33/F34 close; F01/F32 retain honest device/accessibility limitations.30 PASS/6 PARTIAL/0 wholly BLOCKED.242 units/TS/build;3 PG and4 Chromium with actual200/500 graph profiling and emulated pinch. SCALE_LOCALE_CHECKPOINT.md. Next safe internal F23/F24/F29/F30 contracts, then authorized major visual redesign with same-state captures.
+
+
+## 21 October — offline contracts continuation
+
+30 PASS /6 PARTIAL.246 units/typecheck/build;20 integration +3 governance PostgreSQL;2 Chromium. See docs/product-rebuild/implementation/premium-2026-10-20/OFFLINE_CONTRACT_CHECKPOINT.md. Meta/AI remain unqualified; next visual rebuild. Prior49e5 CI failed on stale save-notice browser wait, corrected without removing persisted-data assertions.

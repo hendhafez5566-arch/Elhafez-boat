@@ -1,0 +1,88 @@
+{
+  "date": "2026-10-21",
+  "baseline": "0e4baf59b179eceedfecd93bc1163cda67a94bab",
+  "functional_head": "bddfa02edde92ac950a61f78c3f10eeef072fb0d",
+  "branch": "feat/premium-flow-builder-2026-10-20",
+  "pr": 5,
+  "matrix": {
+    "PASS": 22,
+    "PARTIAL": 14,
+    "BLOCKED": 0
+  },
+  "unit": {
+    "passed": 221,
+    "failed": 0,
+    "skipped": 0,
+    "typecheck": "PASS",
+    "build": "PASS"
+  },
+  "new_pg": {
+    "events": 6,
+    "origins": 9,
+    "native_inputs": 5
+  },
+  "new_chromium": {
+    "events": 3,
+    "origins": 3,
+    "native_inputs": 3,
+    "scenario_replay": 6
+  },
+  "migrations": 42,
+  "observed_successful_remote_runs": [
+    39564261067,
+    39565550333,
+    39567231913,
+    39568310794
+  ],
+  "functional_head_remote_run": 39569623866,
+  "functional_head_remote_status_at_write": "IN_PROGRESS",
+  "screenshots": [
+    {
+      "path": "docs/product-rebuild/evidence/save-repair-2026-10-21/cross-tab-exclusive-mobile.png",
+      "sha256": "f68fcbedac6572cd92c074e0b5dcd41cd371298c9aad471026e447cb14a6b274"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/save-repair-2026-10-21/lost-acknowledgement-desktop.png",
+      "sha256": "b9dff751ea2f5444f525c190ff73cc4e37fc92f2adf73fad5451ea53de23b585"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/channel-events-2026-10-21/channel-events-desktop.png",
+      "sha256": "121a7753f6bb8a65a0bc7126a8b2153c143d20bf76243a67107ccfc8bf9d3558"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/channel-events-2026-10-21/channel-events-mobile.png",
+      "sha256": "3db9dd73fcd46842ce2905a1e8521b14f4d0cb62d58529edfc878342b849f32b"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/job-origin-2026-10-21/owned-jobs-desktop.png",
+      "sha256": "9a01394572031c1e72f9cb9b9f1854d92184408e49ea6946a64a03178f543d27"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/job-origin-2026-10-21/owned-jobs-mobile.png",
+      "sha256": "e45611910cfda38798448991466a6d40e2d524fc0bc26fd981271a48040f3452"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/native-input-2026-10-21/native-input-editor-desktop.png",
+      "sha256": "b12cda5a43fad0608ef1dc40cf7e3f524bc72b56636e0ea3b457d3a3a0124866"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/native-input-2026-10-21/native-location-simulator-desktop.png",
+      "sha256": "737872244638b1d388a6bfeab47948c3742e650869fae765c557a603a5ffe2a2"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/native-input-2026-10-21/native-reply-mobile.png",
+      "sha256": "7db8dd4572f39bc858000653f786a55c7a3705241fcd611e7c860d89935d4cec"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/scenario-replay-2026-10-21/consent-timeout-replay-mobile.png",
+      "sha256": "6fea717e1df6a473e618c37e314a2f33d07448951d290573795cb1906131c15f"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/scenario-replay-2026-10-21/native-replay-desktop.png",
+      "sha256": "e10c029a4e0bad23549b5cd62acfe387ecf6156eb5e1eea617ec741ee7b7acea"
+    }
+  ],
+  "provider_activation": "NONE",
+  "production_deployment": "NONE",
+  "visual_approval": "PENDING"
+}

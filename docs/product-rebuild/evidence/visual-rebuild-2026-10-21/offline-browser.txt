@@ -1,0 +1,4 @@
+Starting actual Chromium
+PASS actual Mock draft/rewrite proposals require scoped audited acceptance, remain undoable drafts and never publish or call a provider
+PASS actual owner form editor exports pinned official-component subset with unapproved status, then saves internal form through normal draft path on mobile
+PASS 2 offline contract Chromium scenarios

@@ -72,7 +72,7 @@ try{
   ids.push({tenantId:t,userId:u,slug});
  }
  // A real low-privilege role (unlike SET ROLE from a privileged connection).
- const env={OUTBOUND_WEBHOOK_HOSTS:'webhook.fixture.invalid',APP_PUBLIC_ORIGIN:'https://pilot.fixture.test',META_APP_ID:'9999911111',META_GRAPH_VERSION:'v24.0',META_EMBEDDED_CONFIG_ID:'1111122222',META_COEXISTENCE_CONFIG_ID:'3333344444',META_EMBEDDED_SIGNUP_ENABLED:'true',META_ONBOARDING_REVIEWED:'true',META_COEXISTENCE_ENABLED:'true',NODE_OPTIONS:'--import=./tests/support/offline-transport.mjs',OFFLINE_PROVIDER_ORIGIN:sim.origin,CLAMAV_SOCKET:process.env.CLAMAV_SOCKET,DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://[::1]:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
+ const env={OUTBOUND_WEBHOOK_HOSTS:'webhook.fixture.invalid,webhook.fixture.test',APP_PUBLIC_ORIGIN:'https://pilot.fixture.test',META_APP_ID:'9999911111',META_GRAPH_VERSION:'v24.0',META_EMBEDDED_CONFIG_ID:'1111122222',META_COEXISTENCE_CONFIG_ID:'3333344444',META_EMBEDDED_SIGNUP_ENABLED:'true',META_ONBOARDING_REVIEWED:'true',META_COEXISTENCE_ENABLED:'true',NODE_OPTIONS:'--import=./tests/support/offline-transport.mjs',OFFLINE_PROVIDER_ORIGIN:sim.origin,CLAMAV_SOCKET:process.env.CLAMAV_SOCKET,DATABASE_URL:runtimeUrl.toString(),PLATFORM_DATABASE_URL:platformUrl.toString(),PORT:'4000',WEB_PORT:'3000',API_INTERNAL_ORIGIN:'http://[::1]:4000',RATE_LIMIT_SECRET:randomBytes(32).toString('hex'),META_APP_SECRET:'acceptance-only-not-provider',META_WEBHOOK_VERIFY_TOKEN:'ci-test',WHATSAPP_TOKEN_ENCRYPTION_KEY:randomBytes(32).toString('base64'),INTEGRATION_SECRET_ENCRYPTION_KEY:randomBytes(32).toString('base64')};
  apiProcess=launch('api',process.execPath,['.build/apps/api/src/server.js'],env);
  webProcess=launch('web',process.execPath,['apps/web/server.mjs'],env);
  await waitForHealth();
@@ -198,6 +198,34 @@ try{
  assert.equal(afterResume.messages.filter(m=>String(m.body).includes('بعد الانتظار')).length,1,'Delayed reply must not be duplicated');
  console.log('PASS real delayed conversation continuation from PostgreSQL worker, exactly once');
 
+ // Full public API -> restricted worker -> production HTTP boundary -> durable continuation.
+ const requestIntegration=await expectCode('/api/v1/integrations',{method:'POST',token:one,body:{name:'Offline request fixture',url:'https://webhook.fixture.test/receive',authMode:'NONE'}},201);
+ const requestFixture='public-widget-'+suffix;
+ const requestCalls=()=>sim.calls.filter(c=>c.host==='webhook.fixture.test'&&c.body.fixture===requestFixture);
+ const requestDefinition={name:'Durable public request',startId:'s',nodes:[{id:'s',type:'START',next:'api'},{id:'api',type:'WEBHOOK',integrationId:requestIntegration.id,next:'ok',request:{method:'POST',timeoutSeconds:10,maxAttempts:1,body:{fixture:requestFixture},mapping:[{path:'data.value',field:'api_value'}],errorNext:'error',timeoutNext:'timeout'}},...['ok','error','timeout'].map(id=>({id,type:'END',text:'request_'+id+' {{api_value}}'}))]};
+ const requestRevision=await expectCode('/api/v1/flows',{token:one},200);
+ await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{...requestDefinition,expectedRevision:requestRevision.draft.draftRevision}},200);
+ await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
+ for(const [mode,outcome] of [['','ok'],['429','error'],['hold','timeout']]){
+  sim.modes.set('webhook.fixture.test',mode);const beforeCalls=requestCalls().length;
+  // Earlier PG fixtures share this host and workers drain every synthetic tenant.
+  // Exercise unrelated traffic explicitly; it must not weaken this wait's once-only assertion.
+  if(outcome==='ok'){const unrelated=await fetch(sim.origin+'/receive',{method:'POST',headers:{'content-type':'application/json','x-fixture-host':'webhook.fixture.test','idempotency-key':'independent-'+suffix},body:JSON.stringify({fixture:'independent-'+suffix})});assert.equal(unrelated.status,200);assert.equal(requestCalls().length,beforeCalls);}
+  const requestVisitor=await expectCode('/api/v1/widget/start',{method:'POST',headers:{origin:base},body:{widgetKey:widgetConfig.widgetKey,name:'Synthetic request '+outcome}},201);
+  const opts={token:requestVisitor.token,headers:{origin:base}};let result;
+  for(let i=0;i<150;i++){result=await expectCode('/api/v1/widget/messages',opts,200);if(result.messages.some(m=>String(m.body).startsWith('request_'+outcome)))break;await sleep(200)}
+  assert.equal(result.messages.filter(m=>String(m.body).startsWith('request_'+outcome)).length,1,'One public request continuation for '+outcome);
+  if(outcome==='ok')assert.ok(result.messages.some(m=>String(m.body).includes('fixture-response')));
+  assert.equal(requestCalls().length-beforeCalls,1,'One HTTP POST attempt for '+outcome);
+  const job=(await db.query('SELECT id,attempts FROM chatbot_integration_jobs WHERE tenant_id=$1 AND integration_id=$2 ORDER BY created_at DESC,id DESC LIMIT 1',[ids[0].tenantId,requestIntegration.id])).rows[0];
+  assert.equal(job.attempts,1,'One durable dispatch attempt for '+outcome);assert.equal(requestCalls().filter(c=>c.idempotencyKey===job.id&&c.method==='POST').length,1,'One actual HTTP POST for the exact persisted job '+outcome);
+ }
+ sim.modes.delete('webhook.fixture.test');
+ const restoreRevision=await expectCode('/api/v1/flows',{token:one},200);
+ await expectCode('/api/v1/flows/draft',{method:'PUT',token:one,body:{...delayedFlow,expectedRevision:restoreRevision.draft.draftRevision}},200);
+ await expectCode('/api/v1/flows/publish',{method:'POST',token:one},200);
+ console.log('PASS public API/widget + real restricted worker/HTTP boundary: mapped response, HTTP failure and timeout, one POST per wait');
+
  // Two API replicas and competing workers against the same limited-role database.
  const replica=launch('api-replica',process.execPath,['.build/apps/api/src/server.js'],{...env,PORT:'4001'});
  for(let i=0;i<50;i++){try{if((await fetch('http://127.0.0.1:4001/health')).ok)break}catch{}await sleep(200)}
@@ -297,8 +325,15 @@ try{
  for(let i=0;i<50;i++){try{if((await fetch('http://127.0.0.1:3002/health')).ok)break}catch{}await sleep(100)}
  const botBrowser=spawn(process.execPath,['tests/bots-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/bot-browser-account.json'},stdio:'inherit'});
  const [botCode]=await once(botBrowser,'exit');assert.equal(botCode,0,'Independent bot browser acceptance failed');
+ const premiumAccount=await browserAccount('premium-ui');
+ const premiumBrowser=spawn(process.execPath,['tests/premium-builder-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002',ACCEPTANCE_SLUG:premiumAccount.slug,ACCEPTANCE_EMAIL:premiumAccount.email,ACCEPTANCE_PASSWORD:premiumAccount.password},stdio:'inherit'});
+ const [premiumCode]=await once(premiumBrowser,'exit');assert.equal(premiumCode,0,'Premium flow builder Chromium acceptance failed');
+ const controlsHttp=spawn(process.execPath,['tests/flow-controls-http.mjs'],{env:{...process.env,WEB_BASE_URL:base,ACCEPTANCE_BROWSER_ACCOUNT:'acceptance-evidence/browser-account.json'},stdio:'inherit'});const [controlsCode]=await once(controlsHttp,'exit');assert.equal(controlsCode,0,'Flow controls HTTP acceptance failed');
+ if(process.env.CI_TRACE_BROWSER==='1'){const traceBrowser=spawn(process.execPath,['tests/flow-trace-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [traceCode]=await once(traceBrowser,'exit');assert.equal(traceCode,0,'Committed conversation trace browser acceptance failed');const requests=spawn(process.execPath,['tests/flow-request-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [requestCode]=await once(requests,'exit');assert.equal(requestCode,0,'Request editor and response preview browser acceptance failed');}
+ if(process.env.CI_INTEGRATED_BROWSER==='1'){const rich=spawn(process.execPath,['tests/integrated-builder-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [richCode]=await once(rich,'exit');assert.equal(richCode,0,'Integrated cards/actions/drawing Chromium acceptance failed');}
  assert.equal((await db.query('SELECT count(*)::int AS n FROM chatbot_campaign_jobs WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
  assert.equal((await db.query('SELECT count(*)::int AS n FROM whatsapp_outbox WHERE tenant_id=$1 AND campaign_id=$2',[ids[0].tenantId,reviewCampaign])).rows[0].n,0);
+ if(process.env.CI_OPS_BROWSER==='1'){const ops=spawn(process.execPath,['tests/flow-request-ops-browser.mjs'],{env:{...process.env,WEB_BASE_URL:'http://127.0.0.1:3002'},stdio:'inherit'});const [opsCode]=await once(ops,'exit');assert.equal(opsCode,0,'Request operations and no-replay Chromium acceptance failed');}
  console.log('PASS campaign browser review queued zero jobs and zero outbound messages');
  const logout=await expectCode('/api/v1/auth/logout',{method:'POST',token:one},200);
  assert.ok(logout);

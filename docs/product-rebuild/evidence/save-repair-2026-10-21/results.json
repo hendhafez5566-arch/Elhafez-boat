@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "real committed save with deliberately dropped response retries the same mutation and creates exactly one server revision",
+    "actual Web Locks exclude an overlapping second-tab save and preserve its separate edits on mobile",
+    "after lease release, stale second-tab content still reaches ordinary revision review and cannot overwrite the newer draft",
+    "closing a tab releases its browser-owned lease automatically without expiry races"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium"
+}

@@ -1,0 +1,8 @@
+Starting actual Chromium
+PASS actual UI replays native input/persona/seed/channel failure exactly, without draft revision or persisted trace changes
+PASS full actual consent/input/delay path rebinds fresh consent challenge and enters terminal continuation without restarting
+PASS real mobile timeout replay rebinds the new durable wait token and reproduces fallback
+PASS existing provider HTTP-error and timeout Mock paths replay through the shared interpreter without configured provider resources
+PASS real preview API rejects invalid typed persona and unsupported mock delivery status
+PASS actual logout clears persona/tape/diagnostics and closes the simulator
+PASS 6 scenario Chromium checks

@@ -1,0 +1,9 @@
+PASS real interpreter attributes both nonblocking queues to exact conversation/version/step, without a request wait
+PASS pause cancels only owned jobs; same-contact other conversation and unknown historical jobs remain untouched
+PASS role-scoped diagnostics show owned counts and explicit unknown company jobs without guessing, under forced RLS
+PASS enqueue rejects mismatched contact or invalid origin before queue insertion
+PASS both actual legacy workers recheck conversation ownership before any mock HTTP dispatch
+PASS competing workers serialize attributed nonblocking jobs and keep existing successful terminal statuses
+PASS deterministic real contact-lock/control race finishes without deadlock or post-stop dispatch
+PASS superseded pinned-version jobs cannot dispatch after restart/version change
+PASS 8 owned nonblocking PostgreSQL scenarios

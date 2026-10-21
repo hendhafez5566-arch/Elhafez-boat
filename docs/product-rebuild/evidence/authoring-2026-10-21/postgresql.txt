@@ -1,0 +1,11 @@
+PASS optional governance preserves ordinary publication and existing immutable version
+PASS same readiness/publication approval gate, optional owner policy and no network probe
+PASS competing review requests coalesce; author and low-privilege decisions are denied
+PASS independent approval permits actual publish; identical decision retries create one audit and opposing retry fails
+PASS saving invalidates old approval and release diff reports actual persisted changes
+PASS changes requested, re-review and revoked reviewer eligibility fail closed at publication
+PASS authored revision/step threads, replies, resolution/reopen and literal untrusted text preserved
+PASS forced RLS and same-tenant wrong-bot thread isolation, view-only access and authoring permissions
+PASS portable inspection denies foreign references, validates explicit local remap and never saves/publishes
+PASS resource blockers are per-node and use same publication guards, without endpoint/credential disclosure
+PASS 10 real authoring PostgreSQL scenarios

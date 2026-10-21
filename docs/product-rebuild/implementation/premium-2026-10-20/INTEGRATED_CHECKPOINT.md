@@ -1,0 +1,20 @@
+# Latest verified continuation — 21 October 2026
+
+[COMPLETION_2026-10-21.md](COMPLETION_2026-10-21.md) supersedes the historical checkpoint below: source ab042d0, 14 PASS / 22 PARTIAL, 194 units, 38 migrations, 65 dedicated browser checks, full runtime + restore + latest Node 22/Compose PASS locally. Remote Actions UNVERIFIED (Forbidden); visual approval pending.
+
+## Current final handover
+
+[CI-CLOSURE.md](CI-CLOSURE.md) supersedes prior pending gates: 10 PASS / 26 PARTIAL; full local acceptance, backup/restore and packaged smoke pass. Remote CI remains unverified (Forbidden). No release/visual approval implied.
+
+## Integrated content, actions and drawing checkpoint — continued from d551ef0
+
+Same branch / Draft PR #5. New end-to-end functionality targets **F03/F05/F06/F25/F31** together:
+- Ordered legacy TEXT/BUTTONS blocks now support CARD and GALLERY, preserving the existing single interpreter/storage contract. Structured card/gallery/action controls, gallery reorder, safe URLs, images and bounded total ten cards; composite content precedes the final interactive prompt. No parallel MESSAGE engine or schema migration.
+- Native Website Chat cards/carousels, shared-engine rich simulator; Messenger/Instagram generic-template contracts; explicit ordered image/text/link fallbacks on WhatsApp/Telegram. Unsupported native WhatsApp carousels are never sent. Channel preflight and fallback simulator reflect the contract; provider activation is not claimed.
+- Button effects atomically validate/apply typed fields and add/remove tags before following their existing stable-ID route; URL actions never execute effects. Existing assign/node/URL contracts retained. Real website replay tests prove one persisted result and CRM value.
+- Persistent group folding keeps external edge identities, search reopens hidden nodes, shortest-path breadcrumbs and explicit path focus; existing minimap/navigation retained. Selection translation clamps the whole group without distorting offsets. Actual rectangle/Shift selection, alignment/distribution and group drag tested.
+- Fixed two user-visible issues exposed by these tests: website composite messages shared transaction timestamps and sorted by random UUID; new delivery now assigns strictly increasing timestamps while holding the existing conversation lock. Save acknowledgments replaced the flow object while leaving editor/drag closures attached to the old object; matching acknowledgments now rebind the editor/canvas while preserving the in-flight-newer-edit guard and camera.
+
+Actually run: TypeScript/build and **177 Unit PASS**; **5 new real PostgreSQL/website/CRM scenarios PASS**; existing **14 controls** and **19 request** PostgreSQL scenarios, bots/CRM/team/legacy and forced RLS PASS. Dedicated actual API/PostgreSQL/Chromium: **8 checks PASS**, including a real mobile widget and persisted group drag after saving. Evidence: `../../evidence/integrated-2026-10-20/` and `INTEGRATED_VERIFICATION.txt`.
+
+The full combined acceptance is the next gate before changing the five matrix statuses. Canonical totals remain conservatively 5 PASS / 31 PARTIAL at this source checkpoint. F23 is unchanged and does not block independent functionality. No real provider/customer sends, new branch/PR, merge or production deployment. Radical redesign remains deferred; these are functional components, not visual approval.

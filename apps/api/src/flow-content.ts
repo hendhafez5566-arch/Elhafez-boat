@@ -1,0 +1,19 @@
+/** Bounded, channel-neutral content. Cards never execute privileged actions from a URL. */
+export type FlowCard={title:string;subtitle?:string;imageUrl?:string;actions?:{title:string;url:string}[]};
+export type RichBlock={type:'CARD';card:FlowCard}|{type:'GALLERY';cards:FlowCard[]};
+export type ChoiceEffect={type:'SET_FIELD';field:string;value:string}|{type:'TAG';tag:string;mode:'ADD'|'REMOVE'};
+const plain=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
+const text=(v:unknown,max:number,min=1)=>typeof v==='string'&&v.length>=min&&v.length<=max;
+export function contentURL(value:unknown){if(!text(value,2048))throw Error('Content URL requires HTTPS');let u;try{u=new URL(String(value))}catch{throw Error('Invalid content URL')}if(u.protocol!=='https:'||u.username||u.password||u.hostname.length<4||['localhost','127.0.0.1','::1'].includes(u.hostname))throw Error('Content URL requires public HTTPS without credentials')}
+export function validateCard(value:unknown):asserts value is FlowCard{
+ if(!plain(value)||!text(value.title,80)||value.subtitle!==undefined&&!text(value.subtitle,160,0))throw Error('Card requires a title up to 80 and subtitle up to 160 characters');
+ if(Object.keys(value).some(k=>!['title','subtitle','imageUrl','actions'].includes(k)))throw Error('Unknown card property');
+ if(value.imageUrl!==undefined)contentURL(value.imageUrl);
+ if(value.actions!==undefined){if(!Array.isArray(value.actions)||value.actions.length>3)throw Error('Card allows at most 3 URL actions');for(const a of value.actions){if(!plain(a)||!text(a.title,20)||Object.keys(a).some(k=>!['title','url'].includes(k)))throw Error('Invalid card action');contentURL(a.url)}}
+}
+export function validateRichBlock(block:Record<string,unknown>){if(block.type==='CARD'){validateCard(block.card);if(Object.keys(block).some(k=>!['type','card'].includes(k)))throw Error('Invalid card block')}else{if(!Array.isArray(block.cards)||!block.cards.length||block.cards.length>10||Object.keys(block).some(k=>!['type','cards'].includes(k)))throw Error('Gallery requires 1–10 cards');block.cards.forEach(validateCard)}}
+export function contentMedia(nodes:{type:string;blocks?:unknown[];url?:string}[]):string[]{const urls:string[]=[];for(const n of nodes){if(n.type==='MEDIA'&&n.url)urls.push(n.url);for(const raw of n.blocks||[]){const b=raw as {type:string;url?:string;card?:FlowCard;cards?:FlowCard[]};if(b.type==='MEDIA'&&b.url)urls.push(b.url);for(const c of b.type==='CARD'?[b.card!]:b.type==='GALLERY'?b.cards||[]:[])if(c.imageUrl)urls.push(c.imageUrl)}}return urls}
+export function validateEffects(value:unknown):asserts value is ChoiceEffect[]{if(!Array.isArray(value)||value.length>5)throw Error('Button supports at most 5 effects');const key=(v:unknown)=>typeof v==='string'&&/^[a-z][a-z0-9_]{0,39}$/.test(v)&&!['constructor','prototype','__proto__'].includes(v);for(const e of value){if(!plain(e))throw Error('Invalid button effect');if(e.type==='SET_FIELD'){if(!key(e.field)||!text(e.value,500,0)||Object.keys(e).some(k=>!['type','field','value'].includes(k)))throw Error('Invalid button field effect')}else if(e.type==='TAG'){if(!key(e.tag)||!['ADD','REMOVE'].includes(String(e.mode))||Object.keys(e).some(k=>!['type','tag','mode'].includes(k)))throw Error('Invalid button tag effect')}else throw Error('Unsupported button effect')}}
+
+/** Explicit fallback for channels without native cards; never send an unofficial WhatsApp carousel. */
+export function galleryFallback(cards:FlowCard[]):Record<string,unknown>[] {return cards.flatMap(c=>[...(c.imageUrl?[{messaging_product:'whatsapp',type:'image',image:{link:c.imageUrl}}]:[]),{messaging_product:'whatsapp',type:'text',text:{preview_url:false,body:[c.title,c.subtitle,...(c.actions||[]).map(a=>a.title+': '+a.url)].filter(Boolean).join('\n')}}])}

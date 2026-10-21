@@ -2,8 +2,14 @@
 # Full logical PostgreSQL backup + restore on disposable CI service only.
 set -euo pipefail
 [[ "${CI_ACCEPTANCE_DISPOSABLE_DB:-}" == "YES" ]] || { echo "Disposable CI DB only" >&2; exit 1; }
-docker_id="$(docker ps --format '{{.ID}} {{.Image}}' | awk '$2 ~ /^postgres:16-alpine$/ {print $1;exit}')"
-[[ -n "$docker_id" ]] || { echo "CI PostgreSQL service container not found" >&2; exit 1; }
+if [[ -n "${CI_POSTGRES_CONTAINER:-}" ]]; then
+  docker_id="$CI_POSTGRES_CONTAINER"
+else
+  mapfile -t postgres_services < <(docker ps --format '{{.ID}} {{.Image}}' | awk '$2 ~ /^postgres:16-alpine$/ {print $1}')
+  [[ "${#postgres_services[@]}" -eq 1 ]] || { echo 'Set CI_POSTGRES_CONTAINER when the disposable PostgreSQL service is ambiguous or missing' >&2; exit 1; }
+  docker_id="${postgres_services[0]}"
+fi
+[[ "$(docker inspect --format '{{.Config.Image}}' "$docker_id" 2>/dev/null || true)" == 'postgres:16-alpine' ]] || { echo 'Selected disposable PostgreSQL service must use postgres:16-alpine' >&2; exit 1; }
 archive="$(mktemp /tmp/elhafez-ci-restore-XXXXXXXX.dump)"
 trap 'rm -f "$archive"' EXIT
 docker exec "$docker_id" pg_dump --format=custom --no-owner -U postgres -d elhafez_ci > "$archive"

@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual native collection editor and explicit unsupported-channel graph port persist through authenticated draft API",
+    "real shared server simulator accepts explicit Mock native coordinates and displays actual typed result",
+    "actual unsupported Website fallback and mobile email quick-reply authoring use channel-aware mock input paths"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium; native provider references only"
+}

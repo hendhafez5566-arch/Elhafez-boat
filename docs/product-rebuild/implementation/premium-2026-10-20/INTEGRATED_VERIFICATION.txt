@@ -1,0 +1,84 @@
+Unit/typecheck/build — EXIT 0
+✔ one-character WhatsApp sender profile uses a contact name accepted by PostgreSQL (0.210597ms)
+ℹ tests 177
+ℹ suites 0
+ℹ pass 177
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4422.377408
+
+Rich PostgreSQL — EXIT 0
+PASS published rich card/gallery and button-effect definition roundtrip, groups/collapse retained, real website route
+PASS actual website delivery stores native galleries and ordered composite content before interactive buttons
+PASS real visitor button effects persist typed fields/tags in session and CRM once under replayed message ID
+PASS new publication preserves existing conversation version and previously delivered card content
+PASS real cross-company bot/message denial, author role boundary and widget origin restriction retained
+PASS 5 integrated rich-content PostgreSQL scenarios
+
+Dedicated API/Chromium — EXIT 0
+PASS persisted group folding hides internals, keeps external edges and expands to editable nodes with path breadcrumbs
+PASS structured card title/action/gallery reorder editor saves through real API and PostgreSQL without JSON editing
+PASS shared-engine simulator renders real card galleries/composite buttons and executes field/tag effects before downstream message
+PASS real preflight/publication accepts validated content and rejects unsafe card action URLs
+PASS real mobile Website Chat fetches published galleries, follows real button callback and displays persisted typed-action result; no external provider
+PASS real Shift multi-selection alignment and distribution persist correct coordinates through API
+PASS actual Shift rectangle selects three nodes and pointer group drag preserves every relative offset
+PASS group creation/fold save, search expansion, breadcrumbs and path focus preserve graph connections
+
+Existing controls — EXIT 0
+PASS draft trigger inert until atomic publication
+PASS retry count and immutable deadline survive separate real transactions; exhausted route cancels job
+PASS optional skip uses current node callback and never writes missing answer
+PASS durable timeout resumes through actual worker exactly once and premature clocks requeue
+PASS same-node re-entry rejects stale token and late answer follows timeout
+PASS reply/worker race serializes one timeout transition under real conversation lock
+PASS real CRM stage/assignee changes and session-only fields stay out of CRM including human-keyword handoff
+PASS persisted timing/goals, preview excluded, value-free analytics and real RLS isolation
+PASS foreign-company CRM assignee cannot publish; pinned version and active triggers remain unchanged
+PASS legacy null-bot pinned session is retained and included only in legacy-bot analytics
+PASS ordered execution IDs and exact cursor pagination retain every real transition without customer values
+PASS conversation trace rejects cross-company and same-company wrong-bot identifiers
+PASS historical events remain visible with explicit unknown order and legacy scope
+PASS diagnostics expose saved failed-continuation status and pinned node without raw error payloads
+PASS 14 PostgreSQL control scenarios; no external provider calls
+
+Existing requests — EXIT 0
+PASS unique wait-token queue, ignored inbound duplicates, stable key and exactly one committed success continuation
+PASS mapping response failure routes atomically without applying invalid fields
+PASS typed response failure routes atomically without applying invalid fields
+PASS POST HTTP 429 takes error branch with no automatic replay
+PASS ambiguous POST timeout is quarantined and follows timeout without resend
+PASS committed in-flight claim blocks second worker; expired interrupted claim never resends and ignores late success
+PASS real concurrent website/privacy contact-first locks and response continuation complete without deadlock or HTTP replay
+PASS durable stored response survives actual PostgreSQL delivery rollback and resumes without repeating HTTP
+PASS human takeover while HTTP is in flight prevents fields, continuation and automated delivery
+PASS publication during wait preserves pinned request and downstream version
+PASS same-node restart changes wait token and cancels stale job before dispatch
+PASS existing deadline worker takes timeout and cancels undispatched request once
+PASS opt-out and unavailable/expired messaging channel stop dispatch
+PASS expired WhatsApp authorization and explicit reauthorization prevent integration side effects even inside service window
+PASS bounded safe GET retry retains one job/idempotency key and one successful continuation
+PASS real forced RLS, other-tenant worker and author-role boundaries remain enforced
+PASS integration disabled after publication follows enqueue-error route without creating a job
+PASS owner erasure refuses unreconciled in-flight/uncertain request attempts
+PASS owner erasure scrubs stored mapped responses and request payloads, cancels pending work and prevents all continuation
+PASS 19 durable integration scenarios; every HTTP dispatch is an explicit local mock
+
+Legacy/bots/CRM/team — EXIT 0
+PASS immutable bot rollback, two concurrent editors, pinned version after publish/route change, new-session routing and non-destructive archive
+PASS contact-wide timeline pagination and all-or-nothing role-scoped bulk CRM state updates
+(node:37833) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS analytics UTC calendar boundary, daily/KPI reconciliation, session-timezone independence and tenant isolation
+PASS real team lifecycle: concurrent case-insensitive duplicate rejection, seat limits, owner/manager/agent/viewer restrictions, cross-tenant denial, revoked and reused tokens denied, acceptance and role-change session invalidation
+PASS campaign review: actual consent/opt-out audience, tenant/role denial, no queued jobs or provider requests
+PASS real lead profile/conversation identity and bot session metrics with cross-company denial
+PASS actual PostgreSQL lead pagination: 20-row page, second-page uniqueness, company isolation, literal wildcard and invalid-page rejection
+PASS PostgreSQL: legacy backfill twice preserves versions; two independent bots; optimistic conflict; tenant/RLS and roles; unique channel routing; actual runtime and pinned bot
+
+FORCE/RLS — EXIT 0
+PASS PostgreSQL catalog isolation, cross-tenant read/update/insert denial, and RLS/FORCE flags for all new tenant tables
+
+Combined regression pending at source checkpoint.

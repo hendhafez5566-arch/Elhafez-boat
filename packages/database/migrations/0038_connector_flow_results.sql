@@ -1,0 +1,25 @@
+BEGIN;
+-- Extend the native queue; legacy non-waiting connector jobs retain their contract.
+ALTER TABLE chatbot_connector_jobs DROP CONSTRAINT chatbot_connector_jobs_status_check;
+ALTER TABLE chatbot_connector_jobs ADD CONSTRAINT chatbot_connector_jobs_status_check CHECK(status IN ('PENDING','PROCESSING','DONE','SENT','FAILED','UNCERTAIN','CANCELLED'));
+ALTER TABLE chatbot_connector_jobs ADD COLUMN conversation_id uuid;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN flow_version integer;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN flow_node_id text;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN wait_token uuid;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN flow_request jsonb;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN deadline_at timestamptz;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN dispatch_until timestamptz;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN result_outcome text CHECK(result_outcome IN ('SUCCESS','ERROR','TIMEOUT'));
+ALTER TABLE chatbot_connector_jobs ADD COLUMN result_fields jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE chatbot_connector_jobs ADD COLUMN response_status integer;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN completion_pending boolean NOT NULL DEFAULT false;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN continuation_attempts integer NOT NULL DEFAULT 0;
+ALTER TABLE chatbot_connector_jobs ADD COLUMN reconciliation_decision text CHECK(reconciliation_decision IN ('DELIVERED','NOT_DELIVERED'));
+ALTER TABLE chatbot_connector_jobs ADD COLUMN reconciled_by uuid REFERENCES users(id);
+ALTER TABLE chatbot_connector_jobs ADD COLUMN reconciled_at timestamptz;
+ALTER TABLE chatbot_connector_jobs ADD CONSTRAINT connector_flow_conversation FOREIGN KEY(tenant_id,conversation_id) REFERENCES conversations(tenant_id,id);
+ALTER TABLE chatbot_connector_jobs ADD CONSTRAINT connector_flow_wait CHECK(flow_request IS NULL OR (conversation_id IS NOT NULL AND flow_version>0 AND flow_node_id IS NOT NULL AND wait_token IS NOT NULL AND deadline_at IS NOT NULL));
+ALTER TABLE chatbot_connector_jobs ADD CONSTRAINT connector_reconciliation_evidence CHECK((reconciliation_decision IS NULL AND reconciled_by IS NULL AND reconciled_at IS NULL) OR (reconciliation_decision IS NOT NULL AND reconciled_by IS NOT NULL AND reconciled_at IS NOT NULL));
+CREATE UNIQUE INDEX connector_flow_token ON chatbot_connector_jobs(tenant_id,conversation_id,wait_token) WHERE flow_request IS NOT NULL;
+CREATE INDEX connector_flow_dispatch ON chatbot_connector_jobs(tenant_id,created_at) WHERE flow_request IS NOT NULL AND (status IN ('PENDING','PROCESSING') OR completion_pending);
+COMMIT;

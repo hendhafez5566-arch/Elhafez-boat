@@ -1,0 +1,22 @@
+{
+  "200": {
+    "loadMs": 494,
+    "editP95": 159,
+    "panP95": 1,
+    "heapBefore": 4067432,
+    "heapAfter": 5130188,
+    "heapGrowth": 1062756,
+    "nodes": 200,
+    "edges": 199
+  },
+  "500": {
+    "loadMs": 988,
+    "editP95": 1192,
+    "panP95": 0.7000000000698492,
+    "heapBefore": 4721948,
+    "heapAfter": 7111764,
+    "heapGrowth": 2389816,
+    "nodes": 500,
+    "edges": 499
+  }
+}

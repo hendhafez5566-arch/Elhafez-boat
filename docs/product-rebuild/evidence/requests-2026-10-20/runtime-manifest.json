@@ -1,0 +1,57 @@
+{
+  "functionalCommit": "privacy follow-up to cfeb13e8ada09f53976cc51a08ab156b7f109c37; exact source bytes below",
+  "files": [
+    {
+      "path": "apps/api/src/flow-integration-worker.ts",
+      "sha256": "0fdd318d6505cb699bcb1645a4806ac57054ceeb0a2631f31b6f89be227c8d66"
+    },
+    {
+      "path": "apps/api/src/flow-request.ts",
+      "sha256": "4df7eafeb190dd4537e87b4fb7fecc81dbc9c9bcf4e3046032c223ee28221d46"
+    },
+    {
+      "path": "apps/api/src/integrations.ts",
+      "sha256": "f95466244620ad210634d872eb562b92ed57a10a7fcb09b88e8b44d7f0c6d001"
+    },
+    {
+      "path": "apps/api/src/flow-service.ts",
+      "sha256": "c2f6c51bb2d6bbd20391896e7c78e0f04dfd209fca0e28804e4c902f26c4dedd"
+    },
+    {
+      "path": "apps/api/src/flow-engine.ts",
+      "sha256": "41852fefda1d6bb43b49c30d5c7572da2580c930942f43f13ac32acc8421cc7d"
+    },
+    {
+      "path": "apps/worker/main.ts",
+      "sha256": "7163072a14248e848ff38ba152016173ef96dad47a80390594e16f54f491f51f"
+    },
+    {
+      "path": "packages/database/migrations/0035_flow_integration_continuations.sql",
+      "sha256": "c9e2b912eeb049a587d77b2da9e3b93eec790220ec119d2396d878583cad7b69"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/requests-2026-10-20/mock-response-success.png",
+      "sha256": "90b842ebf75074d761ffe2ac71d2061ce9827c38d36323f9b43d62f161c37181"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/requests-2026-10-20/request-inspector.png",
+      "sha256": "cdc9c508feff3c1160c158827784e9c83dc1940fd24b305d76f0776e7a38bcbc"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/requests-2026-10-20/combined-trace-results.json",
+      "sha256": "ba78cc71e8b1962eaad40ee7a287d1330b5d814ac39a145c5a03778f31277b2c"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/requests-2026-10-20/combined-premium-results.json",
+      "sha256": "9460302f796106d58d1b38986ef725ada3dba4dc490ed3277fd63f6897e1fd03"
+    },
+    {
+      "path": "docs/product-rebuild/evidence/requests-2026-10-20/results.json",
+      "sha256": "0393e4779b8fff99250f0ea43cdc956f6805e7d98d7744fb337ada62d83c5aa6"
+    },
+    {
+      "path": "apps/api/src/privacy.ts",
+      "sha256": "565a7a4c27423835752b80fddc504e2efd535ba8b74c16377846445c42441059"
+    }
+  ]
+}

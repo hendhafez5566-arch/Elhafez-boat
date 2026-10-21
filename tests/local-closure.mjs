@@ -128,8 +128,9 @@ export async function localClosure({db,env,sim,launch,request,expectCode,apiProc
  const {fixtureDNS}=await import('./support/offline-transport.mjs');const {providerHTTP}=await import('../.build/apps/api/src/provider-http.js');
  for(const addresses of [[{address:'127.0.0.1',family:4}],[{address:'93.184.216.34',family:4},{address:'169.254.169.254',family:4}]]){fixtureDNS.set('woo.fixture.test',addresses);await assert.rejects(providerHTTP(new URL('https://woo.fixture.test/test'),['woo.fixture.test']),/DNS rejected/)}fixtureDNS.delete('woo.fixture.test');
  process.env.OUTBOUND_WEBHOOK_HOSTS='webhook.fixture.test';process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET='fixture-only-signing-secret';const webhookBody={event:'fixture',contactId:contact};
+ const hookStart=sim.calls.length;
  await sendWebhook('https://webhook.fixture.test/receive',webhookBody,'stable-fixture-key');await sendWebhook('https://webhook.fixture.test/receive',webhookBody,'stable-fixture-key');
- const hooks=sim.calls.filter(c=>c.host==='webhook.fixture.test');assert.equal(hooks.length,2);assert.ok(hooks.every(c=>c.idempotencyKey==='stable-fixture-key'&&c.signature==='sha256='+createHmac('sha256',process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET).update(JSON.stringify(webhookBody)).digest('hex')));
+ const hooks=sim.calls.slice(hookStart).filter(c=>c.host==='webhook.fixture.test');assert.equal(hooks.length,2);assert.ok(hooks.every(c=>c.idempotencyKey==='stable-fixture-key'&&c.signature==='sha256='+createHmac('sha256',process.env.OUTBOUND_WEBHOOK_SIGNING_SECRET).update(JSON.stringify(webhookBody)).digest('hex')));
  process.env.AI_BASE_URL='https://ai.fixture.test/v1';process.env.AI_API_KEY='fixture-ai-key';process.env.AI_MODEL='fixture-model';await tx(a.tenant,c=>saveAiSettings(c,a.actor,{enabled:true,instructions:'Company fixture',monthlyLimit:10}));
  const ai=await tx(a.tenant,c=>groundedReply(c,a.tenant,'Unknown fixture query'));assert.deepEqual(ai.sources,[]);assert.ok(sim.calls.some(c=>c.host==='ai.fixture.test'));
  check('production provider 401/403/429/500/reset matrix, mixed/private DNS rejection, webhook HMAC/stable keys and grounded AI fallback');

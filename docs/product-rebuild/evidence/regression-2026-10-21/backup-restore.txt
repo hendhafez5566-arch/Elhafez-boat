@@ -1,0 +1,5 @@
+PASS exact row-content fingerprints for every public table (including present media/queues/secrets)
+PASS disposable PostgreSQL pg_dump/pg_restore: 38 migrations, 25 tenants, 13 published flows, 7 catalog items
+pg_restore: error: could not read from input file: end of file
+PASS LOCAL RESTORE seeded encrypted secrets/original key, media bytes, audit, least-privilege RLS and competing restored delay exactly once
+PASS failed isolated restore does not alter original or successful restored database

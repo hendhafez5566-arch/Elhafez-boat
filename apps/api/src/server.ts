@@ -1,7 +1,23 @@
+import {compileWhatsAppForm} from './flow-forms.js';
+import {proposeAssistance,reviewAssistance} from './flow-assistance-policy.js';
+import {conversationMedia} from './incoming-media.js';
+import {flowFunnel,flowDeliveryTrace} from './flow-analytics.js';
+import {flowExperiments} from './flow-experiments.js';
+import {controlledConversations,controlConversation,handoffRoster,updateHandoffAvailability} from './conversation-control.js';
+import {consentHistory,revokeConsent} from './flow-consent.js';
+import {scheduledFlowJobs,cancelScheduledFlow} from './flow-scheduled-ops.js';
+import {flowReleaseReport,releaseDiff} from './flow-release.js';
+import {flowReviewState,changeFlowReview} from './flow-review.js';
+import {inspectPortableFlow} from './flow-portability.js';
+import {flowRequestJobs,reconcileFlowRequest} from './flow-request-ops.js';
+import {validateRequestMocks,type RequestMock} from './flow-request.js';
+import {flowTraceSessions,flowConversationTrace} from './flow-trace.js';
+import {mockFlowAssistance} from './flow-assistance.js';
+import {flowChannelIssues,channelCapabilities,componentCapabilities} from './flow-capabilities.js';
 import {workspaceSummary,completeWorkspaceSetup} from './workspace-setup.js';
 import {prepareBotTemplate,botTemplates,botTemplate} from './bot-templates.js';
 import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
-import {botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
+import {flowStepInsights,botInsights,listBots,createBot,updateBot,botFlow,botScope} from './bots.js';
 import {diagnoseSignupAccount,requestSignupOperation,onboardingConfiguration,requireSignupOrigin,beginWhatsAppSignup,finishWhatsAppSignup,cancelWhatsAppSignup,selfServiceAccounts} from './whatsapp-onboarding.js';
 import {commerceResources,listCommerceLinks,saveCommerceLink,disableCommerceLink} from './commerce.js';
 import {isIP} from 'node:net';
@@ -15,7 +31,7 @@ import {listCommentRules,saveCommentRule,listCommentCandidates,decideComment,rec
 import {listFlowSnippets,createFlowSnippet,deleteFlowSnippet} from './flow-reuse.js';
 import {reviewCampaign,listCampaigns,createCampaign,launchCampaign,cancelCampaign} from './campaigns.js';
 import {notifications,runtimeJobs} from './workspace.js';
-import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages} from './website.js';
+import {widgetSettings,saveWidgetSettings,startWebsiteSession,websiteSend,websiteMessages,websiteUpload,websiteUploadStatus} from './website.js';
 import {listMedia,uploadMedia,deleteMedia,publicMedia,privateMedia} from './media.js';
 import {listTriggers,createTrigger,deleteTrigger} from './triggers.js';
 import {usageSummary} from './usage.js';
@@ -24,7 +40,7 @@ import {inspectIntegration,listIntegrations,createIntegration,updateIntegration}
 import {savedReplies,createSavedReply,deleteSavedReply,updateSavedReply,inboxNote} from './inbox.js';
 import {aiSettings,saveAiSettings,previewAgent} from './ai.js';
 import {executeFlow} from './flow-service.js';
-import {validateFlow,initialFlowState} from './flow-engine.js';
+import {validVariableValue,validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import {analyticsOverview} from './analytics.js';
@@ -38,7 +54,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { createRequire } from 'node:module';
 import { login, authenticate, logout } from './auth.js';
 import { sessionCookie, sessionBearer, requireCookieCsrf } from './session-cookie.js';
-import { HttpFailure, allow, withTenantTransaction, type SqlPool, type SqlClient } from './services.js';
+import { HttpFailure, allow, isUuid, withTenantTransaction, type SqlPool, type SqlClient } from './services.js';
 import { listContacts, addContact, setContactStatus, listContactNotes, addContactNote, getSummary } from './sales.js';
 import { teamMembers } from './team-directory.js';
 const require=createRequire(import.meta.url);
@@ -76,6 +92,8 @@ const server=createServer(async(req,res)=>{
       if(req.method==='OPTIONS'){res.writeHead(204);res.end();return}
       if(req.method==='POST'&&pathname==='/api/v1/widget/start')return json(res,201,await startWebsiteSession(pool,await body(req),origin));
       if(req.method==='POST'&&pathname==='/api/v1/widget/send')return json(res,200,await websiteSend(pool,req.headers.authorization||'',origin,await body(req)));
+      if(req.method==='POST'&&pathname==='/api/v1/widget/upload')return json(res,201,await websiteUpload(pool,req.headers.authorization||'',origin,await body(req,7500000)));
+      const uploadStatus=/^\/api\/v1\/widget\/uploads\/([^/]+)$/.exec(pathname);if(req.method==='GET'&&uploadStatus)return json(res,200,await websiteUploadStatus(pool,req.headers.authorization||'',origin,uploadStatus[1]));
       if(req.method==='GET'&&pathname==='/api/v1/widget/messages')return json(res,200,await websiteMessages(pool,req.headers.authorization||'',origin));
       throw new HttpFailure(404,'Widget route not found');
     }
@@ -143,7 +161,7 @@ const server=createServer(async(req,res)=>{
     if(/^\/api\/v1\/(programs|bookings|departures|offers|bot)(\/|$)/.test(pathname))return json(res,410,{error:'Legacy tourism endpoints retired. Use /catalog and /flows.'});
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
-    const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req,/\/flows(?:\/|$)/.test(pathname)?1048576:65536);return run(tx=>task(tx,input));};
     if(pathname==='/api/v1/bots/templates/preview'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,prepareBotTemplate(await body(req)));}
     if(pathname==='/api/v1/bots/templates'&&req.method==='GET')return json(res,200,botTemplates.map(t=>({...t,definition:botTemplate(t.id,t.name)})));
     if(pathname==='/api/v1/bots'&&req.method==='GET')return json(res,200,await run(tx=>listBots(tx,actor)));
@@ -154,6 +172,44 @@ const server=createServer(async(req,res)=>{
       if(req.method==='GET'&&!botTrigger[2])return json(res,200,await run(async tx=>listTriggers(tx,actor,await botScope(tx,actor,id))));
       if(req.method==='POST'&&!botTrigger[2])return json(res,201,await runBody(async(tx,input)=>createTrigger(tx,actor,input,await botScope(tx,actor,id,true))));
       if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
+    }
+    const scheduled=/^\/api\/v1\/bots\/([^/]+)\/scheduled-flows(?:\/([^/]+)\/cancel)?$/.exec(pathname);
+    if(scheduled&&req.method==='GET'&&!scheduled[2]){const p=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>scheduledFlowJobs(tx,actor,scheduled[1],{status:p.get('status')||undefined,before:p.get('before')||undefined})));}
+    if(scheduled&&req.method==='POST'&&scheduled[2])return json(res,200,await runBody((tx,input)=>cancelScheduledFlow(tx,actor,scheduled[1],scheduled[2],input)));
+    const requestOps=/^\/api\/v1\/bots\/([^/]+)\/flow-requests(?:\/([^/]+)\/reconcile)?$/.exec(pathname);
+    if(requestOps&&req.method==='GET'&&!requestOps[2]){const params=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>flowRequestJobs(tx,actor,requestOps[1],{kind:params.get('kind')||undefined,status:params.get('status')||undefined,before:params.get('before')||undefined})))}
+    if(requestOps&&req.method==='POST'&&requestOps[2])return json(res,200,await runBody((tx,input)=>reconcileFlowRequest(tx,actor,requestOps[1],requestOps[2],input)));
+    const funnel=/^\/api\/v1\/bots\/([^/]+)\/flow-funnel$/.exec(pathname);if(funnel&&req.method==='GET')return json(res,200,await run(tx=>flowFunnel(tx,actor,funnel[1],new URL(req.url||'/','http://local').searchParams)));
+    const deliveryTrace=/^\/api\/v1\/bots\/([^/]+)\/flow-delivery\/([^/]+)$/.exec(pathname);if(deliveryTrace&&req.method==='GET')return json(res,200,await run(tx=>flowDeliveryTrace(tx,actor,deliveryTrace[1],deliveryTrace[2])));
+    const tracePath=/^\/api\/v1\/bots\/([^/]+)\/flow-traces(?:\/([^/]+))?$/.exec(pathname);
+    if(tracePath&&req.method==='GET'){if(tracePath[2])return json(res,200,await run(tx=>flowConversationTrace(tx,actor,tracePath[1],tracePath[2],new URL(req.url||'/','http://local').searchParams)));return json(res,200,await run(tx=>flowTraceSessions(tx,actor,tracePath[1])))}
+    const experiments=/^\/api\/v1\/bots\/([^/]+)\/experiments$/.exec(pathname);
+    if(experiments&&req.method==='GET')return json(res,200,await run(tx=>flowExperiments(tx,actor,experiments[1],new URL(req.url||'/','http://local').searchParams)));
+    const stepStats=/^\/api\/v1\/bots\/([^/]+)\/flow-insights$/.exec(pathname);
+    if(stepStats&&req.method==='GET')return json(res,200,await run(tx=>flowStepInsights(tx,actor,stepStats[1],new URL(req.url||'/','http://local').searchParams)));
+    if(pathname==='/api/v1/flows/forms/compile'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,compileWhatsAppForm(await body(req)));}
+    const assistanceReview=/^\/api\/v1\/flows\/assist\/([^/]+)\/review$/.exec(pathname);if(assistanceReview&&req.method==='POST')return json(res,200,await runBody((tx,input)=>reviewAssistance(tx,actor,assistanceReview[1],input)));
+    if(pathname==='/api/v1/flows/assist'&&req.method==='POST')return json(res,200,await runBody((tx,input)=>proposeAssistance(tx,actor,input)));
+    if(pathname==='/api/v1/flows/component-capabilities'&&req.method==='GET')return json(res,200,componentCapabilities());
+    if(pathname==='/api/v1/flows/capabilities'&&req.method==='GET')return json(res,200,channelCapabilities);
+    if(pathname==='/api/v1/flows/preflight'&&req.method==='POST'){
+     allow(actor,['OWNER','MANAGER']);const d=await body(req);return json(res,200,await run(tx=>flowReleaseReport(tx,actor,d)));
+    }
+    const authoring=/^\/api\/v1\/bots\/([^/]+)\/flows\/(readiness|compare|portable|review)$/.exec(pathname);
+    if(authoring){
+     const id=authoring[1],op=authoring[2];
+     if(req.method==='GET'&&op==='review')return json(res,200,await run(async tx=>{const scope=await botScope(tx,actor,id);return flowReviewState(tx,actor,id,scope,new URL(req.url||'/','http://local').searchParams.get('before')??undefined)}));
+     if(req.method==='POST')return json(res,200,await runBody(async(tx,input)=>{
+      const scope=await botScope(tx,actor,id,true);
+      if(op==='review')return changeFlowReview(tx,actor,id,scope,input);
+      if(op==='portable')return inspectPortableFlow(tx,actor,input,scope);
+      if(op==='readiness')return flowReleaseReport(tx,actor,input,scope);
+      const d=input as {fromVersion?:unknown;toVersion?:unknown};
+      if(!Number.isInteger(d.fromVersion)||Number(d.fromVersion)<1||d.toVersion!==undefined&&(!Number.isInteger(d.toVersion)||Number(d.toVersion)<1))throw new HttpFailure(400,'Invalid comparison version');
+      const {flowStorage}=await import('./flow-storage.js'),store=flowStorage(tx,actor,scope),from=await store.published(Number(d.fromVersion)),to=d.toVersion===undefined?await store.draft():await store.published(Number(d.toVersion));
+      if(!from.rowCount||!to.rowCount)throw new HttpFailure(404,'Version unavailable');
+      return {fromVersion:d.fromVersion,toVersion:d.toVersion??'DRAFT',diff:releaseDiff(from.rows[0].definition as any,to.rows[0].definition as any)};
+     }));
     }
     const botStats=/^\/api\/v1\/bots\/([^/]+)\/insights$/.exec(pathname);
     if(botStats&&req.method==='GET')return json(res,200,await run(tx=>botInsights(tx,actor,botStats[1])));
@@ -223,6 +279,16 @@ const server=createServer(async(req,res)=>{
     if(req.method==='POST'&&pathname==='/api/v1/whatsapp/connection')return json(res,201,await runBody((tx,input)=>connectWhatsApp(tx,actor,input)));
     const waDisconnect=/^\/api\/v1\/whatsapp\/connection\/([^/]+)$/.exec(pathname);
     if(req.method==='DELETE'&&waDisconnect)return json(res,200,await run(tx=>disconnectWhatsApp(tx,actor,waDisconnect[1])));
+    if(pathname==='/api/v1/inbox/availability'){
+      if(req.method==='GET')return json(res,200,await run(tx=>handoffRoster(tx,actor)));
+      if(req.method==='PATCH')return json(res,200,await runBody((tx,input)=>updateHandoffAvailability(tx,actor,input)));
+    }
+    const botControl=/^\/api\/v1\/bots\/([^/]+)\/conversation-control(?:\/([^/]+))?$/.exec(pathname);
+    if(botControl&&req.method==='GET'&&!botControl[2])return json(res,200,await run(tx=>controlledConversations(tx,actor,botControl[1])));
+    if(botControl&&req.method==='POST'&&botControl[2])return json(res,200,await runBody((tx,input)=>controlConversation(tx,actor,botControl[1],botControl[2],input)));
+    const consentRoute=/^\/api\/v1\/conversations\/([^/]+)\/consent$/.exec(pathname);
+    if(consentRoute&&req.method==='GET')return json(res,200,await run(tx=>consentHistory(tx,actor,consentRoute[1])));
+    if(consentRoute&&req.method==='POST')return json(res,200,await runBody((tx,input)=>revokeConsent(tx,actor,consentRoute[1],input)));
     if(req.method==='GET'&&pathname==='/api/v1/notifications')return json(res,200,await run(tx=>notifications(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/runtime/jobs')return json(res,200,await run(tx=>runtimeJobs(tx,actor)));
     if(req.method==='GET'&&pathname==='/api/v1/campaigns')return json(res,200,await run(tx=>listCampaigns(tx,actor)));
@@ -231,6 +297,7 @@ const server=createServer(async(req,res)=>{
     if(campaignReview&&req.method==='GET')return json(res,200,await run(tx=>reviewCampaign(tx,actor,campaignReview[1])));
     const campaignAction=/^\/api\/v1\/campaigns\/([^/]+)\/(launch|cancel)$/.exec(pathname);
     if(req.method==='POST'&&campaignAction)return json(res,200,await run<unknown>(tx=>campaignAction[2]==='launch'?launchCampaign(tx,actor,campaignAction[1]):cancelCampaign(tx,actor,campaignAction[1])));
+    const conversationAssets=/^\/api\/v1\/conversations\/([^/]+)\/media$/.exec(pathname);if(req.method==='GET'&&conversationAssets)return json(res,200,await run(tx=>conversationMedia(tx,actor,conversationAssets[1])));
     const mediaContent=/^\/api\/v1\/media\/([^/]+)\/content$/.exec(pathname);
     if(req.method==='GET'&&mediaContent){const asset=await run(tx=>privateMedia(tx,actor,mediaContent[1]));res.writeHead(200,{'content-type':asset.mime,'cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; sandbox",'content-disposition':'attachment'});return res.end(asset.content)}
     if(req.method==='GET'&&pathname==='/api/v1/workspace')return json(res,200,await run(tx=>workspaceSummary(tx,actor)));
@@ -270,20 +337,30 @@ const server=createServer(async(req,res)=>{
       const d=input as Record<string,unknown>;let flow;try{flow=validateFlow(d.definition)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
       const state=d.state as ReturnType<typeof initialFlowState>|undefined;
       if(state&&(!Array.isArray(state.tags)||state.tags.length>100||state.tags.some(t=>typeof t!=='string'||t.length>40)||!state.answers||typeof state.answers!=='object'||Array.isArray(state.answers)||Object.keys(state.answers).length>200||Object.values(state.answers).some(v=>typeof v!=='string'||v.length>500)||(state.at!==null&&(typeof state.at!=='string'||state.at.length>180))))throw new HttpFailure(400,'Invalid preview state');
-      const incoming=d.input as {kind:'TEXT'|'CHOICE';value:string}|undefined;
-      if(incoming&&(!['TEXT','CHOICE'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
+      const incoming=d.input as import('./flow-engine.js').FlowInput|undefined;
+      if(incoming&&(!['TEXT','CHOICE','SKIP','TIMEOUT','LOCATION','ATTACHMENT'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
       flow=await compileSubflows(tx,actor.tenantId,flow);
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
-      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true);return {state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,runtimeNodes:r.flow.nodes};
+      const simulation=d.simulation as {now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:import('./flow-triggers.js').TriggerEvent;persona?:Record<string,string>;enter?:boolean;delivery?:'SUCCESS'|'REJECTED'|'TIMEOUT'}|undefined;
+      if(simulation&&(typeof simulation!=='object'||simulation.now!==undefined&&(!Number.isFinite(simulation.now)||simulation.now<0||simulation.now>4102444800000)||simulation.seed!==undefined&&(!Number.isFinite(simulation.seed)||simulation.seed<0||simulation.seed>=1)))throw new HttpFailure(400,'Invalid simulation clock/seed');
+      if(simulation?.channel!==undefined&&!['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(simulation.channel)||simulation?.event!==undefined&&!['MESSAGE','POSTBACK','MEDIA','LOCATION'].includes(simulation.event))throw new HttpFailure(400,'Invalid simulated channel/event');
+      if(simulation?.enter!==undefined&&typeof simulation.enter!=='boolean')throw new HttpFailure(400,'Invalid mock continuation');
+      if(simulation?.delivery!==undefined&&!['SUCCESS','REJECTED','TIMEOUT'].includes(simulation.delivery))throw new HttpFailure(400,'Invalid mock channel delivery');
+      if(simulation?.persona!==undefined){const p=simulation.persona;if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).length>100||Object.entries(p).some(([k,v])=>!/^[a-z][a-z0-9_]{0,39}$/.test(k)||typeof v!=='string'||v.length>500||!validVariableValue(flow.variables?.find(f=>f.key===k),v)))throw new HttpFailure(400,'Invalid mock persona fields');}
+      if(simulation?.staffAvailable!==undefined&&typeof simulation.staffAvailable!=='boolean')throw new HttpFailure(400,'Invalid simulated availability');
+      if(simulation?.requests!==undefined){try{validateRequestMocks(simulation.requests)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid request mocks')}}
+      if(state?.runtime?.consent){const c=state.runtime.consent;if(typeof c.nodeId!=='string'||c.nodeId.length>180||!isUuid(c.token)||typeof c.policyVersion!=='string'||c.policyVersion.length>80)throw new HttpFailure(400,'Invalid consent simulation challenge')}
+      if(state?.runtime){const r=state.runtime;if(!r.attempts||typeof r.attempts!=='object'||Array.isArray(r.attempts)||Object.keys(r.attempts).length>100||Object.values(r.attempts).some(v=>!Number.isInteger(v)||v<0||v>10)||r.wait&&(!Number.isFinite(r.wait.expiresAt)||typeof r.wait.token!=='string'||!isUuid(r.wait.token)||typeof r.wait.nodeId!=='string')||r.experiments&&(typeof r.experiments!=='object'||Array.isArray(r.experiments)||Object.keys(r.experiments).length>100||Object.values(r.experiments).some(v=>typeof v!=='string'||v.length>40)))throw new HttpFailure(400,'Invalid simulation runtime state')}
+      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,botAction:r.botAction,runtimeNodes:r.flow.nodes,...(simulation?.delivery?{deliveryMock:{mock:true,channel:simulation.channel||flow.channel||'WHATSAPP',status:simulation.delivery,messageCount:r.messages.length}}:{})};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/inspect-draft'){
-      allow(actor,['OWNER','MANAGER']);const input=await body(req);
+      allow(actor,['OWNER','MANAGER']);const input=await body(req,1048576);
       let definition;try{definition=validateFlow(input,{draft:true})}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid draft')}
       return json(res,200,await run(async tx=>{try{await compileSubflows(tx,actor.tenantId,validateFlow(definition));return {definition,publishable:true,issues:[]}}catch(error){return {definition,publishable:false,issues:[error instanceof Error?error.message:'Draft needs completion']}}}));
     }
     if(req.method==='POST'&&pathname==='/api/v1/flows/validate'){
       allow(actor,['OWNER','MANAGER']);
-      const input=await body(req);try{await run(tx=>compileSubflows(tx,actor.tenantId,validateFlow(input)));return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
+      const input=await body(req,1048576);try{await run(tx=>compileSubflows(tx,actor.tenantId,validateFlow(input)));return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
     }
     if(req.method==='GET'&&pathname==='/api/v1/flows/snippets')
       return json(res,200,await run(tx=>listFlowSnippets(tx,actor)));
