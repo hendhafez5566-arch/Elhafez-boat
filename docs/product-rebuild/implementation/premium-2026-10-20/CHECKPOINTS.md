@@ -179,3 +179,5 @@ Next: finish/inspect combined API/Chromium and GitHub CI, then extend the existi
 
 
 2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.
+
+2026-10-21 CI 39590460890: both observability PG/Chromium gates PASS, checks PASS. Existing scheduled-browser lookup incorrectly searched only the first ALL-status page after already loading both UI pages. Test now follows the actual bounded API cursor before asserting the exact job/token/cancellation. Local six scheduling PG and all three scheduling Chromium scenarios PASS; cancellation, first-page=20/next-page=3, acknowledgement, exact identity, no-send and idempotence assertions retained.
