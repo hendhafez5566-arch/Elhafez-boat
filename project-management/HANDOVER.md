@@ -1,3 +1,7 @@
+## Bold visual transformation / Package A
+
+Owner rejected the previous visual presentation. Continue same branch/PR5 from verifiedadc939b. Central Orbit tokens, deep plum command header, stronger primary action, readable shared typography and complete original SVG/descriptions are implemented. Authenticated17-check baseline/authoring suite passes with the new foundation. This is packageA only; nodes/library/Inspector/preview and final contrast/visual acceptance remain next. No engine/schema/provider changes. See docs/product-rebuild/implementation/premium-bold-2026-10-21/DESIGN_DECISIONS.md.
+
 ## Completed local release qualification
 
 The unchanged-limit runtime retry completed successfully through all broad Chromium/CDP/company tests,28 premium checks,9 integrated Canvas/widget checks,request operations,actual persistent-profile restart/cross-tab recovery and logout. It includes the real30-second mixed workload, HTTP load, process crashes/restarts,private media/real ClamAV,RLS,legacy bots and tenant boundaries. No assertions or execution flags were removed to obtain this result. The initial failed mixed-load run remains preserved separately. See final-refinement/final-runtime.txt.

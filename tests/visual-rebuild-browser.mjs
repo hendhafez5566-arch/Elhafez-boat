@@ -8,7 +8,7 @@ import {randomBytes} from 'node:crypto';
 import {arrangeFlow} from '../apps/web/public/flow-geometry.js';
 import {studioClick,revealStudioControl} from './support/studio-navigation.mjs';
 const account=JSON.parse(await readFile('acceptance-evidence/scale-locale-account.json','utf8'));
-const phase=process.env.VISUAL_PHASE||'after',dir='docs/product-rebuild/evidence/visual-rebuild-2026-10-21/'+phase;
+const phase=process.env.VISUAL_PHASE||'after',dir=(process.env.VISUAL_EVIDENCE_ROOT||'docs/product-rebuild/evidence/premium-bold-2026-10-21')+'/'+phase;
 await mkdir(dir,{recursive:true});
 const apiPort=4187,webPort=3187,base='http://127.0.0.1:'+webPort,children=[],errors=[],checks=[];
 let browser;
