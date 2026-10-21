@@ -4,7 +4,7 @@ After images were refreshed on21 October from a new isolated database, with the 
 
 # Actual Chromium visual acceptance — 21 October 2026
 
-Same synthetic bot ID is recorded in both results.json files. Same11-node tourism graph and saved layout, Arabic,100% zoom,1440×1000, welcome inspector open. Mobile390×844 preserves the same inspector. Large graph: same500 nodes/499 edges, same17 minus-button presses after100%. Baseline source:2f0f77c. Original hidden-overflow browser scrolling could shift the visible baseline area despite the same focus command; new overflow:clip prevents that drift. No generated images or competitor assets.
+The initial checkpoint used one synthetic bot ID for both phases. The final refreshed After uses a new disposable bot ID with the same logical fixture and layout; the original Before files remain unchanged. Same11-node tourism graph and saved layout, Arabic,100% zoom,1440×1000, welcome inspector open. Mobile390×844 preserves the same inspector. Large graph: same500 nodes/499 edges, same17 minus-button presses after100%. Baseline source:2f0f77c. Original hidden-overflow browser scrolling could shift the visible baseline area despite the same focus command; new overflow:clip prevents that drift. No generated images or competitor assets.
 
 | View | Original HEAD | Rebuilt UI |
 |---|---|---|
