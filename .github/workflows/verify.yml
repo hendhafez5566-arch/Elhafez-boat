@@ -28,7 +28,7 @@ jobs:
           node-version: '22'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Browser acceptance module syntax
-        run: for file in tests/*browser.mjs tests/support/*.mjs; do node --check "$file" || exit 1; done
+        run: for file in tests/*.mjs tests/support/*.mjs; do node --check "$file" || exit 1; done
       - run: npm run check
       - run: node tests/flow-load.mjs
       - run: npm run db:migrate

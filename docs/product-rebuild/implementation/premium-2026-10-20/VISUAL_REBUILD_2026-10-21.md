@@ -44,3 +44,7 @@ TEXT nodes with CARD/GALLERY blocks now show the correct visual subtype, icon an
 ### Replay test correction / stronger syntax gate
 
 CI39621417082 passed checks and prior browser groups, then caught a syntax error introduced while adapting replay test navigation. Corrected the test, retained the logout state assertion, and made each replay action open the actual Mock disclosure. All6 authenticated PostgreSQL/Chromium scenario checks now pass locally: native/persona/seed/channel, consent/input/delay, timeout tokens, provider-error/timeout Mock, invalid persona/delivery rejection and logout cleanup.55 local Chromium checks total. CI now parses every browser/support module before execution. No product/runtime changes in this correction. Latest full CI still needs independent observation.
+
+### Broad CDP acceptance compatibility
+
+CI39623322985 passed all feature-specific groups and reached the real non-owner runtime acceptance. Its older broad CDP script expected the previous contextual-picker hook and positional toolbar buttons. Kept the picker hook on the new shared tile, styled it explicitly, and changed CDP navigation to named display actions and actual canvas Zoom/Fit controls. Guided creation closes settings on completion and has a new return-to-canvas assertion. No prior assertion removed. All test modules parse; seven tourism checks rerun successfully. Source hashes refreshed; latest full CI remains separate.

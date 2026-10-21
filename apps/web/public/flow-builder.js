@@ -304,7 +304,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function paintPicker(){pickerGrid.replaceChildren();const q=pickerSearch.value.trim().toLowerCase();
    for(const [kind] of kinds.concat([['CONTROL'],['CONSENT'],['CARD'],['GALLERY'],['CRM_ACTION'],['BUSINESS_HOURS'],['GOAL'],['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
      if(!types[kind].toLowerCase().includes(q)&&!kind.toLowerCase().includes(q))continue;
-     pickerGrid.append(componentTile(kind,types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)}));
+     const tile=componentTile(kind,types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)});tile.classList.add('builder-picker-item');pickerGrid.append(tile);
    }
    if(!pickerGrid.children.length)pickerGrid.append(el('p','لا توجد مكونات مطابقة للبحث'));
  }
@@ -766,7 +766,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      selected='menu';selectedNodes=new Set([selected]);
      history=[previous];cursor=0;dirty=false;
      markDirty();renderAll();resetPreview();
-     guideDisclosure.open=false;workspace.scrollIntoView({block:'start',behavior:'smooth'});
+     guideDisclosure.open=false;guideHost.closest('dialog')?.close();workspace.scrollIntoView({block:'start',behavior:'smooth'});
      return true;
    }
  });

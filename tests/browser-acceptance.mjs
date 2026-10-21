@@ -18,6 +18,7 @@ async function waitForPort(){for(let i=0;i<120;i++){if(child.exitCode!==null)thr
  const info=(await readFile(join(profile,'DevToolsActivePort'),'utf8')).trim().split('\n');return Number(info[0]);
  }catch{}await sleep(150)}throw new Error('Chrome DevTools port unavailable')}
 async function evaluate(expression){const result=await send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text);return result.result.value}
+async function studioView(title){await evaluate(`(()=>{const menu=document.querySelector('.builder-display-menu');if(!menu.open)menu.querySelector(':scope>summary').click();const button=[...menu.querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(title)});if(!button)throw Error('Missing studio display action '+${JSON.stringify(title)});button.click()})()`)}
 function send(method,params={}){const id=++commandId;return new Promise((resolve,reject)=>{
  const timeout=setTimeout(()=>{pending.delete(id);reject(new Error('Chrome CDP timeout: '+method))},12000);
  pending.set(id,{resolve:result=>{clearTimeout(timeout);resolve(result)},reject:error=>{clearTimeout(timeout);reject(error)}});
@@ -119,26 +120,26 @@ try{
  await evaluate("document.querySelector('.builder-properties > button').click()");
  assert.equal(await evaluate("document.querySelector('.builder-inspector').hidden"),true,'Inspector closes without losing draft');
  const viewBefore=await evaluate("document.querySelector('.flow-stage').style.transform");
- await evaluate("document.querySelector('.builder-view-actions button:nth-child(3)').click()");
+ await evaluate("document.querySelector('.canvas-navigation button:nth-child(3)').click()");
  assert.notEqual(await evaluate("document.querySelector('.flow-stage').style.transform"),viewBefore,'Zoom toolbar updates canvas');
- await evaluate("document.querySelector('.builder-view-actions button:nth-child(4)').click()");
+ await evaluate("document.querySelector('.canvas-navigation button:last-child').click()");
  await screenshot('premium-full-canvas-desktop.png');
  await evaluate("document.querySelector('.builder-view-actions button.primary').click()");
  await until("Boolean(document.querySelector('.builder-preview-dialog[open]'))",'phone simulator dialog');
  await sleep(450);await screenshot('premium-phone-simulator-desktop.png');
  await evaluate("document.querySelector('.builder-preview-dialog .builder-dialog-header button').click()");
- await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
+ await studioView('ملء الشاشة');
  assert.equal(await evaluate("document.body.classList.contains('studio-focus')"),true,'Full-screen studio hides navigation');
  await sleep(200);
  assert.equal(await evaluate("(()=>{const r=document.querySelector('.flow-canvas').getBoundingClientRect();return r.top<innerHeight&&r.bottom>70&&r.width>600})()"),true,'Focus mode must actually show a usable canvas in viewport');
  await screenshot('premium-studio-focus-desktop.png');
- await evaluate("document.querySelector('.builder-view-actions button:last-child').click()");
+ await studioView('إنهاء ملء الشاشة');
  console.log('PASS contextual add step, graph insertion, live inspector update, zoom, phone modal and full-screen');
 
 
  // Exercise the real guided builder in Chrome, without saving/publishing or connecting accounts.
  assert.equal(await evaluate("Boolean(document.querySelector('.boat-guide-hero button'))"),true,'Guided bot creator must be on Flow Builder');
- await evaluate("document.querySelector('.boat-guide-hero button').click()");
+ await evaluate("document.querySelector('.studio-operations-button').click();const guide=document.querySelector('.builder-guide-disclosure');if(!guide.open)guide.querySelector(':scope>summary').click();document.querySelector('.boat-guide-hero button').click()");
  await until("!document.querySelector('.boat-guide-panel').hidden",'guided bot setup');
  await screenshot('guided-bot-01-goal-desktop.png');
  await evaluate("(()=>{const a=document.querySelector('.boat-guide-quick textarea');a.value='شركة سياحة تعرض برامج العمرة والأسعار';a.dispatchEvent(new Event('input',{bubbles:true}));document.querySelector('.boat-guide-quick button').click()})()");
@@ -151,6 +152,7 @@ try{
  await evaluate("document.querySelector('.boat-guide-actions .primary').click()");
  await until("document.getElementById('builder-name').value.includes('شركة رواد السياحة التجريبية')",'actual editable draft created by guide');
  assert.equal(await evaluate("document.getElementById('builder-unsaved').textContent"),'تعديلات غير محفوظة');
+ assert.equal(await evaluate("document.querySelector('.builder-operations-dialog').open"),false,'Wizard completion returns to the actual canvas');
  await screenshot('guided-bot-04-generated-draft-desktop.png');
  // A business owner will often leave the builder to fill the catalog first.
  // Switching sections must not erase the bot that was just generated.
@@ -174,13 +176,13 @@ try{
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+5,'Undo must remove last branch step');
  await evaluate("(()=>{const bar=document.querySelector('.builder-stage-extras>.builder-toolbar');const btn=[...bar.querySelectorAll('button')].find(b=>b.textContent==='إعادة');btn.click()})()");
  assert.equal(await evaluate("document.querySelectorAll('.canvas-node').length"),originalGraphCount+6,'Redo must restore last branch step');
- await evaluate("(()=>{const btn=[...document.querySelectorAll('.builder-view-actions button')].find(b=>b.textContent==='ترتيب تلقائي');btn.click()})()");
+ await studioView('ترتيب تلقائي');
  const overlaps=await evaluate("(()=>{const r=[...document.querySelectorAll('.canvas-node')].map(n=>({id:n.dataset.nodeId,b:n.getBoundingClientRect()}));let count=0;for(let i=0;i<r.length;i++)for(let j=0;j<i;j++){const a=r[i].b,b=r[j].b;if(a.left<b.right-3&&a.right>b.left+3&&a.top<b.bottom-3&&a.bottom>b.top+3)count++}return count})()");
  assert.equal(overlaps,0,'Actual DOM canvas cards cannot overlap after auto-layout');
  await evaluate("document.querySelector('.builder-stage').scrollIntoView({block:'start'})");
  await screenshot('premium-large-branching-flow-desktop.png');
  // Real DOM pointer handlers: attempt to drag a card directly onto an occupied card.
- await evaluate("document.querySelector('.builder-properties > button')?.click();[...document.querySelectorAll('.builder-view-actions button')].find(b=>b.textContent==='ملاءمة المخطط').click();document.querySelector('.flow-canvas').scrollIntoView({block:'center'})");await sleep(180);
+ await evaluate("document.querySelector('.builder-properties > button')?.click()");await studioView('ملاءمة المخطط');await evaluate("document.querySelector('.flow-canvas').scrollIntoView({block:'center'})");await sleep(180);
  const dragTarget=await evaluate("(()=>{const nodes=[...document.querySelectorAll('.canvas-node')],a=nodes.find(n=>n.dataset.nodeId==='welcome'),b=nodes.find(n=>{if(!n.classList.contains('canvas-text')||n.dataset.nodeId==='welcome')return false;const title=n.querySelector('.canvas-title'),r=title.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.closest('.canvas-title')===title});if(!a||!b)throw Error('drag nodes unavailable');const title=b.querySelector('.canvas-title'),from=b.getBoundingClientRect(),to=a.getBoundingClientRect(),r=title.getBoundingClientRect();window.collisionDraggedId=b.dataset.nodeId;window.collisionTrustedEvents=0;title.addEventListener('pointerdown',e=>{if(e.isTrusted)window.collisionTrustedEvents++},{once:true});const x=r.left+r.width/2,y=r.top+r.height/2;return {x,y,toX:x+to.left-from.left,toY:y+to.top-from.top}})()");
  await send('Input.dispatchMouseEvent',{type:'mouseMoved',x:dragTarget.x,y:dragTarget.y});
  await send('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',buttons:1,clickCount:1,x:dragTarget.x,y:dragTarget.y});

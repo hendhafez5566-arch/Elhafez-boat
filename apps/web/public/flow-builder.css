@@ -126,7 +126,7 @@
 .builder-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 14px; }
 .builder-component-dialog input { width: 100%; min-height: 44px; }
 .builder-picker-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
-.builder-picker-item { background: rgb(255, 255, 255); border: 1px solid rgb(226, 217, 238); text-align: start; color: rgb(87, 65, 104); padding: 16px; font-size: 13px; }
+.builder-picker-item { display:flex;align-items:center;gap:12px;background: rgb(255, 255, 255); border: 1px solid rgb(226, 217, 238); text-align: start; color: rgb(87, 65, 104); padding: 16px; font-size: 13px; }
 .builder-picker-item:hover { background: rgb(241, 236, 255); }
 .builder-preview-dialog .ops-note, .builder-preview-dialog .ops-muted { display: none; }
 .builder-diagnostics ol { max-height: 110px; overflow: auto; direction: ltr; text-align: left; }

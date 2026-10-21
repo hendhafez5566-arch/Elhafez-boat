@@ -16,12 +16,12 @@
     "apps/web/public/flow-request-controls.js": "a0ecad71014ba4164e11c1e4bcd85205e45c030d47da48e40966c6b65e65fee1",
     "apps/web/public/flow-presentation.js": "b1653a888ffe73375eda0a2d76e8363a51708b13eb95d1a30ca8f4f5dede3e66",
     "apps/web/public/flow-experiments.js": "802fcfd4346a9eeeffbec8cd1946d6ad23397ef218ddcdd686e331679cf5d4df",
-    "apps/web/public/flow-builder.js": "34d3864dac0fc7440542df00157c4497af7e3c40279d8eefc0adc0878a59a6d3",
+    "apps/web/public/flow-builder.js": "16ebdb707fca5c53422c5798695844cb3312c8e0746c69326506bf128551b97b",
     "apps/web/public/flow-content-controls.js": "d56ea14607cfaff80b8f9fd399f7a2c6110d7d26d685764daa1d962c44b4c632",
     "apps/web/public/flow-request-ops.js": "faf4d5783a9712166ccb8f5ec3a927935c9af6749075df8703c06652ee1b12f4",
     "apps/web/public/flow-merge.js": "a8adca8eaf27ad8ed19d5978118f1a442a540ace85902572837aea8d27dc6b50",
     "apps/web/public/flow-authoring.js": "e510b905f81ad3a0b8bef51a7d1c4ccbb6624b94e7eef3da33d14e0c56f9c2be",
-    "apps/web/public/flow-builder.css": "543de67b8f2b6c1cb9029fb23fbca8a6fceb0450527edd3a1a4bb995317652a4",
+    "apps/web/public/flow-builder.css": "47d4b50ea5a42211e61537215d389f71993c060e628d3d99bc1c28f389488d41",
     "apps/web/server.mjs": "2671dcda0f8c10ada1673538447743ab5e792d3147f7264334240169604233bd",
     "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/before/07-condition-editor.png": "4faa4b6eb5187fef46371691193cd2887b00c0a29edcedb2c7f0bc59fc44dbdc",
     "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/before/04-library.png": "d4d8ef8cfaa6fa8b4520d18ba8176bf262bc725cc46f0cd8891eab355afef1f4",
@@ -42,6 +42,6 @@
     "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/after/10-large-graph.png": "ff69aca5eb40054e07c870296eeb67a3b2e0fa3eb36bf86bac1c62911ed0f73f",
     "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/after/06-message-editor.png": "b6c39fa429cf880f654c5616b299be04b54a5010218bd9c50f1100c40258099c",
     "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/after/02-node-cards.png": "f9941d4cf6e5d64545ff3b3789f240d2a3dde5cb3e99f356b47fb5a175b848ee",
-    "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/after/03-connectors.png": "494833e8dc589aa5ff1bbf1b7195c5e1bfb6f828143b048baec4f7168ef1080e"
+    "docs/product-rebuild/evidence/visual-rebuild-2026-10-21/after/03-connectors.png": "dc8409da181bb21da8205c7d12d809065852083b25b9f53577cce04ded04fe20"
   }
 }

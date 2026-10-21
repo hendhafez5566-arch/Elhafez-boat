@@ -1,3 +1,7 @@
+## 2026-10-21 — contextual picker/CDP acceptance compatibility
+
+Same branch/PR #5; verified previous source88db6d8a464b6de1c0065535feda6c495f6213e0. Full CI39623322985 passed units and all feature-specific DB/browser groups, then caught the older broad CDP suite using the previous picker class and positional toolbar selectors. Restored the picker compatibility class with proper shared tile styling; updated CDP checks to actual canvas Zoom/Fit and named display-menu actions, retaining assertions. Guided creation now closes its containing settings dialog and returns to the visible canvas; added an explicit assertion. Early syntax gate covers all top-level/support test modules. Seven matched-tourism checks rerun successfully; source/screenshot hashes refreshed. Next: observe latest full CI, including broad CDP, novice bots, packaged/restore acceptance. No runtime/database/worker change, merge, deploy or provider send.
+
 ## 2026-10-21 — novice CDP display-menu navigation
 
 Same branch/PR #5; verified prior test checkpoint4e67472cf3194ec9a897db9062aa906b59419e1e. Updated the older novice CDP suite to open the new display menu before switching between linear/canvas modes; original assertions remain. This completes the remaining static selector audit for moved view controls. All browser/support modules parse. Product/source screenshot hashes unchanged. Next: observe full latest-source CI; no merge, deploy or real send.
