@@ -32,3 +32,7 @@ Inspect `flow-trace.ts`, `bots.ts` insights/experiments, `flow-service.ts` trans
 ## Boundaries retained
 
 PR remains Draft/open/unmerged. Protected target feat/stage0-foundation remains cc702b795f1c7aa0d0b75fec6655574f4f2ec57b; main remains c8acec40d44803417e9e21a381d7e7f9b0d41fe0. No new branch/PR, merge, Railway deployment, production migration, real provider/customer send or paid AI call. Native webhook inputs and provider calls in tests are explicit synthetic/offline fixtures. Unknown old jobs were not backfilled, attributed by guesses or cancelled by conversation controls. Radical visual redesign remains deferred; actual Chromium images and functional tests do not establish owner visual acceptance.
+
+## Current continuation: observability bundle
+
+F27/F35 now close at 24 PASS / 12 PARTIAL / 0 wholly BLOCKED; OBSERVABILITY_CHECKPOINT.md supersedes item 1 above. Local 224 units/typecheck/build, 6 actual analytics PG and 3 Chromium scenarios PASS; previous controls and 19 integration PG regressions PASS. Actual screenshots in ../../evidence/flow-observability-2026-10-21/. Migration0043 is additive. Next package F26: use existing private storage/scanner, session-bound Website uploads and provider contracts. Latest GitHub CI must be checked after this bundle push; no claim of new remote success yet.

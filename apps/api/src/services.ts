@@ -1,3 +1,4 @@
+import {persistFlowFailure,forgetFlow} from './flow-observation.js';
 /** Tenant-scoped business services. All callers MUST use withTenantTransaction. */
 export type Role = 'OWNER' | 'MANAGER' | 'AGENT' | 'VIEWER';
 export interface Actor { tenantId: string; userId: string; role: Role }
@@ -29,13 +30,13 @@ export async function withTenantTransaction<T>(pool: SqlPool, actor: Actor, task
     began = true;
     await client.query("SELECT set_config('app.tenant_id', $1, true)", [actor.tenantId]);
     const value = await task(client);
-    await client.query('COMMIT');
+    await client.query('COMMIT');forgetFlow(client);
     return value;
   } catch (error) {
     if (began) {
       try { await client.query('ROLLBACK'); } catch { /* original failure takes precedence */ }
     }
-    throw error;
+    await persistFlowFailure(client,error);throw error;
   } finally {
     client.release();
   }

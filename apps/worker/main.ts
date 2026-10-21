@@ -1,3 +1,4 @@
+import {persistFlowFailure,forgetFlow} from '../api/src/flow-observation.js';
 import {processFlowIntegration,processFlowConnector} from '../api/src/flow-integration-worker.js';
 import {deliveryDisposition,sendWhatsApp} from './delivery.js';
 import {verifyCommerceRefs,type CommerceRef} from '../api/src/commerce.js';
@@ -106,8 +107,8 @@ async function processTenant(tenantId:string):Promise<boolean>{
       WHERE tenant_id=$1 AND id=$2`,[tenantId,job.id,providerId]);
     const source=job.payload as {type?:string;text?:{body?:string};interactive?:{body?:{text?:string}}};
     const message=source.text?.body||source.interactive?.body?.text||(source.type==='template'?'[قالب واتساب معتمد]':'[رسالة تفاعلية]');
-    await tx.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,delivery_status)
-      VALUES($1,$2,'OUTBOUND',$3,$4,'sent') ON CONFLICT DO NOTHING`,[tenantId,job.conversation_id,message,providerId]);
+    await tx.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,delivery_status,execution_id)
+      VALUES($1,$2,'OUTBOUND',$3,$4,'sent',$5) ON CONFLICT DO NOTHING`,[tenantId,job.conversation_id,message,providerId,job.execution_id]);
     await tx.query(`UPDATE conversations SET last_message_at=now() WHERE tenant_id=$1 AND id=$2`,[tenantId,job.conversation_id]);
   }else{
     const count=Number(job.attempt_count)+1;
@@ -117,10 +118,10 @@ async function processTenant(tenantId:string):Promise<boolean>{
      WHERE tenant_id=$1 AND id=$2 AND status='PROCESSING'`,[tenantId,job.id,status,count,delay,lastError]);
   }
   await tx.query('COMMIT');return true;
- }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});throw e;}finally{tx.release();}
+ }catch(e){if(began)await tx.query('ROLLBACK').catch(()=>{});await persistFlowFailure(tx,e);throw e;}finally{tx.release();}
 }
 async function tenantTask(tenantId:string,task:(db:import('../api/src/services.js').SqlClient,id:string)=>Promise<unknown>,activeOnly=true){
- const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);let didWork=false;if(active.rowCount||!activeOnly)didWork=Boolean(await task(tx,tenantId));await tx.query('INSERT INTO chatbot_worker_health(tenant_id,last_seen_at,last_error_code) VALUES($1,now(),NULL) ON CONFLICT(tenant_id) DO UPDATE SET last_seen_at=now(),last_error_code=NULL',[tenantId]);await tx.query('COMMIT');return didWork}catch(e){await tx.query('ROLLBACK').catch(()=>{});throw e}finally{tx.release()}
+ const tx=await pool.connect();try{await tx.query('BEGIN');await tx.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const active=await tx.query("SELECT 1 FROM tenant_subscriptions WHERE tenant_id=$1 AND status IN ('TRIAL','ACTIVE') AND current_period_ends_at>now()",[tenantId]);let didWork=false;if(active.rowCount||!activeOnly)didWork=Boolean(await task(tx,tenantId));await tx.query('INSERT INTO chatbot_worker_health(tenant_id,last_seen_at,last_error_code) VALUES($1,now(),NULL) ON CONFLICT(tenant_id) DO UPDATE SET last_seen_at=now(),last_error_code=NULL',[tenantId]);await tx.query('COMMIT');forgetFlow(tx);return didWork}catch(e){await tx.query('ROLLBACK').catch(()=>{});await persistFlowFailure(tx,e);throw e}finally{tx.release()}
 }
 async function run(){
  console.log('WhatsApp outbox worker started');

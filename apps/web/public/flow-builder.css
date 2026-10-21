@@ -147,3 +147,7 @@ body.bot-studio .builder-inspector,body.bot-studio .builder-palette{height:100%;
 .canvas-group-toggle{position:absolute;inset-inline-end:10px;top:4px;pointer-events:auto;padding:6px;font-size:12px}.canvas-group-folded{background:#f5f1ff;border:2px solid #a394d1;z-index:2;pointer-events:auto;padding:42px 16px 10px;box-sizing:border-box}.canvas-group-folded p{font-size:13px}.canvas-breadcrumbs{position:absolute;top:8px;inset-inline:12px;display:flex;gap:4px;max-width:calc(100% - 24px);overflow:auto;z-index:5;pointer-events:none}.canvas-breadcrumbs button{pointer-events:auto;font-size:11px;padding:5px 8px;border-radius:20px;white-space:nowrap}
 
 .flow-stage .canvas-node.path-muted,.flow-stage .canvas-edge.path-muted{opacity:.18}
+
+#flow-builder .canvas-node .canvas-analytics{position:absolute;bottom:calc(100% + 5px);left:0;max-width:286px;min-height:32px;padding:5px 9px;background:#e9f2ff;color:#173b69;border:1px solid #7a9dc9;border-radius:8px;font-size:11px;white-space:nowrap}
+
+.builder-conflict-dialog.flow-funnel-dialog{width:min(1100px,95vw);max-width:95vw}.flow-funnel-dialog table th,.flow-funnel-dialog table td{white-space:nowrap;padding:8px}

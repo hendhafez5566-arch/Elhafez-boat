@@ -1,3 +1,4 @@
+import {persistFlowFailure,forgetFlow,recordFlowFailure} from './flow-observation.js';
 import {runConnectorSync} from './connectors.js';
 import {providerHTTP,ProviderFailure} from './provider-http.js';
 /** Existing integration queue, with a committed claim before HTTP and a separately persisted completion. */
@@ -10,7 +11,7 @@ type RequestKind='WEBHOOK'|'CONNECTOR';
 const queueName=(kind:RequestKind)=>kind==='CONNECTOR'?'chatbot_connector_jobs':'chatbot_integration_jobs';
 export type RequestTransport=typeof sendWebhook;
 async function transaction<T>(pool:SqlPool,tenantId:string,fn:(db:SqlClient)=>Promise<T>){
- if(!isUuid(tenantId))throw Error('Invalid worker tenant');const db=await pool.connect();try{await db.query('BEGIN');await db.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const value=await fn(db);await db.query('COMMIT');return value}catch(error){await db.query('ROLLBACK');throw error}finally{db.release()}
+ if(!isUuid(tenantId))throw Error('Invalid worker tenant');const db=await pool.connect();try{await db.query('BEGIN');await db.query("SELECT set_config('app.tenant_id',$1,true)",[tenantId]);const value=await fn(db);await db.query('COMMIT');forgetFlow(db);return value}catch(error){await db.query('ROLLBACK');await persistFlowFailure(db,error);throw error}finally{db.release()}
 }
 function owns(job:Record<string,unknown>){const runtime=job.runtime_state as {wait?:{token?:string}}|undefined;return job.conversation_status==='OPEN'&&!job.do_not_contact&&job.active&&job.session_node===job.flow_node_id&&Number(job.session_version)===Number(job.flow_version)&&runtime?.wait?.token===job.wait_token&&job.contact_id===job.current_contact}
 function windowOpen(job:Record<string,unknown>){return Boolean(job.channel_ready)&&( !['WHATSAPP','MESSENGER','INSTAGRAM'].includes(String(job.channel))||Boolean(job.last_customer_message_at&&Date.now()-new Date(String(job.last_customer_message_at)).getTime()<86400000))}
@@ -84,8 +85,8 @@ async function complete(pool:SqlPool,tenantId:string,id:string,kind:RequestKind)
    const result=await respondToFlow(db,{tenantId,conversationId:String(job.conversation_id),contactId:String(job.contact_id),actionId:'',body:'',fromWhatsApp:job.channel==='WHATSAPP',...(kind==='CONNECTOR'?{connectorResume:{jobId:id,token:String(job.wait_token)}}:{integrationResume:{jobId:id,token:String(job.wait_token)}})});
    await deliverConversation(db,tenantId,String(job.conversation_id),result.payloads,{staff:result.handedOff});
    await db.query(`UPDATE ${queueName(kind)} SET completion_pending=false,continuation_attempts=continuation_attempts+1 WHERE tenant_id=$1 AND id=$2`,[tenantId,id]);await db.query('RELEASE SAVEPOINT request_completion');
-  }catch{
-   await db.query('ROLLBACK TO SAVEPOINT request_completion');await db.query(`UPDATE ${queueName(kind)} SET continuation_attempts=continuation_attempts+1,completion_pending=(continuation_attempts<4),last_error='CONTINUATION_FAILED_NO_HTTP_RESEND' WHERE tenant_id=$1 AND id=$2`,[tenantId,id]);await audit(db,tenantId,id,'FLOW_REQUEST_CONTINUATION_FAILED',kind);
+  }catch(error){
+   await db.query('ROLLBACK TO SAVEPOINT request_completion');await recordFlowFailure(db,error);await db.query(`UPDATE ${queueName(kind)} SET continuation_attempts=continuation_attempts+1,completion_pending=(continuation_attempts<4),last_error='CONTINUATION_FAILED_NO_HTTP_RESEND' WHERE tenant_id=$1 AND id=$2`,[tenantId,id]);await audit(db,tenantId,id,'FLOW_REQUEST_CONTINUATION_FAILED',kind);
   }
  });
 }

@@ -176,3 +176,6 @@ Actually run at this checkpoint: TypeScript/build and **171 Unit PASS**; **16 ne
 F23 remains **PARTIAL**: native CONNECTOR nodes still enqueue their existing fire-and-forget provider jobs and do not implement this response-continuation contract; provider-specific response/error mapping, provider qualification, configurable non-JSON/header contracts and production crash/load qualification remain. Totals remain **5 PASS / 31 PARTIAL / 0 wholly BLOCKED**. Meta/WhatsApp/AI external qualification remains blocked within PARTIAL F24/F29/F30. No merge/deploy/provider activation. Radical visual redesign is deferred, and earlier screenshots do not constitute owner approval.
 
 Next: finish/inspect combined API/Chromium and GitHub CI, then extend the existing CONNECTOR contracts with scoped bounded response/error mapping (no parallel queue and no real provider), or proceed to adjacent message/channel gaps from the matrix. Do not repeat the saved request worker or earlier control/trace work.
+
+
+2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.

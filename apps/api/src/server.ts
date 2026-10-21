@@ -1,3 +1,4 @@
+import {flowFunnel,flowDeliveryTrace} from './flow-analytics.js';
 import {flowExperiments} from './flow-experiments.js';
 import {controlledConversations,controlConversation,handoffRoster,updateHandoffAvailability} from './conversation-control.js';
 import {consentHistory,revokeConsent} from './flow-consent.js';
@@ -173,6 +174,8 @@ const server=createServer(async(req,res)=>{
     const requestOps=/^\/api\/v1\/bots\/([^/]+)\/flow-requests(?:\/([^/]+)\/reconcile)?$/.exec(pathname);
     if(requestOps&&req.method==='GET'&&!requestOps[2]){const params=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>flowRequestJobs(tx,actor,requestOps[1],{kind:params.get('kind')||undefined,status:params.get('status')||undefined,before:params.get('before')||undefined})))}
     if(requestOps&&req.method==='POST'&&requestOps[2])return json(res,200,await runBody((tx,input)=>reconcileFlowRequest(tx,actor,requestOps[1],requestOps[2],input)));
+    const funnel=/^\/api\/v1\/bots\/([^/]+)\/flow-funnel$/.exec(pathname);if(funnel&&req.method==='GET')return json(res,200,await run(tx=>flowFunnel(tx,actor,funnel[1],new URL(req.url||'/','http://local').searchParams)));
+    const deliveryTrace=/^\/api\/v1\/bots\/([^/]+)\/flow-delivery\/([^/]+)$/.exec(pathname);if(deliveryTrace&&req.method==='GET')return json(res,200,await run(tx=>flowDeliveryTrace(tx,actor,deliveryTrace[1],deliveryTrace[2])));
     const tracePath=/^\/api\/v1\/bots\/([^/]+)\/flow-traces(?:\/([^/]+))?$/.exec(pathname);
     if(tracePath&&req.method==='GET'){if(tracePath[2])return json(res,200,await run(tx=>flowConversationTrace(tx,actor,tracePath[1],tracePath[2],new URL(req.url||'/','http://local').searchParams)));return json(res,200,await run(tx=>flowTraceSessions(tx,actor,tracePath[1])))}
     const experiments=/^\/api\/v1\/bots\/([^/]+)\/experiments$/.exec(pathname);

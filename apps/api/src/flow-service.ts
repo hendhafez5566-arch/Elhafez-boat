@@ -1,3 +1,4 @@
+import {observeFlow} from './flow-observation.js';
 import {triggerMatches,validTriggerPostback,type TriggerContext} from './flow-triggers.js';
 import {definitionHash} from './flow-release.js';
 import {setBotControl,cancelConversationAutomation} from './conversation-control.js';
@@ -79,7 +80,7 @@ export async function listFlowVersions(db:SqlClient,actor:Actor,botId?:string){
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
-export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;triggerEvent?:import('./flow-triggers.js').TriggerEvent;nativeInput?:FlowInput;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
+export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;inboundMessageId?:string;triggerEvent?:import('./flow-triggers.js').TriggerEvent;nativeInput?:FlowInput;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
  const ownership=await db.query('SELECT status,bot_control FROM conversations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,conversationId]);
  const control=(ownership.rows[0]?.bot_control||{}) as {mode?:string};
@@ -142,6 +143,9 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
   state.at=triggered;
  }
  if(['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(channel))&&flowChannelIssues(flow,channel as import('./flow-engine.js').FlowChannel).some(i=>i.severity==='error'))throw new HttpFailure(409,'Flow content is incompatible with this conversation channel');
+ const executionId=randomUUID(),observation={tenantId,executionId,conversationId,botId:botId?String(botId):null,version,nodeId:state.at||flow.startId,nodeType:'START'};observeFlow(db,observation);
+ await db.query("SELECT set_config('app.flow_execution',$1,true),set_config('app.flow_conversation',$2,true)",[executionId,conversationId]);
+ if(ctx.inboundMessageId)await db.query("UPDATE conversation_messages SET execution_id=$3 WHERE tenant_id=$1 AND conversation_id=$2 AND id=$4 AND kind='INBOUND' AND execution_id IS NULL",[tenantId,conversationId,executionId,ctx.inboundMessageId]);
  const waitingNode=flow.nodes.find(n=>n.id===state.at);
  let resumedInput:FlowInput|undefined;let requestOutcome:string|undefined;
  const asyncResume=ctx.integrationResume??ctx.connectorResume;
@@ -166,7 +170,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,conversationId]);
  // Flow replies are untrusted until matching the current node & option ID.
  const inbound=ctx.nativeInput??(actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body});
- const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,channel:channel as import('./flow-engine.js').FlowChannel,enter:Boolean(triggered||ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
+ const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,channel:channel as import('./flow-engine.js').FlowChannel,onStep:(id,type)=>{observation.nodeId=id;observation.nodeType=type;},enter:Boolean(triggered||ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
  if(requestOutcome)result.trace.unshift({nodeId:waitingNode!.id,type:waitingNode!.type,outcome:requestOutcome,elapsedMs:0});
  flow=result.flow;
  const contactAnswers=Object.fromEntries(Object.entries(result.state.answers).filter(([key])=>!flow.variables?.some(v=>v.key===key&&v.scope==='session')));
@@ -183,7 +187,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
 
  if(result.botAction?.operation==='PAUSE'&&result.botAction.seconds){const controlled=await db.query('SELECT bot_control FROM conversations WHERE tenant_id=$1 AND id=$2',[tenantId,conversationId]);const token=(controlled.rows[0].bot_control as any).token;await db.query(`INSERT INTO chatbot_delay_jobs(tenant_id,conversation_id,version,node_id,due_at,wait_token,purpose) VALUES($1,$2,$3,$4,now()+($5::int*interval '1 second'),$6,'BOT_RESUME') ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET due_at=EXCLUDED.due_at,wait_token=EXCLUDED.wait_token,purpose=EXCLUDED.purpose,node_id=EXCLUDED.node_id,version=EXCLUDED.version,status='PENDING',error=NULL`,[tenantId,conversationId,version,result.state.at,result.botAction.seconds,token]);}
  // Events contain identifiers/outcomes only, never answer values or message bodies.
- if(result.trace?.length)await db.query(`INSERT INTO chatbot_flow_step_events(tenant_id,conversation_id,bot_id,version,node_id,node_type,outcome,elapsed_ms,execution_id,step_index,recorded_at) SELECT $1,$2,$3,$4,x."nodeId",x.type,x.outcome,coalesce(x."elapsedMs",0),$6,x."stepIndex",statement_timestamp() FROM jsonb_to_recordset($5::jsonb) AS x("nodeId" text,type text,outcome text,"elapsedMs" numeric,"stepIndex" integer)`,[tenantId,conversationId,botId,version,JSON.stringify(result.trace.map((entry,stepIndex)=>({...entry,stepIndex}))),randomUUID()]);
+ if(result.trace?.length)await db.query(`INSERT INTO chatbot_flow_step_events(tenant_id,conversation_id,bot_id,version,node_id,node_type,outcome,elapsed_ms,execution_id,step_index,recorded_at,waiting,terminal) SELECT $1,$2,$3,$4,x."nodeId",x.type,x.outcome,coalesce(x."elapsedMs",0),$6,x."stepIndex",statement_timestamp(),x.waiting,x.terminal FROM jsonb_to_recordset($5::jsonb) AS x("nodeId" text,type text,outcome text,"elapsedMs" numeric,"stepIndex" integer,waiting boolean,terminal boolean)`,[tenantId,conversationId,botId,version,JSON.stringify(result.trace.map((entry,stepIndex)=>({...entry,stepIndex,waiting:stepIndex===result.trace.length-1&&!result.finished&&!result.handoff&&!result.botAction,terminal:stepIndex===result.trace.length-1&&(result.finished||result.handoff||Boolean(result.botAction))}))),executionId]);
  if(!result.handoff&&(Object.keys(result.state.answers).length||result.state.tags.length)){
   const leadId=await registerInterest(db,tenantId,conversationId,contactId,null);
   await db.query('UPDATE chatbot_leads SET custom_fields=$3::jsonb,updated_at=now() WHERE tenant_id=$1 AND id=$2',[tenantId,leadId,JSON.stringify({...contactAnswers,lead_tags:result.state.tags.join(', ')})]);
@@ -271,7 +275,7 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
  return {...flow,nodes:[...new Map(nodes.map(n=>[n.id,n])).values()]};
 }
 
-export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event'];persona?:Record<string,string>;enter?:boolean}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
+export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel;onStep?:(id:string,type:string)=>void},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event'];persona?:Record<string,string>;enter?:boolean}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
  let crmStage:string|undefined;let chosenHandoff:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy}|undefined;let blockedService=false;
  if(dryRun&&simulation){
   if(state.at===null&&simulation.persona)state={...state,answers:{...state.answers,...simulation.persona}};
@@ -283,7 +287,7 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
    if(trigger){state={at:trigger.targetNode,answers:{...(simulation.persona||{})},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
   }
  }
- let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
+ let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,onStep:context?.onStep,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
   if(pending?.type==='CONTROL'&&result.botAction){
@@ -337,7 +341,7 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
   }
   if(pending?.type==='CONNECTOR'&&!pending.request){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'),undefined,{conversationId:context.conversationId,contactId:context.contactId,version:context.version!,nodeId:pending.id});}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
   flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId,context);
-  result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{...simulation,channel:simulation?.channel||context?.channel||definition.channel});messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
+  result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{...simulation,onStep:context?.onStep,channel:simulation?.channel||context?.channel||definition.channel});messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
  }
  if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
  return {...result,messages,trace,flow,chosenHandoff,blockedService,...(crmStage?{crmStage}:{})};

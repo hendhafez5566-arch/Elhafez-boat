@@ -421,3 +421,6 @@ After `.dockerignore` and Docker smoke were committed, [CI 39105618688](https://
 Continue the same implementation branch/Draft PR targeting staging. Preserve embedded-link JSON compatibility. Read the delivery and canonical matrix. Next: input timeout/retry/skip scheduling, channel capabilities and remaining advanced runtime. This is not full parity.
 
 [Implementation and evidence](../docs/product-rebuild/implementation/premium-2026-10-20/README.md). Unit/build: 142 passed, zero failed/skipped. Exact PostgreSQL/API/Chromium outcomes and limits are recorded there.
+
+
+2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.

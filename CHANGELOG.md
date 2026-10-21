@@ -56,3 +56,6 @@ Embedded Signup with owner/browser/tenant-bound one-use grant, encrypted phone c
 - HTTPS staging overlay and runtime configuration; hosting and Meta activation require separate owner consent.
 - Add onboarding regression and real-PostgreSQL reconnect/diagnostic acceptance cases.
 
+
+
+2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.

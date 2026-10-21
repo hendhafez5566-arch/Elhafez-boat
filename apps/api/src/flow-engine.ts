@@ -281,7 +281,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
 }
 export function renderFlowText(text:string,answers:Record<string,string>,limit=4096):string{return text.replace(/\{\{([a-z][a-z0-9_]{0,39})\}\}/g,(_,key:string)=>Object.hasOwn(answers,key)?answers[key]:'').slice(0,limit)}
 export function initialFlowState():FlowState{return {at:null,answers:{},tags:[]}}
-export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number;enter?:boolean;channel?:FlowChannel}={}):FlowAdvance{
+export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number;enter?:boolean;channel?:FlowChannel;onStep?:(id:string,type:string)=>void}={}):FlowAdvance{
  const now=context.now??Date.now(),nodes=new Map(flow.nodes.map(n=>[n.id,n]));
  const answers:Record<string,string>=Object.assign(Object.create(null),state.answers),tags=[...state.tags];let at=state.at??flow.startId;
  let runtime:FlowRuntime|undefined=state.runtime?JSON.parse(JSON.stringify(state.runtime)):undefined;
@@ -304,7 +304,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
  };
  const consentPrompt=(node:Extract<FlowNode,{type:'CONSENT'}>)=>{const r=ensureRuntime();if(!r.consent||r.consent.nodeId!==node.id||r.consent.policyVersion!==node.policyVersion)r.consent={nodeId:node.id,policyVersion:node.policyVersion,token:crypto.randomUUID()};const token=r.consent.token;messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024),choices:[{id:'consent:'+token+':accept',title:'أوافق',next:node.acceptNext},{id:'consent:'+token+':decline',title:'لا أوافق',next:node.declineNext},...(node.withdrawNext?[{id:'consent:'+token+':withdraw',title:'سحب الموافقة',next:node.withdrawNext}]:[])]});};
  let rerouted=false;for(let i=0;i<100;i++){const n=nodes.get(at);if(n?.type!=='INPUT'||!n.acquisition||supportsAcquisition(context.channel||flow.channel||'WHATSAPP',n.acquisition.kind))break;trace.push({nodeId:n.id,type:n.type,outcome:'unsupported_channel',elapsedMs:0});at=n.acquisition.unsupportedNext;clearWait();rerouted=true;}
- const current=nodes.get(at);if(!current)throw Error('Unknown current flow node');
+ const current=nodes.get(at);if(current)context.onStep?.(current.id,current.type);if(!current)throw Error('Unknown current flow node');
  if(state.at!==null&&!context.enter&&!rerouted){
   if(current.type==='CONSENT'){const challenge=runtime?.consent,prefix='consent:'+challenge?.token+':',parts=input?.kind==='CHOICE'&&input.value.startsWith(prefix)?input.value.slice(prefix.length).split(':'):[],id=parts[0],valid=challenge?.nodeId===current.id&&challenge.policyVersion===current.policyVersion&&parts.length===1;const next=valid?(id==='accept'?current.acceptNext:id==='decline'?current.declineNext:id==='withdraw'?current.withdrawNext:undefined):undefined;if(next){delete ensureRuntime().consent;return result({pending:true,consent:{purpose:current.purpose,decision:id==='accept'?'GRANT':id==='decline'?'DENY':'WITHDRAW',next,nodeId:current.id,policyVersion:current.policyVersion,notice:renderFlowText(current.text,answers,1024)}})}consentPrompt(current);return result();}
   if(current.type==='INPUT'||current.type==='QUESTION'||current.type==='BUTTONS'||current.type==='LIST'){
@@ -334,7 +334,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   }else if(current.type==='END'||current.type==='HANDOFF')at=flow.startId;
  }
  for(let hops=0;hops<120;hops++){
-  const node=nodes.get(at);if(!node)throw Error('Node destination unavailable');finishStep();const entry:FlowTrace={nodeId:node.id,type:node.type,outcome:'entered',elapsedMs:0};trace.push(entry);
+  const node=nodes.get(at);if(node)context.onStep?.(node.id,node.type);if(!node)throw Error('Node destination unavailable');finishStep();const entry:FlowTrace={nodeId:node.id,type:node.type,outcome:'entered',elapsedMs:0};trace.push(entry);
   if(node.type==='INPUT'&&node.acquisition&&!supportsAcquisition(context.channel||flow.channel||'WHATSAPP',node.acquisition.kind)){entry.outcome='unsupported_channel';at=node.acquisition.unsupportedNext;clearWait();continue;}
   if(node.type==='CONSENT'){consentPrompt(node);return result();}
   if(node.type==='CONTROL'){clearWait();entry.outcome='bot_'+node.operation.toLowerCase();return result({pending:true,botAction:{operation:node.operation,next:node.next,seconds:node.seconds}});}

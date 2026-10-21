@@ -1,3 +1,4 @@
+import {recordFlowFailure} from './flow-observation.js';
 import {processControlledDeadline} from './conversation-control.js';
 import {respondToFlow} from './flow-service.js';
 import {deliverConversation} from './channels.js';
@@ -19,8 +20,8 @@ export async function processDelay(db:SqlClient,tenantId:string){
   // Handoff may change status to HUMAN while still needing to deliver its final acknowledgement.
   await deliverConversation(db,tenantId,conversationId,result.payloads,{staff:result.handedOff});
   await db.query('RELEASE SAVEPOINT delay_work');
- }catch{
-  await db.query('ROLLBACK TO SAVEPOINT delay_work');
+ }catch(error){
+  await db.query('ROLLBACK TO SAVEPOINT delay_work');await recordFlowFailure(db,error);
   await db.query(`UPDATE chatbot_delay_jobs SET status='FAILED',error='Continuation unavailable; check window, consent, flow and account' WHERE tenant_id=$1 AND conversation_id=$2`,[tenantId,conversationId]);
  }
  return true;

@@ -424,3 +424,6 @@ Added security-focused `.dockerignore` to exclude untracked secrets and customer
 Incomplete premium Flow Studio batch on feat/premium-flow-builder-2026-10-20 from reports HEAD 9196603. Staging unchanged. Canonical matrix: 3 PASS / 30 PARTIAL / 3 BLOCKED. Canvas/edge editing, composite content, typed inputs, AND/OR, SET_FIELD, weighted branching, simulator trace and safe saves/session recovery implemented. No production/provider activation.
 
 [Implementation and evidence](../docs/product-rebuild/implementation/premium-2026-10-20/README.md). Unit/build: 142 passed, zero failed/skipped. Exact PostgreSQL/API/Chromium outcomes and limits are recorded there.
+
+
+2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.

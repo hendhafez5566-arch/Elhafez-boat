@@ -11,8 +11,9 @@ export function mountFlowDiagnostics({el,button,api,execute,getScope,toolbar,foc
    if(busy)return;busy=true;try{const data=await api(path+(older?'?before='+encodeURIComponent(cursor):''));if(!same(scope,epoch)||!view.dialog.isConnected)return;events=older?[...data.events,...events]:data.events;cursor=data.nextCursor;paint(data);}finally{busy=false}
   }
   function paint(data){
-   const snapshot=data.snapshot;view.content.replaceChildren(el('p','هذه أحداث التنفيذ المحفوظة فقط؛ لا تظهر إجابات العميل أو محتوى رسائله. قد لا تسجل المعاملة التي فشلت وتراجعت حدثًا.'));
+   const snapshot=data.snapshot;view.content.replaceChildren(el('p','هذه أحداث التنفيذ المحفوظة فقط؛ لا تظهر إجابات العميل أو محتوى رسائله. أخطاء المعاملات المتراجعة متاحة في تحليلات المسار والأخطاء.'));
    view.content.append(el('code',conversationId,'builder-trace-correlation'),el('p','الحالة: '+snapshot.status+' · الإصدار المثبت: '+snapshot.version+' · الخطوة الحالية: '+(snapshot.nodeId||'—')));
+   view.content.append(button('الرسائل وحالات التسليم',()=>execute(async()=>{const delivery=await api('/bots/'+scope.botId+'/flow-delivery/'+conversationId);if(!same(scope,epoch)||!view.dialog.isConnected)return;for(const m of delivery.rows)view.content.append(el('p',m.executionId+' · '+m.direction+' · '+m.source+' · '+m.certainty))})));
    if(snapshot.waitUntil)view.content.append(el('p','المهلة المحفوظة: '+when(snapshot.waitUntil)));
    if(snapshot.jobStatus)view.content.append(el('p','استكمال الانتظار: '+snapshot.jobStatus+' · '+(snapshot.jobNodeId||'—')+' · '+when(snapshot.jobDueAt),snapshot.jobStatus==='FAILED'?'builder-preview-warning':undefined));
    if(events.some(e=>!e.ordered))view.content.append(el('p','أحداث قديمة: لا تتوفر لها هوية تنفيذ أو أدلة ترتيب مؤكدة.','builder-preview-warning'));

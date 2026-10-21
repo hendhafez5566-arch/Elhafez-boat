@@ -435,3 +435,6 @@ New independent CI gate **PASSED** on [run 39105138303](https://github.com/hendh
 Input timeout/retry/skip scheduler; nested/date/tag conditions; typed field registry; START triggers; full CRM actions; channel preflight; timezone delays; sticky A/B metrics; HTTP response/error mapping; galleries/WhatsApp Flows; AI generation/text suggestions; review threads; persistent trace; tab-close recovery; pinch/screen reader/actual browser zoom acceptance.
 
 [Implementation and evidence](../docs/product-rebuild/implementation/premium-2026-10-20/README.md). Unit/build: 142 passed, zero failed/skipped. Exact PostgreSQL/API/Chromium outcomes and limits are recorded there.
+
+
+2026-10-21 — F27/F35 observability bundle: existing engine execution/message correlation, rollback-safe value-free audit, actual funnels/version comparison/Canvas and retention. Matrix 24 PASS / 12 PARTIAL; see docs/product-rebuild/implementation/premium-2026-10-20/OBSERVABILITY_CHECKPOINT.md. Next: F26 secure incoming assets; no live provider enabled.

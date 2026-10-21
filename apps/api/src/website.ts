@@ -58,7 +58,7 @@ export async function websiteSend(pool:SqlClient&SqlPool,bearer:string,origin:st
   const previous=await db.query('SELECT 1 FROM chatbot_web_receipts WHERE tenant_id=$1 AND session_id=$2 AND message_id=$3',[tenantId,s.id,messageId]);if(previous.rowCount)return {received:true,duplicate:true};
   const recent=await db.query(`SELECT count(*)::int AS n FROM chatbot_web_receipts WHERE tenant_id=$1 AND session_id=$2 AND created_at>now()-interval '1 minute'`,[tenantId,s.id]);if(Number(recent.rows[0]?.n)>=30&&!/^(stop|unsubscribe|إيقاف الرسائل|إلغاء الرسائل)$/i.test(text.trim()))throw new HttpFailure(429,'Please wait before sending more messages');
   await db.query('INSERT INTO chatbot_web_receipts(tenant_id,session_id,message_id) VALUES($1,$2,$3)',[tenantId,s.id,messageId]);
-  await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3)`,[tenantId,s.conversation_id,text.trim()||'اختيار: '+actionId]);
+  const inbound=await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body) VALUES($1,$2,'INBOUND',$3) RETURNING id`,[tenantId,s.conversation_id,text.trim()||'اختيار: '+actionId]);
   await db.query(`UPDATE conversations SET last_message_at=now(),last_customer_message_at=now(),status=CASE WHEN status='CLOSED' AND coalesce(bot_control->>'mode','')<>'STOPPED' THEN 'OPEN' ELSE status END WHERE tenant_id=$1 AND id=$2`,[tenantId,s.conversation_id]);
   if(/^(stop|unsubscribe|إيقاف الرسائل|إلغاء الرسائل)$/i.test(text.trim())){
    await recordFlowConsent(db,tenantId,String(s.contact_id),String(s.conversation_id),{purpose:'SERVICE',decision:'WITHDRAW',source:'CUSTOMER_COMMAND'});await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,s.conversation_id]);
@@ -69,7 +69,7 @@ export async function websiteSend(pool:SqlClient&SqlPool,bearer:string,origin:st
   const consent=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[tenantId,s.contact_id]);if(consent.rows[0]?.do_not_contact)return {received:true};
   if(s.status==='CLOSED'&&(s.bot_control as any)?.mode!=='STOPPED'){await cancelConversationAutomation(db,tenantId,String(s.conversation_id));await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,s.conversation_id]);}
   if(s.status!=='HUMAN'){
-   const result=await respondToFlow(db,{tenantId,conversationId:String(s.conversation_id),contactId:String(s.contact_id),actionId:actionId,body:text,fromWhatsApp:false});await deliverConversation(db,tenantId,String(s.conversation_id),result.payloads,{staff:result.handedOff});
+   const result=await respondToFlow(db,{tenantId,conversationId:String(s.conversation_id),contactId:String(s.contact_id),inboundMessageId:String(inbound.rows[0].id),actionId:actionId,body:text,fromWhatsApp:false});await deliverConversation(db,tenantId,String(s.conversation_id),result.payloads,{staff:result.handedOff});
   }return {received:true};
  });
 }

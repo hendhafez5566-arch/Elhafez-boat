@@ -3,7 +3,7 @@ import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutO
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
   const ns='http://www.w3.org/2000/svg';
   const titles={CONTROL:'تشغيل البوت',CONSENT:'موافقة العميل',CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
-  const edges=graphOutputs;
+  const edges=graphOutputs;let analytics=new Map(),analyticsSelect=()=>{};
   let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,pathFocused=false,connectionGeneration=0,pendingFit=false;
   host.tabIndex=0;
   host.classList.add('flow-canvas');host.dir='ltr';host.setAttribute('role','region');
@@ -69,6 +69,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       if(collapsed.has(n.id)){const proxy=collapsed.get(n.id);cards.set(n.id,proxy);for(const e of edges(n))if(positions[e.to])linkRequests.push({from:n.id,to:e.to,key:e.key,port:proxy});continue}
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
       card.dataset.nodeId=n.id;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
+      const metric=analytics.get(n.id);if(metric){const badge=btn('دخل '+metric.entered+' · أكمل '+metric.completed+' · انتظار '+metric.waiting+' · انقطاع '+metric.abandoned,'canvas-analytics',()=>analyticsSelect(n.id));badge.setAttribute('aria-label','تحليلات الخطوة '+n.id);card.append(badge);}
       card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(titles[n.type]||'محادثة'));
       const chooseCard=(event={})=>{active=n.id;select(n.id,event.shiftKey);highlight(n.id)};
       card.addEventListener('click',event=>{if(!event.target.closest('button'))chooseCard(event)});
@@ -223,6 +224,6 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const area=host.getBoundingClientRect();zoom=1;
     pan={x:Math.round(area.width/2-(p.x+NODE_WIDTH/2)),y:Math.round(area.height/2-(p.y+155))};transform();
   }
-  return {draw,fit,focus,reset,autoLayout,highlight,zoomIn:()=>zoomTo(zoom*1.2),zoomOut:()=>zoomTo(zoom/1.2),
+  return {setAnalytics(rows,onSelect){analytics=new Map(rows.map(r=>[r.nodeId,r]));analyticsSelect=onSelect||(()=>{});draw()},draw,fit,focus,reset,autoLayout,highlight,zoomIn:()=>zoomTo(zoom*1.2),zoomOut:()=>zoomTo(zoom/1.2),
     coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(9000,Math.round((clientX-r.left-pan.x)/zoom-130))),y:Math.max(0,Math.min(9000,Math.round((clientY-r.top-pan.y)/zoom-60)))}}};
 }

@@ -117,6 +117,10 @@ jobs:
         run: node tests/flow-connector-db.mjs
       - name: Customer timezone, long calendars and precise wait cancellation
         run: node tests/flow-schedule-db.mjs
+      - name: Committed funnels, rollback diagnostics and Canvas observability
+        run: |
+          node tests/flow-analytics-db.mjs
+          node tests/flow-analytics-browser.mjs
       - name: Native data requests, quick replies and unsupported channel routes
         run: |
           node tests/flow-native-input-db.mjs
