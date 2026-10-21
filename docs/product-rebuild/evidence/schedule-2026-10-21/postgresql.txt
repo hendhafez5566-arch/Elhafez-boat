@@ -1,0 +1,7 @@
+PASS published engine collects customer timezone and persists real twenty-day calendar wait; metadata excludes answers
+PASS invalid customer zone actually follows published scheduling error branch without creating a job
+PASS explicit acknowledgement, exact due/token/version, bot/tenant/role guards prevent stale or unauthorized cancellation
+PASS competing cancellation retries produce one audit, cancelled deadline and real human/CRM handoff with no message send
+PASS legacy seconds-only tokenless wait remains inspectable and durable worker delivers its pinned continuation exactly once
+PASS bounded real pending schedule pagination has no duplicate rows and remains scoped to pinned DELAY nodes
+PASS 6 scheduled conversation PostgreSQL scenarios

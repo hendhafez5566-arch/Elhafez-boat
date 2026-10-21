@@ -30,6 +30,7 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
    if('text'in n)n.text=template(n.text);
    if(n.type==='MEDIA'&&n.caption)n.caption=template(n.caption);
    if(n.type==='SET_FIELD')n.value=template(n.value);
+   if((n.type==='BUSINESS_HOURS'||n.type==='DELAY')&&n.schedule&&'timezoneField'in n.schedule&&n.schedule.timezoneField)n.schedule.timezoneField=Object.hasOwn(bindings,n.schedule.timezoneField)?bindings[n.schedule.timezoneField]:n.schedule.timezoneField;
    if((n.type==='TEXT'||n.type==='BUTTONS')&&n.blocks)n.blocks=n.blocks.map(b=>b.type==='MEDIA'?{...b,caption:template(b.caption||'')}:b.type==='CARD'?{...b,card:{...b.card,title:template(b.card.title),subtitle:template(b.card.subtitle||'')}}:b.type==='GALLERY'?{...b,cards:b.cards.map(c=>({...c,title:template(c.title),subtitle:template(c.subtitle||'')}))}:{...b,text:template(b.text)});
    if('field'in n)n.field=Object.hasOwn(bindings,n.field)?bindings[n.field]:n.field;
    if(n.type==='CONDITION'&&n.rules)n.rules=mapConditionRules(n.rules,field=>Object.hasOwn(bindings,field)?bindings[field]:field);

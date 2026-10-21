@@ -1,3 +1,7 @@
+# Calendar package — 21 October 2026
+
+[SCHEDULE_CHECKPOINT.md](SCHEDULE_CHECKPOINT.md): customer timezones, long closed calendars and exact wait inspection/cancellation. 194 units, 6 real PG and 3 new desktop/mobile browser checks PASS. Matrix 14 PASS / 22 PARTIAL. Visual approval pending.
+
 # Native result package — 21 October 2026
 
 [CONNECTOR_CHECKPOINT.md](CONNECTOR_CHECKPOINT.md): shared existing queues/runtime with committed waits/results, no resend, privacy/operations and real desktop/mobile UI. 189 units, 13 new PG scenarios and 3 new Chromium checks PASS; 13 PASS / 23 PARTIAL.

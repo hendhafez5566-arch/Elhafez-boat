@@ -1,3 +1,7 @@
+# Customer scheduling package — 21 October 2026
+
+Same branch / Draft PR #5 after 807aa1c. F21 closed: customer-zone field/fallback, bounded one-year holiday/calendar search with DST gap/fold support, existing pinned DELAY job pagination and exact no-send cancellation/human handoff. 194 units, 6 PG, 3 new desktop/mobile checks PASS; all 11 combined authoring/native/schedule browser checks PASS. Matrix 14 PASS / 22 PARTIAL. Details: `docs/product-rebuild/implementation/premium-2026-10-20/SCHEDULE_CHECKPOINT.md`. Next: combined fresh DB/full runtime gate. Remaining scopes stay explicit in canonical matrix; visual acceptance pending. No merge/deploy/real providers.
+
 # Native connector result package — 21 October 2026
 
 Same branch / Draft PR #5, after b01ba79. CONNECTOR optional committed waits/result mapping and success/error/timeout routes now share existing queues/engine. No automatic upsert retry, actual delivery fault recovery without HTTP resend, scoped native reconciliation/privacy and named editor/Mock controls. 189 units, 13 PostgreSQL and 3 new Chromium checks PASS; old authoring 5 and webhook/controls/operations regressions PASS. F23/F14/F15 remain PARTIAL for their explicitly larger scopes; matrix 13 PASS / 23 PARTIAL. Exact evidence/remaining: `docs/product-rebuild/implementation/premium-2026-10-20/CONNECTOR_CHECKPOINT.md`. Next: customer timezone, long closure, scheduled-job inspection/cancellation. Visual approval pending. No merge/deploy/real provider use.

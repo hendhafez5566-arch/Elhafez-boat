@@ -326,7 +326,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
    // Old seconds-only DELAY states retain their original shape for compatibility.
    return result({waiting:node.schedule?wait(node,seconds,node.next,'DELAY'):{seconds,next:node.next}});
   }
-  if(node.type==='BUSINESS_HOURS'){const open=businessIsOpen(node.schedule,now);entry.outcome=open?'open':'closed';at=open?node.yes:node.no;continue}
+  if(node.type==='BUSINESS_HOURS'){try{const open=businessIsOpen(node.schedule,now,answers);entry.outcome=open?'open':'closed';at=open?node.yes:node.no}catch{entry.outcome='schedule_error';at=node.no}continue}
   if(node.type==='KEYWORD'){const text=input?.kind==='TEXT'?input.value.toLowerCase():'';at=node.keywords.some(k=>text.includes(k.toLowerCase()))?node.yes:node.no;continue}
   if(node.type==='SUBFLOW')throw Error('Subflow must be compiled before execution');
   if(node.type==='CATALOG'||node.type==='AI'||node.type==='WEBHOOK'||node.type==='CONNECTOR'||node.type==='CRM_ACTION')return result({pending:true});

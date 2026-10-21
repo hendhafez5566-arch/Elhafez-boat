@@ -1,3 +1,5 @@
+[Customer timezone, actual scheduled waits and mobile cancellation screenshots/results](evidence/schedule-2026-10-21/) · [Scope](implementation/premium-2026-10-20/SCHEDULE_CHECKPOINT.md)
+
 [Native connector actual desktop/mobile screenshots and test logs](evidence/connector-2026-10-21/) · [Checkpoint and remaining boundary](implementation/premium-2026-10-20/CONNECTOR_CHECKPOINT.md)
 
 # New authoring evidence — 21 October 2026
