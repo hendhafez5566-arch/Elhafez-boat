@@ -1,3 +1,7 @@
+## 2026-10-21 — channel events / F10
+
+Same branch and Draft PR #5 after 62ed60c. F10 closes: channel-scoped native events, exact current-node callback provenance, ambiguous priority publish guards, trigger-only graph roots, WhatsApp actual bot precedence and shared channel/event simulator. Migration 0041 additive; 207 units/typecheck/build, six new PG, three actual desktop/mobile Chromium and existing RLS/bot/control/request/authoring/native DB regressions PASS. Matrix 19 PASS / 17 PARTIAL / 0 BLOCKED. Save-repair remote CI fully SUCCESS; this feature's CI must be observed separately. Details: docs/product-rebuild/implementation/premium-2026-10-20/CHANNEL_EVENTS_CHECKPOINT.md. Next: precise nonblocking job ownership/F12, preserving unknown old jobs. No providers/deploy/merge; visual approval pending.
+
 ## 2026-10-21 — save lease CI repair
 
 Same premium branch / Draft PR #5; verified initial HEAD 0e4baf5. Actual successful/failed Actions inspected. Tab-close assertion now waits for actual bounded lock acquisition and verifies exclusion before close; application/CAS unchanged. 201 units/typecheck/build, fresh 40 migrations, 11 control + 6 save PostgreSQL scenarios and two four-scenario real Chromium runs PASS. Canonical matrix bottom corrected: 18 PASS / 18 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/SAVE_CI_REPAIR.md. Next: channel events/priority conflicts and native input contracts. No merge/deploy/providers; visual acceptance pending.

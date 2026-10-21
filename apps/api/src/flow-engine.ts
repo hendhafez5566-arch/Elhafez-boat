@@ -1,3 +1,4 @@
+import {triggerConflicts,triggerEvents} from './flow-triggers.js';
 import {validateHandoffPolicy,type HandoffPolicy,type BotAction} from './flow-conversation-policy.js';
 import {validateRichBlock,validateEffects,type RichBlock,type FlowCard,type ChoiceEffect} from './flow-content.js';
 import {validateFlowRequest,type FlowRequest} from './flow-request.js';
@@ -43,7 +44,7 @@ export type FlowNode = (
  | {id:string;type:'HANDOFF';text:string;handoffPolicy?:HandoffPolicy}
  | {id:string;type:'END';text:string}) & {label?:string;note?:string};
 export type FlowGroup={id:string;title:string;nodeIds:string[];collapsed?:boolean};
-export type DraftTrigger={kind:'KEYWORD'|'FIRST_MESSAGE';phrase:string;matchMode:'EXACT'|'CONTAINS';targetNode:string;priority:number;enabled:boolean};
+export type DraftTrigger={kind:'KEYWORD'|'FIRST_MESSAGE'|'EVENT';channel?:FlowChannel;phrase:string;matchMode:'EXACT'|'CONTAINS';targetNode:string;priority:number;enabled:boolean};
 export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>;groups?:FlowGroup[];variables?:FlowVariable[];channel?:FlowChannel;triggers?:DraftTrigger[];forms?:FlowFormDraft[]};
 export type FlowChannel='WHATSAPP'|'WEBSITE'|'MESSENGER'|'INSTAGRAM'|'TELEGRAM';
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[];runtime?:FlowRuntime};
@@ -226,11 +227,13 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  requireTrue((options.runtime?startCount>=1:startCount===1)&&input.nodes.some(n=>plain(n)&&n.id===input.startId&&n.type==='START'),'Flow needs exactly one START matching startId');
  const nodes=input.nodes as FlowNode[];
  const edges=flowDestinations;
+ const triggers:DraftTrigger[]=[];
+ if(input.triggers!==undefined){requireTrue(Array.isArray(input.triggers)&&input.triggers.length<=100,'Maximum 100 start triggers');const used=new Set<string>();for(const t of input.triggers){requireTrue(plain(t)&&['KEYWORD','FIRST_MESSAGE','EVENT'].includes(String(t.kind))&&bounded(t.phrase,80,t.kind==='FIRST_MESSAGE'?0:1)&&['EXACT','CONTAINS'].includes(String(t.matchMode))&&typeof t.targetNode==='string'&&ident.test(t.targetNode)&&Number.isInteger(t.priority)&&Math.abs(Number(t.priority))<=100&&typeof t.enabled==='boolean','Invalid start trigger');requireTrue(t.channel===undefined||['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(t.channel)),'Invalid trigger channel');requireTrue(t.kind!=='EVENT'||triggerEvents.includes(t.phrase as typeof triggerEvents[number]),'Invalid channel event');const signature=(t.channel||'*')+':'+t.kind+':'+t.matchMode+':'+t.phrase.normalize('NFKC').trim().toLowerCase();if(t.enabled){requireTrue(!used.has(signature),'Duplicate enabled start triggers');used.add(signature);if(!options.draft)requireTrue(seen.has(t.targetNode),'Trigger target is unavailable')}triggers.push(t as DraftTrigger)}if(!options.draft&&!options.runtime)requireTrue(!triggerConflicts(triggers).length,'Overlapping triggers need distinct priorities');}
  if(!options.draft){
  for(const node of nodes)for(const dest of edges(node))requireTrue(seen.has(dest),'Node '+node.id+' links to missing '+dest);
  // Unreachable blocks are configuration mistakes, not silently ignored.
  const reached=new Set<string>();const visit=(id:string)=>{if(reached.has(id))return;reached.add(id);for(const dest of edges(nodes.find(n=>n.id===id)!))visit(dest)};
- visit(input.startId);requireTrue(reached.size===nodes.length,'Flow has unreachable nodes');
+ visit(input.startId);for(const trigger of triggers)if(trigger.enabled)visit(trigger.targetNode);requireTrue(reached.size===nodes.length,'Flow has unreachable nodes');
  // Prevent automatic (no user input) loops. Choices/INPUT are permissible cycle breaks.
  const visiting=new Set<string>(),done=new Set<string>();
  const verifyAuto=(id:string)=>{
@@ -267,8 +270,6 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   }
  }
  if(input.forms!==undefined)validateFormDrafts(input.forms);
- const triggers:DraftTrigger[]=[];
- if(input.triggers!==undefined){requireTrue(Array.isArray(input.triggers)&&input.triggers.length<=100,'Maximum 100 start triggers');const used=new Set<string>();for(const t of input.triggers){requireTrue(plain(t)&&['KEYWORD','FIRST_MESSAGE'].includes(String(t.kind))&&bounded(t.phrase,80,t.kind==='FIRST_MESSAGE'?0:1)&&['EXACT','CONTAINS'].includes(String(t.matchMode))&&typeof t.targetNode==='string'&&ident.test(t.targetNode)&&Number.isInteger(t.priority)&&Math.abs(Number(t.priority))<=100&&typeof t.enabled==='boolean','Invalid start trigger');const signature=t.kind+':'+t.matchMode+':'+t.phrase.normalize('NFKC').trim().toLowerCase();if(t.enabled){requireTrue(!used.has(signature),'Duplicate enabled start triggers');used.add(signature);if(!options.draft)requireTrue(seen.has(t.targetNode),'Trigger target is unavailable')}triggers.push(t as DraftTrigger)}}
  const variables:FlowVariable[]=[];
  if(input.variables!==undefined){requireTrue(Array.isArray(input.variables)&&input.variables.length<=100,'Maximum 100 variables');const names=new Set();for(const v of input.variables){requireTrue(plain(v)&&typeof v.key==='string'&&key.test(v.key)&&!names.has(v.key)&&bounded(v.label,80)&&['text','phone','email','number','date','datetime','location','boolean','enum'].includes(String(v.type))&&['session','contact'].includes(String(v.scope)),'Invalid typed variable');names.add(v.key);if(v.type==='enum')requireTrue(Array.isArray(v.options)&&v.options.length>=1&&v.options.length<=50&&v.options.every(o=>bounded(o,100)),'Enum requires bounded options');variables.push(v as FlowVariable)}}
  if(input.channel!==undefined)requireTrue(['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(input.channel)),'Invalid authoring channel');

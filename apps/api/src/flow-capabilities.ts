@@ -1,8 +1,11 @@
+import {triggerConflicts} from './flow-triggers.js';
 import type {FlowDefinition,FlowChannel} from './flow-engine.js';
 export type FlowIssue={severity:'error'|'warning';nodeId?:string;code:string;message:string};
 export const channelCapabilities={WHATSAPP:{buttons:3,listRows:10,urlButtons:1,mixedUrl:false},WEBSITE:{buttons:3,listRows:10,urlButtons:3,mixedUrl:true},TELEGRAM:{buttons:3,listRows:10,urlButtons:3,mixedUrl:true},MESSENGER:{buttons:3,listRows:10,urlButtons:3,mixedUrl:true},INSTAGRAM:{buttons:3,listRows:10,urlButtons:0,mixedUrl:false}} as const;
 export function flowChannelIssues(flow:FlowDefinition,channel:FlowChannel=flow.channel||'WHATSAPP'):FlowIssue[]{
  const issues:FlowIssue[]=[],cap=channelCapabilities[channel];
+ for(const conflict of triggerConflicts(flow.triggers||[]))issues.push({severity:'error',code:'TRIGGER_PRIORITY_CONFLICT',message:'التريجران '+(conflict.first+1)+' و'+(conflict.second+1)+' قد يتطابقان بأولوية متساوية؛ اختر أولويتين مختلفتين.'});
+ for(const [i,t]of (flow.triggers||[]).entries())if(t.enabled&&t.kind==='EVENT'&&['MEDIA','LOCATION'].includes(t.phrase)&&(t.channel||channel)==='WEBSITE')issues.push({severity:'error',code:'TRIGGER_UNSUPPORTED_EVENT',message:'التريجر '+(i+1)+': دردشة الموقع لا تستقبل موقعًا أو مرفقات أصلية حاليًا.'});
  if(flow.forms?.length)issues.push({severity:'warning',code:'FORM_DRAFT_ONLY',message:'النماذج مسودات داخلية فقط؛ لا توجد مراجع Meta معتمدة أو إرسال حي.'});
  for(const node of flow.nodes){
   if(node.type==='BUTTONS'||node.type==='LIST'){

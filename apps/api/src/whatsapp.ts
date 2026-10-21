@@ -1,3 +1,4 @@
+import {resolveConversationBot} from './bot-routing.js';
 import {cancelConversationAutomation,resumeControlledConversation} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
 import {coexistenceEvent,eventTime} from './whatsapp-coexistence.js';
@@ -165,6 +166,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const conversationId=String(conversation.rows[0].id),status=str(conversation.rows[0].status);
  const interactive=asObject(message.interactive),reply=asObject(interactive.list_reply||interactive.button_reply);
  const action=limited(reply.id||asObject(message.button).payload,200);
+ const triggerEvent=message.type==='location'?'LOCATION' as const:['image','video','audio','document','sticker'].includes(str(message.type))?'MEDIA' as const:action?'POSTBACK' as const:'MESSAGE' as const;
  const msgType=str(message.type),body=msgType==='order'?'[اهتمام بمنتجات كتالوج Meta — يحتاج مراجعة موظف]':msgType==='text'?limited(asObject(message.text).body,4000):msgType==='button'?limited(asObject(message.button).text,4000):action?'اختيار: '+action:'[رسالة واتساب غير نصية]';
  await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,message_source,provider_at)
   VALUES($1,$2,'INBOUND',$3,$4,'CUSTOMER',$5)`,[tenantId,conversationId,body,messageId,receivedAt]);
@@ -185,7 +187,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
    if(status==='HUMAN'){
      await respond(textPayload('تم تفعيل الردود الخدمية. الموظف المسؤول هيتابع محادثتك.'));return;
    }
-   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true});
+   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true,triggerEvent});
    for(const payload of restarted.payloads)await respond(payload);
    return;
  }
@@ -206,10 +208,11 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
 
  // Generic published workflows take priority over old tourism-specific navigation.
  // Approved answers are permitted only when the exact company-approved question matches.
- const waiting=await db.query(`SELECT 1 FROM chatbot_flow_sessions s JOIN chatbot_flow_versions v ON v.tenant_id=s.tenant_id AND v.version=s.version CROSS JOIN LATERAL jsonb_array_elements(v.definition->'nodes') node WHERE s.tenant_id=$1 AND s.conversation_id=$2 AND node->>'id'=s.node_id AND node->>'type' IN ('INPUT','QUESTION') LIMIT 1`,[tenantId,conversationId]);
+ const waiting=await db.query(`SELECT 1 FROM chatbot_flow_sessions s LEFT JOIN chatbot_bot_versions b ON b.tenant_id=s.tenant_id AND b.bot_id=s.bot_id AND b.version=s.version LEFT JOIN chatbot_flow_versions v ON v.tenant_id=s.tenant_id AND v.version=s.version AND s.bot_id IS NULL CROSS JOIN LATERAL jsonb_array_elements(coalesce(b.definition,v.definition)->'nodes') node WHERE s.tenant_id=$1 AND s.conversation_id=$2 AND node->>'id'=s.node_id AND node->>'type' IN ('INPUT','QUESTION') LIMIT 1`,[tenantId,conversationId]);
  const explicitHandoff=/^(موظف|عايز موظف|عاوز موظف|خدمة العملاء|كلموني|عايز حد|عاوز حد|human|agent)$/i.test(body.trim());
- const hasFlowSession=await db.query('SELECT 1 FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,conversationId]);
- const triggered=msgType==='text'||msgType==='button'?await matchTrigger(db,tenantId,body,!hasFlowSession.rowCount):undefined;
+ const hasFlowSession=await db.query('SELECT bot_id FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,conversationId]);
+ const routedBot=hasFlowSession.rowCount&&!hasFlowSession.rows[0].bot_id?null:await resolveConversationBot(db,tenantId,conversationId,hasFlowSession.rows[0]?.bot_id);
+ const triggered=msgType==='text'||msgType==='button'?await matchTrigger(db,tenantId,body,!hasFlowSession.rowCount,routedBot&&!routedBot.legacy_default?String(routedBot.id):undefined,{channel:'WHATSAPP',event:triggerEvent}):undefined;
  if(msgType==='text'&&!action&&!waiting.rowCount&&!explicitHandoff&&!triggered){
   const answer=await findApprovedAnswer(db,tenantId,body);
   if(answer){await respond(textPayload(answer));return;}
@@ -225,7 +228,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const flowOutput=await respondToFlow(db,{
    tenantId,conversationId,contactId,
    actionId:action==='home'?'flow:restart':action,
-   body,fromWhatsApp:true
+   body,fromWhatsApp:true,triggerEvent
  });
  for(const payload of flowOutput.payloads)await respond(payload);
  return;

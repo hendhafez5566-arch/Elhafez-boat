@@ -30,17 +30,17 @@ export async function connectSocial(db:SqlClient,a:Actor,input:unknown){
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'SOCIAL_ACCOUNT_CONNECTED','channel',$3)`,[a.tenantId,a.userId,r.rows[0].id]);return {id:r.rows[0].id,channel:d.channel,externalId:id,configured:true,deliveryVerified:false};
 }
 export async function disableSocial(db:SqlClient,a:Actor,id:string){allow(a,['OWNER']);if(!isUuid(id))throw new HttpFailure(400,'Invalid account');const r=await db.query('UPDATE chatbot_social_accounts SET enabled=false WHERE tenant_id=$1 AND id=$2 RETURNING id',[a.tenantId,id]);if(!r.rowCount)throw new HttpFailure(404,'Account not found');await db.query("UPDATE chatbot_social_outbox SET status='CANCELLED',payload='{}'::jsonb WHERE tenant_id=$1 AND account_id=$2 AND status='PENDING'",[a.tenantId,id]);await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'SOCIAL_ACCOUNT_DISABLED','channel',$3)`,[a.tenantId,a.userId,id]);return {disabled:true};}
-type Incoming={sender:string;eventId:string;name:string;text:string;action:string;timestamp:number};
+type Incoming={triggerEvent?:import('./flow-triggers.js').TriggerEvent;sender:string;eventId:string;name:string;text:string;action:string;timestamp:number};
 export function parseTelegram(payload:any):Incoming|null{
  const cb=payload?.callback_query,m=cb?.message||payload?.message;if(!m||m.chat?.type!=='private'||!Number.isSafeInteger(payload?.update_id))return null;const sender=String(m.chat.id);if(!/^\d{1,20}$/.test(sender))return null;
- return {sender,eventId:String(payload.update_id),name:String((cb?.from||m.from)?.first_name||'عميل Telegram').slice(0,120),text:String(cb?'':m.text||m.caption||'[وسائط واردة]').slice(0,2000),action:typeof cb?.data==='string'?cb.data:'',timestamp:Number(m.date)*1000};
+ return {triggerEvent:cb?'POSTBACK':m.location?'LOCATION':m.photo||m.document||m.audio||m.video||m.voice?'MEDIA':'MESSAGE',sender,eventId:String(payload.update_id),name:String((cb?.from||m.from)?.first_name||'عميل Telegram').slice(0,120),text:String(cb?'':m.text||m.caption||'[وسائط واردة]').slice(0,2000),action:typeof cb?.data==='string'?cb.data:'',timestamp:Number(m.date)*1000};
 }
 export function parseMetaSocial(payload:any):{channel:string;account:string;message:Incoming}[]{
- if(!['page','instagram'].includes(payload?.object)||!Array.isArray(payload.entry))return [];const out=[];
+ if(!['page','instagram'].includes(payload?.object)||!Array.isArray(payload.entry))return [];const out:{channel:string;account:string;message:Incoming}[]=[];
  for(const entry of payload.entry.slice(0,50))for(const e of (Array.isArray(entry.messaging)?entry.messaging:[]).slice(0,100)){
  if(e.message?.is_echo||e.read||e.delivery||!/^\d{5,30}$/.test(String(e.sender?.id)))continue;
  const id=e.message?.mid||e.postback?.mid;if(typeof id!=='string'||id.length>256)continue;
- out.push({channel:payload.object==='page'?'MESSENGER':'INSTAGRAM',account:String(entry.id),message:{sender:String(e.sender.id),eventId:id,name:payload.object==='page'?'عميل Messenger':'عميل Instagram',text:String(e.message?.text||e.postback?.title||'[وسائط واردة]').slice(0,2000),action:String(e.message?.quick_reply?.payload||e.postback?.payload||'').slice(0,200),timestamp:Number(e.timestamp)}});
+ out.push({channel:payload.object==='page'?'MESSENGER':'INSTAGRAM',account:String(entry.id),message:{triggerEvent:e.message?.quick_reply||e.postback?'POSTBACK':e.message?.attachments?.some((a:any)=>a.type==='location')?'LOCATION':e.message?.attachments?.length?'MEDIA':'MESSAGE',sender:String(e.sender.id),eventId:id,name:payload.object==='page'?'عميل Messenger':'عميل Instagram',text:String(e.message?.text||e.postback?.title||'[وسائط واردة]').slice(0,2000),action:String(e.message?.quick_reply?.payload||e.postback?.payload||'').slice(0,200),timestamp:Number(e.timestamp)}});
  }return out;
 }
 export async function receiveTelegram(pool:SqlClient&SqlPool,bot:string,secret:string,payload:unknown){
@@ -67,7 +67,8 @@ async function receive(db:SqlClient,t:string,account:string,channel:string,m:Inc
  if(c.status==='HUMAN')return;
  if(c.status==='CLOSED'&&(c.bot_control as any)?.mode!=='STOPPED'){await db.query("UPDATE conversations SET status='OPEN',assigned_user_id=NULL WHERE tenant_id=$1 AND id=$2",[t,cid]);await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[t,cid]);}
  let action='';if(m.action){const found=await db.query('SELECT action_id FROM chatbot_social_actions WHERE tenant_id=$1 AND conversation_id=$2 AND token=$3 AND created_at>now()-interval \'7 days\'',[t,cid,m.action]);if(found.rowCount)action=String(found.rows[0].action_id);}
- const result=await respondToFlow(db,{tenantId:t,conversationId:cid,contactId:String(c.contact_id),actionId:action,body:m.text,fromWhatsApp:false});await deliverConversation(db,t,cid,result.payloads,{staff:result.handedOff});
+ if(m.action&&!action)return; // Unknown/expired callback is never reclassified as a message event.
+ const result=await respondToFlow(db,{tenantId:t,conversationId:cid,contactId:String(c.contact_id),actionId:action,body:m.text,fromWhatsApp:false,triggerEvent:m.triggerEvent==='POSTBACK'&&!action?undefined:m.triggerEvent});await deliverConversation(db,t,cid,result.payloads,{staff:result.handedOff});
 }
 /** Convert internal neutral messages to provider-supported formats. Large Telegram callbacks
  * use opaque 24-byte action references rather than exceeding its 64-byte limit. */

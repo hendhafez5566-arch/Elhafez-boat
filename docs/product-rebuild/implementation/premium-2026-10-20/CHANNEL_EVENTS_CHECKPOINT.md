@@ -1,0 +1,13 @@
+# Channel events and priority resolution — 21 October 2026
+
+Continues verified remote 62ed60c on existing premium branch / Draft PR #5. F10 closes for the supported channel event contract, without live provider qualification.
+
+EVENT MESSAGE/POSTBACK/MEDIA/LOCATION, optional exact channel filter, existing FIRST_MESSAGE/KEYWORD and priority semantics share validation, atomic publication, both old/bot trigger tables, legacy trigger API, runtime and authenticated dry-run. Supported native adapters classify events before display-text conversion. A keyword cannot match a button title/media placeholder. A postback must match an actual non-URL choice, skip or current consent challenge on the pinned waiting node; unknown/expired social tokens cannot become message events. WhatsApp FAQ precedence now respects actual bot routes and pinned bot input waits. Human/consent controls still precede trigger selection.
+
+Equal-priority overlapping triggers with different targets cannot publish; disabled/different-channel/nonoverlapping rules are distinguished. Contains rules can co-occur in one message. Old published runtime snapshots retain their existing readable contract; no historical triggers are rewritten. Trigger-only targets now count as graph roots and terminal targets are entered directly. UI has channel/event/priority controls and visible review guidance. Simulator chooses exact channel/event through the shared matching logic. Website native MEDIA/LOCATION triggers are rejected rather than pretending that the widget can acquire them. No claim of F26 collection or new F07 native reply variants.
+
+Additive migration 0041 preserves rows/FORCE RLS and extends both existing trigger tables. 207 unit tests + TypeScript/build PASS; six new PostgreSQL scenarios with non-BYPASSRLS role; three actual authenticated Chromium desktop/mobile API/editor/readiness/Mock checks PASS. Existing RLS/legacy-bot/control/consent/integration/authoring/native-connector database regressions PASS (one initial native run correctly required the authoring fixture; prepared that fixture and reran all 13 native scenarios successfully). New tests are mandatory in Verify CI. Save repair CI 39564261067 observed fully SUCCESS, including browser/runtime/restore/Compose gates. This new feature commit has a separate pending remote run.
+
+Evidence: ../../evidence/channel-events-2026-10-21/ (real desktop/mobile screenshots and results). Matrix: 19 PASS / 17 PARTIAL / 0 wholly BLOCKED.
+
+Next: F12 exact origin for new nonblocking jobs, cancellation/dispatch guards and explicit preserved unknown legacy jobs. Then native acquisition/quick-reply components and delivery/funnel correlation. Visual approval pending; no real provider/account/send, merge or deployment.

@@ -1,3 +1,4 @@
+import {triggerMatches,validTriggerPostback,type TriggerContext} from './flow-triggers.js';
 import {definitionHash} from './flow-release.js';
 import {setBotControl} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
@@ -66,7 +67,7 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor,botId?:string){
  await assertFlowApproved(db,actor,botId,Number(draft.rows[0].draftRevision),sourceDefinition);
  if(sourceDefinition.triggers!==undefined){
   const table=botId?'chatbot_bot_triggers':'chatbot_triggers';await db.query(`DELETE FROM ${table} WHERE tenant_id=$1${botId?' AND bot_id=$2':''}`,botId?[actor.tenantId,botId]:[actor.tenantId]);
-  for(const trigger of sourceDefinition.triggers)await db.query(`INSERT INTO ${table}(tenant_id,kind,phrase,match_mode,target_node,priority,enabled${botId?',bot_id':''}) VALUES($1,$2,$3,$4,$5,$6,$7${botId?',$8':''})`,[actor.tenantId,trigger.kind,trigger.phrase,trigger.matchMode,trigger.targetNode,trigger.priority,trigger.enabled,...(botId?[botId]:[])]);
+  for(const trigger of sourceDefinition.triggers)await db.query(`INSERT INTO ${table}(tenant_id,kind,phrase,match_mode,target_node,priority,enabled,channel${botId?',bot_id':''}) VALUES($1,$2,$3,$4,$5,$6,$7,$8${botId?',$9':''})`,[actor.tenantId,trigger.kind,trigger.phrase,trigger.matchMode,trigger.targetNode,trigger.priority,trigger.enabled,trigger.channel??null,...(botId?[botId]:[])]);
  }
  const saved=await store.publish(definition,draft.rows[0].draftRevision,sourceDefinition);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_PUBLISHED','bot_flow',$3)`,[actor.tenantId,actor.userId,(botId?botId+':':'')+String(saved.rows[0].version)]);
@@ -78,7 +79,7 @@ export async function listFlowVersions(db:SqlClient,actor:Actor,botId?:string){
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
-export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
+export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;triggerEvent?:import('./flow-triggers.js').TriggerEvent;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
  const ownership=await db.query('SELECT status,bot_control FROM conversations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,conversationId]);
  const control=(ownership.rows[0]?.bot_control||{}) as {mode?:string};
@@ -106,7 +107,11 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
    return {payloads:[{messaging_product:'whatsapp',type:'text',text:{preview_url:false,
      body:'تم تحويل محادثتك للموظف المختص. هيكمل معاك كل التفاصيل.'}}],handedOff:true};
  }
- const triggered=!ctx.operatorResume&&!ctx.integrationResume&&!ctx.connectorResume&&!ctx.resume&&(!previous||body)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined):undefined;
+ const transport=await db.query('SELECT channel FROM conversations WHERE tenant_id=$1 AND id=$2',[tenantId,conversationId]);
+ const channel=transport.rows[0]?.channel||(ctx.fromWhatsApp?'WHATSAPP':'WEBSITE');
+ let validPostback=!actionId||(!previous&&actionId==='flow:restart');
+ if(actionId&&previous?.version){const pinned=(await readVersion(Number(previous.version))).rows[0]?.definition as FlowDefinition|undefined;if(pinned)validPostback=validTriggerPostback({...pinned,nodes:Array.isArray(previous.runtime_nodes)?[...pinned.nodes,...previous.runtime_nodes]:pinned.nodes},typeof previous.node_id==='string'?previous.node_id:null,actionId,previousRuntime);}
+ const triggered=validPostback&&!ctx.operatorResume&&!ctx.integrationResume&&!ctx.connectorResume&&!ctx.resume&&(!previous||body||actionId||ctx.triggerEvent)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined,{channel:channel as import('./flow-engine.js').FlowChannel,event:ctx.triggerEvent||(actionId?'POSTBACK':'MESSAGE')}):undefined;
  const restart=Boolean(triggered)||/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
  let version=Number(previous?.version??0),flow:FlowDefinition;
  if(!previous||restart){
@@ -135,8 +140,6 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
   if(!flow.nodes.some(n=>n.id===triggered))throw new HttpFailure(409,'Trigger target is not in the current published flow');
   state.at=triggered;
  }
- const transport=await db.query('SELECT channel FROM conversations WHERE tenant_id=$1 AND id=$2',[tenantId,conversationId]);
- const channel=transport.rows[0]?.channel||(ctx.fromWhatsApp?'WHATSAPP':'WEBSITE');
  if(['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(channel))&&flowChannelIssues(flow,channel as import('./flow-engine.js').FlowChannel).some(i=>i.severity==='error'))throw new HttpFailure(409,'Flow content is incompatible with this conversation channel');
  const waitingNode=flow.nodes.find(n=>n.id===state.at);
  let resumedInput:FlowInput|undefined;let requestOutcome:string|undefined;
@@ -162,7 +165,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,conversationId]);
  // Flow replies are untrusted until matching the current node & option ID.
  const inbound=actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body};
- const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,enter:Boolean(ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
+ const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,enter:Boolean(triggered||ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
  if(requestOutcome)result.trace.unshift({nodeId:waitingNode!.id,type:waitingNode!.type,outcome:requestOutcome,elapsedMs:0});
  flow=result.flow;
  const contactAnswers=Object.fromEntries(Object.entries(result.state.answers).filter(([key])=>!flow.variables?.some(v=>v.key===key&&v.scope==='session')));
@@ -266,8 +269,17 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
  return {...flow,nodes:[...new Map(nodes.map(n=>[n.id,n])).values()]};
 }
 
-export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
+export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event']}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
  let crmStage:string|undefined;let chosenHandoff:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy}|undefined;let blockedService=false;
+ if(dryRun&&simulation){
+  const channel=simulation.channel||definition.channel||'WHATSAPP';
+  if(flowChannelIssues(definition,channel).some(i=>i.severity==='error'))throw new HttpFailure(400,'Flow is incompatible with simulated channel');
+  if((!input||['TEXT','CHOICE'].includes(input.kind))&&(input?.kind!=='CHOICE'||validTriggerPostback(definition,state.at,input.value,state.runtime))){
+   const event=simulation.event||(input?.kind==='CHOICE'?'POSTBACK':'MESSAGE');
+   const trigger=[...(definition.triggers||[])].sort((a,b)=>b.priority-a.priority).find(t=>triggerMatches(t,input?.value||'',state.at===null,{channel,event}));
+   if(trigger){state={at:trigger.targetNode,answers:{},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
+  }
+ }
  let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);

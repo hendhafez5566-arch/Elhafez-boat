@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual trigger editor saves event/channel/priority through scoped API and persisted draft",
+    "shared authenticated preview chooses real trigger priority and rejects unsupported event kinds",
+    "mobile event inspector remains usable; actual readiness rejects ambiguous priorities without publication"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium"
+}
