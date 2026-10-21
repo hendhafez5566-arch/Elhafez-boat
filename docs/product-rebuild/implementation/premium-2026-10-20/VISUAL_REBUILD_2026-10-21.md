@@ -13,7 +13,7 @@ Continues verified remote HEAD `2f0f77c52abe1dc298b968ca71f8644e3b2e10a4`, same 
 
 ## Verification at first checkpoint
 
-`npm run check`: TypeScript + build + **246 unit tests PASS**. `node --check` edited modules PASS. 46 migrations apply on a new local PostgreSQL16 database; three scale/localization PostgreSQL scenarios PASS, including 200/500 actual saved/published definitions, pinned old sessions, atomic501 rejection and tenant/RLS isolation. Existing scale/localization Chromium suite: **4 PASS**, covering 200/500 save/reopen,24 text edits,120 pans, keyboard zoom, LTR and emulated two-finger pinch. Physical device/screen-reader acceptance remains separate.
+`npm run check`: TypeScript + build + **246 unit tests PASS**. `node --check` edited modules PASS. 47 migrations apply on a new local PostgreSQL16 database; three scale/localization PostgreSQL scenarios PASS, including 200/500 actual saved/published definitions, pinned old sessions, atomic501 rejection and tenant/RLS isolation. Existing scale/localization Chromium suite: **4 PASS**, covering 200/500 save/reopen,24 text edits,120 pans, keyboard zoom, LTR and emulated two-finger pinch. Physical device/screen-reader acceptance remains separate.
 
 Matched authentic baseline images now captured from original HEAD web source against real authenticated API/PostgreSQL: 11-node tourism scenario with unchanged layout, Arabic,100% zoom,1440×1000; mobile390×844; separate500-node scene at a fixed repeated zoom. No generated images. Initial isolated presentation captures are retained under package-a/b/c/d as intermediate evidence, not runtime evidence.
 
@@ -26,3 +26,13 @@ Read repository BotSailor reports and inspected original masked screenshot003 (e
 ## Exact continuation
 
 Finish matched After/interaction regression, review desktop/mobile screenshots, run remaining affected browser suites and inspect latest GitHub CI. Keep F01/F32 PARTIAL; providers/physical devices/owner visual acceptance remain explicit. No merge, Railway deployment, real provider account activation or customer message.
+
+## Integrated E / final local acceptance
+
+49 actual Chromium checks PASS:28 prior premium-builder checks;7 new matched-tourism/library/save/edge/mobile/500 checks;4 scale/bilingual/pinch;3 caret/context/capability;5 authoring/readiness/import/review;2 offline audited Mock/form checks.20 PostgreSQL cases PASS:3 scale +10 authoring +4 context +3 offline governance. Final TypeScript/build246 units PASS. All47 migrations applied to the isolated database. No API/runtime/database/worker source changes relative to2f0f77c.
+
+The library uses the server's real component-capability matrix to label conditional/fallback/draft modes and retains the exhaustive matrix dialog. Native browser focus scrolling is prevented with overflow:clip while original pan/zoom state remains authoritative. Mobile library close and settings menu have stable accessible names. Controls in dialogs close the operations menu before returning to the canvas; prior tests were updated to navigate the new disclosure controls, with assertions retained.
+
+The new authenticated matched visual/interaction suite is included in CI after scale fixtures. Same actual bot ID before/after,11 nodes, saved layout, same viewports/language/zoom/inspector; separate500-node comparison. The original baseline's browser focus could scroll its hidden-overflow container; this is documented rather than altering baseline source to conceal it. SHA256 manifest covers screenshots and relevant modules.
+
+First uploaded source checkpoint:c00abfeebdeba41771faeb102b86e59c4905343e. Its checks job passed; browser acceptance stopped at old offline navigation. Complete local rerun now passes. Latest-head CI pending observation after correction push. Owner visual approval and physical-device/screen-reader acceptance remain open;30 prior PASS labels are retained without promoting the six PARTIAL items.

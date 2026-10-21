@@ -203,6 +203,18 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const librarySearch=el('input');librarySearch.type='search';librarySearch.placeholder='ابحث عن رسالة، شرط، إجراء…';librarySearch.setAttribute('aria-label','بحث مكتبة المكونات');
  librarySearch.oninput=()=>{const q=librarySearch.value.trim().toLowerCase();let count=0;for(const section of librarySections){let visible=0;for(const item of section.querySelectorAll('button')){item.hidden=!(item.textContent+' '+item.dataset.kind).toLowerCase().includes(q);if(!item.hidden)visible++}section.hidden=!visible;count+=visible}libraryEmpty.hidden=count>0;libraryCount.textContent=count+' مكون'};
  palette.querySelector('h3').after(intro,librarySearch,quick,libraryEmpty);
+ let componentMatrix=null;
+ const libraryChannelNote=el('p','قدرات القناة تظهر بعد تحميل إعداداتها.','builder-library-channel');libraryChannelNote.setAttribute('role','status');librarySearch.before(libraryChannelNote);
+ function paintComponentCapabilities(){
+  libraryChannelNote.textContent=componentMatrix?'المكونات حسب '+(flow.channel||'WHATSAPP')+' · الفحص قبل النشر يراجع الإعدادات':'تعذر عرض قدرات القناة؛ افتح مراجعة قبل النشر.';
+  for(const tile of quick.querySelectorAll('[data-kind]')){
+   tile.querySelector('.builder-channel-hint')?.remove();const cell=componentMatrix?.rows?.find(row=>row.component===tile.dataset.kind)?.channels?.[flow.channel||'WHATSAPP'];
+   if(!cell)continue;tile.title=cell.detail;
+   const title={FALLBACK:'عرض بديل في هذه القناة',CONDITIONAL:'حسب إعداد المكوّن',EXPLICIT_ROUTE:'يحتاج مسارًا بديلًا',DRAFT_ONLY:'مسودة فقط'}[cell.mode];
+   if(title){const hint=el('small',title,'builder-channel-hint');tile.lastElementChild.append(hint)}
+  }
+ }
+ async function loadComponentCapabilities(){palette.setAttribute('aria-busy','true');try{componentMatrix=await baseApi('/flows/component-capabilities')}catch{componentMatrix=null}finally{palette.setAttribute('aria-busy','false');paintComponentCapabilities()}}
  const steps=el('details',undefined,'builder-steps-list');steps.open=false;
  steps.append(el('summary','خطوات المحادثة'),$('builder-nodes'));palette.append(steps);
  const more=el('details',undefined,'builder-more-list');
@@ -730,7 +742,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;
    lastRecoveryScope=recoveryScope();retainRecovery.checked=recoveryStore.enabled(lastRecoveryScope);
-   simulatedChannel.value=flow.channel||'WHATSAPP';connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
+   simulatedChannel.value=flow.channel||'WHATSAPP';connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();await loadComponentCapabilities();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const editingDirection=el('select');editingDirection.setAttribute('aria-label','اتجاه التحرير Editing direction');for(const [value,title]of [['rtl','العربية — RTL'],['ltr','English — LTR'],['auto','مختلط — Auto']]){const o=el('option',title);o.value=value;editingDirection.append(o)}editingDirection.onchange=()=>{$('builder-editor').dir=editingDirection.value;for(const c of $('builder-editor').querySelectorAll('input:not([type=number]),textarea'))if(!c.lang)c.dir=editingDirection.value};
@@ -886,7 +898,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }catch(error){saveState=error.status===409?'تعارض: راجع النسختين':'تعذر الحفظ؛ تعديلاتك باقية — أعد المحاولة';storeRecovery();if(error.status===409){clearTimeout(autosaveTimer);autosave.checked=false;await showDraftConflict()}else if(!automatic)notify(saveState+' · '+error.message,'error')}
    finally{saving=false;renderStatus();if(autosave.checked&&dirty&&saveState==='تعديلات أحدث تنتظر الحفظ')autosaveTimer=setTimeout(()=>void saveDraft(true),1200)}
  }
- const channelSelect=el('select');for(const channel of ['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM']){const o=el('option',channel);o.value=channel;channelSelect.append(o)}channelSelect.setAttribute('aria-label','قناة التصميم');channelSelect.onchange=()=>{flow.channel=channelSelect.value;markDirty()};primaryBar.append(labelInput('قناة التصميم',channelSelect));
+ const channelSelect=el('select');for(const channel of ['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM']){const o=el('option',channel);o.value=channel;channelSelect.append(o)}channelSelect.setAttribute('aria-label','قناة التصميم');channelSelect.onchange=()=>{flow.channel=channelSelect.value;paintComponentCapabilities();markDirty()};primaryBar.append(labelInput('قناة التصميم',channelSelect));
  mountFlowLabs({el,button,label,control,api,execute,getFlow:()=>flow,getSelected:()=>nodeById(selected),changed:()=>markDirty(),renderAll,toolbar:advancedButtons,replaceFlow:definition=>{flow=deep(definition);selected=flow.startId;selectedNodes=new Set([selected]);markDirty();renderAll();resetPreview()}});
  const preflightButton=button('مراجعة قبل النشر',()=>execute(async()=>{if(state.demo)return;const result=await baseApi(state.botId?'/bots/'+encodeURIComponent(state.botId)+'/flows/readiness':'/flows/preflight',{method:'POST',body:flow});const dialog=el('dialog',undefined,'builder-conflict-dialog');dialog.append(el('h3',result.publishable?'المسار جاهز بنيويًا لهذه القناة':'أصلح الأخطاء قبل النشر'),el('p','الفحص لا يربط قناة ولا يرسل أي رسالة.'));for(const issue of result.issues)dialog.append(button((issue.severity==='error'?'خطأ: ':'تنبيه: ')+issue.message,()=>{if(issue.nodeId){selected=issue.nodeId;selectedNodes=new Set([selected]);renderAll();canvas.focus(selected);showInspector();dialog.close();dialog.remove()}}));if(!result.issues.length)dialog.append(el('p','لا أخطاء في البنية أو المحتوى المعلن للقناة. يبقى فحص حساب المزود منفصلًا.'));dialog.append(button('إغلاق',()=>{dialog.close();dialog.remove()}));document.body.append(dialog);dialog.showModal()}));primaryBar.append(preflightButton);
  advancedButtons.append(button('تحليلات الخطوات',()=>execute(async()=>{if(!state.botId||state.demo){notify('افتح بوتًا محفوظًا لعرض أحداثه الفعلية');return}const data=await baseApi('/bots/'+encodeURIComponent(state.botId)+'/flow-insights?days=7');const dialog=el('dialog',undefined,'builder-conflict-dialog');dialog.append(el('h3','أحداث التنفيذ الفعلية — 7 أيام'),el('p','العدادات انتقالات فعلية وجلسات محادثة، وليست إيصالات تسليم. المحاكاة مستبعدة.'));const table=el('table');const head=el('tr');for(const t of ['الإصدار','الخطوة','النتيجة','الانتقالات','المحادثات'])head.append(el('th',t));table.append(head);for(const row of data.rows){const tr=el('tr');for(const value of [row.version,row.nodeId,row.outcome,row.events,row.sessions])tr.append(el('td',value));table.append(tr)}dialog.append(data.rows.length?table:el('p','لا توجد أحداث تشغيل فعلية لهذا البوت بعد.'),button('إغلاق',()=>{dialog.close();dialog.remove()}));document.body.append(dialog);dialog.showModal()})));
@@ -926,12 +938,13 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const operationsBody=el('div',undefined,'builder-operations-grid');
  const keep=new Set([studioBack,$('builder-name').closest('label'),$('builder-save'),$('builder-publish'),$('builder-unsaved').parentElement,channelSelect.closest('label')]);
  for(const child of [...primaryBar.children])if(!keep.has(child))operationsBody.append(child);
- guideDisclosure.remove();operationsBody.prepend(guideDisclosure,advancedView);operationsDialog.append(operationsHead,operationsBody);document.body.append(operationsDialog);operationsBody.addEventListener('click',event=>{const action=event.target.closest('button');if(action?.parentElement===operationsBody&&action!==guideLaunch)operationsDialog.close()});
+ guideDisclosure.remove();operationsBody.prepend(guideDisclosure,advancedView);operationsDialog.append(operationsHead,operationsBody);document.body.append(operationsDialog);operationsBody.addEventListener('click',event=>{const action=event.target.closest('button');if(action&&action!==guideLaunch&&!guideDisclosure.contains(action))operationsDialog.close()});
  const brand=el('span','✦','studio-brand-mark');brand.setAttribute('aria-hidden','true');studioBack.textContent='إدارة البوتات';studioBack.prepend(brand);
- const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');primaryBar.append(operationsButton);
+ const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');operationsButton.setAttribute('aria-label','إعدادات المسار');primaryBar.append(operationsButton);
  // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
  const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'));
  for(const child of [...actions.children])if(![paletteToggle].includes(child)&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
+ displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
  stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
  const editActions=el('div',undefined,'builder-edit-actions');
  for(const title of ['تراجع','إعادة']){const original=[...tools.querySelectorAll('button')].find(b=>b.textContent===title);if(original)editActions.append(button(title,()=>original.click()))}
@@ -940,7 +953,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const paletteClose=button('إغلاق المكتبة ×',()=>{palette.hidden=true;workspace.classList.add('palette-collapsed');paletteToggle.textContent='إظهار المكونات';paletteToggle.setAttribute('aria-expanded','false')},'builder-palette-close');palette.prepend(paletteClose);
  const compactStudio=matchMedia('(max-width:800px)');if(compactStudio.matches)paletteClose.click();compactStudio.addEventListener('change',event=>{if(event.matches&&!workspace.classList.contains('builder-linear-mode'))paletteClose.click()});
  const simulatorLayout=el('div',undefined,'builder-simulator-layout'),simulatorLab=el('aside',undefined,'builder-simulator-lab');
- simulatorLab.append(el('h3','إعدادات التجربة'),el('p','محاكاة محلية آمنة؛ لا تُرسل رسائل إلى العملاء.','builder-simulator-note'),simulatedChannel.closest('label'));
+ simulatorLab.append(el('h3','إعدادات التجربة'),el('p','محاكاة محلية آمنة؛ لا تُرسل رسائل إلى العملاء.','builder-simulator-note'),simulatedChannel.closest('label'),$('builder-export'));
  const mockSettings=el('details',undefined,'builder-mock-settings');mockSettings.append(el('summary','بيانات Mock والوقت والأحداث'),simulatedEvent.closest('label'),simulatedStaff.closest('label'),simulatedClock.closest('label'),scenarioControls);
  simulatorLab.append(mockSettings,diagnostics);simulatorLayout.append(phoneShell,simulatorLab);simulatorDialog.append(simulatorLayout);
  simulatorHead.querySelector('strong').textContent='تجربة المحادثة';

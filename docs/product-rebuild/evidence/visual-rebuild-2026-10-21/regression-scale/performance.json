@@ -1,21 +1,21 @@
 {
   "200": {
-    "loadMs": 368,
-    "editP95": 71,
-    "panP95": 0.6999999999534339,
-    "heapBefore": 3794208,
-    "heapAfter": 5076956,
-    "heapGrowth": 1282748,
+    "loadMs": 207,
+    "editP95": 76,
+    "panP95": 0.6000000000931323,
+    "heapBefore": 3704680,
+    "heapAfter": 5114216,
+    "heapGrowth": 1409536,
     "nodes": 200,
     "edges": 199
   },
   "500": {
-    "loadMs": 252,
-    "editP95": 77,
-    "panP95": 1.3000000000465661,
-    "heapBefore": 4720560,
-    "heapAfter": 7057128,
-    "heapGrowth": 2336568,
+    "loadMs": 349,
+    "editP95": 109,
+    "panP95": 0.6000000000931323,
+    "heapBefore": 5106152,
+    "heapAfter": 7380076,
+    "heapGrowth": 2273924,
     "nodes": 500,
     "edges": 499
   }
