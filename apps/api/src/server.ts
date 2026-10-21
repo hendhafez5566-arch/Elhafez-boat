@@ -1,3 +1,5 @@
+import {compileWhatsAppForm} from './flow-forms.js';
+import {proposeAssistance,reviewAssistance} from './flow-assistance-policy.js';
 import {conversationMedia} from './incoming-media.js';
 import {flowFunnel,flowDeliveryTrace} from './flow-analytics.js';
 import {flowExperiments} from './flow-experiments.js';
@@ -185,7 +187,9 @@ const server=createServer(async(req,res)=>{
     if(experiments&&req.method==='GET')return json(res,200,await run(tx=>flowExperiments(tx,actor,experiments[1],new URL(req.url||'/','http://local').searchParams)));
     const stepStats=/^\/api\/v1\/bots\/([^/]+)\/flow-insights$/.exec(pathname);
     if(stepStats&&req.method==='GET')return json(res,200,await run(tx=>flowStepInsights(tx,actor,stepStats[1],new URL(req.url||'/','http://local').searchParams)));
-    if(pathname==='/api/v1/flows/assist'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,mockFlowAssistance(await body(req)))}
+    if(pathname==='/api/v1/flows/forms/compile'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,compileWhatsAppForm(await body(req)));}
+    const assistanceReview=/^\/api\/v1\/flows\/assist\/([^/]+)\/review$/.exec(pathname);if(assistanceReview&&req.method==='POST')return json(res,200,await runBody((tx,input)=>reviewAssistance(tx,actor,assistanceReview[1],input)));
+    if(pathname==='/api/v1/flows/assist'&&req.method==='POST')return json(res,200,await runBody((tx,input)=>proposeAssistance(tx,actor,input)));
     if(pathname==='/api/v1/flows/component-capabilities'&&req.method==='GET')return json(res,200,componentCapabilities());
     if(pathname==='/api/v1/flows/capabilities'&&req.method==='GET')return json(res,200,channelCapabilities);
     if(pathname==='/api/v1/flows/preflight'&&req.method==='POST'){

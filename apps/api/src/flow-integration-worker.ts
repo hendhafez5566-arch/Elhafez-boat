@@ -60,7 +60,7 @@ async function processFlowRequest(pool:SqlPool,tenantId:string,kind:RequestKind,
    if(!await lockConversation(db,tenantId,job.conversation_id))throw new WebhookFailure('TRANSPORT');
    const current=await readJob(db,tenantId,String(job.id),kind);if(!current||!owns(current)||!windowOpen(current)||!current.enabled||current.status!=='PROCESSING')throw new WebhookFailure('TRANSPORT');
    return {status:200,body:await runConnectorSync(db,tenantId,current,http,deadline)};
-  });else response=await transport(String(job.url),job.payload,String(job.id),{mode:String(job.auth_mode),encrypted:job.secret_encrypted?String(job.secret_encrypted):null},{method:request.method,timeoutSeconds:request.timeoutSeconds});
+  });else response=await transport(String(job.url),job.payload,String(job.id),{mode:String(job.auth_mode),encrypted:job.secret_encrypted?String(job.secret_encrypted):null},{method:request.method,timeoutSeconds:request.timeoutSeconds,responseFormat:request.responseFormat,captureHeaders:request.captureHeaders,headers:request.headers});
  }catch(error){failure=error instanceof WebhookFailure?error:error instanceof HttpFailure?new WebhookFailure('HTTP',error.status):error instanceof ProviderFailure?new WebhookFailure(error.status===0&&Date.now()>=deadline?'TIMEOUT':'HTTP',error.status,error.ambiguous):new WebhookFailure('MAPPING_OR_TRANSPORT',0,request.method==='POST')}
 
  if(response&&!failure){try{fields=mapRequestResponse(request,response.body)}catch{failure=new WebhookFailure('MAPPING',response.status)}}

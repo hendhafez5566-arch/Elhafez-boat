@@ -117,6 +117,10 @@ jobs:
         run: node tests/flow-connector-db.mjs
       - name: Customer timezone, long calendars and precise wait cancellation
         run: node tests/flow-schedule-db.mjs
+      - name: Offline HTTP formats, form compilation and audited Mock proposals
+        run: |
+          node tests/offline-contract-db.mjs
+          node tests/offline-contract-browser.mjs
       - name: Bilingual content, 200/500 graph performance and emulated touch
         run: |
           node tests/flow-scale-locale-db.mjs

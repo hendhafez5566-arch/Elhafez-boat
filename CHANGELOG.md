@@ -74,3 +74,7 @@ Embedded Signup with owner/browser/tenant-bound one-use grant, encrypted phone c
 
 
 2026-10-21 latest B/C bundle: F33/F34 close; F01/F32 retain honest device/accessibility limitations.30 PASS/6 PARTIAL/0 wholly BLOCKED.242 units/TS/build;3 PG and4 Chromium with actual200/500 graph profiling and emulated pinch. SCALE_LOCALE_CHECKPOINT.md. Next safe internal F23/F24/F29/F30 contracts, then authorized major visual redesign with same-state captures.
+
+
+## 2026-10-21 — safe offline contracts
+TEXT/NONE response and safe headers through existing durable worker; pinned unapproved WhatsApp component export; role/quota/private audit and scoped reviews for MOCK proposals.246 units,20 integration +3 governance PostgreSQL,2 Chromium. No provider activation.

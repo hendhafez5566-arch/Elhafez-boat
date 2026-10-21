@@ -442,3 +442,8 @@ Incomplete premium Flow Studio batch on feat/premium-flow-builder-2026-10-20 fro
 
 
 2026-10-21 latest B/C bundle: F33/F34 close; F01/F32 retain honest device/accessibility limitations.30 PASS/6 PARTIAL/0 wholly BLOCKED.242 units/TS/build;3 PG and4 Chromium with actual200/500 graph profiling and emulated pinch. SCALE_LOCALE_CHECKPOINT.md. Next safe internal F23/F24/F29/F30 contracts, then authorized major visual redesign with same-state captures.
+
+
+## 21 October — offline contracts continuation
+
+30 PASS /6 PARTIAL.246 units/typecheck/build;20 integration +3 governance PostgreSQL;2 Chromium. See docs/product-rebuild/implementation/premium-2026-10-20/OFFLINE_CONTRACT_CHECKPOINT.md. Meta/AI remain unqualified; next visual rebuild. Prior49e5 CI failed on stale save-notice browser wait, corrected without removing persisted-data assertions.

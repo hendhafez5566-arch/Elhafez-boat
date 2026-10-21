@@ -70,7 +70,7 @@ try{
  await evaluate("(()=>{const t=document.querySelector('.builder-inspector textarea');t.value='أهلًا بك في تجربة البوت المستقل';t.dispatchEvent(new Event('input',{bubbles:true}))})()");
  await screenshot('rebuild-after-contextual-message-1366.png');
  // Empty-bot insertion adds a real terminal step, rather than leaving a dangling edge.
- await evaluate("document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'first message draft saved');
+ await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'first message draft saved');
  const initialBots=await evaluate("fetch('/api/v1/bots').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})"),initialBot=initialBots.find(b=>b.name===botName);
  const firstMessage=await evaluate(`fetch('/api/v1/bots/${initialBot.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);
  const firstDefinition=firstMessage.draft.definition,firstStart=firstDefinition.nodes.find(n=>n.type==='START'),firstText=firstDefinition.nodes.find(n=>n.id===firstStart.next);assert.equal(firstText.type,'TEXT');assert.equal(firstDefinition.nodes.find(n=>n.id===firstText.next).type,'END');
@@ -78,7 +78,7 @@ try{
  // Exercise the real Arabic template and three stable button branches through existing controls.
  await evaluate("document.getElementById('builder-load-preset').click()");
  await until("Boolean(document.querySelector('.canvas-node[data-node-id=menu]'))",'three button template');
- await evaluate("document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'draft saved');
+ await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'draft saved');
  const bots=await evaluate("fetch('/api/v1/bots').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})");const bot=bots.find(b=>b.name===botName);assert.ok(bot);
  const cfg=await evaluate(`fetch('/api/v1/bots/${bot.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);assert.equal(cfg.draft.definition.nodes.find(n=>n.type==='BUTTONS').choices.length,3);
  await evaluate("document.getElementById('builder-publish').click()");await until("document.getElementById('notice').textContent.includes('تم نشر')",'bot publish');
@@ -154,7 +154,7 @@ try{
  await evaluate("[...document.querySelectorAll('[data-step-id=menu] .builder-step-branch button')].find(b=>b.textContent==='إضافة خطوة هنا').click()");await until("Boolean(document.querySelector('.builder-component-dialog[open]'))",'novice branch picker');await click('رسالة نصية','.builder-picker-item');
  await until("Boolean(document.querySelector('.builder-inspector:not([hidden]) textarea'))",'novice branch inspector');
  await evaluate("(()=>{const t=document.querySelector('.builder-inspector textarea');t.value='رد خاص لاختيار المعلومات';t.dispatchEvent(new Event('input',{bubbles:true}))})()");
- await evaluate("document.querySelector('.builder-properties > button').click()");await evaluate("document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'novice branch save');
+ await evaluate("document.querySelector('.builder-properties > button').click()");await evaluate("document.getElementById('notice').textContent='';document.getElementById('builder-save').click()");await until("document.getElementById('notice').textContent.includes('تم حفظ')",'novice branch save');
  const noviceSaved=await evaluate(`fetch('/api/v1/bots/${novice.id}/flows').then(async r=>{if(!r.ok)throw Error('HTTP '+r.status);return r.json()})`);const menu=noviceSaved.draft.definition.nodes.find(n=>n.id==='menu'),reply=noviceSaved.draft.definition.nodes.find(n=>n.id===menu.choices[0].next);assert.equal(reply.text,'رد خاص لاختيار المعلومات');assert.equal(reply.next,'information');assert.equal(menu.choices[0].id,'info');
  await screenshot('continuation-simple-editor-1366.png');await click('عرض المخطط المرئي','.builder-view-actions button');assert.ok(await evaluate("!document.querySelector('.builder-studio').classList.contains('builder-linear-mode')"));await screenshot('continuation-canvas-1366.png');await click('عرض مبسط بالخطوات','.builder-view-actions button');
  for(const [width,height] of [[390,844],[320,700]]){await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:true});await screenshot('continuation-simple-editor-'+width+'.png');assert.ok(await evaluate('document.documentElement.scrollWidth<=innerWidth+2'),'novice editor overflow '+width)}

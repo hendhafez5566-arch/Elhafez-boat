@@ -11,3 +11,9 @@ export function validateFormDrafts(raw:unknown):asserts raw is FlowFormDraft[]{
   for(const [i,s]of f.screens.entries())if(s.next!==(f.screens[i+1]?.id))throw Error('Form screens must follow their declared order');
  }
 }
+
+/** Pinned official-component JSON subset; only Meta can validate/approve an actual asset. No data exchange endpoint. */
+export function compileWhatsAppForm(input:unknown){validateFormDrafts([input]);const form=input as FlowFormDraft,fields:{key:string;label:string;type:string;required:boolean}[]=[],routing:Record<string,string[]>={},screens=[];
+ for(const [i,s]of form.screens.entries()){const id=s.id.toUpperCase(),terminal=i===form.screens.length-1,prior=[...fields];routing[id]=terminal?[]:[form.screens[i+1].id.toUpperCase()];const payload=Object.fromEntries([...prior.map(f=>[f.key,'${data.'+f.key+'}']),...s.fields.map(f=>[f.key,'${form.'+f.key+'}'])]);screens.push({id,title:s.title,...(terminal?{terminal:true,success:true}:{}),data:Object.fromEntries(prior.map(f=>[f.key,{type:'string',__example__:'SYNTHETIC'}])),layout:{type:'SingleColumnLayout',children:[{type:'Form',name:'form',children:[...s.fields.map(f=>({type:'TextInput',name:f.key,label:f.label,'input-type':f.type==='text'?'text':f.type,required:f.required})),{type:'Footer',label:terminal?'إرسال':'التالي','on-click-action':terminal?{name:'complete',payload}:{name:'navigate',next:{type:'screen',name:form.screens[i+1].id.toUpperCase()},payload}}]}]}});fields.push(...s.fields)}
+ return {json:{version:'7.3',routing_model:routing,screens},qualification:'LOCAL_PINNED_COMPONENT_SUBSET',requiresMetaValidation:true,approved:false,providerAssetId:null,dataExchange:false};
+}
