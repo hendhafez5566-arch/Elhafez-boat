@@ -1,3 +1,4 @@
+import {componentGroups,componentTile,composeInspector} from './flow-presentation.js';
 import {mountLocalization} from './flow-localization.js';
 import {mountVariableSuggestions} from './flow-variable-suggestions.js';
 import {mountFlowFunnel} from './flow-funnel.js';
@@ -183,22 +184,26 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const palette=$('builder-nodes').closest('.builder-column');
  const properties=$('builder-editor').closest('.builder-column');
  const simulator=$('builder-preview').closest('.builder-column');
- workspace.classList.add('builder-studio','palette-collapsed');
- palette.classList.add('builder-palette');palette.hidden=true;
+ workspace.classList.add('builder-studio');
+ palette.classList.add('builder-palette');palette.hidden=false;
  properties.classList.add('builder-properties');
  simulator.classList.add('builder-simulator');
  palette.querySelector('h3').textContent='مكتبة المكونات';
  const intro=el('p','اضغط لإضافة مكون، أو اسحبه إلى لوحة التصميم.','builder-hint');
  const quick=el('div',undefined,'builder-quick');
- const kinds=[['TEXT','✉'],['BUTTONS','☷'],['LIST','≡'],['INPUT','?'],['CONDITION','◇'],['CATALOG','▦'],['MEDIA','▣'],['HANDOFF','↗']];
- for(const [kind,symbol] of kinds){
-   const item=button(types[kind],()=>addNode(kind),'builder-quick-item');
-   item.draggable=true;item.setAttribute('aria-label','إضافة '+types[kind]);item.prepend(el('span',symbol,'builder-quick-symbol'));
-   item.ondragstart=e=>{e.dataTransfer?.setData('application/x-boat-block',kind);if(e.dataTransfer)e.dataTransfer.effectAllowed='copy'};
-   quick.append(item);
+ const kinds=componentGroups.flatMap(([,items])=>items.map(k=>[k]));
+ const libraryEmpty=el('p','لا توجد نتائج. جرّب اسمًا آخر.','builder-library-empty');libraryEmpty.hidden=true;
+ const libraryCount=el('span',String(kinds.length)+' مكون','builder-library-count');palette.querySelector('h3').append(libraryCount);
+ const librarySections=[];
+ for(const [title,items] of componentGroups){
+  const section=el('section',undefined,'builder-library-group');section.append(el('h4',title));
+  for(const kind of items)section.append(componentTile(kind,types[kind],()=>addNode(kind)));
+  quick.append(section);librarySections.push(section);
  }
- const librarySearch=el('input');librarySearch.type='search';librarySearch.placeholder='ابحث عن مكون…';librarySearch.setAttribute('aria-label','بحث مكتبة المكونات');librarySearch.oninput=()=>{const q=librarySearch.value.trim().toLowerCase();for(const item of quick.children)item.hidden=!item.textContent.toLowerCase().includes(q)};palette.querySelector('h3').after(intro,librarySearch,quick);
- const steps=el('details',undefined,'builder-steps-list');steps.open=true;
+ const librarySearch=el('input');librarySearch.type='search';librarySearch.placeholder='ابحث عن رسالة، شرط، إجراء…';librarySearch.setAttribute('aria-label','بحث مكتبة المكونات');
+ librarySearch.oninput=()=>{const q=librarySearch.value.trim().toLowerCase();let count=0;for(const section of librarySections){let visible=0;for(const item of section.querySelectorAll('button')){item.hidden=!(item.textContent+' '+item.dataset.kind).toLowerCase().includes(q);if(!item.hidden)visible++}section.hidden=!visible;count+=visible}libraryEmpty.hidden=count>0;libraryCount.textContent=count+' مكون'};
+ palette.querySelector('h3').after(intro,librarySearch,quick,libraryEmpty);
+ const steps=el('details',undefined,'builder-steps-list');steps.open=false;
  steps.append(el('summary','خطوات المحادثة'),$('builder-nodes'));palette.append(steps);
  const more=el('details',undefined,'builder-more-list');
  more.append(el('summary','المزيد من المكونات'),palette.querySelector('.builder-toolbar'));palette.append(more);
@@ -206,7 +211,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const stageHead=el('header',undefined,'builder-stage-head');
  stageHead.append(el('h3','مساحة تصميم المحادثة'),el('p','اضغط على الرسالة لتحريرها، أو اضغط + لإضافة خطوة داخل المسار.'));
  const actions=el('div',undefined,'builder-view-actions');
- const paletteToggle=button('إظهار المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات'});
+ const paletteToggle=button('إخفاء المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات';paletteToggle.setAttribute('aria-expanded',String(!palette.hidden))});
  const focusToggle=button('ملء الشاشة',()=>{const on=document.body.classList.toggle('studio-focus');focusToggle.textContent=on?'إنهاء ملء الشاشة':'ملء الشاشة';stagePanel.scrollIntoView({block:'start'});requestAnimationFrame(()=>{window.scrollTo(0,0);canvas.focus(selected||flow.startId)})});
  const advancedView=el('details',undefined,'builder-view-advanced');
   advancedView.append(el('summary','أدوات العرض المتقدمة'));
@@ -215,7 +220,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   advancedView.append(advancedButtons);
   actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
  function setEditorMode(linear){
-   workspace.classList.toggle('builder-linear-mode',linear);palette.hidden=!linear;workspace.classList.toggle('palette-collapsed',!linear);paletteToggle.disabled=linear;
+   workspace.classList.toggle('builder-linear-mode',linear);palette.hidden=false;workspace.classList.remove('palette-collapsed');paletteToggle.disabled=linear;paletteToggle.textContent='إخفاء المكونات';paletteToggle.setAttribute('aria-expanded','true');
    simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
    if(state.botId)sessionStorage.setItem('eb-editor-mode:'+state.tenantId+':'+state.botId,linear?'simple':'canvas');
    if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open')}
@@ -287,7 +292,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function paintPicker(){pickerGrid.replaceChildren();const q=pickerSearch.value.trim().toLowerCase();
    for(const [kind] of kinds.concat([['CONTROL'],['CONSENT'],['CARD'],['GALLERY'],['CRM_ACTION'],['BUSINESS_HOURS'],['GOAL'],['SET_FIELD'],['RANDOMIZER'],['QUESTION'],['TAG'],['DELAY'],['LINK'],['AI'],['SUBFLOW'],['CONNECTOR'],['WEBHOOK'],['END']])){
      if(!types[kind].toLowerCase().includes(q)&&!kind.toLowerCase().includes(q))continue;
-     pickerGrid.append(button(types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)},'builder-picker-item'));
+     pickerGrid.append(componentTile(kind,types[kind],()=>{const anchor=insertAnchor;picker.close();addNode(kind,anchor)}));
    }
    if(!pickerGrid.children.length)pickerGrid.append(el('p','لا توجد مكونات مطابقة للبحث'));
  }
@@ -553,6 +558,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      flow.groups=(flow.groups||[]).map(g=>({...g,nodeIds:g.nodeIds.filter(id=>id!==node.id)})).filter(g=>g.nodeIds.length>=2);
      selected=flow.startId;selectedNodes=new Set([selected]);markDirty();renderAll();
    },'danger'));
+   composeInspector(host,node,flow);
  }
  function renderStatus(){
    $('builder-version').textContent=published?'الإصدار المنشور: '+published.version:'مفيش إصدار منشور لسه';
@@ -915,6 +921,30 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
  });
+ const operationsDialog=el('dialog',undefined,'builder-conflict-dialog builder-operations-dialog');operationsDialog.setAttribute('aria-label','إعدادات وأدوات المسار');
+ const operationsHead=el('header',undefined,'builder-dialog-header');operationsHead.append(el('strong','إعدادات وأدوات المسار'),button('إغلاق ×',()=>operationsDialog.close()));
+ const operationsBody=el('div',undefined,'builder-operations-grid');
+ const keep=new Set([studioBack,$('builder-name').closest('label'),$('builder-save'),$('builder-publish'),$('builder-unsaved').parentElement,channelSelect.closest('label')]);
+ for(const child of [...primaryBar.children])if(!keep.has(child))operationsBody.append(child);
+ guideDisclosure.remove();operationsBody.prepend(guideDisclosure,advancedView);operationsDialog.append(operationsHead,operationsBody);document.body.append(operationsDialog);operationsBody.addEventListener('click',event=>{const action=event.target.closest('button');if(action?.parentElement===operationsBody&&action!==guideLaunch)operationsDialog.close()});
+ const brand=el('span','✦','studio-brand-mark');brand.setAttribute('aria-hidden','true');studioBack.textContent='إدارة البوتات';studioBack.prepend(brand);
+ const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');primaryBar.append(operationsButton);
+ // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
+ const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'));
+ for(const child of [...actions.children])if(![paletteToggle].includes(child)&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
+ stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
+ const editActions=el('div',undefined,'builder-edit-actions');
+ for(const title of ['تراجع','إعادة']){const original=[...tools.querySelectorAll('button')].find(b=>b.textContent===title);if(original)editActions.append(button(title,()=>original.click()))}
+ actions.prepend(editActions);stageExtras.remove();operationsBody.append(stageExtras);
+ primaryBar.classList.add('studio-header');paletteToggle.setAttribute('aria-expanded','true');
+ const paletteClose=button('إغلاق المكتبة ×',()=>{palette.hidden=true;workspace.classList.add('palette-collapsed');paletteToggle.textContent='إظهار المكونات';paletteToggle.setAttribute('aria-expanded','false')},'builder-palette-close');palette.prepend(paletteClose);
+ const compactStudio=matchMedia('(max-width:800px)');if(compactStudio.matches)paletteClose.click();compactStudio.addEventListener('change',event=>{if(event.matches&&!workspace.classList.contains('builder-linear-mode'))paletteClose.click()});
+ const simulatorLayout=el('div',undefined,'builder-simulator-layout'),simulatorLab=el('aside',undefined,'builder-simulator-lab');
+ simulatorLab.append(el('h3','إعدادات التجربة'),el('p','محاكاة محلية آمنة؛ لا تُرسل رسائل إلى العملاء.','builder-simulator-note'),simulatedChannel.closest('label'));
+ const mockSettings=el('details',undefined,'builder-mock-settings');mockSettings.append(el('summary','بيانات Mock والوقت والأحداث'),simulatedEvent.closest('label'),simulatedStaff.closest('label'),simulatedClock.closest('label'),scenarioControls);
+ simulatorLab.append(mockSettings,diagnostics);simulatorLayout.append(phoneShell,simulatorLab);simulatorDialog.append(simulatorLayout);
+ simulatorHead.querySelector('strong').textContent='تجربة المحادثة';
+ phoneBar.replaceChildren(el('span','✦','builder-chat-avatar'),el('strong','مساعد العملاء'),el('small','محادثة تجريبية · لا يوجد إرسال فعلي'));
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
  return {load,hasUnsavedChanges:()=>dirty,reset(){clearTimeout(textEditTimer);variableSuggestions.reset();forgetScenario();scenarioOwner='';forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;flowFunnel.reset();experiments.reset();conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

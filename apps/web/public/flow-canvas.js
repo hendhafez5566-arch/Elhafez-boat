@@ -1,3 +1,4 @@
+import {componentMeta,componentIcon} from './flow-presentation.js';
 import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH,MAX_POSITION} from './flow-geometry.js';
 /** Dependency-free, RTL-friendly flow canvas. Graph mutations stay in the existing draft editor. */
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
@@ -54,7 +55,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     stage.querySelectorAll('.canvas-node,.canvas-group').forEach(n=>n.remove());svg.replaceChildren();
     const defs=document.createElementNS(ns,'defs'),marker=document.createElementNS(ns,'marker');
     marker.id='flow-arrow';for(const [k,v] of Object.entries({markerWidth:'9',markerHeight:'9',refX:'8',refY:'3',orient:'auto'}))marker.setAttribute(k,v);
-    const arrow=document.createElementNS(ns,'path');arrow.setAttribute('d','M0,0 L8,3 L0,6');arrow.setAttribute('fill','#8272c9');marker.append(arrow);defs.append(marker);svg.append(defs);
+    const arrow=document.createElementNS(ns,'path');arrow.setAttribute('d','M0,0 L8,3 L0,6');arrow.setAttribute('fill','#8276ba');marker.append(arrow);defs.append(marker);svg.append(defs);
     const positions=positionsFor(f);for(const [id,p]of Object.entries(positions))if(!f.layout[id])f.layout[id]=p;const width=NODE_WIDTH,linkRequests=[],cards=new Map();
     const collapsed=new Map(),proxyPositions=new Map();
     for(const group of f.groups||[]){
@@ -70,7 +71,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     for(const n of f.nodes){
       if(collapsed.has(n.id)){const proxy=collapsed.get(n.id);cards.set(n.id,proxy);for(const e of edges(n))if(positions[e.to])linkRequests.push({from:n.id,to:e.to,key:e.key,port:proxy});continue}
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
-      card.dataset.nodeId=n.id;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
+      card.dataset.nodeId=n.id;card.dataset.tone=componentMeta(n.type).tone;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
       const metric=analytics.get(n.id);if(metric){const badge=btn('دخل '+metric.entered+' · أكمل '+metric.completed+' · انتظار '+metric.waiting+' · انقطاع '+metric.abandoned,'canvas-analytics',()=>analyticsSelect(n.id));badge.setAttribute('aria-label','تحليلات الخطوة '+n.id);card.append(badge);}
       card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(n.label||titles[n.type]||'محادثة')+' · '+n.id);
       const chooseCard=(event={})=>{active=n.id;select(n.id,event.shiftKey);highlight(n.id)};
@@ -84,9 +85,13 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       });
       const head=mk('div',undefined,'canvas-node-head'),drag=btn(n.label||titles[n.type]||'خطوة','canvas-title',e=>{active=n.id;select(n.id,e.shiftKey);highlight(n.id)});
       drag.setAttribute('aria-label','اختيار وتحريك '+(titles[n.type]||'خطوة'));
-      const icon=mk('span',undefined,'canvas-kind-indicator');const symbol=document.createElementNS(ns,'svg');symbol.setAttribute('viewBox','0 0 24 24');symbol.setAttribute('aria-hidden','true');const iconPath=document.createElementNS(ns,'path');iconPath.setAttribute('d',({START:'M8 4l12 8-12 8z',TEXT:'M4 5h16v12H9l-5 4z M8 9h8 M8 13h5',INPUT:'M6 3h12v18H6z M9 8h6 M9 12h6 M9 16h3',CONDITION:'M12 3l9 9-9 9-9-9z M9 12h6',HANDOFF:'M4 14v-3a8 8 0 0 1 16 0v3 M4 11H2v7h4v-7z M20 11h2v7h-4v-7z',BUTTONS:'M4 4h16v7H4z M4 15h7v5H4z M15 15h5v5h-5z',MEDIA:'M3 4h18v16H3z M3 16l6-6 6 6 3-3 3 3',DELAY:'M12 8v5l3 2 M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0'})[n.type]||'M5 4h14v16H5z M8 9h8 M8 14h8');symbol.append(iconPath);icon.append(symbol);head.append(icon,drag);card.append(head);
+      const icon=mk('span',undefined,'canvas-kind-indicator');icon.append(componentIcon(n.type));
+      const heading=mk('div',undefined,'canvas-heading-copy');heading.append(mk('small',titles[n.type]||'خطوة','canvas-type-label'),drag);
+      const edit=btn('⋯','canvas-node-edit',e=>{e.stopPropagation();chooseCard(e)});edit.setAttribute('aria-label','تحرير '+(n.label||titles[n.type]||n.id));
+      head.append(icon,heading,edit);card.append(head);
       const msg=mk('div',undefined,'canvas-message');
-      const text=String(n.text||n.caption||n.tag||(n.type==='START'?'أهلًا بعميلك — هنا تبدأ المحادثة':n.type==='CATALOG'?'عرض المنتجات والخدمات المعتمدة':n.type==='CONDITION'?'تحديد المسار حسب إجابة العميل':n.type==='END'?'انتهت المحادثة':'اضغط لتعديل محتوى هذه الخطوة'));
+      const summary=n.type==='DELAY'?'انتظار '+(n.seconds||0)+' ثانية':n.type==='CONDITION'?(n.rules?'قواعد مركبة · '+(n.rules.mode||n.rules.operator||'AND'):[n.field,n.operator,n.value].filter(v=>v!==undefined).join(' · ')):n.type==='SET_FIELD'?n.field+' ← '+n.value:n.type==='CONNECTOR'?'مزامنة موصل · نجاح / خطأ / مهلة':null;
+      const text=String(summary||n.text||n.caption||n.tag||(n.type==='START'?'أهلًا بعميلك — هنا تبدأ المحادثة':n.type==='CATALOG'?'عرض المنتجات والخدمات المعتمدة':n.type==='CONDITION'?'تحديد المسار حسب إجابة العميل':n.type==='END'?'انتهت المحادثة':'اضغط لتعديل محتوى هذه الخطوة'));
       msg.append(mk('p',text.slice(0,190),'canvas-message-text'));
       if(n.type==='MEDIA'||n.type==='LINK')msg.append(mk('small',n.mediaKind==='video'?'فيديو':n.mediaKind==='document'?'ملف':'مرفق / رابط','canvas-media-hint'));
       if(Array.isArray(n.choices)){

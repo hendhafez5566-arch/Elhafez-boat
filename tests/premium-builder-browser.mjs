@@ -1,3 +1,4 @@
+import {studioClick,revealStudioControl} from './support/studio-navigation.mjs';
 /** Real Chromium + real API. Requires an isolated account; never sends provider messages. */
 import {chromium} from 'playwright-core';
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ const context=await browser.newContext({viewport:{width:1440,height:1000}}),page
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
 const evidence=process.env.PREMIUM_EVIDENCE_DIR||'docs/product-rebuild/evidence/premium-2026-10-20';await mkdir(evidence,{recursive:true});const checks=[];
 const check=name=>{checks.push(name);console.log('PASS '+name)};
-const clickText=async(text,root=page)=>{await root.getByRole('button',{name:text,exact:true}).first().click();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))};
+const clickText=async(text,root=page)=>{await revealStudioControl(page,root.getByRole('button',{name:text,exact:true}).first());await root.getByRole('button',{name:text,exact:true}).first().click();await page.evaluate(()=>new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))))};
 const api=async(path,method='GET',body)=>page.evaluate(async({path,method,body})=>{const r=await fetch('/api/v1'+path,{method,headers:{'content-type':'application/json','x-boat-csrf':'1'},body:body?JSON.stringify(body):undefined});return {status:r.status,data:await r.json()}},{path,method,body});
 const shot=async name=>page.screenshot({path:evidence+'/'+name+'.png',fullPage:false});
 try{
