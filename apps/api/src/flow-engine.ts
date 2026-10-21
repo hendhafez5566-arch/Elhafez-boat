@@ -1,3 +1,4 @@
+import type {VariableContext} from './flow-variable-context.js';
 import {supportsAcquisition,attachmentReference,type Acquisition} from './flow-native-input.js';
 import {triggerConflicts,triggerEvents} from './flow-triggers.js';
 import {validateHandoffPolicy,type HandoffPolicy,type BotAction} from './flow-conversation-policy.js';
@@ -11,7 +12,7 @@ import {businessIsOpen,scheduledDelay,validateBusinessSchedule,validateDelaySche
  */
 export type ConditionRule={field:string;operator:'equals'|'contains'|'exists'|'not_exists'|'not_equals'|'gt'|'gte'|'lt'|'lte'|'date_before'|'date_after'|'tagged'|'not_tagged'|'in';value?:string}|{match:'all'|'any';rules:ConditionRule[]};
 export type WaitPolicy={required?:boolean;maxAttempts?:number;invalidNext?:string;skipNext?:string;timeoutSeconds?:number;timeoutNext?:string};
-export type FlowVariable={key:string;label:string;type:InputValidation['type']|'boolean'|'enum';scope:'contact'|'session';options?:string[]};
+export type FlowVariable={key:string;label:string;type:InputValidation['type']|'boolean'|'enum';scope:'contact'|'session';options?:string[];metadata?:{sensitivity:'GENERAL'|'PERSONAL'|'SENSITIVE';purpose:'SERVICE'|'MARKETING';consentPolicyVersion?:string}};
 export type FlowRuntime={attempts:Record<string,number>;consent?:{nodeId:string;token:string;policyVersion:string};wait?:{nodeId:string;expiresAt:number;token:string};experiments?:Record<string,string>};
 export type FlowInput={kind:'TEXT'|'CHOICE'|'SKIP'|'TIMEOUT'|'LOCATION'|'ATTACHMENT';value:string};
 export type InputValidation={type:'text'|'email'|'phone'|'number'|'date'|'datetime'|'location'|'attachment';min?:number;max?:number;errorText?:string};
@@ -43,7 +44,7 @@ export type FlowNode = (
  | {id:string;type:'CONTROL';operation:BotAction['operation'];next:string;seconds?:number}
  | {id:string;type:'CONSENT';text:string;purpose:'SERVICE'|'MARKETING';policyVersion:string;acceptNext:string;declineNext:string;withdrawNext?:string}
  | {id:string;type:'HANDOFF';text:string;handoffPolicy?:HandoffPolicy}
- | {id:string;type:'END';text:string}) & {label?:string;note?:string};
+ | {id:string;type:'END';text:string}) & {label?:string;note?:string;errorNext?:string};
 export type FlowGroup={id:string;title:string;nodeIds:string[];collapsed?:boolean};
 export type DraftTrigger={kind:'KEYWORD'|'FIRST_MESSAGE'|'EVENT';channel?:FlowChannel;phrase:string;matchMode:'EXACT'|'CONTAINS';targetNode:string;priority:number;enabled:boolean};
 export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>;groups?:FlowGroup[];variables?:FlowVariable[];channel?:FlowChannel;triggers?:DraftTrigger[];forms?:FlowFormDraft[]};
@@ -275,13 +276,13 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  }
  if(input.forms!==undefined)validateFormDrafts(input.forms);
  const variables:FlowVariable[]=[];
- if(input.variables!==undefined){requireTrue(Array.isArray(input.variables)&&input.variables.length<=100,'Maximum 100 variables');const names=new Set();for(const v of input.variables){requireTrue(plain(v)&&typeof v.key==='string'&&key.test(v.key)&&!names.has(v.key)&&bounded(v.label,80)&&['text','phone','email','number','date','datetime','location','attachment','boolean','enum'].includes(String(v.type))&&['session','contact'].includes(String(v.scope)),'Invalid typed variable');names.add(v.key);if(v.type==='enum')requireTrue(Array.isArray(v.options)&&v.options.length>=1&&v.options.length<=50&&v.options.every(o=>bounded(o,100)),'Enum requires bounded options');variables.push(v as FlowVariable)}}
+ if(input.variables!==undefined){requireTrue(Array.isArray(input.variables)&&input.variables.length<=100,'Maximum 100 variables');const names=new Set();for(const v of input.variables){requireTrue(plain(v)&&typeof v.key==='string'&&key.test(v.key)&&!names.has(v.key)&&bounded(v.label,80)&&['text','phone','email','number','date','datetime','location','attachment','boolean','enum'].includes(String(v.type))&&['session','contact'].includes(String(v.scope)),'Invalid typed variable');names.add(v.key);if(v.type==='enum')requireTrue(Array.isArray(v.options)&&v.options.length>=1&&v.options.length<=50&&v.options.every(o=>bounded(o,100)),'Enum requires bounded options');if(v.metadata!==undefined){const m=v.metadata;requireTrue(plain(m)&&Object.keys(m).every(k=>['sensitivity','purpose','consentPolicyVersion'].includes(k))&&['GENERAL','PERSONAL','SENSITIVE'].includes(String(m.sensitivity))&&['SERVICE','MARKETING'].includes(String(m.purpose))&&(m.consentPolicyVersion===undefined||bounded(m.consentPolicyVersion,80)),'Invalid variable consent metadata');}variables.push(v as FlowVariable)}}
  if(input.channel!==undefined)requireTrue(['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(input.channel)),'Invalid authoring channel');
  return {...(input.forms!==undefined?{forms:input.forms as FlowFormDraft[]}:{}),...(input.triggers!==undefined?{triggers}:{}),...(input.variables!==undefined?{variables}:{}),...(input.channel!==undefined?{channel:input.channel as FlowChannel}:{}),name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[],layout,groups};
 }
-export function renderFlowText(text:string,answers:Record<string,string>,limit=4096):string{return text.replace(/\{\{([a-z][a-z0-9_]{0,39})\}\}/g,(_,key:string)=>Object.hasOwn(answers,key)?answers[key]:'').slice(0,limit)}
+export function renderFlowText(text:string,answers:Record<string,string>,limit=4096,context:VariableContext={}):string{return text.replace(/\{\{(@?[a-z][a-z0-9_]{0,39})\}\}/g,(_,key:string)=>key.startsWith('@')?context[key.slice(1) as keyof VariableContext]||'':Object.hasOwn(answers,key)?answers[key]:'').slice(0,limit)}
 export function initialFlowState():FlowState{return {at:null,answers:{},tags:[]}}
-export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number;enter?:boolean;channel?:FlowChannel;onStep?:(id:string,type:string)=>void}={}):FlowAdvance{
+export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number;enter?:boolean;channel?:FlowChannel;onStep?:(id:string,type:string)=>void;variables?:VariableContext}={}):FlowAdvance{
  const now=context.now??Date.now(),nodes=new Map(flow.nodes.map(n=>[n.id,n]));
  const answers:Record<string,string>=Object.assign(Object.create(null),state.answers),tags=[...state.tags];let at=state.at??flow.startId;
  let runtime:FlowRuntime|undefined=state.runtime?JSON.parse(JSON.stringify(state.runtime)):undefined;
@@ -294,19 +295,19 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   const r=ensureRuntime();if(!r.wait||r.wait.nodeId!==node.id)r.wait={nodeId:node.id,expiresAt:now+seconds*1000,token:crypto.randomUUID()};
   return {seconds:Math.max(0,Math.ceil((r.wait.expiresAt-now)/1000)),next,kind,expiresAt:r.wait.expiresAt,token:r.wait.token};
  };
- const emitBlocks=(blocks:MessageBlock[]=[])=>{for(const block of blocks){if(block.type==='CARD'||block.type==='GALLERY'){const cards=block.type==='CARD'?[block.card]:block.cards;messages.push({type:'GALLERY',cards:cards.map(c=>({...c,title:renderFlowText(c.title,answers,80),subtitle:renderFlowText(c.subtitle||'',answers,160)}))})}else messages.push(block.type==='MEDIA'?{...block,caption:renderFlowText(block.caption||'',answers,1024)}:{type:'TEXT',text:renderFlowText(block.type==='LINK'?block.text+'\n'+block.url:block.text,answers)})}};
+ const emitBlocks=(blocks:MessageBlock[]=[])=>{for(const block of blocks){if(block.type==='CARD'||block.type==='GALLERY'){const cards=block.type==='CARD'?[block.card]:block.cards;messages.push({type:'GALLERY',cards:cards.map(c=>({...c,title:renderFlowText(c.title,answers,80,context.variables),subtitle:renderFlowText(c.subtitle||'',answers,160,context.variables)}))})}else messages.push(block.type==='MEDIA'?{...block,caption:renderFlowText(block.caption||'',answers,1024,context.variables)}:{type:'TEXT',text:renderFlowText(block.type==='LINK'?block.text+'\n'+block.url:block.text,answers)})}};
  const prompt=(node:Extract<FlowNode,{type:'INPUT'|'QUESTION'|'BUTTONS'|'LIST'}>)=>{
   if(node.type==='BUTTONS'&&node.blocks)emitBlocks(node.blocks);
-  if(node.type==='BUTTONS'||node.type==='LIST')messages.push({type:node.type,text:renderFlowText(node.text,answers,1024),choices:node.choices,buttonText:node.type==='LIST'?node.buttonText:undefined});
-  else if(node.type==='INPUT'&&node.acquisition){messages.push({type:'TEXT',text:renderFlowText(node.text,answers,1024),inputRequest:node.acquisition.kind});if(node.policy?.skipNext)messages.push({type:'BUTTONS',text:'يمكنك تخطي هذا السؤال الاختياري.',choices:[{id:'skip',title:'تخطي',next:node.policy.skipNext}]});}
-  else if(node.type==='INPUT'&&node.policy?.skipNext)messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024),choices:[{id:'skip',title:'تخطي',next:node.policy.skipNext}]});
-  else messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});
+  if(node.type==='BUTTONS'||node.type==='LIST')messages.push({type:node.type,text:renderFlowText(node.text,answers,1024,context.variables),choices:node.choices,buttonText:node.type==='LIST'?node.buttonText:undefined});
+  else if(node.type==='INPUT'&&node.acquisition){messages.push({type:'TEXT',text:renderFlowText(node.text,answers,1024,context.variables),inputRequest:node.acquisition.kind});if(node.policy?.skipNext)messages.push({type:'BUTTONS',text:'يمكنك تخطي هذا السؤال الاختياري.',choices:[{id:'skip',title:'تخطي',next:node.policy.skipNext}]});}
+  else if(node.type==='INPUT'&&node.policy?.skipNext)messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024,context.variables),choices:[{id:'skip',title:'تخطي',next:node.policy.skipNext}]});
+  else messages.push({type:'TEXT',text:renderFlowText(node.text,answers,4096,context.variables)});
  };
- const consentPrompt=(node:Extract<FlowNode,{type:'CONSENT'}>)=>{const r=ensureRuntime();if(!r.consent||r.consent.nodeId!==node.id||r.consent.policyVersion!==node.policyVersion)r.consent={nodeId:node.id,policyVersion:node.policyVersion,token:crypto.randomUUID()};const token=r.consent.token;messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024),choices:[{id:'consent:'+token+':accept',title:'أوافق',next:node.acceptNext},{id:'consent:'+token+':decline',title:'لا أوافق',next:node.declineNext},...(node.withdrawNext?[{id:'consent:'+token+':withdraw',title:'سحب الموافقة',next:node.withdrawNext}]:[])]});};
+ const consentPrompt=(node:Extract<FlowNode,{type:'CONSENT'}>)=>{const r=ensureRuntime();if(!r.consent||r.consent.nodeId!==node.id||r.consent.policyVersion!==node.policyVersion)r.consent={nodeId:node.id,policyVersion:node.policyVersion,token:crypto.randomUUID()};const token=r.consent.token;messages.push({type:'BUTTONS',text:renderFlowText(node.text,answers,1024,context.variables),choices:[{id:'consent:'+token+':accept',title:'أوافق',next:node.acceptNext},{id:'consent:'+token+':decline',title:'لا أوافق',next:node.declineNext},...(node.withdrawNext?[{id:'consent:'+token+':withdraw',title:'سحب الموافقة',next:node.withdrawNext}]:[])]});};
  let rerouted=false;for(let i=0;i<100;i++){const n=nodes.get(at);if(n?.type!=='INPUT'||!n.acquisition||supportsAcquisition(context.channel||flow.channel||'WHATSAPP',n.acquisition.kind))break;trace.push({nodeId:n.id,type:n.type,outcome:'unsupported_channel',elapsedMs:0});at=n.acquisition.unsupportedNext;clearWait();rerouted=true;}
  const current=nodes.get(at);if(current)context.onStep?.(current.id,current.type);if(!current)throw Error('Unknown current flow node');
  if(state.at!==null&&!context.enter&&!rerouted){
-  if(current.type==='CONSENT'){const challenge=runtime?.consent,prefix='consent:'+challenge?.token+':',parts=input?.kind==='CHOICE'&&input.value.startsWith(prefix)?input.value.slice(prefix.length).split(':'):[],id=parts[0],valid=challenge?.nodeId===current.id&&challenge.policyVersion===current.policyVersion&&parts.length===1;const next=valid?(id==='accept'?current.acceptNext:id==='decline'?current.declineNext:id==='withdraw'?current.withdrawNext:undefined):undefined;if(next){delete ensureRuntime().consent;return result({pending:true,consent:{purpose:current.purpose,decision:id==='accept'?'GRANT':id==='decline'?'DENY':'WITHDRAW',next,nodeId:current.id,policyVersion:current.policyVersion,notice:renderFlowText(current.text,answers,1024)}})}consentPrompt(current);return result();}
+  if(current.type==='CONSENT'){const challenge=runtime?.consent,prefix='consent:'+challenge?.token+':',parts=input?.kind==='CHOICE'&&input.value.startsWith(prefix)?input.value.slice(prefix.length).split(':'):[],id=parts[0],valid=challenge?.nodeId===current.id&&challenge.policyVersion===current.policyVersion&&parts.length===1;const next=valid?(id==='accept'?current.acceptNext:id==='decline'?current.declineNext:id==='withdraw'?current.withdrawNext:undefined):undefined;if(next){delete ensureRuntime().consent;return result({pending:true,consent:{purpose:current.purpose,decision:id==='accept'?'GRANT':id==='decline'?'DENY':'WITHDRAW',next,nodeId:current.id,policyVersion:current.policyVersion,notice:renderFlowText(current.text,answers,1024,context.variables)}})}consentPrompt(current);return result();}
   if(current.type==='INPUT'||current.type==='QUESTION'||current.type==='BUTTONS'||current.type==='LIST'){
    const policy='policy'in current?current.policy:undefined,entry:FlowTrace={nodeId:current.id,type:current.type,outcome:'resume'};trace.push(entry);
    const timedOut=runtime?.wait?.nodeId===current.id&&now>=runtime.wait.expiresAt;
@@ -317,7 +318,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
     let valid=false,error='اختر إجابة من الخيارات المتاحة.';
     if(current.type==='BUTTONS'||current.type==='LIST'){
      const prefix='flow:'+current.id+':',choice=input?.kind==='CHOICE'&&input.value.startsWith(prefix)?current.choices.find(c=>c.action!=='URL'&&c.id===input.value.slice(prefix.length)):undefined;
-     if(choice){const effects:ChoiceEffect[]=[...(choice.assign?[{type:'SET_FIELD' as const,...choice.assign}]:[]),...(choice.effects||[])],staged={...answers};let effectsValid=true;for(const effect of effects)if(effect.type==='SET_FIELD'){const value=renderFlowText(effect.value,staged,500);if(!validVariableValue(flow.variables?.find(v=>v.key===effect.field),value))effectsValid=false;staged[effect.field]=value}if(effectsValid){Object.assign(answers,staged);for(const effect of effects)if(effect.type==='TAG'){const i=tags.indexOf(effect.tag);if(effect.mode==='ADD'&&i<0)tags.push(effect.tag);if(effect.mode==='REMOVE'&&i>=0)tags.splice(i,1)}answers['choice_'+current.id]=choice.title;answers['pick_'+current.id]=choice.id;at=choice.next;valid=true;entry.outcome='choice:'+choice.id}else entry.outcome='effect_invalid'}
+     if(choice){const effects:ChoiceEffect[]=[...(choice.assign?[{type:'SET_FIELD' as const,...choice.assign}]:[]),...(choice.effects||[])],staged={...answers};let effectsValid=true;for(const effect of effects)if(effect.type==='SET_FIELD'){const value=renderFlowText(effect.value,staged,500,context.variables);if(!validVariableValue(flow.variables?.find(v=>v.key===effect.field),value))effectsValid=false;staged[effect.field]=value}if(effectsValid){Object.assign(answers,staged);for(const effect of effects)if(effect.type==='TAG'){const i=tags.indexOf(effect.tag);if(effect.mode==='ADD'&&i<0)tags.push(effect.tag);if(effect.mode==='REMOVE'&&i>=0)tags.splice(i,1)}answers['choice_'+current.id]=choice.title;answers['pick_'+current.id]=choice.id;at=choice.next;valid=true;entry.outcome='choice:'+choice.id}else entry.outcome='effect_invalid'}
     }else{
      if(input&&['TEXT','LOCATION','ATTACHMENT'].includes(input.kind)){
       const variable=flow.variables?.find(v=>v.key===current.field),validation=current.type==='INPUT'?current.validation:undefined;
@@ -349,7 +350,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   if(node.type==='KEYWORD'){const text=input?.kind==='TEXT'?input.value.toLowerCase():'';at=node.keywords.some(k=>text.includes(k.toLowerCase()))?node.yes:node.no;continue}
   if(node.type==='SUBFLOW')throw Error('Subflow must be compiled before execution');
   if(node.type==='CATALOG'||node.type==='AI'||node.type==='WEBHOOK'||node.type==='CONNECTOR'||node.type==='CRM_ACTION')return result({pending:true});
-  if(node.type==='SET_FIELD'){const value=renderFlowText(node.value,answers,500);if(!validVariableValue(flow.variables?.find(v=>v.key===node.field),value)){entry.outcome='field_invalid';if(node.errorNext){at=node.errorNext;continue}throw Error('Assigned value does not match the typed variable')}answers[node.field]=value;entry.outcome='field_updated';at=node.next;continue}
+  if(node.type==='SET_FIELD'){const value=renderFlowText(node.value,answers,500,context.variables);if(!validVariableValue(flow.variables?.find(v=>v.key===node.field),value)){entry.outcome='field_invalid';if(node.errorNext){at=node.errorNext;continue}throw Error('Assigned value does not match the typed variable')}answers[node.field]=value;entry.outcome='field_updated';at=node.next;continue}
   if(node.type==='GOAL'){entry.outcome='goal:'+node.goal;at=node.next;continue}
   if(node.type==='RANDOMIZER'){
    const saved=node.sticky?runtime?.experiments?.[node.id]:undefined;let branch=node.choices.find(c=>c.id===saved);
@@ -357,16 +358,16 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
    entry.outcome=branch.id;at=branch.next;continue;
   }
   if(node.type==='START'){at=node.next;continue}
-  if(node.type==='TEXT'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});emitBlocks(node.blocks);at=node.next;continue}
-  if(node.type==='LINK'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers)+'\n'+node.url});at=node.next;continue}
-  if(node.type==='MEDIA'){messages.push({type:'MEDIA',mediaKind:node.mediaKind,url:node.url,caption:renderFlowText(node.caption||'',answers,1024)});at=node.next;continue}
+  if(node.type==='TEXT'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers,4096,context.variables)});emitBlocks(node.blocks);at=node.next;continue}
+  if(node.type==='LINK'){messages.push({type:'TEXT',text:renderFlowText(node.text,answers,4096,context.variables)+'\n'+node.url});at=node.next;continue}
+  if(node.type==='MEDIA'){messages.push({type:'MEDIA',mediaKind:node.mediaKind,url:node.url,caption:renderFlowText(node.caption||'',answers,1024,context.variables)});at=node.next;continue}
   if(node.type==='TAG'){if(node.mode==='REMOVE'){const i=tags.indexOf(node.tag);if(i>=0)tags.splice(i,1)}else if(!tags.includes(node.tag))tags.push(node.tag);entry.outcome=node.mode==='REMOVE'?'tag_removed':'tag_added';at=node.next;continue}
   if(node.type==='CONDITION'){const matches=matchesCondition(node,answers,tags);entry.outcome=matches?'yes':'no';at=matches?node.yes:node.no;continue}
   if(node.type==='INPUT'||node.type==='QUESTION'||node.type==='BUTTONS'||node.type==='LIST'){
    prompt(node);const policy='policy'in node?node.policy:undefined;if(policy?.maxAttempts)ensureRuntime().attempts[node.id]=0;
    const waiting=policy?.timeoutSeconds?wait(node,policy.timeoutSeconds,policy.timeoutNext!,node.type==='INPUT'?'INPUT':'CHOICE'):undefined;return result(waiting?{waiting}:{});
   }
-  messages.push({type:'TEXT',text:renderFlowText(node.text,answers)});if(node.type==='HANDOFF')handoff=true;else finished=true;clearWait();return result();
+  messages.push({type:'TEXT',text:renderFlowText(node.text,answers,4096,context.variables)});if(node.type==='HANDOFF')handoff=true;else finished=true;clearWait();return result();
  }
  throw Error('Flow exceeded automatic step limit');
 }

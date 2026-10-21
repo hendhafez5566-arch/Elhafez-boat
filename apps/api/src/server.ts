@@ -11,7 +11,7 @@ import {flowRequestJobs,reconcileFlowRequest} from './flow-request-ops.js';
 import {validateRequestMocks,type RequestMock} from './flow-request.js';
 import {flowTraceSessions,flowConversationTrace} from './flow-trace.js';
 import {mockFlowAssistance} from './flow-assistance.js';
-import {flowChannelIssues,channelCapabilities} from './flow-capabilities.js';
+import {flowChannelIssues,channelCapabilities,componentCapabilities} from './flow-capabilities.js';
 import {workspaceSummary,completeWorkspaceSetup} from './workspace-setup.js';
 import {prepareBotTemplate,botTemplates,botTemplate} from './bot-templates.js';
 import {getBotRoutes,bindBotRoute,unbindBotRoute} from './bot-routing.js';
@@ -186,6 +186,7 @@ const server=createServer(async(req,res)=>{
     const stepStats=/^\/api\/v1\/bots\/([^/]+)\/flow-insights$/.exec(pathname);
     if(stepStats&&req.method==='GET')return json(res,200,await run(tx=>flowStepInsights(tx,actor,stepStats[1],new URL(req.url||'/','http://local').searchParams)));
     if(pathname==='/api/v1/flows/assist'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,mockFlowAssistance(await body(req)))}
+    if(pathname==='/api/v1/flows/component-capabilities'&&req.method==='GET')return json(res,200,componentCapabilities());
     if(pathname==='/api/v1/flows/capabilities'&&req.method==='GET')return json(res,200,channelCapabilities);
     if(pathname==='/api/v1/flows/preflight'&&req.method==='POST'){
      allow(actor,['OWNER','MANAGER']);const d=await body(req);return json(res,200,await run(tx=>flowReleaseReport(tx,actor,d)));

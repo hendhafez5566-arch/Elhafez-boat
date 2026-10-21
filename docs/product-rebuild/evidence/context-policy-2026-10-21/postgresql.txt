@@ -1,0 +1,5 @@
+PASS actual immutable metadata survives publication; forged consent never grants; trusted same-execution context reflects accepted policy without storing system tokens
+PASS real withdrawal and tenant RLS protect consent metadata; no notice/body/actor identifiers are returned
+PASS real SQL-aborted sensitive action recovers through savepoint, rolls back partial CRM changes, safely routes and retains redacted failure audit
+PASS privacy erasure removes collected values/session and leaves only value-free consent metadata
+PASS 4 context/policy PostgreSQL scenarios

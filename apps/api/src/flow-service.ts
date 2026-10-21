@@ -1,4 +1,5 @@
-import {observeFlow} from './flow-observation.js';
+import {consentVariableContext,type VariableContext} from './flow-variable-context.js';
+import {observeFlow,recordFlowFailure} from './flow-observation.js';
 import {triggerMatches,validTriggerPostback,type TriggerContext} from './flow-triggers.js';
 import {definitionHash} from './flow-release.js';
 import {setBotControl,cancelConversationAutomation} from './conversation-control.js';
@@ -279,6 +280,15 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
 }
 
 export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel;onStep?:(id:string,type:string)=>void},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event'];persona?:Record<string,string>;enter?:boolean}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
+ let failedId=state.at||definition.startId;const guarded=definition.nodes.some(n=>n.errorNext),savepoint=guarded&&!dryRun&&Boolean(context);
+ if(savepoint)await db.query('SAVEPOINT sensitive_flow');
+ try{const result=await executeFlowUnchecked(db,tenantId,definition,state,input,dryRun,context?{...context,onStep:(id,type)=>{failedId=id;context.onStep?.(id,type)}}:dryRun?{contactId:'',conversationId:'',onStep:(id,type)=>{failedId=id}}:undefined,simulation);if(savepoint)await db.query('RELEASE SAVEPOINT sensitive_flow');return result}
+ catch(error){if(savepoint)await db.query('ROLLBACK TO SAVEPOINT sensitive_flow');const failed=definition.nodes.find(n=>n.id===failedId);if(!failed?.errorNext)throw error;if(savepoint)await recordFlowFailure(db,error);
+ const result=await executeFlowUnchecked(db,tenantId,definition,{...state,answers:{...state.answers},tags:[...state.tags],at:failed.errorNext},undefined,dryRun,context?{...context,enter:true}:dryRun?{contactId:'',conversationId:'',enter:true}:undefined,simulation);result.trace.unshift({nodeId:failed.id,type:failed.type,outcome:dryRun?'mock_error_routed':'error_routed',elapsedMs:0});if(savepoint)await db.query('RELEASE SAVEPOINT sensitive_flow');return result;
+ }
+}
+
+async function executeFlowUnchecked(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel;onStep?:(id:string,type:string)=>void},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event'];persona?:Record<string,string>;enter?:boolean}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
  let crmStage:string|undefined;let chosenHandoff:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy}|undefined;let blockedService=false;
  if(dryRun&&simulation){
   if(state.at===null&&simulation.persona)state={...state,answers:{...state.answers,...simulation.persona}};
@@ -290,7 +300,8 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
    if(trigger){state={at:trigger.targetNode,answers:{...(simulation.persona||{})},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
   }
  }
- let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,onStep:context?.onStep,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
+ let variables:VariableContext={channel:simulation?.channel||context?.channel||definition.channel||'WHATSAPP'};if(JSON.stringify(definition.nodes).includes('{{@consent_')){if(dryRun)variables={...variables,consent_service:'MOCK_UNKNOWN',consent_marketing:'MOCK_UNKNOWN'};else if(context)variables=await consentVariableContext(db,tenantId,context.contactId,variables.channel!);}
+ let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{variables,now:simulation?.now,onStep:context?.onStep,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
   if(pending?.type==='CONTROL'&&result.botAction){
@@ -303,6 +314,7 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
   }
   if(pending?.type==='CONSENT'&&result.consent){
    const consent=result.consent;if(!dryRun){if(!context)throw new HttpFailure(409,'Consent requires a customer conversation');const recorded=await recordFlowConsent(db,tenantId,context.contactId,context.conversationId,{purpose:consent.purpose,decision:consent.decision,source:'FLOW',nodeId:pending.id,policyVersion:consent.policyVersion,notice:consent.notice,flowVersion:context.version});blockedService=recorded.serviceBlocked;}
+   if(dryRun)variables[consent.purpose==='SERVICE'?'consent_service':'consent_marketing']=consent.decision;else if(context&&JSON.stringify(definition.nodes).includes('{{@consent_'))variables=await consentVariableContext(db,tenantId,context.contactId,variables.channel!);
    trace.push({nodeId:pending.id,type:pending.type,outcome:(dryRun?'mock_':'')+'consent_'+consent.purpose.toLowerCase()+'_'+consent.decision.toLowerCase(),elapsedMs:0});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:consent.next}:n)};
   }
   if(pending?.type==='HANDOFF'&&pending.handoffPolicy){
@@ -339,12 +351,12 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
      if(pending.operation==='ASSIGN'){const member=await db.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role IN ('OWNER','MANAGER','AGENT')",[tenantId,pending.value]);if(!member.rowCount)throw new HttpFailure(400,'CRM assignee unavailable');await db.query('UPDATE conversations SET assigned_user_id=$3 WHERE tenant_id=$1 AND id=$2',[tenantId,context.conversationId,pending.value])}
      else{const lead=await registerInterest(db,tenantId,context.conversationId,context.contactId,null);await db.query('UPDATE chatbot_leads SET stage=$3,updated_at=now() WHERE tenant_id=$1 AND id=$2',[tenantId,lead,pending.value]);crmStage=pending.value;}
     }
-   }catch(e){if(!pending.errorNext)throw e;next=pending.errorNext;outcome='crm_error'}
+   }catch(e){if(!pending.errorNext||!(e instanceof HttpFailure))throw e;next=pending.errorNext;outcome='crm_error'}
    trace.push({nodeId:pending.id,type:pending.type,outcome,elapsedMs:performance.now()-started});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next}:n)};
   }
   if(pending?.type==='CONNECTOR'&&!pending.request){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'),undefined,{conversationId:context.conversationId,contactId:context.contactId,version:context.version!,nodeId:pending.id});}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
   flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId,context);
-  result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{...simulation,onStep:context?.onStep,channel:simulation?.channel||context?.channel||definition.channel});messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
+  result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{...simulation,variables,onStep:context?.onStep,channel:simulation?.channel||context?.channel||definition.channel});messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
  }
  if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
  return {...result,messages,trace,flow,chosenHandoff,blockedService,...(crmStage?{crmStage}:{})};
