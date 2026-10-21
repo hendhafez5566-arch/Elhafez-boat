@@ -351,6 +351,9 @@ try{
   await screenshot('platform-admin-authenticated.png');
   await evaluate(`(()=>{const f=document.getElementById('platform-create-form');f.elements.name.value='Browser company fixture';window.createdFixtureSlug='browser-'+Date.now();f.elements.slug.value=window.createdFixtureSlug;f.elements.ownerEmail.value='browser-owner@example.invalid';f.requestSubmit()})()`);
   await until("!document.getElementById('platform-invite-result').hidden && document.getElementById('platform-invite-link').value.includes('#owner.')",'platform company create');
+  // Invite availability precedes the asynchronous tenant-list reload. Wait for the
+  // created row itself before testing the synchronous search filter.
+  await until("[...document.querySelectorAll('#platform-tenants [data-tenant-search]')].some(card=>card.dataset.tenantSearch.includes(window.createdFixtureSlug))",'newly created company rendered');
   await evaluate("document.getElementById('platform-invite-link').value='';document.getElementById('platform-invite-result').hidden=true;const input=document.querySelector('[aria-label=\"البحث في الشركات\"]');input.value=window.createdFixtureSlug;input.dispatchEvent(new Event('input'))");
   assert.equal(await evaluate("document.querySelectorAll('#platform-tenants [data-tenant-id]:not([hidden])').length"),1,'real company search');
   await evaluate("(()=>{const card=document.querySelector('#platform-tenants [data-tenant-id]:not([hidden])');card.querySelectorAll('select')[1].value='SUSPENDED';[...card.querySelectorAll('button')].find(b=>b.textContent==='حفظ الاشتراك').click()})()");await until("document.getElementById('platform-notice').textContent.includes('تم تحديث اشتراك') && document.querySelector('#platform-tenants [data-tenant-id]:not([hidden]) select[aria-label^=حالة]')?.value==='SUSPENDED'",'actual subscription persisted');
