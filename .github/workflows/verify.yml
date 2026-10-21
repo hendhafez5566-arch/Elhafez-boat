@@ -117,6 +117,10 @@ jobs:
         run: node tests/flow-connector-db.mjs
       - name: Customer timezone, long calendars and precise wait cancellation
         run: node tests/flow-schedule-db.mjs
+      - name: Exact nonblocking job ownership and safe conversation cancellation
+        run: |
+          node tests/flow-job-origin-db.mjs
+          node tests/flow-job-origin-browser.mjs
       - name: Channel events, priority conflicts and native event provenance
         run: |
           node tests/flow-channel-events-db.mjs

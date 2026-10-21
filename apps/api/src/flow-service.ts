@@ -229,7 +229,7 @@ export async function rollbackFlow(db:SqlClient,actor:Actor,version:string,botId
 }
 
 /** Resolve approved dynamic content without changing immutable flow definitions. */
-export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefinition,answers:Record<string,string>,incoming:string,onlyId?:string,dryRun=false,contactId?:string){
+export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefinition,answers:Record<string,string>,incoming:string,onlyId?:string,dryRun=false,contactId?:string,origin?:{conversationId:string;version?:number}){
  const nodes=[];
  const target=flow.nodes.find(n=>n.id===onlyId);
  const activeRoot=target?.type==='CATALOG'?(target.id.startsWith('@catalog:')?target.id.split(':')[1]:target.id):null;
@@ -259,7 +259,7 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
    }
    nodes.push({id:node.id,type:'LIST' as const,text:'اختر منتجًا أو خدمة من الكتالوج المعتمد',buttonText:'عرض الكتالوج',choices});
   }else if(node.type==='WEBHOOK'&&(!onlyId||node.id===onlyId)){
-   if(!dryRun)await enqueueIntegration(db,tenantId,node.integrationId,{event:'FLOW_WEBHOOK',fields:answers,contactId});
+   if(!dryRun)await enqueueIntegration(db,tenantId,node.integrationId,{event:'FLOW_WEBHOOK',fields:answers,contactId},undefined,origin&&contactId?{...origin,contactId,version:origin.version!,nodeId:node.id}:undefined);
    nodes.push({id:node.id,type:'START' as const,next:node.next});
   }else if(node.type==='AI'&&(!onlyId||node.id===onlyId)){
    const result=dryRun?{handoff:false,text:'[Mock AI] رد تجريبي؛ لم يتم الاتصال بمزود ذكاء اصطناعي.'}:await groundedReply(db,tenantId,answers[node.field]||incoming);
@@ -332,8 +332,8 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
    }catch(e){if(!pending.errorNext)throw e;next=pending.errorNext;outcome='crm_error'}
    trace.push({nodeId:pending.id,type:pending.type,outcome,elapsedMs:performance.now()-started});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next}:n)};
   }
-  if(pending?.type==='CONNECTOR'&&!pending.request){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'));}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
-  flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId);
+  if(pending?.type==='CONNECTOR'&&!pending.request){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'),undefined,{conversationId:context.conversationId,contactId:context.contactId,version:context.version!,nodeId:pending.id});}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
+  flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId,context);
   result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,simulation);messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
  }
  if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
