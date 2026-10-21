@@ -1,3 +1,7 @@
+## 2026-10-21 — consent replay and old inbox resume hardening
+
+Persisted per-prompt consent challenges reject old/cross-conversation/version callbacks; old inbox release uses the existing controlled pinned resume path. Mobile experiment columns remain readable in a horizontal scroller. 201 units/typecheck/build; 11 actual control PG scenarios and rerun 11 new desktop/mobile browser checks PASS. Cumulative new PG scenarios: 25. Matrix remains 18 PASS / 18 PARTIAL. See HARDENING_CHECKPOINT.md; final closure uses a new disposable PostgreSQL instance and explicit installed Chromium, preserving earlier failed attempt evidence. No external provider/merge/deploy or visual/remote-CI acceptance claim.
+
 ## 2026-10-21 — real experiment conversion cohorts
 
 F22 PASS: published-version first-exposure cohorts, subsequent seven-day goal attribution, distinct conversions, old/repeated/unknown-order exclusions, maturity/mixed exposure and real Arabic desktop/mobile comparison. 200 units/TypeScript/build, 8 new PostgreSQL and 3 Chromium scenarios PASS. Cumulative batch: 18 PASS / 18 PARTIAL; four closures F18/F20/F22/F36, 24 new PG and 11 new browser scenarios. `EXPERIMENT_CHECKPOINT.md` contains exact metric definitions and evidence. F12 legacy nonblocking job attribution, F27 funnels/abandonment and F35 failed-transaction/outbound correlation remain real gaps. Full fresh acceptance rerun explicitly uses installed Chromium; no merge/deploy/real provider use, no visual approval and no verified remote Actions claim.

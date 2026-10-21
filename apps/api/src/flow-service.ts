@@ -209,7 +209,7 @@ export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:F
   if(!node||(node.type!=='CONSENT'&&node.type!=='BUTTONS'&&node.type!=='LIST'&&!(node.type==='INPUT'&&node.policy?.skipNext)))throw new Error('Flow awaiting node not valid for options');
   const urls=message.choices.filter(c=>c.action==='URL');
   if(urls.length===1&&urls.length===message.choices.length)return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'cta_url',body:{text:message.text},action:{name:'cta_url',parameters:{display_text:urls[0].title,url:urls[0].url}}}};
-  const choices=message.choices.map(c=>({id:`flow:${node.id}:${c.id}`,title:c.title,description:c.description||'',...(c.action==='URL'?{url:c.url}:{})}));
+  const choices=message.choices.map(c=>({id:node.type==='CONSENT'?c.id:`flow:${node.id}:${c.id}`,title:c.title,description:c.description||'',...(c.action==='URL'?{url:c.url}:{})}));
   if(message.type==='BUTTONS')return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'button',body:{text:message.text},action:{buttons:choices.map(c=>c.url?{type:'url',url:c.url,title:c.title}:{type:'reply',reply:{id:c.id,title:c.title}})}}};
   return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'list',body:{text:message.text},action:{button:message.buttonText||'اختار',sections:[{title:'القائمة',rows:choices}]}}};
  });return channel==='WHATSAPP'?payloads.flatMap(p=>p.type==='elhafez_gallery'?galleryFallback(p.cards as import('./flow-content.js').FlowCard[]):[p]):payloads;

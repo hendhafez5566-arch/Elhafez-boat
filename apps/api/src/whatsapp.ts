@@ -1,4 +1,4 @@
-import {cancelConversationAutomation} from './conversation-control.js';
+import {cancelConversationAutomation,resumeControlledConversation} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
 import {coexistenceEvent,eventTime} from './whatsapp-coexistence.js';
 import {recordCommerceInterest} from './commerce.js';
@@ -321,6 +321,7 @@ export async function setWhatsAppHandoff(db:SqlClient,actor:Actor,id:string,inpu
   const member=await db.query(`SELECT role FROM memberships WHERE tenant_id=$1 AND user_id=$2`,[actor.tenantId,assigned]);
   if(member.rowCount!==1||member.rows[0].role==='VIEWER')throw new HttpFailure(404,'Active staff assignee not found');
  }
+ if(d.status==='OPEN'&&['PAUSED','HANDOFF'].includes(String((current.bot_control as any)?.mode))){await resumeControlledConversation(db,actor.tenantId,id);await db.query("INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'WHATSAPP_HANDOFF_CHANGED','conversation',$3)",[actor.tenantId,actor.userId,id]);return (await db.query('SELECT id,status,assigned_user_id FROM conversations WHERE tenant_id=$1 AND id=$2',[actor.tenantId,id])).rows[0];}
  await cancelConversationAutomation(db,actor.tenantId,id);
  await db.query("UPDATE conversations SET bot_control='{}',bot_revision=bot_revision+1 WHERE tenant_id=$1 AND id=$2",[actor.tenantId,id]);
  if(d.status!=='OPEN')await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[actor.tenantId,id]);

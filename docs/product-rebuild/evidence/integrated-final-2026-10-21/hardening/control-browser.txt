@@ -1,0 +1,7 @@
+Starting actual Chromium
+Chromium ready
+PASS actual operator controls pause/resume the persisted pinned conversation through authenticated API
+PASS real scoped consent history and withdrawal controls render on mobile
+PASS saved consent node and all decision ports are editable in actual designer
+PASS real preview endpoint simulates consent acceptance/refusal and staff availability without sending
+PASS 4 conversation-control Chromium scenarios

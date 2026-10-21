@@ -1,0 +1,12 @@
+PASS pause cancels durable timeout, suppresses bot responses, rejects stale CAS and resumes with a fresh wait token
+PASS stopped flow stays stopped on customer input, requires explicit restart, and preserves role/tenant isolation
+PASS old inbox release resumes the pinned controlled path instead of resetting its node and replaying prior work
+PASS only issued current-prompt choice records marketing consent; consumed prompt replay cannot grant again after re-entry
+PASS marketing withdrawal does not stop service; service withdrawal prevents staff restart and staff cannot forge a grant
+PASS real public website receipts are idempotent; STOP/START records separate service withdrawal and restoration
+PASS service refusal records actual customer decision and stops outbound replies in the same transaction
+PASS unavailable team follows explicit fallback; available team assigns a real tenant member and blocks competing bot replies
+PASS durable human inactivity resumes pinned continuation once through the existing queue and engine
+PASS idle queue release and close outcomes are terminal and never repeat a worker continuation
+PASS published pause action persists and timed resume survives a separate worker transaction
+PASS 11 conversation-control PostgreSQL scenarios

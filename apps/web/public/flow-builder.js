@@ -625,10 +625,10 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   if(previewBusy)return;previewBusy=true;const generation=simulationGeneration;
   try{
    const current=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);const choice=current?.type==='BUTTONS'||current?.type==='LIST'||current?.type==='CONSENT';
-   const inbound=eventKind?{kind:eventKind,value:input||''}:input!==undefined?{kind:choice?'CHOICE':'TEXT',value:choice?'flow:'+current.id+':'+input:input}:undefined;
+   const inbound=eventKind?{kind:eventKind,value:input||''}:input!==undefined?{kind:choice?'CHOICE':'TEXT',value:choice?(current.type==='CONSENT'?input:'flow:'+current.id+':'+input):input}:undefined;
    const r=await api('/flows/preview',{method:'POST',body:{definition:flow,state:preview,input:inbound,simulation:{now:simulationNow,requests:requestMocks,staffAvailable:simulatedStaff.value==='yes'},...(previewRuntimeNodes?{runtimeNodes:previewRuntimeNodes}:{})}});
    if(generation!==simulationGeneration)return;
-   if(input)bubble(choice?current.choices?.find(c=>c.id===input)?.title||input:input,'customer');
+   if(input)bubble(choice?(current.type==='CONSENT'?({accept:'أوافق',decline:'لا أوافق',withdraw:'سحب الموافقة'}[input.split(':').at(-1)]||'اختيار الموافقة'):current.choices?.find(c=>c.id===input)?.title||input):input,'customer');
    for(const entry of r.trace||[]){const item=el('li',entry.nodeId+' · '+entry.type+' · '+entry.outcome);item.onclick=()=>{simulatorDialog.close();canvas.focus(entry.nodeId)};traceHost.append(item)}valuesHost.textContent=JSON.stringify(r.state.answers,null,2);canvas.highlight(r.state.at);
    preview=r.state;previewRuntimeNodes=r.runtimeNodes;$('builder-preview-options').replaceChildren();
    for(const message of r.messages){
