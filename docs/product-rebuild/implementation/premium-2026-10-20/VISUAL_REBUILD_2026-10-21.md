@@ -29,7 +29,7 @@ Finish matched After/interaction regression, review desktop/mobile screenshots, 
 
 ## Integrated E / final local acceptance
 
-49 actual Chromium checks PASS:28 prior premium-builder checks;7 new matched-tourism/library/save/edge/mobile/500 checks;4 scale/bilingual/pinch;3 caret/context/capability;5 authoring/readiness/import/review;2 offline audited Mock/form checks.20 PostgreSQL cases PASS:3 scale +10 authoring +4 context +3 offline governance. Final TypeScript/build246 units PASS. All47 migrations applied to the isolated database. No API/runtime/database/worker source changes relative to2f0f77c.
+55 actual Chromium checks PASS:28 prior premium-builder checks;7 new matched-tourism/library/save/edge/mobile/500 checks;4 scale/bilingual/pinch;3 caret/context/capability;5 authoring/readiness/import/review;2 offline audited Mock/form checks.20 PostgreSQL cases PASS:3 scale +10 authoring +4 context +3 offline governance. Final TypeScript/build246 units PASS. All47 migrations applied to the isolated database. No API/runtime/database/worker source changes relative to2f0f77c.
 
 The library uses the server's real component-capability matrix to label conditional/fallback/draft modes and retains the exhaustive matrix dialog. Native browser focus scrolling is prevented with overflow:clip while original pan/zoom state remains authoritative. Mobile library close and settings menu have stable accessible names. Controls in dialogs close the operations menu before returning to the canvas; prior tests were updated to navigate the new disclosure controls, with assertions retained.
 
@@ -40,3 +40,7 @@ First uploaded source checkpoint:c00abfeebdeba41771faeb102b86e59c4905343e. Its c
 ### Composite identity final refinement
 
 TEXT nodes with CARD/GALLERY blocks now show the correct visual subtype, icon and content count without changing runtime storage. Condition summaries use the real top-level AND/OR match; scheduled waits no longer imply zero seconds. The seven-case matched-tourism suite includes explicit subtype/summary assertions and passes. Responsive test waits for the drawer's media-query transition before opening it; no assertion removed. Remote checkpoint781bfc8 observed on the same PR/branch; its full CI39620615655 reached final runtime acceptance while final source CI remains separate.
+
+### Replay test correction / stronger syntax gate
+
+CI39621417082 passed checks and prior browser groups, then caught a syntax error introduced while adapting replay test navigation. Corrected the test, retained the logout state assertion, and made each replay action open the actual Mock disclosure. All6 authenticated PostgreSQL/Chromium scenario checks now pass locally: native/persona/seed/channel, consent/input/delay, timeout tokens, provider-error/timeout Mock, invalid persona/delivery rejection and logout cleanup.55 local Chromium checks total. CI now parses every browser/support module before execution. No product/runtime changes in this correction. Latest full CI still needs independent observation.
