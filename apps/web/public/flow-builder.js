@@ -232,7 +232,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   advancedView.append(advancedButtons);
   actions.append(paletteToggle,button('−',()=>canvas.zoomOut()),button('+',()=>canvas.zoomIn()),button('ملاءمة المخطط',()=>canvas.fit()),button('ترتيب تلقائي',()=>canvas.autoLayout()),button('تجربة المحادثة',()=>showSimulator(),'primary'),focusToggle);
  function setEditorMode(linear){
-   workspace.classList.toggle('builder-linear-mode',linear);palette.hidden=false;workspace.classList.remove('palette-collapsed');paletteToggle.disabled=linear;paletteToggle.textContent='إخفاء المكونات';paletteToggle.setAttribute('aria-expanded','true');
+   workspace.classList.toggle('builder-linear-mode',linear);const compact=!linear&&matchMedia('(max-width:800px)').matches;palette.hidden=compact;workspace.classList.toggle('palette-collapsed',compact);paletteToggle.disabled=linear;paletteToggle.textContent=compact?'إظهار المكونات':'إخفاء المكونات';paletteToggle.setAttribute('aria-expanded',String(!compact));
    simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
    if(state.botId)sessionStorage.setItem('eb-editor-mode:'+state.tenantId+':'+state.botId,linear?'simple':'canvas');
    if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open')}

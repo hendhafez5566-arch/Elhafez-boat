@@ -5,3 +5,4 @@ PASS select/disconnect/Undo restores all original edges
 PASS shared real server simulation traverses gallery,input validation,condition and employee handoff
 PASS mobile library opens/closes with visible controls and no horizontal page overflow
 PASS actual500-node save/reopen and499 connectors at matching fixed zoom
+PASS fresh mobile load starts with a clear canvas; linear steps remain a normal scroll surface with no dismiss trap

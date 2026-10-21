@@ -29,7 +29,7 @@ Finish matched After/interaction regression, review desktop/mobile screenshots, 
 
 ## Integrated E / final local acceptance
 
-55 actual Chromium checks PASS:28 prior premium-builder checks;7 new matched-tourism/library/save/edge/mobile/500 checks;4 scale/bilingual/pinch;3 caret/context/capability;5 authoring/readiness/import/review;2 offline audited Mock/form checks.20 PostgreSQL cases PASS:3 scale +10 authoring +4 context +3 offline governance. Final TypeScript/build246 units PASS. All47 migrations applied to the isolated database. No API/runtime/database/worker source changes relative to2f0f77c.
+56 actual Chromium checks PASS:28 prior premium-builder checks;8 new matched-tourism/library/save/edge/mobile/500 checks;4 scale/bilingual/pinch;3 caret/context/capability;5 authoring/readiness/import/review;2 offline audited Mock/form checks.20 PostgreSQL cases PASS:3 scale +10 authoring +4 context +3 offline governance. Final TypeScript/build246 units PASS. All47 migrations applied to the isolated database. No API/runtime/database/worker source changes relative to2f0f77c.
 
 The library uses the server's real component-capability matrix to label conditional/fallback/draft modes and retains the exhaustive matrix dialog. Native browser focus scrolling is prevented with overflow:clip while original pan/zoom state remains authoritative. Mobile library close and settings menu have stable accessible names. Controls in dialogs close the operations menu before returning to the canvas; prior tests were updated to navigate the new disclosure controls, with assertions retained.
 
@@ -43,8 +43,12 @@ TEXT nodes with CARD/GALLERY blocks now show the correct visual subtype, icon an
 
 ### Replay test correction / stronger syntax gate
 
-CI39621417082 passed checks and prior browser groups, then caught a syntax error introduced while adapting replay test navigation. Corrected the test, retained the logout state assertion, and made each replay action open the actual Mock disclosure. All6 authenticated PostgreSQL/Chromium scenario checks now pass locally: native/persona/seed/channel, consent/input/delay, timeout tokens, provider-error/timeout Mock, invalid persona/delivery rejection and logout cleanup.55 local Chromium checks total. CI now parses every browser/support module before execution. No product/runtime changes in this correction. Latest full CI still needs independent observation.
+CI39621417082 passed checks and prior browser groups, then caught a syntax error introduced while adapting replay test navigation. Corrected the test, retained the logout state assertion, and made each replay action open the actual Mock disclosure. All6 authenticated PostgreSQL/Chromium scenario checks now pass locally: native/persona/seed/channel, consent/input/delay, timeout tokens, provider-error/timeout Mock, invalid persona/delivery rejection and logout cleanup.56 local Chromium checks total. CI now parses every browser/support module before execution. No product/runtime changes in this correction. Latest full CI still needs independent observation.
 
 ### Broad CDP acceptance compatibility
 
 CI39623322985 passed all feature-specific groups and reached the real non-owner runtime acceptance. Its older broad CDP script expected the previous contextual-picker hook and positional toolbar buttons. Kept the picker hook on the new shared tile, styled it explicitly, and changed CDP navigation to named display actions and actual canvas Zoom/Fit controls. Guided creation closes settings on completion and has a new return-to-canvas assertion. No prior assertion removed. All test modules parse; seven tourism checks rerun successfully. Source hashes refreshed; latest full CI remains separate.
+
+### Fresh mobile and linear-mode acceptance
+
+Fresh mobile canvas loads now keep the library drawer closed; linear steps are excluded from absolute drawer positioning and do not expose a close action that could hide the essential step list. A new actual390px reload/switch check on the saved500-node graph passes. Eight visual/tourism checks,56 local Chromium checks total; no runtime/data changes.
