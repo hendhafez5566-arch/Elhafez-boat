@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {placeWithoutOverlap,collides,nodeFootprint,arrangeFlow} from '../apps/web/public/flow-geometry.js';
+import {placeWithoutOverlap,collides,nodeFootprint,arrangeFlow,MAX_POSITION} from '../apps/web/public/flow-geometry.js';
 
 test('manual drag never commits a rectangle on another card',()=>{
  const first={x:100,y:100,...nodeFootprint({type:'BUTTONS',choices:[{},{},{}]})};
@@ -31,5 +31,5 @@ test('already free point is preserved and does not rewrite graph content',()=>{
 test('maximum-size 100-step graph remains bounded and collision-free',()=>{
  const nodes=Array.from({length:100},(_,i)=>i===99?{id:'n'+i,type:'END',text:'انتهى'}:{id:'n'+i,type:i===0?'START':'INPUT',text:'سؤال طويل '+i,field:'answer'+i,next:'n'+(i+1)});
  const snapshot=JSON.stringify(nodes),layout=arrangeFlow({startId:'n0',nodes});const boxes=nodes.map(n=>({...layout[n.id],...nodeFootprint(n)}));assert.equal(Object.keys(layout).length,100);
- for(let i=0;i<boxes.length;i++){assert.ok(boxes[i].x<=9600&&boxes[i].y<=9600);for(let j=0;j<i;j++)assert.equal(collides(boxes[i],boxes[j]),false,'overlap '+i+' / '+j)}assert.equal(JSON.stringify(nodes),snapshot);
+ for(let i=0;i<boxes.length;i++){assert.ok(boxes[i].x<=MAX_POSITION&&boxes[i].y<=MAX_POSITION);for(let j=0;j<i;j++)assert.equal(collides(boxes[i],boxes[j]),false,'overlap '+i+' / '+j)}assert.equal(JSON.stringify(nodes),snapshot);
 });

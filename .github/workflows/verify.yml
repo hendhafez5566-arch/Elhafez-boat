@@ -117,6 +117,10 @@ jobs:
         run: node tests/flow-connector-db.mjs
       - name: Customer timezone, long calendars and precise wait cancellation
         run: node tests/flow-schedule-db.mjs
+      - name: Bilingual content, 200/500 graph performance and emulated touch
+        run: |
+          node tests/flow-scale-locale-db.mjs
+          node tests/flow-scale-locale-browser.mjs
       - name: Context variables, consent metadata, sensitive errors and component contracts
         run: |
           node tests/flow-context-policy-db.mjs

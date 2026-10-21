@@ -300,8 +300,9 @@ async function executeFlowUnchecked(db:SqlClient,tenantId:string,definition:Flow
    if(trigger){state={at:trigger.targetNode,answers:{...(simulation.persona||{})},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
   }
  }
- let variables:VariableContext={channel:simulation?.channel||context?.channel||definition.channel||'WHATSAPP'};if(JSON.stringify(definition.nodes).includes('{{@consent_')){if(dryRun)variables={...variables,consent_service:'MOCK_UNKNOWN',consent_marketing:'MOCK_UNKNOWN'};else if(context)variables=await consentVariableContext(db,tenantId,context.contactId,variables.channel!);}
- let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{variables,now:simulation?.now,onStep:context?.onStep,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
+ let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition,[],definition.localization?(['ar','en'].includes(state.answers[definition.localization.localeField||''])?state.answers[definition.localization.localeField||''] as 'ar'|'en':definition.localization.defaultLocale):undefined):definition;
+ let variables:VariableContext={channel:simulation?.channel||context?.channel||definition.channel||'WHATSAPP'};if(JSON.stringify(flow).includes('{{@consent_')){if(dryRun)variables={...variables,consent_service:'MOCK_UNKNOWN',consent_marketing:'MOCK_UNKNOWN'};else if(context)variables=await consentVariableContext(db,tenantId,context.contactId,variables.channel!);}
+ let result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{variables,now:simulation?.now,onStep:context?.onStep,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
   if(pending?.type==='CONTROL'&&result.botAction){
@@ -314,7 +315,7 @@ async function executeFlowUnchecked(db:SqlClient,tenantId:string,definition:Flow
   }
   if(pending?.type==='CONSENT'&&result.consent){
    const consent=result.consent;if(!dryRun){if(!context)throw new HttpFailure(409,'Consent requires a customer conversation');const recorded=await recordFlowConsent(db,tenantId,context.contactId,context.conversationId,{purpose:consent.purpose,decision:consent.decision,source:'FLOW',nodeId:pending.id,policyVersion:consent.policyVersion,notice:consent.notice,flowVersion:context.version});blockedService=recorded.serviceBlocked;}
-   if(dryRun)variables[consent.purpose==='SERVICE'?'consent_service':'consent_marketing']=consent.decision;else if(context&&JSON.stringify(definition.nodes).includes('{{@consent_'))variables=await consentVariableContext(db,tenantId,context.contactId,variables.channel!);
+   if(dryRun)variables[consent.purpose==='SERVICE'?'consent_service':'consent_marketing']=consent.decision;else if(context&&JSON.stringify(flow).includes('{{@consent_'))variables=await consentVariableContext(db,tenantId,context.contactId,variables.channel!);
    trace.push({nodeId:pending.id,type:pending.type,outcome:(dryRun?'mock_':'')+'consent_'+consent.purpose.toLowerCase()+'_'+consent.decision.toLowerCase(),elapsedMs:0});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:consent.next}:n)};
   }
   if(pending?.type==='HANDOFF'&&pending.handoffPolicy){

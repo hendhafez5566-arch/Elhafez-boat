@@ -1,3 +1,4 @@
+import {mountLocalization} from './flow-localization.js';
 import {mountVariableSuggestions} from './flow-variable-suggestions.js';
 import {mountFlowFunnel} from './flow-funnel.js';
 import {scenarioInput,replayInput,scenarioOutcome,personaValues} from './flow-scenario.js';
@@ -15,7 +16,7 @@ import {mountFlowLabs} from './flow-labs.js';
 import {mountRuntimeControls} from './flow-controls.js';
 import {mergeFlowDrafts,sameDraftValue} from './flow-merge.js';
 import {createCanvas} from './flow-canvas.js';
-import {graphOutputs,setGraphOutput,arrangeFlow} from './flow-geometry.js';
+import {graphOutputs,setGraphOutput,arrangeFlow,MAX_POSITION} from './flow-geometry.js';
 import {mountGuidedWizard} from './flow-onboarding.js';
 /** Company-specific visual block editor, no industry assumptions or customer data. */
 export function initFlowBuilder({state,api:baseApi,notify,execute}){
@@ -145,7 +146,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   const anchor=flow.nodes.find(n=>n.id===selected);
   if(!anchor||!('next'in anchor)){notify('اختار خطوة لها مخرج «التالي»','error');return}
   const steps=item.definition.steps||[];
-  if(flow.nodes.length+steps.length>100){notify('المسار تجاوز 100 خطوة','error');return}
+  if(flow.nodes.length+steps.length>500){notify('المسار تجاوز 500 خطوة','error');return}
   const occupied=new Set(flow.nodes.map(n=>n.id)),ids=new Map();let serial=1;
   for(const step of steps){let id;do{id='reuse'+serial++}while(occupied.has(id));occupied.add(id);ids.set(step.id,id)}
   const downstream=anchor.next;
@@ -159,7 +160,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   flow.nodes.push(...copies);
   if(flow.layout?.[selected]){
    const p=flow.layout[selected];for(const [i,n] of copies.entries()){
-    flow.layout[n.id]={x:Math.min(9500,p.x+290*(i+1)),y:p.y};
+    flow.layout[n.id]={x:Math.min(MAX_POSITION,p.x+290*(i+1)),y:p.y};
    }
   }
   selected=copies[0].id;selectedNodes=new Set([selected]);markDirty();renderAll();resetPreview();
@@ -315,15 +316,15 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  window.addEventListener('storage',event=>{const scope=recoveryScope();if(!scope.tenantId||!scope.userId)return;retainRecovery.checked=recoveryStore.enabled(scope);const prefix='eb-persistent-draft-v1:'+encodeURIComponent(scope.tenantId)+':'+encodeURIComponent(scope.userId)+':'+encodeURIComponent(scope.botId||'default')+':';if(dirty&&event.key?.startsWith(prefix)){autosave.checked=false;clearTimeout(autosaveTimer);saveState='مسودة في نافذة أخرى؛ أوقفنا الحفظ التلقائي. راجع نسختك قبل الحفظ.';renderStatus()}});
  let copied=null;
  function copySelection(){const ids=new Set([...selectedNodes].filter(id=>nodeById(id)?.type!=='START'));copied={nodes:deep(flow.nodes.filter(n=>ids.has(n.id))),layout:deep(flow.layout||{})};notify('نُسخت '+copied.nodes.length+' خطوة داخل المحرر')}
- function pasteSelection(){if(!copied?.nodes.length)return;if(flow.nodes.length+copied.nodes.length>100){notify('حد المسار 100 خطوة','error');return}const used=new Set(flow.nodes.map(n=>n.id)),ids=new Map();let serial=1;for(const n of copied.nodes){let id;do{id='copy'+serial++}while(used.has(id));used.add(id);ids.set(n.id,id)}flow.layout??={};for(const n of deep(copied.nodes)){const old=n.id;n.id=ids.get(old);for(const output of graphOutputs(n)){const to=ids.get(output.to)||'';setGraphOutput(n,output.key,to)}flow.nodes.push(n);const pos=copied.layout[old]||{x:50,y:50};flow.layout[n.id]={x:Math.min(9600,pos.x+70),y:Math.min(9600,pos.y+70)}}selectedNodes=new Set(ids.values());selected=[...selectedNodes][0];markDirty();renderAll()}
+ function pasteSelection(){if(!copied?.nodes.length)return;if(flow.nodes.length+copied.nodes.length>500){notify('حد المسار 500 خطوة','error');return}const used=new Set(flow.nodes.map(n=>n.id)),ids=new Map();let serial=1;for(const n of copied.nodes){let id;do{id='copy'+serial++}while(used.has(id));used.add(id);ids.set(n.id,id)}flow.layout??={};for(const n of deep(copied.nodes)){const old=n.id;n.id=ids.get(old);for(const output of graphOutputs(n)){const to=ids.get(output.to)||'';setGraphOutput(n,output.key,to)}flow.nodes.push(n);const pos=copied.layout[old]||{x:50,y:50};flow.layout[n.id]={x:Math.min(MAX_POSITION,pos.x+70),y:Math.min(MAX_POSITION,pos.y+70)}}selectedNodes=new Set(ids.values());selected=[...selectedNodes][0];markDirty();renderAll()}
  function deleteSelection(){const ids=new Set([...selectedNodes].filter(id=>nodeById(id)?.type!=='START'));if(!ids.size)return;flow.nodes=flow.nodes.filter(n=>!ids.has(n.id));for(const n of flow.nodes)for(const out of graphOutputs(n))if(ids.has(out.to)){setGraphOutput(n,out.key,'')}for(const id of ids)if(flow.layout)delete flow.layout[id];flow.groups=(flow.groups||[]).map(g=>({...g,nodeIds:g.nodeIds.filter(id=>!ids.has(id))})).filter(g=>g.nodeIds.length>=2);selected=flow.startId;selectedNodes=new Set([selected]);markDirty();renderAll()}
  function alignSelection(axis,distribute=false){const nodes=flow.nodes.filter(n=>selectedNodes.has(n.id));if(nodes.length<2)return;flow.layout??=arrangeFlow(flow);for(const n of nodes)flow.layout[n.id]??=arrangeFlow(flow)[n.id];nodes.sort((a,b)=>flow.layout[a.id][axis]-flow.layout[b.id][axis]);const min=flow.layout[nodes[0].id][axis],max=flow.layout[nodes.at(-1).id][axis];nodes.forEach((n,i)=>{flow.layout[n.id][axis]=distribute?Math.round(min+(max-min)*i/(nodes.length-1)):min});markDirty();renderAll()}
  tools.append(button('نسخ المحدد',copySelection),button('لصق',pasteSelection),button('تكرار المحدد',()=>{copySelection();pasteSelection()}),button('حذف المحدد',deleteSelection,'danger'),button('محاذاة أفقية',()=>alignSelection('y')),button('محاذاة رأسية',()=>alignSelection('x')),button('توزيع أفقي',()=>alignSelection('x',true)),button('توزيع رأسي',()=>alignSelection('y',true)));
 
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{if(!control.hasAttribute('aria-label'))control.setAttribute('aria-label',title);const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
- const control=(value,change,large=false)=>{
-   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096;c.dataset.templateEditor='true';c.dir='auto'}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();canvas.draw();renderBlocks()});return c;
+ let textEditTimer;const control=(value,change,large=false,liveText=false)=>{
+   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096;c.dataset.templateEditor='true';c.dir=$('builder-editor').dir||'auto'}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();if(liveText){canvas.previewText(selected);const row=$('builder-nodes').querySelector('[data-step-id="'+selected+'"] .builder-node p');if(row)row.textContent=c.value.slice(0,90);clearTimeout(textEditTimer);textEditTimer=setTimeout(()=>{canvas.draw();renderBlocks()},150)}else{canvas.draw();renderBlocks()}});return c;
  };
  const target=(value,change,optional=false)=>{
    const s=el('select');if(optional){const blank=el('option','بدون مسار خطأ مخصص');blank.value='';s.append(blank)}for(const node of flow.nodes){const option=el('option',(types[node.type]||'خطوة')+' — '+String(node.text||'').slice(0,28));option.value=node.id;s.append(option)}
@@ -356,8 +357,9 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      row.append(outputs);host.append(row);
    }
  }
+ const localeHost=el('section');const localizationEditor=mountLocalization({host:localeHost,el,button,label,control,getFlow:()=>flow,getNode:()=>nodeById(selected),changed:()=>{markDirty();canvas.draw()}});
  function renderEditor(){
-   const host=$('builder-editor');host.replaceChildren();const node=nodeById(selected);
+   const host=$('builder-editor');host.replaceChildren();const node=nodeById(selected);localizationEditor.render();host.append(localeHost);
    if(!node){host.append(el('p','اختار خطوة من القائمة'));return}
    host.append(el('h3',types[node.type]||'خصائص الخطوة'),label('اسم الخطوة',control(node.label||'',v=>{if(v.trim())node.label=v;else delete node.label})));const note=el('details',undefined,'builder-developer');note.append(el('summary','ملاحظة داخلية — لا تُرسل للعميل'),label('ملاحظة للمراجعة',control(node.note||'',v=>{node.note=v},true)));
    const developerSettings=el('details',undefined,'builder-developer');developerSettings.append(el('summary','إعدادات تقنية متقدمة'));
@@ -421,7 +423,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',({image:'صورة',video:'فيديو',audio:'صوت',document:'مستند'})[k]);o.value=k;kind.append(o)}kind.value=node.mediaKind;kind.onchange=()=>{node.mediaKind=kind.value;markDirty()};host.append(label('نوع الوسائط',kind),label('التعليق',control(node.caption||'',v=>{node.caption=v})));
    }
 
-   if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true)));
+   if('text'in node)host.append(label(node.type==='INPUT'?'السؤال': 'نص الرسالة',control(node.text,value=>{node.text=value},true,true)));
    if(node.type==='TEXT'||node.type==='BUTTONS'){
     const section=el('fieldset',undefined,'builder-validation');section.append(el('legend','محتويات الرسالة بالترتيب'));
     for(const [i,block]of (node.blocks||[]).entries()){if(block.type==='CARD'||block.type==='GALLERY')continue;
@@ -556,11 +558,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    $('builder-version').textContent=published?'الإصدار المنشور: '+published.version:'مفيش إصدار منشور لسه';
    $('builder-unsaved').textContent=saveState||(dirty?'تعديلات غير محفوظة':'المسودة محفوظة أو جاهزة للتعديل');$('builder-unsaved').setAttribute('role','status');$('builder-save').disabled=saving;
  }
- function renderAll(){
+ function renderAll(){clearTimeout(textEditTimer);
    $('builder-name').value=flow.name;channelSelect.value=flow.channel||'WHATSAPP';runtimeControls.variables(variableHost);renderStatus();renderBlocks();renderEditor();canvas.draw();canvas.highlight(selected);
  }
  function addNode(type,anchor=null){
-   if(flow.nodes.length>=100){notify('وصلت للحد الأقصى 100 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
+   if(flow.nodes.length>=500){notify('وصلت للحد الأقصى 500 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
    if(anchor&&nodeById(graphOutputs(nodeById(anchor.nodeId)).find(e=>e.key===anchor.key)?.to)&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
    const origin=anchor?nodeById(anchor.nodeId):null;
    let oldTarget=origin?(graphOutputs(origin).find(e=>e.key===anchor.key)?.to):null;
@@ -606,7 +608,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    selected=id;selectedNodes=new Set([selected]);markDirty();renderAll();showInspector();
  }
  function bubble(message,side='bot'){
-   const item=el('div',message,'builder-bubble '+side);$('builder-preview').append(item);
+   const item=el('div',message,'builder-bubble '+side);item.dir='auto';$('builder-preview').append(item);
  }
  const diagnostics=el('details',undefined,'builder-diagnostics');diagnostics.append(el('summary','مسار التنفيذ والمتغيرات التجريبية'));const traceHost=el('ol'),valuesHost=el('pre');diagnostics.append(traceHost,valuesHost);simulator.append(diagnostics);
  let previewBusy=false,simulationGeneration=0,simulationNow=Date.now();
@@ -725,7 +727,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    simulatedChannel.value=flow.channel||'WHATSAPP';connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
- const primaryBar=$('builder-industry').closest('.builder-toolbar');primaryBar.append($('builder-unsaved').parentElement);
+ const editingDirection=el('select');editingDirection.setAttribute('aria-label','اتجاه التحرير Editing direction');for(const [value,title]of [['rtl','العربية — RTL'],['ltr','English — LTR'],['auto','مختلط — Auto']]){const o=el('option',title);o.value=value;editingDirection.append(o)}editingDirection.onchange=()=>{$('builder-editor').dir=editingDirection.value;for(const c of $('builder-editor').querySelectorAll('input:not([type=number]),textarea'))if(!c.lang)c.dir=editingDirection.value};
+ const primaryBar=$('builder-industry').closest('.builder-toolbar');primaryBar.append($('builder-unsaved').parentElement,editingDirection);
  const studioBack=button('← إدارة البوتات',()=>document.dispatchEvent(new Event('boat-open-bots')),'secondary');studioBack.classList.add('bot-studio-back');primaryBar.prepend(studioBack);
  const presetOptions=el('details',undefined,'builder-preset-disclosure');
  presetOptions.append(el('summary','القوالب الجاهزة (اختياري)'),$('builder-industry').closest('label'),$('builder-load-preset'));
@@ -913,5 +916,5 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
  });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){variableSuggestions.reset();forgetScenario();scenarioOwner='';forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;flowFunnel.reset();experiments.reset();conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){clearTimeout(textEditTimer);variableSuggestions.reset();forgetScenario();scenarioOwner='';forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;flowFunnel.reset();experiments.reset();conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

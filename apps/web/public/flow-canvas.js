@@ -1,4 +1,4 @@
-import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH} from './flow-geometry.js';
+import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH,MAX_POSITION} from './flow-geometry.js';
 /** Dependency-free, RTL-friendly flow canvas. Graph mutations stay in the existing draft editor. */
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
   const ns='http://www.w3.org/2000/svg';
@@ -18,15 +18,16 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   nav.append(btn('−','',()=>zoomTo(zoom/1.2)),zoomLabel,btn('+','',()=>zoomTo(zoom*1.2)),btn('ملاءمة','',()=>fit()));host.append(nav);
   const map=document.createElementNS(ns,'svg');map.classList.add('canvas-minimap');map.setAttribute('viewBox','0 0 180 112');map.setAttribute('aria-label','خريطة المخطط؛ اضغط للانتقال');map.setAttribute('role','img');host.append(map);
   const breadcrumb=mk('nav',undefined,'canvas-breadcrumbs');breadcrumb.setAttribute('aria-label','المسار من البداية إلى الخطوة');host.append(breadcrumb);
-  let mapBounds={x:0,y:0,scale:1};
+  let mapBounds={x:0,y:0,scale:1},mapDirty=true,mapViewport=null;
   function paintMap(){
+    if(!mapDirty&&mapViewport){const b=mapBounds;for(const [k,v]of Object.entries({x:5+(-pan.x/zoom-b.x)*b.scale,y:5+(-pan.y/zoom-b.y)*b.scale,width:host.clientWidth/zoom*b.scale,height:host.clientHeight/zoom*b.scale}))mapViewport.setAttribute(k,v);return}mapDirty=false;
     const f=getFlow(),positions=f.layout||{},pts=f.nodes.map(n=>positions[n.id]).filter(Boolean);if(!pts.length)return;
     const left=Math.min(0,...pts.map(p=>p.x)),top=Math.min(0,...pts.map(p=>p.y));
     const w=Math.max(800,...pts.map(p=>p.x+NODE_WIDTH))-left,h=Math.max(600,...pts.map(p=>p.y+300))-top,k=Math.min(170/w,102/h);
     mapBounds={x:left,y:top,scale:k};map.replaceChildren();
     const rect=(x,y,width,height,cls)=>{const r=document.createElementNS(ns,'rect');for(const [key,val]of Object.entries({x:5+(x-left)*k,y:5+(y-top)*k,width:Math.max(2,width*k),height:Math.max(2,height*k)}))r.setAttribute(key,val);r.setAttribute('class',cls);map.append(r)};
     for(const n of f.nodes){const p=positions[n.id];if(p)rect(p.x,p.y,NODE_WIDTH,220,getSelection().has(n.id)?'map-node selected':'map-node')}
-    rect(-pan.x/zoom,-pan.y/zoom,host.clientWidth/zoom,host.clientHeight/zoom,'map-viewport');
+    rect(-pan.x/zoom,-pan.y/zoom,host.clientWidth/zoom,host.clientHeight/zoom,'map-viewport');mapViewport=map.lastElementChild;
   }
   map.onpointerdown=e=>{e.stopPropagation();const r=map.getBoundingClientRect(),b=mapBounds;const x=((e.clientX-r.left)*180/r.width-5)/b.scale+b.x,y=((e.clientY-r.top)*112/r.height-5)/b.scale+b.y;pan={x:host.clientWidth/2-x*zoom,y:host.clientHeight/2-y*zoom};transform()};
   const edgeTools=mk('div',undefined,'canvas-edge-tools');edgeTools.hidden=true;host.append(edgeTools);
@@ -35,7 +36,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   function chooseEdge(edge){selectedEdge=edge;edgeTools.replaceChildren(mk('strong','وصلة محددة'),btn('تغيير الوجهة','',()=>{source={id:edge.from,key:edge.key};notify('اختر مدخل الوجهة الجديدة؛ Escape للإلغاء')}),btn('فصل الوصلة','danger',disconnect));edgeTools.hidden=false;svg.querySelectorAll('.canvas-edge').forEach(p=>p.classList.toggle('edge-selected',p.dataset.from===edge.from&&p.dataset.key===edge.key))}
   host.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select'))return;if(e.key==='Escape'){connectionGeneration++;source=null;selectedEdge=null;edgeTools.hidden=true;svg.querySelector('.canvas-ghost')?.remove()}if((e.key==='Delete'||e.key==='Backspace')&&selectedEdge){e.preventDefault();disconnect()}});
   const positionsFor=f=>{
-    const proposed=arrangeFlow(f),placed=[],positions=Object.create(null);
+    const proposed=f.nodes.every(n=>f.layout?.[n.id])?f.layout:arrangeFlow(f),placed=[],positions=Object.create(null);
     for(const n of f.nodes){
       const point=f.layout?.[n.id]||proposed[n.id];
       // Recover visually from colliding older layouts without overwriting a user's saved draft.
@@ -44,10 +45,11 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     }
     return positions;
   };
-  function highlight(id){active=id;breadcrumb.replaceChildren();const path=pathToNode(getFlow(),id),pathIds=new Set(path);const focusPath=btn('تركيز المسار','',()=>{pathFocused=!pathFocused;highlight(active)});focusPath.setAttribute('aria-pressed',String(pathFocused));focusPath.disabled=!path.length;breadcrumb.append(focusPath);if(!path.length)breadcrumb.append(mk('span','خطوة غير متصلة بالبداية'));for(const step of path){const node=getFlow().nodes.find(n=>n.id===step);breadcrumb.append(btn(node?.label||step,'',()=>{select(step);focus(step)}))}stage.querySelectorAll('.canvas-node').forEach(n=>{n.classList.toggle('selected',getSelection().has(n.dataset.nodeId)||n.dataset.nodeId===id);n.classList.toggle('path-muted',pathFocused&&!pathIds.has(n.dataset.nodeId))});
-    svg.querySelectorAll('.canvas-edge').forEach(n=>{n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id);n.classList.toggle('path-muted',pathFocused&&!path.some((step,i)=>step===n.dataset.from&&path[i+1]===n.dataset.to))});
+  function highlight(id){mapDirty=true;active=id;breadcrumb.replaceChildren();const path=pathToNode(getFlow(),id),pathIds=new Set(path);const focusPath=btn('تركيز المسار','',()=>{pathFocused=!pathFocused;highlight(active)});focusPath.setAttribute('aria-pressed',String(pathFocused));focusPath.disabled=!path.length;breadcrumb.append(focusPath);if(!path.length)breadcrumb.append(mk('span','خطوة غير متصلة بالبداية'));for(const step of path.length>12?[...path.slice(0,3),...path.slice(-7)]:path){const node=getFlow().nodes.find(n=>n.id===step);breadcrumb.append(btn(node?.label||step,'',()=>{select(step);focus(step)}))}stage.querySelectorAll('.canvas-node').forEach(n=>{n.classList.toggle('selected',getSelection().has(n.dataset.nodeId)||n.dataset.nodeId===id);n.classList.toggle('path-muted',pathFocused&&!pathIds.has(n.dataset.nodeId))});
+    paintMap();svg.querySelectorAll('.canvas-edge').forEach(n=>{n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id);n.classList.toggle('path-muted',pathFocused&&!path.some((step,i)=>step===n.dataset.from&&path[i+1]===n.dataset.to))});
   }
   function draw(){
+    mapDirty=true;
     const f=getFlow();f.layout=Object.assign(Object.create(null),f.layout||{});
     stage.querySelectorAll('.canvas-node,.canvas-group').forEach(n=>n.remove());svg.replaceChildren();
     const defs=document.createElementNS(ns,'defs'),marker=document.createElementNS(ns,'marker');
@@ -70,14 +72,14 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
       card.dataset.nodeId=n.id;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
       const metric=analytics.get(n.id);if(metric){const badge=btn('دخل '+metric.entered+' · أكمل '+metric.completed+' · انتظار '+metric.waiting+' · انقطاع '+metric.abandoned,'canvas-analytics',()=>analyticsSelect(n.id));badge.setAttribute('aria-label','تحليلات الخطوة '+n.id);card.append(badge);}
-      card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(titles[n.type]||'محادثة'));
+      card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(n.label||titles[n.type]||'محادثة')+' · '+n.id);
       const chooseCard=(event={})=>{active=n.id;select(n.id,event.shiftKey);highlight(n.id)};
       card.addEventListener('click',event=>{if(!event.target.closest('button'))chooseCard(event)});
       card.addEventListener('keydown',event=>{
         if(event.target===card&&(event.key==='Enter'||event.key===' ')){event.preventDefault();chooseCard(event)}
         if(event.altKey&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)&&!event.target.matches('input,textarea,select')){
           event.preventDefault();const distance=event.shiftKey?80:20,delta={ArrowLeft:[-distance,0],ArrowRight:[distance,0],ArrowUp:[0,-distance],ArrowDown:[0,distance]}[event.key];
-          f.layout[n.id]={x:Math.max(0,Math.min(9600,p.x+delta[0])),y:Math.max(0,Math.min(9600,p.y+delta[1]))};active=n.id;changed();draw();highlight(n.id);stage.querySelector('[data-node-id="'+n.id+'"]')?.focus({preventScroll:true});
+          f.layout[n.id]={x:Math.max(0,Math.min(MAX_POSITION,p.x+delta[0])),y:Math.max(0,Math.min(MAX_POSITION,p.y+delta[1]))};active=n.id;changed();draw();highlight(n.id);stage.querySelector('[data-node-id="'+n.id+'"]')?.focus({preventScroll:true});
         }
       });
       const head=mk('div',undefined,'canvas-node-head'),drag=btn(n.label||titles[n.type]||'خطوة','canvas-title',e=>{active=n.id;select(n.id,e.shiftKey);highlight(n.id)});
@@ -145,7 +147,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
           const point=placeWithoutOverlap({x:Math.round((left+(ev.clientX-start.x)/zoom)/10)*10,y:Math.round((top+(ev.clientY-start.y)/zoom)/10)*10},n,others,28,size);
           const {dx,dy}=boundedTranslation(members.map(id=>positions[id]),point.x-left,point.y-top);
           for(const id of members){const pos=positions[id],c=cards.get(id),at={x:pos.x+dx,y:pos.y+dy};f.layout[id]=at;c.style.left=at.x+'px';c.style.top=at.y+'px'}
-          for(const path of svg.querySelectorAll('.canvas-edge,.canvas-edge-hit')){const a=cards.get(path.dataset.from),b=cards.get(path.dataset.to);if(!a||!b)continue;const x=parseFloat(a.style.left)+NODE_WIDTH,y=parseFloat(a.style.top)+a.offsetHeight-25,tx=parseFloat(b.style.left),ty=parseFloat(b.style.top)+b.offsetHeight-55;path.setAttribute('d',`M${x},${y} C${x+80},${y} ${tx-80},${ty} ${tx},${ty}`)}paintMap();
+          for(const path of svg.querySelectorAll('.canvas-edge,.canvas-edge-hit')){const a=cards.get(path.dataset.from),b=cards.get(path.dataset.to);if(!a||!b)continue;const x=parseFloat(a.style.left)+NODE_WIDTH,y=parseFloat(a.style.top)+a.offsetHeight-25,tx=parseFloat(b.style.left),ty=parseFloat(b.style.top)+b.offsetHeight-55;path.setAttribute('d',`M${x},${y} C${x+80},${y} ${tx-80},${ty} ${tx},${ty}`)}mapDirty=true;paintMap();
 
         };
         const stop=()=>{drag.onpointermove=null;drag.onpointerup=null;drag.onpointercancel=null;if(moved){changed();draw()}};
@@ -185,12 +187,12 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       }
       line.setAttribute('d',data);line.setAttribute('marker-end','url(#flow-arrow)');
       line.classList.add('canvas-edge');line.dataset.from=edge.from;line.dataset.to=edge.to;line.dataset.key=edge.key;
-      const hit=line.cloneNode();hit.removeAttribute('marker-end');hit.setAttribute('class','canvas-edge-hit');hit.setAttribute('tabindex','0');hit.setAttribute('role','button');hit.setAttribute('aria-label','تحديد وصلة '+edge.from+' إلى '+edge.to);hit.onclick=e=>{e.stopPropagation();chooseEdge(edge)};hit.onkeydown=e=>{if(e.key==='Enter')chooseEdge(edge)};
+      const hit=line.cloneNode();hit.removeAttribute('marker-end');hit.setAttribute('class','canvas-edge-hit');hit.setAttribute('tabindex','0');hit.setAttribute('role','button');hit.setAttribute('aria-label','تحديد وصلة '+edge.from+' إلى '+edge.to);hit.onclick=e=>{e.stopPropagation();chooseEdge(edge)};hit.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();chooseEdge(edge)}};
       svg.append(line,hit);
     }
     transform();highlight(active);
   }
-  const zoomTo=(v,x=host.clientWidth/2,y=host.clientHeight/2)=>{const old=zoom;zoom=Math.max(.1,Math.min(2,v));pan={x:x-(x-pan.x)*zoom/old,y:y-(y-pan.y)*zoom/old};transform()};
+  const zoomTo=(v,x=host.clientWidth/2,y=host.clientHeight/2)=>{const old=zoom;zoom=Math.max(.01,Math.min(2,v));pan={x:x-(x-pan.x)*zoom/old,y:y-(y-pan.y)*zoom/old};transform()};
   function fit(){
     if(!host.clientWidth||!host.clientHeight){pendingFit=true;return}pendingFit=false;
     const f=getFlow(),points=Object.values(positionsFor(f));
@@ -198,7 +200,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const nodes=f.nodes,positions=positionsFor(f);
     const rendered=new Map([...stage.querySelectorAll('.canvas-node')].map(card=>[card.dataset.nodeId,card]));
     const left=Math.min(...points.map(p=>p.x)),top=Math.min(...points.map(p=>p.y)),right=Math.max(...nodes.map(n=>positions[n.id].x+Math.max(rendered.get(n.id)?.offsetWidth||0,nodeFootprint(n).width))),bottom=Math.max(...nodes.map(n=>positions[n.id].y+Math.max(rendered.get(n.id)?.offsetHeight||0,nodeFootprint(n).height)));
-    const rect=host.getBoundingClientRect();zoom=Math.max(.1,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
+    const rect=host.getBoundingClientRect();zoom=Math.max(.01,Math.min(1.2,Math.min((rect.width-70)/(right-left),(rect.height-70)/(bottom-top))));
     pan={x:(rect.width-(right-left)*zoom)/2-left*zoom,y:Math.max(25,(rect.height-(bottom-top)*zoom)/2-top*zoom)};transform();
   }
   function reset(){zoom=1;pan={x:36,y:36};transform()}
@@ -217,6 +219,11 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const stop=()=>{if(box){const r=box.getBoundingClientRect();const ids=[...stage.querySelectorAll('.canvas-node')].filter(c=>{const b=c.getBoundingClientRect();return b.left<r.right&&b.right>r.left&&b.top<r.bottom&&b.bottom>r.top}).map(c=>c.dataset.nodeId);box.remove();selectMany(ids);highlight(ids[0])}host.removeEventListener('pointermove',move);host.removeEventListener('pointerup',stop);host.removeEventListener('pointercancel',stop)};
     host.addEventListener('pointermove',move);host.addEventListener('pointerup',stop);host.addEventListener('pointercancel',stop);
   });
+  host.addEventListener('keydown',e=>{if(e.target.closest('input,textarea,select'))return;if(['+','=','-','0','Home'].includes(e.key)){e.preventDefault();if(e.key==='Home'||e.key==='0')fit();else zoomTo(zoom*(e.key==='-'?1/1.2:1.2))}else if(e.target===host&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)&&!e.altKey){e.preventDefault();pan.x+=e.key==='ArrowLeft'?60:e.key==='ArrowRight'?-60:0;pan.y+=e.key==='ArrowUp'?60:e.key==='ArrowDown'?-60:0;transform()}});
+  const touches=new Map();let pinch=null,endingPinch=false;
+  host.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){e.preventDefault();e.stopImmediatePropagation();host.setPointerCapture(e.pointerId);const [a,b]=[...touches.values()],r=host.getBoundingClientRect(),x=(a.x+b.x)/2-r.left,y=(a.y+b.y)/2-r.top;pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom,anchor:{x:(x-pan.x)/zoom,y:(y-pan.y)/zoom}}}},true);
+  host.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')return;if(touches.has(e.pointerId))touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(endingPinch){e.preventDefault();e.stopImmediatePropagation();return}if(pinch&&touches.size===2){e.preventDefault();e.stopImmediatePropagation();const [a,b]=[...touches.values()],r=host.getBoundingClientRect();zoom=Math.max(.01,Math.min(2,pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/pinch.distance));pan={x:(a.x+b.x)/2-r.left-pinch.anchor.x*zoom,y:(a.y+b.y)/2-r.top-pinch.anchor.y*zoom};transform()}},true);
+  for(const event of ['pointerup','pointercancel'])host.addEventListener(event,e=>{if(e.pointerType!=='touch')return;touches.delete(e.pointerId);if(pinch){endingPinch=true;pinch=null}if(!touches.size)endingPinch=false},true);
   const resize=new ResizeObserver(()=>{if(pendingFit&&host.clientWidth&&host.clientHeight)fit();else paintMap()});resize.observe(host);
   function focus(id){
     const group=getFlow().groups?.find(g=>g.collapsed&&g.nodeIds.includes(id));if(group){group.collapsed=false;changed();draw()}
@@ -224,6 +231,6 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const area=host.getBoundingClientRect();zoom=1;
     pan={x:Math.round(area.width/2-(p.x+NODE_WIDTH/2)),y:Math.round(area.height/2-(p.y+155))};transform();
   }
-  return {setAnalytics(rows,onSelect){analytics=new Map(rows.map(r=>[r.nodeId,r]));analyticsSelect=onSelect||(()=>{});draw()},draw,fit,focus,reset,autoLayout,highlight,zoomIn:()=>zoomTo(zoom*1.2),zoomOut:()=>zoomTo(zoom/1.2),
-    coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(9000,Math.round((clientX-r.left-pan.x)/zoom-130))),y:Math.max(0,Math.min(9000,Math.round((clientY-r.top-pan.y)/zoom-60)))}}};
+  return {previewText(id){const node=getFlow().nodes.find(n=>n.id===id),text=stage.querySelector('[data-node-id="'+id+'"] .canvas-message-text');if(node&&text)text.textContent=String(node.text||'').slice(0,190)},setAnalytics(rows,onSelect){analytics=new Map(rows.map(r=>[r.nodeId,r]));analyticsSelect=onSelect||(()=>{});draw()},draw,fit,focus,reset,autoLayout,highlight,zoomIn:()=>zoomTo(zoom*1.2),zoomOut:()=>zoomTo(zoom/1.2),
+    coordinates(clientX,clientY){const r=host.getBoundingClientRect();return {x:Math.max(0,Math.min(MAX_POSITION,Math.round((clientX-r.left-pan.x)/zoom-130))),y:Math.max(0,Math.min(MAX_POSITION,Math.round((clientY-r.top-pan.y)/zoom-60)))}}};
 }

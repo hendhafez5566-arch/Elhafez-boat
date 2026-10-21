@@ -1,3 +1,4 @@
+import {contentPaths} from './flow-localization.js';
 import {randomUUID,createHash} from 'node:crypto';
 import {allow,HttpFailure,isUuid,type Actor,type SqlClient} from './services.js';
 import {validateFlow,mapConditionRules,type FlowDefinition,type FlowNode} from './flow-engine.js';
@@ -18,8 +19,8 @@ export async function saveSubflow(db:SqlClient,actor:Actor,input:unknown){
 /** Resolve pinned tenant-private calls at publication. Immutable compiled graph returns at END.
  * This is compilation, not mutable copied snippets: source calls retain exact library versions.
  * Field bindings map callee keys to caller keys, so input/output persist safely across delays. */
-export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDefinition,ancestors:string[]=[]):Promise<FlowDefinition>{
- let serial=0;const nodes:FlowNode[]=[],variables=new Map<string,import('./flow-engine.js').FlowVariable>();
+export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDefinition,ancestors:string[]=[],locale?:'ar'|'en'):Promise<FlowDefinition>{
+ let serial=0;const localization={defaultLocale:source.localization?.defaultLocale||'ar' as 'ar'|'en',...(source.localization?.localeField?{localeField:source.localization.localeField}:{}),values:{ar:{},en:{}}} as import('./flow-localization.js').FlowLocalization;let localized=false;const nodes:FlowNode[]=[],variables=new Map<string,import('./flow-engine.js').FlowVariable>();
  async function expand(flow:FlowDefinition,prefix:string,bindings:Record<string,string>,exit?:string,stack=ancestors){
   for(const field of flow.variables||[]){const key=Object.hasOwn(bindings,field.key)?bindings[field.key]:field.key;const v={...field,key};const existing=variables.get(key);if(existing&&(existing.type!==v.type||existing.scope!==v.scope||JSON.stringify(existing.options)!==JSON.stringify(v.options)))throw new HttpFailure(400,'Conflicting bound variable types');variables.set(key,v)}
   const map=(id:string)=>prefix?prefix+createHash('sha256').update(id).digest('hex').slice(0,20):id;
@@ -27,6 +28,7 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
    const n=JSON.parse(JSON.stringify(raw)) as FlowNode;n.id=map(n.id);
    if(n.type==='INPUT'&&!n.validation){const v=flow.variables?.find(v=>v.key===n.field);if(v&&['text','phone','email','number','date','datetime','location'].includes(v.type))n.validation={type:v.type as import('./flow-engine.js').InputValidation['type']}}
    const template=(text:string)=>text.replace(/\{\{([a-z][a-z0-9_]{0,39})\}\}/g,(token,key:string)=>Object.hasOwn(bindings,key)?'{{'+bindings[key]+'}}':token);
+   if(flow.localization){localized=true;const paths=new Set([...Object.keys(flow.localization.values.ar?.[raw.id]||{}),...Object.keys(flow.localization.values.en?.[raw.id]||{})]);for(const lang of ['ar','en'] as const){const translated:Record<string,string>={};for(const path of paths){let base:any=raw;for(const part of path.split('.'))base=base[part];translated[path]=template(flow.localization.values[lang]?.[raw.id]?.[path]??base)}if(Object.keys(translated).length){localization.values[lang]![n.id]=translated}}}
    if('text'in n)n.text=template(n.text);
    if(n.type==='MEDIA'&&n.caption)n.caption=template(n.caption);
    if(n.type==='SET_FIELD')n.value=template(n.value);
@@ -54,10 +56,10 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
     await expand(child,childPrefix,childBindings,n.next,[...stack,n.subflowId]);
    }else if(n.type==='END'&&exit){nodes.push({id:n.id,type:'TEXT',text:n.text,next:exit})}
    else nodes.push(n);
-   if(nodes.length>100)throw new HttpFailure(400,'Expanded flow exceeds 100 nodes');
+   if(nodes.length>500)throw new HttpFailure(400,'Expanded flow exceeds 500 nodes');
   }
  }
  await expand(source,'',{});
  // Nested entry nodes become empty transitions (START); runtime validation allows several.
- const compiled={...source,nodes,...(variables.size?{variables:[...variables.values()]}:{})};validateFlow(compiled,{runtime:true});return compiled;
+ const compiled={...source,nodes,...(localized?{localization}:{}),...(variables.size?{variables:[...variables.values()]}:{})};validateFlow(compiled,{runtime:true});return compiled;
 }

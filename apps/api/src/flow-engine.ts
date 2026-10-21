@@ -1,3 +1,4 @@
+import {localizedFlow,validateLocalization,type FlowLocalization} from './flow-localization.js';
 import type {VariableContext} from './flow-variable-context.js';
 import {supportsAcquisition,attachmentReference,type Acquisition} from './flow-native-input.js';
 import {triggerConflicts,triggerEvents} from './flow-triggers.js';
@@ -47,7 +48,7 @@ export type FlowNode = (
  | {id:string;type:'END';text:string}) & {label?:string;note?:string;errorNext?:string};
 export type FlowGroup={id:string;title:string;nodeIds:string[];collapsed?:boolean};
 export type DraftTrigger={kind:'KEYWORD'|'FIRST_MESSAGE'|'EVENT';channel?:FlowChannel;phrase:string;matchMode:'EXACT'|'CONTAINS';targetNode:string;priority:number;enabled:boolean};
-export type FlowDefinition={name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>;groups?:FlowGroup[];variables?:FlowVariable[];channel?:FlowChannel;triggers?:DraftTrigger[];forms?:FlowFormDraft[]};
+export type FlowDefinition={localization?:FlowLocalization;name:string;startId:string;nodes:FlowNode[];layout?:Record<string,{x:number;y:number}>;groups?:FlowGroup[];variables?:FlowVariable[];channel?:FlowChannel;triggers?:DraftTrigger[];forms?:FlowFormDraft[]};
 export type FlowChannel='WHATSAPP'|'WEBSITE'|'MESSENGER'|'INSTAGRAM'|'TELEGRAM';
 export type FlowState={at:string|null;answers:Record<string,string>;tags:string[];runtime?:FlowRuntime};
 export type FlowMessage={type:'GALLERY';cards:FlowCard[]}|{type:'TEXT';text:string;inputRequest?:Acquisition['kind']}|{type:'BUTTONS'|'LIST';text:string;choices:Choice[];buttonText?:string}|{type:'MEDIA';mediaKind:'image'|'video'|'document'|'audio';url:string;caption?:string};
@@ -126,7 +127,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  requireTrue(plain(input),'Flow must be an object');
  requireTrue(bounded(input.name,100,2),'Flow name must be 2–100 characters');
  requireTrue(typeof input.startId==='string'&&ident.test(input.startId),'Invalid start node ID');
- requireTrue(Array.isArray(input.nodes)&&input.nodes.length>=(options.draft?1:2)&&input.nodes.length<=(options.runtime?500:100),'Flow requires 2–100 nodes');
+ requireTrue(Array.isArray(input.nodes)&&input.nodes.length>=(options.draft?1:2)&&input.nodes.length<=500,'Flow requires 2–500 nodes');
  const seen=new Set<string>();const fields=new Set<string>();let startCount=0;
  for(const raw of input.nodes){
   requireTrue(plain(raw),'Invalid node object');
@@ -253,7 +254,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  }
  const layout:Record<string,{x:number;y:number}>={};
  if(plain(input.layout))for(const [id,pos] of Object.entries(input.layout)){
-  requireTrue(seen.has(id)&&plain(pos)&&typeof pos.x==='number'&&typeof pos.y==='number'&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&Math.abs(pos.x)<=10000&&Math.abs(pos.y)<=10000,'Invalid canvas position');
+  requireTrue(seen.has(id)&&plain(pos)&&typeof pos.x==='number'&&typeof pos.y==='number'&&Number.isFinite(pos.x)&&Number.isFinite(pos.y)&&Math.abs(pos.x)<=50000&&Math.abs(pos.y)<=50000,'Invalid canvas position');
   Object.defineProperty(layout,id,{value:{x:pos.x,y:pos.y},enumerable:true});
  }
  const groups:FlowGroup[]=[];
@@ -278,12 +279,13 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
  const variables:FlowVariable[]=[];
  if(input.variables!==undefined){requireTrue(Array.isArray(input.variables)&&input.variables.length<=100,'Maximum 100 variables');const names=new Set();for(const v of input.variables){requireTrue(plain(v)&&typeof v.key==='string'&&key.test(v.key)&&!names.has(v.key)&&bounded(v.label,80)&&['text','phone','email','number','date','datetime','location','attachment','boolean','enum'].includes(String(v.type))&&['session','contact'].includes(String(v.scope)),'Invalid typed variable');names.add(v.key);if(v.type==='enum')requireTrue(Array.isArray(v.options)&&v.options.length>=1&&v.options.length<=50&&v.options.every(o=>bounded(o,100)),'Enum requires bounded options');if(v.metadata!==undefined){const m=v.metadata;requireTrue(plain(m)&&Object.keys(m).every(k=>['sensitivity','purpose','consentPolicyVersion'].includes(k))&&['GENERAL','PERSONAL','SENSITIVE'].includes(String(m.sensitivity))&&['SERVICE','MARKETING'].includes(String(m.purpose))&&(m.consentPolicyVersion===undefined||bounded(m.consentPolicyVersion,80)),'Invalid variable consent metadata');}variables.push(v as FlowVariable)}}
  if(input.channel!==undefined)requireTrue(['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(input.channel)),'Invalid authoring channel');
- return {...(input.forms!==undefined?{forms:input.forms as FlowFormDraft[]}:{}),...(input.triggers!==undefined?{triggers}:{}),...(input.variables!==undefined?{variables}:{}),...(input.channel!==undefined?{channel:input.channel as FlowChannel}:{}),name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[],layout,groups};
+ if(input.localization!==undefined){validateLocalization(input.localization,nodes as FlowNode[]);for(const locale of ['ar','en'] as const)validateFlow(localizedFlow({...input,localization:input.localization} as unknown as FlowDefinition,{},locale),options);}
+ return {...(input.localization!==undefined?{localization:input.localization as FlowLocalization}:{}),...(input.forms!==undefined?{forms:input.forms as FlowFormDraft[]}:{}),...(input.triggers!==undefined?{triggers}:{}),...(input.variables!==undefined?{variables}:{}),...(input.channel!==undefined?{channel:input.channel as FlowChannel}:{}),name:input.name.trim(),startId:input.startId,nodes:JSON.parse(JSON.stringify(nodes)) as FlowNode[],layout,groups};
 }
 export function renderFlowText(text:string,answers:Record<string,string>,limit=4096,context:VariableContext={}):string{return text.replace(/\{\{(@?[a-z][a-z0-9_]{0,39})\}\}/g,(_,key:string)=>key.startsWith('@')?context[key.slice(1) as keyof VariableContext]||'':Object.hasOwn(answers,key)?answers[key]:'').slice(0,limit)}
 export function initialFlowState():FlowState{return {at:null,answers:{},tags:[]}}
 export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput,random:()=>number=Math.random,context:{now?:number;enter?:boolean;channel?:FlowChannel;onStep?:(id:string,type:string)=>void;variables?:VariableContext}={}):FlowAdvance{
- const now=context.now??Date.now(),nodes=new Map(flow.nodes.map(n=>[n.id,n]));
+ const localizationSource=flow;flow=localizedFlow(flow,state.answers);const now=context.now??Date.now(),nodes=new Map(flow.nodes.map(n=>[n.id,n]));
  const answers:Record<string,string>=Object.assign(Object.create(null),state.answers),tags=[...state.tags];let at=state.at??flow.startId;
  let runtime:FlowRuntime|undefined=state.runtime?JSON.parse(JSON.stringify(state.runtime)):undefined;
  const ensureRuntime=():FlowRuntime=>runtime??={attempts:Object.create(null)};
@@ -335,6 +337,7 @@ export function advanceFlow(flow:FlowDefinition,state:FlowState,input?:FlowInput
   }else if(current.type==='END'||current.type==='HANDOFF')at=flow.startId;
  }
  for(let hops=0;hops<120;hops++){
+  if(localizationSource.localization){flow=localizedFlow(localizationSource,answers);nodes.clear();for(const n of flow.nodes)nodes.set(n.id,n);}
   const node=nodes.get(at);if(node)context.onStep?.(node.id,node.type);if(!node)throw Error('Node destination unavailable');finishStep();const entry:FlowTrace={nodeId:node.id,type:node.type,outcome:'entered',elapsedMs:0};trace.push(entry);
   if(node.type==='INPUT'&&node.acquisition&&!supportsAcquisition(context.channel||flow.channel||'WHATSAPP',node.acquisition.kind)){entry.outcome='unsupported_channel';at=node.acquisition.unsupportedNext;clearWait();continue;}
   if(node.type==='CONSENT'){consentPrompt(node);return result();}

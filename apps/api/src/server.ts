@@ -159,7 +159,7 @@ const server=createServer(async(req,res)=>{
     if(/^\/api\/v1\/(programs|bookings|departures|offers|bot)(\/|$)/.test(pathname))return json(res,410,{error:'Legacy tourism endpoints retired. Use /catalog and /flows.'});
     // No reservation/room-allocation endpoints. Staff handles actual bookings in their existing systems.
     const run=<T>(task:(tx:SqlClient)=>Promise<T>)=>withTenantTransaction(pool,actor,task);
-    const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req);return run(tx=>task(tx,input));};
+    const runBody=async<T>(task:(tx:SqlClient,input:unknown)=>Promise<T>):Promise<T>=>{const input=await body(req,/\/flows(?:\/|$)/.test(pathname)?1048576:65536);return run(tx=>task(tx,input));};
     if(pathname==='/api/v1/bots/templates/preview'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,prepareBotTemplate(await body(req)));}
     if(pathname==='/api/v1/bots/templates'&&req.method==='GET')return json(res,200,botTemplates.map(t=>({...t,definition:botTemplate(t.id,t.name)})));
     if(pathname==='/api/v1/bots'&&req.method==='GET')return json(res,200,await run(tx=>listBots(tx,actor)));
@@ -350,13 +350,13 @@ const server=createServer(async(req,res)=>{
       const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,botAction:r.botAction,runtimeNodes:r.flow.nodes,...(simulation?.delivery?{deliveryMock:{mock:true,channel:simulation.channel||flow.channel||'WHATSAPP',status:simulation.delivery,messageCount:r.messages.length}}:{})};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/inspect-draft'){
-      allow(actor,['OWNER','MANAGER']);const input=await body(req);
+      allow(actor,['OWNER','MANAGER']);const input=await body(req,1048576);
       let definition;try{definition=validateFlow(input,{draft:true})}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid draft')}
       return json(res,200,await run(async tx=>{try{await compileSubflows(tx,actor.tenantId,validateFlow(definition));return {definition,publishable:true,issues:[]}}catch(error){return {definition,publishable:false,issues:[error instanceof Error?error.message:'Draft needs completion']}}}));
     }
     if(req.method==='POST'&&pathname==='/api/v1/flows/validate'){
       allow(actor,['OWNER','MANAGER']);
-      const input=await body(req);try{await run(tx=>compileSubflows(tx,actor.tenantId,validateFlow(input)));return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
+      const input=await body(req,1048576);try{await run(tx=>compileSubflows(tx,actor.tenantId,validateFlow(input)));return json(res,200,{valid:true})}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid flow')}
     }
     if(req.method==='GET'&&pathname==='/api/v1/flows/snippets')
       return json(res,200,await run(tx=>listFlowSnippets(tx,actor)));

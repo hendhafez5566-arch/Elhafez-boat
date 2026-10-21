@@ -1,6 +1,6 @@
 /** Pure canvas geometry. Coordinates affect the draft layout only, never the bot engine. */
 export const NODE_WIDTH=286;
-export const MAX_POSITION=9600;
+export const MAX_POSITION=48000;
 export const GAP=28;
 export function nodeFootprint(node={}){
  const options=Array.isArray(node.choices)?node.choices.length:0;
@@ -60,6 +60,7 @@ export function arrangeFlow(flow){
  for(const node of flow.nodes)if(!rank.has(node.id))rank.set(node.id,orphanRank);
  const layers=new Map();
  for(const node of flow.nodes){const level=rank.get(node.id);if(!layers.has(level))layers.set(level,[]);layers.get(level).push(node)}
+ if(flow.nodes.length>100){const result=Object.create(null),ordered=[...flow.nodes].sort((a,b)=>rank.get(a.id)-rank.get(b.id)),columns=Math.min(24,Math.ceil(Math.sqrt(ordered.length)));let y=70;for(let i=0;i<ordered.length;i+=columns){const row=ordered.slice(i,i+columns),height=Math.max(...row.map(n=>nodeFootprint(n).height));for(const [column,node]of row.entries())result[node.id]={x:64+column*(NODE_WIDTH+105),y:Math.min(MAX_POSITION,y)};y+=height+112;}return result;}
  const result=Object.create(null),occupied=[];let y=70;
  for(const [,nodes] of [...layers].sort((a,b)=>a[0]-b[0])){
   // Maximum four cards per row. The tallest rendered footprint governs the row gap.

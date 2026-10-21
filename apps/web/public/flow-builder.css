@@ -153,3 +153,5 @@ body.bot-studio .builder-inspector,body.bot-studio .builder-palette{height:100%;
 .builder-conflict-dialog.flow-funnel-dialog{width:min(1100px,95vw);max-width:95vw}.flow-funnel-dialog table th,.flow-funnel-dialog table td{white-space:nowrap;padding:8px}
 
 .builder-token-suggestions{display:grid;gap:4px;max-height:220px;overflow:auto;padding:8px;border:1px solid #6678a2;background:#fff;border-radius:10px;position:relative;z-index:20}.builder-token-suggestions [aria-selected=true]{background:#dbeafe;color:#163d73;outline:2px solid #2563eb}.builder-token-suggestions button{text-align:start;white-space:normal}
+
+#builder-editor[dir=ltr]{direction:ltr;text-align:left}#builder-editor textarea,#builder-editor input:not([type=checkbox]):not([type=number]){text-align:start;unicode-bidi:plaintext}.canvas-node:focus-visible,.canvas-edge-hit:focus-visible{outline:3px solid #075985;outline-offset:4px}.canvas-node p,.builder-bubble{unicode-bidi:plaintext}.canvas-navigation button{min-width:40px;min-height:40px}

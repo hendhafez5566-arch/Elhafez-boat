@@ -20,7 +20,7 @@ test('pinned subflow resolves under tenant scope, captures mapped fields and ret
 test('subflow missing version, circular references, expansion and depth fail closed',async()=>{
  await assert.rejects(compileSubflows({query:async()=>({rows:[],rowCount:0})},tenant,source),/unavailable/);
  await assert.rejects(compileSubflows({query:async()=>({rows:[{definition:{...source,nodes:source.nodes.map(n=>n.type==='SUBFLOW'?{...n,next:'done'}:n)}}],rowCount:1})},tenant,source),/Recursive/);
- const huge={...child,nodes:[{id:'start',type:'START',next:'n0'},...Array.from({length:98},(_,i)=>({id:'n'+i,type:'TEXT',text:'x',next:i===97?'end':'n'+(i+1)})),{id:'end',type:'END',text:'x'}]};await assert.rejects(compileSubflows({query:async()=>({rows:[{definition:huge}],rowCount:1})},tenant,source),/exceeds/);
+ const huge={...child,nodes:[{id:'start',type:'START',next:'n0'},...Array.from({length:498},(_,i)=>({id:'n'+i,type:'TEXT',text:'x',next:i===497?'end':'n'+(i+1)})),{id:'end',type:'END',text:'x'}]};await assert.rejects(compileSubflows({query:async()=>({rows:[{definition:huge}],rowCount:1})},tenant,source),/exceeds/);
 });
 test('subflow binding does not inherit Object.prototype keys',async()=>{
  const definition={...child,nodes:child.nodes.map(n=>n.type==='INPUT'?{...n,field:'constructor'}:n)};const compiled=await compileSubflows({query:async()=>({rows:[{definition}],rowCount:1})},tenant,source);assert.equal(compiled.nodes.find(n=>n.type==='INPUT').field,'constructor');
