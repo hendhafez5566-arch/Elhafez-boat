@@ -1,3 +1,9 @@
+## Completed local release qualification
+
+The unchanged-limit runtime retry completed successfully through all broad Chromium/CDP/company tests,28 premium checks,9 integrated Canvas/widget checks,request operations,actual persistent-profile restart/cross-tab recovery and logout. It includes the real30-second mixed workload, HTTP load, process crashes/restarts,private media/real ClamAV,RLS,legacy bots and tenant boundaries. No assertions or execution flags were removed to obtain this result. The initial failed mixed-load run remains preserved separately. See final-refinement/final-runtime.txt.
+
+All35 feature/runtime workflow commands have now completed successfully across the feature run plus the successful runtime retry;246 unit/TS/build and final17 visual/real-authoring +4 scale checks also pass. This evidence commit follows source candidatec6093f5aeb10ce09f92b210ec88c16ac6b558a51 without further application changes. The newest GitHub commit still requires both push/PR runs to complete; final observed SHA/results are recorded in PR#5.
+
 ## Final authoring and release candidate — 21 October 2026
 
 Previous correction654c90c8444251ce3338389f3e232dc7b3d52ec1 is fully GREEN on both push39634848979 and PR39634857704, including backup/restore, packaged Docker and isolated Compose/database-outage recovery. The next candidate must obtain its own green runs; these results do not certify later source.
