@@ -1,0 +1,52 @@
+
+> elhafez-boat@0.1.0 db:migrate
+> node --env-file-if-exists=.env scripts/migrate.mjs
+
+.env not found. Continuing without it.
+Applied migration 0001_initial.sql
+Applied migration 0002_sessions_capacity.sql
+Applied migration 0003_sales_workspace.sql
+Applied migration 0004_program_trip_details.sql
+Applied migration 0005_bot_configuration.sql
+Applied migration 0006_whatsapp_inbox.sql
+Applied migration 0007_team_platform.sql
+Applied migration 0008_platform_owner_invites.sql
+Applied migration 0009_whatsapp_flows.sql
+Applied migration 0010_tenant_knowledge.sql
+Applied migration 0011_departures_rooms.sql
+Applied migration 0012_templates_consent.sql
+Applied migration 0013_whatsapp_booking_choices.sql
+Applied migration 0014_chatbot_leads_only.sql
+Applied migration 0015_generic_flows.sql
+Applied migration 0016_generic_catalog.sql
+Applied migration 0017_ai_settings.sql
+Applied migration 0018_team_inbox.sql
+Applied migration 0019_integrations.sql
+Applied migration 0020_scheduled_templates.sql
+Applied migration 0021_access_keys.sql
+Applied migration 0022_chatbot_runtime.sql
+Applied migration 0023_reusable_flow_sections.sql
+Applied migration 0024_advanced_runtime.sql
+Applied migration 0025_meta_commerce.sql
+Applied migration 0026_lead_followups.sql
+Applied migration 0027_comment_automation.sql
+Applied migration 0028_whatsapp_self_service.sql
+Applied migration 0029_independent_bots.sql
+Applied migration 0030_bot_channel_routes.sql
+Applied migration 0031_bot_triggers.sql
+Applied migration 0032_bot_integrity.sql
+Applied migration 0033_flow_runtime_controls.sql
+Applied migration 0034_flow_trace_order.sql
+Applied migration 0035_flow_integration_continuations.sql
+Applied migration 0036_flow_request_reconciliation.sql
+Applied migration 0037_flow_authoring_reviews.sql
+Applied migration 0038_connector_flow_results.sql
+Applied migration 0039_conversation_control_consent.sql
+Applied migration 0040_flow_save_receipts.sql
+Applied migration 0041_channel_event_triggers.sql
+Applied migration 0042_nonblocking_job_origin.sql
+Applied migration 0043_flow_observability.sql
+Applied migration 0044_private_incoming_media.sql
+Applied migration 0045_attachment_retention.sql
+Applied migration 0046_attachment_continuations.sql
+Applied migration 0047_attachment_wait_generation.sql

@@ -262,5 +262,10 @@ jobs:
             docs/product-rebuild/evidence/flow-observability-2026-10-21/results.json
             docs/product-rebuild/evidence/incoming-media-2026-10-21/*.png
             docs/product-rebuild/evidence/incoming-media-2026-10-21/results.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/*.png
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/results.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/authored-tourism.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/contrast.json
+            docs/product-rebuild/evidence/scale-locale-2026-10-21/performance.json
           if-no-files-found: ignore
           retention-days: 7

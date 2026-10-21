@@ -1,0 +1,27 @@
+{
+  "sourceCommit": "adc939be89d311178eaf159c274ac034138d28d5",
+  "phase": "before",
+  "checks": [
+    "ten actual matched Chromium screenshots; real stored 11-node tourism graph, Arabic,100% zoom,1440x1000 and390x844",
+    "actual500-node save/reopen and499 connectors at matching fixed zoom"
+  ],
+  "errors": [],
+  "fixture": {
+    "botId": "ab0296d5-81b8-443c-beb1-410f44f7b81a",
+    "nodes": 11,
+    "language": "ar",
+    "zoom": "100%",
+    "selected": "welcome",
+    "viewport": [
+      1440,
+      1000
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "provider": "NONE; actual PostgreSQL/API/Chromium",
+  "runnerCommit": "a81df48a3eb72e4a623155c5a780a63aa4156f75",
+  "sourceNote": "Archived original web source served locally with unchanged API/contracts; matching synthetic data,viewport,zoom; original Before files untouched."
+}
