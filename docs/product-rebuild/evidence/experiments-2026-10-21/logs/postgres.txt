@@ -1,0 +1,9 @@
+PASS actual published sticky allocations, returns and repeated goals count one conversation and one conversion per initial variant
+PASS goal-before-exposure is excluded; timestamp and within-execution order govern attribution
+PASS conversion window is seven days after allocation; late goals and immature versus mature cohorts are explicit
+PASS unordered historical assignment is excluded and separately reported rather than inventing event order
+PASS recent re-entry cannot reclassify a first exposure outside the selected observation period
+PASS non-sticky/mixed exposure is surfaced without moving the conversation between denominator cohorts
+PASS immutable published versions keep independent weights/cohorts; zero-sample variants have no invented conversion rate
+PASS actual RLS/foreign bot, published node validation, bounded periods and value-free metadata isolation hold
+PASS 8 experiment PostgreSQL scenarios

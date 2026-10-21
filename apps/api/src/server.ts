@@ -1,3 +1,4 @@
+import {flowExperiments} from './flow-experiments.js';
 import {controlledConversations,controlConversation,handoffRoster,updateHandoffAvailability} from './conversation-control.js';
 import {consentHistory,revokeConsent} from './flow-consent.js';
 import {scheduledFlowJobs,cancelScheduledFlow} from './flow-scheduled-ops.js';
@@ -174,6 +175,8 @@ const server=createServer(async(req,res)=>{
     if(requestOps&&req.method==='POST'&&requestOps[2])return json(res,200,await runBody((tx,input)=>reconcileFlowRequest(tx,actor,requestOps[1],requestOps[2],input)));
     const tracePath=/^\/api\/v1\/bots\/([^/]+)\/flow-traces(?:\/([^/]+))?$/.exec(pathname);
     if(tracePath&&req.method==='GET'){if(tracePath[2])return json(res,200,await run(tx=>flowConversationTrace(tx,actor,tracePath[1],tracePath[2],new URL(req.url||'/','http://local').searchParams)));return json(res,200,await run(tx=>flowTraceSessions(tx,actor,tracePath[1])))}
+    const experiments=/^\/api\/v1\/bots\/([^/]+)\/experiments$/.exec(pathname);
+    if(experiments&&req.method==='GET')return json(res,200,await run(tx=>flowExperiments(tx,actor,experiments[1],new URL(req.url||'/','http://local').searchParams)));
     const stepStats=/^\/api\/v1\/bots\/([^/]+)\/flow-insights$/.exec(pathname);
     if(stepStats&&req.method==='GET')return json(res,200,await run(tx=>flowStepInsights(tx,actor,stepStats[1],new URL(req.url||'/','http://local').searchParams)));
     if(pathname==='/api/v1/flows/assist'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,mockFlowAssistance(await body(req)))}

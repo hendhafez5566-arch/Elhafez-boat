@@ -125,6 +125,10 @@ jobs:
         run: |
           node tests/flow-save-db.mjs
           node tests/flow-save-browser.mjs
+      - name: Real first-exposure experiment cohorts and desktop/mobile comparison
+        run: |
+          node tests/flow-experiments-db.mjs
+          node tests/flow-experiments-browser.mjs
       - name: Authoring, native connector and scheduled wait desktop/mobile UI
         run: CI_CONNECTOR_BROWSER=1 CI_SCHEDULE_BROWSER=1 node tests/flow-authoring-browser.mjs
       - name: Real non-owner runtime / web browser acceptance
