@@ -1,0 +1,6 @@
+Starting actual Chromium
+PASS real committed save with deliberately dropped response retries the same mutation and creates exactly one server revision
+PASS actual Web Locks exclude an overlapping second-tab save and preserve its separate edits on mobile
+PASS after lease release, stale second-tab content still reaches ordinary revision review and cannot overwrite the newer draft
+PASS closing a tab releases its browser-owned lease automatically without expiry races
+PASS 4 draft-save Chromium scenarios

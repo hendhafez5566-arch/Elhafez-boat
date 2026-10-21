@@ -1,3 +1,4 @@
+import {withDraftSaveLock,draftMutation,forgetDraftMutation} from './draft-save-lock.js';
 import {mountConversationControls,mountConversationOperations} from './flow-conversation-controls.js';
 import {mountScheduledOperations} from './flow-scheduled-ops.js';
 import {mountFlowAuthoring} from './flow-authoring.js';
@@ -700,7 +701,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
- const primaryBar=$('builder-industry').closest('.builder-toolbar');
+ const primaryBar=$('builder-industry').closest('.builder-toolbar');primaryBar.append($('builder-unsaved').parentElement);
  const studioBack=button('← إدارة البوتات',()=>document.dispatchEvent(new Event('boat-open-bots')),'secondary');studioBack.classList.add('bot-studio-back');primaryBar.prepend(studioBack);
  const presetOptions=el('details',undefined,'builder-preset-disclosure');
  presetOptions.append(el('summary','القوالب الجاهزة (اختياري)'),$('builder-industry').closest('label'),$('builder-load-preset'));
@@ -739,7 +740,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),2500);
    notify('تم تنزيل نسخة احتياطية من التعديلات المحلية؛ لم يتم نشر أي شيء.');
  };
- const conflictDialog=el('dialog',undefined,'builder-conflict-dialog');
+ const conflictDialog=el('dialog',undefined,'builder-conflict-dialog');conflictDialog.setAttribute('aria-label','مراجعة تعارض المسودة');
  document.body.append(conflictDialog);
  const closeConflict=()=>{if(conflictDialog.open)conflictDialog.close()};
  const compareDrafts=(local,remote)=>{
@@ -834,11 +835,17 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
 
  async function saveDraft(automatic=false){
    if(state.demo){if(!automatic)notify('وضع المعاينة فقط؛ لا حفظ على الخادم.');return}
+   if(automatic&&!navigator.locks?.request){autosave.checked=false;saveState='تنسيق النوافذ غير متاح في هذا المتصفح؛ استخدم الحفظ اليدوي الآمن.';renderStatus();return}
    if(saving)return;saving=true;saveState='جارٍ الحفظ…';renderStatus();
    const snapshot=deep(flow),serialized=JSON.stringify(flow),scope={tenant:state.tenantId,bot:state.botId};
    try{
     if(mainSnapshot){const saved=await api('/flows/subflows',{method:'POST',body:{id:editingSubflowId||undefined,definition:snapshot}});editingSubflowId=saved.id;if(JSON.stringify(flow)===serialized)dirty=false;await refreshSubflows();saveState='حُفظ الإصدار الفرعي';return}
-    const r=await api('/flows/draft',{method:'PUT',body:{...snapshot,expectedRevision:draftRevision}});
+    const mutationKey=recoveryKey()+':mutation';const mutation=await draftMutation({getItem:key=>sessionStorage.getItem(key),setItem:(key,value)=>sessionStorage.setItem(key,value)},mutationKey,snapshot,draftRevision);
+    let r;const lease=await withDraftSaveLock(navigator.locks,recoveryScope(),async()=>{r=await api('/flows/draft',{method:'PUT',body:{...snapshot,expectedRevision:draftRevision,mutationId:mutation.id}})});
+    if(!lease.acquired){saveState='نافذة أخرى تحفظ الآن؛ تعديلاتك باقية. أعد المحاولة بعد انتهائها.';if(!automatic)notify(saveState);return}
+    if(r.superseded){const e=new Error('حُفظت هذه المحاولة سابقًا ثم وصلت نسخة أحدث. راجع النسختين.');e.status=409;throw e}
+    forgetDraftMutation(mutationKey);try{sessionStorage.removeItem(mutationKey)}catch{}
+
     if(scope.tenant!==state.tenantId||scope.bot!==state.botId)return;
     draftRevision=r.draftRevision;mergeBase=deep(r.definition);
     if(JSON.stringify(flow)===serialized){flow=deep(r.definition);dirty=false;const key=recoveryKey();if(key)sessionStorage.removeItem(key);recoveryStore.clearMatching(recoveryScope(),serialized);renderAll()}else storeRecovery();
@@ -879,5 +886,5 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
  });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

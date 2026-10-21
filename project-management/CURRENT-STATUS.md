@@ -1,3 +1,7 @@
+## 2026-10-21 — retry-safe draft saves and atomic browser leases
+
+F36 now PASS: one committed draft revision across duplicate/lost-ack requests, scoped metadata-only receipts, superseded replay review, actual Web Locks cross-tab lease and automatic tab-close release. 199 units/TypeScript/build, 6 real PostgreSQL and 4 Chromium desktop/mobile scenarios PASS; fresh migrations 0001–0040 and forced RLS/bot compatibility PASS. Matrix 17 PASS / 19 PARTIAL; see `docs/product-rebuild/implementation/premium-2026-10-20/SAVE_COORDINATION_CHECKPOINT.md`. Continue full fresh database/API/worker/Chromium/backup acceptance. Remaining F12 old uncorrelated jobs and other partial items remain explicit. GitHub API Forbidden; no merge/deploy/provider use; design unapproved.
+
 ## 2026-10-21 — conversation control / human policies / consent
 
 Implemented and locally verified the integrated ownership/consent package on premium PR #5. Matrix 16 PASS / 20 PARTIAL; F18/F20 close, F12 deliberately retains legacy nonblocking-job attribution gap. 197 unit/typecheck/build, 10 new PostgreSQL and 4 Chromium desktop/mobile scenarios PASS; previous request/native/schedule regressions PASS. See `docs/product-rebuild/implementation/premium-2026-10-20/CONVERSATION_CONTROL_CHECKPOINT.md`. Next integrated package: F36 save idempotency/cross-tab coordination. Remote Actions not yet verified; no merge/deploy/provider use. Visual acceptance remains pending.

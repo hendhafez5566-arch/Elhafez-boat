@@ -1,3 +1,4 @@
+import {definitionHash} from './flow-release.js';
 import {setBotControl} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
 import {businessIsOpen} from './flow-time.js';
@@ -34,10 +35,22 @@ export async function saveFlowDraft(db:SqlClient,actor:Actor,input:unknown,inter
  const store=flowStorage(db,actor,botId);
  const current=await store.draft(true);
  const expected=(input as {expectedRevision?:unknown}).expectedRevision;
+ const mutation=(input as {mutationId?:unknown}).mutationId;
+ if(mutation!==undefined&&(typeof mutation!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(mutation)))throw new HttpFailure(400,'Invalid save mutation identifier');
+ const requestHash=definitionHash({definition,expectedRevision:expected});
+ if(!internal&&mutation){
+  const receipt=await db.query('SELECT request_hash,draft_revision FROM chatbot_flow_save_receipts WHERE tenant_id=$1 AND actor_id=$2 AND flow_scope=$3 AND mutation_id=$4 AND expires_at>now()',[actor.tenantId,actor.userId,botId??'default',mutation]);
+  if(receipt.rowCount){const r=receipt.rows[0];if(r.request_hash!==requestHash)throw new HttpFailure(409,'Save mutation identifier was already used for different content');return {draftRevision:Number(r.draft_revision),definition,replayed:true,superseded:Number(current.rows[0]?.draftRevision)!==Number(r.draft_revision)};}
+ }
+
  if(!internal&&(!Number.isInteger(expected)||Number(expected)!==Number(current.rows[0]?.draftRevision||0)))throw new HttpFailure(409,'Draft changed in another session; reload before saving');
  const saved=await store.save(definition);
  if(!botId)await db.query(`INSERT INTO chatbot_bots(tenant_id,id,name,legacy_default,created_by) VALUES($1,$1,'البوت الأساسي',true,$2) ON CONFLICT DO NOTHING`,[actor.tenantId,actor.userId]);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_DRAFT_SAVED','bot_flow',$3)`,[actor.tenantId,actor.userId,botId??'default']);
+ if(!internal&&mutation){
+  await db.query('DELETE FROM chatbot_flow_save_receipts WHERE tenant_id=$1 AND actor_id=$2 AND expires_at<=now()',[actor.tenantId,actor.userId]);
+  await db.query('INSERT INTO chatbot_flow_save_receipts(tenant_id,actor_id,flow_scope,mutation_id,request_hash,draft_revision) VALUES($1,$2,$3,$4,$5,$6)',[actor.tenantId,actor.userId,botId??'default',mutation,requestHash,saved.rows[0].draftRevision]);
+ }
  return {draftRevision:saved.rows[0].draftRevision,definition};
 }
 export async function publishFlowDraft(db:SqlClient,actor:Actor,botId?:string){
