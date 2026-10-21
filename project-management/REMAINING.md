@@ -1,3 +1,7 @@
+## Bold transformation / Package C
+
+Library tiles now have42px semantic icons,14px titles,12px descriptions,strong search and category headers. Inspector uses a semantic42px heading,14–15px content fields,clear action groups and amber condition groups. Found and fixed Vessel selector collisions that weakened field boundaries and squeezed the mobile channel; production-CSS contrast fixture includes the actual app ancestor.17 authoring/mobile checks PASS; rendered contrast and boundary checks PASS. Next D: messenger preview/responsive surfaces. No functionality removed.
+
 ## Bold transformation / Package B
 
 Semantic full node headers,44px original icons,16px titles,readable bubbles,gallery miniatures,input affordances,clear selection and actual disconnected-route badges now replace the thin-strip white cards. Graph position/storage remains unchanged; missing-target lookup is a Set to preserve bounded500-node work.17 actual visual/authoring checks and4 scale/LTR/pinch checks PASS. Rendered contrast and complete icon/copy vocabulary are checked by tests/studio-contrast.mjs. Next C: library/Inspector. Owner acceptance remains open.

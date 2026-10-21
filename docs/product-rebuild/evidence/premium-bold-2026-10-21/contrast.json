@@ -1,7 +1,22 @@
 {
-  "checks": 111,
-  "minimum": 5.31143872143982,
+  "checks": 175,
+  "minimum": 3.6997429800452992,
   "cases": [
+    {
+      "selector": "secondary bot-studio-back",
+      "ratio": 16.84241298092411,
+      "required": 4.5
+    },
+    {
+      "selector": "secondary studio-operations-button",
+      "ratio": 12.779276420073836,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "ratio": 12.07702093857847,
+      "required": 4.5
+    },
     {
       "selector": "builder-name",
       "ratio": 16.84241298092411,
@@ -42,27 +57,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
+      "selector": "",
       "kind": "violet",
-      "ratio": 9.108887408693919,
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
+      "selector": "",
       "kind": "violet",
-      "ratio": 7.20241759162661,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "violet",
-      "ratio": 13.134107737996194,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "violet",
-      "ratio": 15.352073202291733,
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -90,27 +93,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
+      "selector": "",
       "kind": "violet",
-      "ratio": 9.108887408693919,
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
+      "selector": "",
       "kind": "violet",
-      "ratio": 7.20241759162661,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "violet",
-      "ratio": 13.134107737996194,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "violet",
-      "ratio": 15.352073202291733,
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -138,27 +129,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
+      "selector": "",
       "kind": "violet",
-      "ratio": 9.108887408693919,
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
+      "selector": "",
       "kind": "violet",
-      "ratio": 7.20241759162661,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "violet",
-      "ratio": 13.134107737996194,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "violet",
-      "ratio": 15.352073202291733,
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -186,6 +165,18 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "violet",
       "ratio": 9.108887408693919,
@@ -207,6 +198,126 @@
       "selector": "canvas-message-text",
       "kind": "violet",
       "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "violet",
+      "ratio": 9.108887408693919,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "violet",
+      "ratio": 7.20241759162661,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "violet",
+      "ratio": 13.134107737996194,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "violet",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "violet",
+      "ratio": 9.108887408693919,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "violet",
+      "ratio": 7.20241759162661,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "violet",
+      "ratio": 13.134107737996194,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "violet",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "violet",
+      "ratio": 9.108887408693919,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "violet",
+      "ratio": 7.20241759162661,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "violet",
+      "ratio": 13.134107737996194,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "violet",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -234,6 +345,18 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "blue",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "blue",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "blue",
       "ratio": 7.148009840514964,
@@ -258,27 +381,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
-      "kind": "amber",
-      "ratio": 7.4330262191480685,
+      "selector": "",
+      "kind": "blue",
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
-      "kind": "amber",
-      "ratio": 6.340845910393795,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "amber",
-      "ratio": 14.169976998520543,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "amber",
-      "ratio": 15.352073202291733,
+      "selector": "",
+      "kind": "blue",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -303,6 +414,54 @@
       "selector": "canvas-message-text",
       "kind": "amber",
       "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "amber",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "amber",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "amber",
+      "ratio": 7.4330262191480685,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "amber",
+      "ratio": 6.340845910393795,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "amber",
+      "ratio": 14.169976998520543,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "amber",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "amber",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "amber",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -330,27 +489,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
-      "kind": "blue",
-      "ratio": 7.148009840514964,
+      "selector": "",
+      "kind": "green",
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
-      "kind": "blue",
-      "ratio": 5.884363502479865,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "blue",
-      "ratio": 13.6742010799578,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "blue",
-      "ratio": 15.352073202291733,
+      "selector": "",
+      "kind": "green",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -378,6 +525,54 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "blue",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "blue",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "blue",
+      "ratio": 7.148009840514964,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "blue",
+      "ratio": 5.884363502479865,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "blue",
+      "ratio": 13.6742010799578,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "blue",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "blue",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "blue",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "rose",
       "ratio": 7.211170552040956,
@@ -402,6 +597,18 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "rose",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "rose",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "rose",
       "ratio": 7.211170552040956,
@@ -423,6 +630,18 @@
       "selector": "canvas-message-text",
       "kind": "rose",
       "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "rose",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "rose",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -450,6 +669,18 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "amber",
       "ratio": 7.4330262191480685,
@@ -474,6 +705,18 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "amber",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "amber",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "rose",
       "ratio": 7.211170552040956,
@@ -495,6 +738,18 @@
       "selector": "canvas-message-text",
       "kind": "rose",
       "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "rose",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "rose",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -522,6 +777,18 @@
       "required": 4.5
     },
     {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "violet",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
       "selector": "canvas-kind-indicator",
       "kind": "amber",
       "ratio": 7.4330262191480685,
@@ -546,27 +813,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
-      "kind": "teal",
-      "ratio": 6.365695477074164,
+      "selector": "",
+      "kind": "amber",
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
-      "kind": "teal",
-      "ratio": 5.31143872143982,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "teal",
-      "ratio": 13.859703097757922,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "teal",
-      "ratio": 15.352073202291733,
+      "selector": "",
+      "kind": "amber",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -594,27 +849,15 @@
       "required": 4.5
     },
     {
-      "selector": "canvas-kind-indicator",
+      "selector": "",
       "kind": "teal",
-      "ratio": 6.365695477074164,
+      "ratio": 15.836096751920003,
       "required": 4.5
     },
     {
-      "selector": "canvas-type-label",
+      "selector": "",
       "kind": "teal",
-      "ratio": 5.31143872143982,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-title",
-      "kind": "teal",
-      "ratio": 13.859703097757922,
-      "required": 4.5
-    },
-    {
-      "selector": "canvas-message-text",
-      "kind": "teal",
-      "ratio": 15.352073202291733,
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -639,6 +882,90 @@
       "selector": "canvas-message-text",
       "kind": "teal",
       "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "teal",
+      "ratio": 6.365695477074164,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "teal",
+      "ratio": 5.31143872143982,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "teal",
+      "ratio": 13.859703097757922,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "teal",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-kind-indicator",
+      "kind": "teal",
+      "ratio": 6.365695477074164,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-type-label",
+      "kind": "teal",
+      "ratio": 5.31143872143982,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-title",
+      "kind": "teal",
+      "ratio": 13.859703097757922,
+      "required": 4.5
+    },
+    {
+      "selector": "canvas-message-text",
+      "kind": "teal",
+      "ratio": 15.352073202291733,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "teal",
+      "ratio": 7.0806133758620575,
       "required": 4.5
     },
     {
@@ -664,6 +991,53 @@
       "kind": "green",
       "ratio": 15.352073202291733,
       "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "green",
+      "ratio": 15.836096751920003,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "kind": "green",
+      "ratio": 7.0806133758620575,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-field",
+      "ratio": 15.48689832670105,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "ratio": 16.610687602750314,
+      "required": 4.5
+    },
+    {
+      "selector": "builder-field",
+      "ratio": 15.48689832670105,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "ratio": 16.610687602750314,
+      "required": 4.5
+    },
+    {
+      "selector": "",
+      "ratio": 13.683844052444647,
+      "required": 4.5
+    },
+    {
+      "selector": "field boundary",
+      "ratio": 3.6997429800452992,
+      "required": 3
+    },
+    {
+      "selector": "field boundary",
+      "ratio": 3.6997429800452992,
+      "required": 3
     }
   ],
   "paths": [
