@@ -1,3 +1,7 @@
+## Recovery navigation correction after full CI
+
+CI39633357324 on0ac38b4 passed the integrated Canvas suite, then exposed the same legacy disclosure assumption in flow-recovery-browser.mjs. It now reveals the actual named save setting through studio-navigation and closes the operations dialog before editing/saving. All original recovery assertions retained. Actual local7 request-operations PG cases,6 operations Chromium and4 persistent-profile restart/cross-tab/logout Chromium cases PASS. Full remote CI on this correction is pending. No application/data changes in this correction.
+
 ## Visual/interaction refinement checkpoint
 
 - Expanded Canvas area through shared238/336px library/inspector tokens; reduced toolbar padding; improved library/card type/message readability while retaining286px graph geometry and original identity.

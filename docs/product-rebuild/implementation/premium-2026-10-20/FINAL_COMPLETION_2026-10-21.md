@@ -14,3 +14,8 @@ Continues verified `8b08b38d6b9f44a1c60f8ab8f6c8ba32ba475da2`, same branch and D
 
 Local:246 units/TS/build;28 existing premium Chromium checks;12 matched tourism/Canvas/mobile/large-graph checks;4 scale/LTR/pinch checks. Independent9 integrated rich/widget/selection checks also run. Current source remote full CI remains a separate gate. Before images preserved; After captures refreshed from authenticated real PostgreSQL/API/Chromium with the same logical11-node fixture, saved layout,Arabic100%,1440x1000 and390x844. Synthetic IDs differ from the previous session's disposable database; no same-ID claim across sessions.
 
+
+## Recovery navigation correction after full CI
+
+CI39633357324 on0ac38b4 passed the integrated Canvas suite, then exposed the same legacy disclosure assumption in flow-recovery-browser.mjs. It now reveals the actual named save setting through studio-navigation and closes the operations dialog before editing/saving. All original recovery assertions retained. Actual local7 request-operations PG cases,6 operations Chromium and4 persistent-profile restart/cross-tab/logout Chromium cases PASS. Full remote CI on this correction is pending. No application/data changes in this correction.
+
