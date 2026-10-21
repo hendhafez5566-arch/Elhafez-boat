@@ -1,3 +1,7 @@
+# Premium authoring package — 21 October 2026
+
+Same branch / Draft PR #5. F16/F17/F28 delivered: shared publication readiness + release diff, scoped safe import remapping, persisted comments/independent reviews with optional owner policy. 185 units/typecheck/build, 10 PostgreSQL and 5 real desktop/mobile Chromium scenarios PASS; prior bots/controls/requests regressions PASS. Matrix 13 PASS / 23 PARTIAL. Evidence and exact scope: `docs/product-rebuild/implementation/premium-2026-10-20/AUTHORING_CHECKPOINT.md`. Remaining: native CONNECTOR waits/error routing; conversation/consent/event/input policies; analytics/experiments; F36 lease/idempotency; device/accessibility and external-provider qualification. Design not owner-approved. No merge/deploy/real send.
+
 ## Latest accepted handover — 20 October 2026
 
 Same premium branch / Draft PR #5. Saved source: e8edb1e pointer CI repair, b22b9bf request operations, 2be26d2 browser-close recovery. Full final PostgreSQL/API/worker/Chromium CI-equivalent acceptance exits 0 with all LOCAL_CLOSURE/TRACE/INTEGRATED/OPS/RECOVERY flags. 182 units pass; 54 dedicated browser checks across six suites; existing legacy/RLS/team/CRM and 14 control/19 request/5 rich/7 operation DB scenarios pass. Full 36-migration backup/restore fingerprints and isolated failed-restore protection pass. Trusted-proxy-CA local Node 22 non-root image build/authenticated HTTP smoke passes; repository Dockerfile unchanged.

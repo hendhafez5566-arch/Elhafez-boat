@@ -1,3 +1,7 @@
+# Current package — 21 October 2026
+
+See [AUTHORING_CHECKPOINT.md](AUTHORING_CHECKPOINT.md): unified readiness/version comparison, safe resource remapping and revision-bound independent reviews. 185 units, 10 new PostgreSQL and 5 real desktop/mobile Chromium checks PASS. Matrix 13 PASS / 23 PARTIAL; visual approval pending.
+
 ## Current final handover
 
 [CI-CLOSURE.md](CI-CLOSURE.md) supersedes prior pending gates: 10 PASS / 26 PARTIAL; full local acceptance, backup/restore and packaged smoke pass. Remote CI remains unverified (Forbidden). No release/visual approval implied.

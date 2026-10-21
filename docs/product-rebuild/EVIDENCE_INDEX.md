@@ -1,3 +1,7 @@
+# New authoring evidence — 21 October 2026
+
+[Real desktop/mobile screenshots, five Chromium checks and PostgreSQL/unit regression logs](evidence/authoring-2026-10-21/). [Scope and matrix checkpoint](implementation/premium-2026-10-20/AUTHORING_CHECKPOINT.md). Visual acceptance is pending.
+
 ## Premium PR #5 account handover — 20 October 2026
 
 [Current F01–F36](implementation/premium-2026-10-20/F01-F36.md), [final accepted gates and remaining work](implementation/premium-2026-10-20/CI-CLOSURE.md), [source/image hashes and actual results](evidence/handover-2026-10-20/final/verification.json). Operations and actual browser-restart/cross-tab evidence are in their dated folders; earlier image bytes remain historical.

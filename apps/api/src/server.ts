@@ -1,3 +1,6 @@
+import {flowReleaseReport,releaseDiff} from './flow-release.js';
+import {flowReviewState,changeFlowReview} from './flow-review.js';
+import {inspectPortableFlow} from './flow-portability.js';
 import {flowRequestJobs,reconcileFlowRequest} from './flow-request-ops.js';
 import {validateRequestMocks,type RequestMock} from './flow-request.js';
 import {flowTraceSessions,flowConversationTrace} from './flow-trace.js';
@@ -170,7 +173,23 @@ const server=createServer(async(req,res)=>{
     if(pathname==='/api/v1/flows/assist'&&req.method==='POST'){allow(actor,['OWNER','MANAGER']);return json(res,200,mockFlowAssistance(await body(req)))}
     if(pathname==='/api/v1/flows/capabilities'&&req.method==='GET')return json(res,200,channelCapabilities);
     if(pathname==='/api/v1/flows/preflight'&&req.method==='POST'){
-     allow(actor,['OWNER','MANAGER']);const d=await body(req);return json(res,200,await run(async tx=>{try{const flow=await compileSubflows(tx,actor.tenantId,validateFlow(d));const issues=flowChannelIssues(flow);return {publishable:!issues.some(i=>i.severity==='error'),issues}}catch(e){return {publishable:false,issues:[{severity:'error',code:'GRAPH_INVALID',message:e instanceof Error?e.message:'Invalid graph'}]}}}));
+     allow(actor,['OWNER','MANAGER']);const d=await body(req);return json(res,200,await run(tx=>flowReleaseReport(tx,actor,d)));
+    }
+    const authoring=/^\/api\/v1\/bots\/([^/]+)\/flows\/(readiness|compare|portable|review)$/.exec(pathname);
+    if(authoring){
+     const id=authoring[1],op=authoring[2];
+     if(req.method==='GET'&&op==='review')return json(res,200,await run(async tx=>{const scope=await botScope(tx,actor,id);return flowReviewState(tx,actor,id,scope,new URL(req.url||'/','http://local').searchParams.get('before')??undefined)}));
+     if(req.method==='POST')return json(res,200,await runBody(async(tx,input)=>{
+      const scope=await botScope(tx,actor,id,true);
+      if(op==='review')return changeFlowReview(tx,actor,id,scope,input);
+      if(op==='portable')return inspectPortableFlow(tx,actor,input,scope);
+      if(op==='readiness')return flowReleaseReport(tx,actor,input,scope);
+      const d=input as {fromVersion?:unknown;toVersion?:unknown};
+      if(!Number.isInteger(d.fromVersion)||Number(d.fromVersion)<1||d.toVersion!==undefined&&(!Number.isInteger(d.toVersion)||Number(d.toVersion)<1))throw new HttpFailure(400,'Invalid comparison version');
+      const {flowStorage}=await import('./flow-storage.js'),store=flowStorage(tx,actor,scope),from=await store.published(Number(d.fromVersion)),to=d.toVersion===undefined?await store.draft():await store.published(Number(d.toVersion));
+      if(!from.rowCount||!to.rowCount)throw new HttpFailure(404,'Version unavailable');
+      return {fromVersion:d.fromVersion,toVersion:d.toVersion??'DRAFT',diff:releaseDiff(from.rows[0].definition as any,to.rows[0].definition as any)};
+     }));
     }
     const botStats=/^\/api\/v1\/bots\/([^/]+)\/insights$/.exec(pathname);
     if(botStats&&req.method==='GET')return json(res,200,await run(tx=>botInsights(tx,actor,botStats[1])));

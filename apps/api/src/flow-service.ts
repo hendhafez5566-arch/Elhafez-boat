@@ -1,3 +1,5 @@
+import {flowReadiness} from './flow-release.js';
+import {assertFlowApproved} from './flow-review.js';
 import {galleryFallback,contentMedia} from './flow-content.js';
 import {mapRequestResponse,type RequestMock} from './flow-request.js';
 import {flowChannelIssues} from './flow-capabilities.js';
@@ -42,30 +44,13 @@ export async function publishFlowDraft(db:SqlClient,actor:Actor,botId?:string){
  const store=flowStorage(db,actor,botId);
  const draft=await store.draft(true);
  if(draft.rowCount!==1)throw new HttpFailure(409,'Save a draft before publishing');
- let definition:FlowDefinition;
- try{definition=validateFlow(draft.rows[0].definition)}catch(error){throw new HttpFailure(400,error instanceof Error?error.message:'Invalid flow')}
- const sourceDefinition=definition;
- definition=await compileSubflows(db,actor.tenantId,definition);
- const capabilities=flowChannelIssues(definition);
- const routes=await db.query(`SELECT r.channel FROM chatbot_bot_routes r JOIN chatbot_bots b ON b.tenant_id=r.tenant_id AND b.id=r.bot_id WHERE r.tenant_id=$1 AND ${botId?'r.bot_id=$2':'b.legacy_default=true'}`,botId?[actor.tenantId,botId]:[actor.tenantId]);
- for(const route of routes.rows)capabilities.push(...flowChannelIssues(definition,route.channel as import('./flow-engine.js').FlowChannel));
- if(capabilities.some(i=>i.severity==='error'))throw new HttpFailure(400,capabilities.filter(i=>i.severity==='error').map(i=>i.message).join(' '));
+ const readiness=await flowReadiness(db,actor,draft.rows[0].definition,botId);
+ if(!readiness.publishable||!readiness.definition||!readiness.source)throw new HttpFailure(400,readiness.issues.some(i=>i.code==='MEDIA_UNAVAILABLE')?'Managed media is unavailable in this company':readiness.issues.filter(i=>i.severity==='error').map(i=>i.message).join(' '));
+ const definition=readiness.definition,sourceDefinition=readiness.source;
+ await assertFlowApproved(db,actor,botId,Number(draft.rows[0].draftRevision),sourceDefinition);
  if(sourceDefinition.triggers!==undefined){
   const table=botId?'chatbot_bot_triggers':'chatbot_triggers';await db.query(`DELETE FROM ${table} WHERE tenant_id=$1${botId?' AND bot_id=$2':''}`,botId?[actor.tenantId,botId]:[actor.tenantId]);
   for(const trigger of sourceDefinition.triggers)await db.query(`INSERT INTO ${table}(tenant_id,kind,phrase,match_mode,target_node,priority,enabled${botId?',bot_id':''}) VALUES($1,$2,$3,$4,$5,$6,$7${botId?',$8':''})`,[actor.tenantId,trigger.kind,trigger.phrase,trigger.matchMode,trigger.targetNode,trigger.priority,trigger.enabled,...(botId?[botId]:[])]);
- }
- const triggers=await db.query(`SELECT target_node FROM ${botId?'chatbot_bot_triggers':'chatbot_triggers'} WHERE tenant_id=$1${botId?' AND bot_id=$2':''} AND enabled=true`,botId?[actor.tenantId,botId]:[actor.tenantId]);
- if(triggers.rows.some(t=>!definition.nodes.some(n=>n.id===t.target_node)))throw new HttpFailure(400,'An active trigger references a removed node; update triggers before publishing');
- for(const node of definition.nodes){
-  if(node.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,node.url,node.mediaKind);
-  if(node.type==='TEXT'||node.type==='BUTTONS'){for(const block of node.blocks||[])if(block.type==='MEDIA')await validateManagedMedia(db,actor.tenantId,block.url,block.mediaKind);for(const url of contentMedia([{type:node.type,blocks:(node.blocks||[]).filter(b=>b.type==='CARD'||b.type==='GALLERY')}]))await validateManagedMedia(db,actor.tenantId,url,'image')}
- }
- for(const node of definition.nodes)if(node.type==='CRM_ACTION'&&node.operation==='ASSIGN'){const member=await db.query("SELECT 1 FROM memberships WHERE tenant_id=$1 AND user_id=$2 AND role IN ('OWNER','MANAGER','AGENT')",[actor.tenantId,node.value]);if(!member.rowCount)throw new HttpFailure(400,'CRM assignee is not an eligible member of this company')}
- for(const node of definition.nodes)if(node.type==='CONNECTOR'){const c=await db.query('SELECT 1 FROM chatbot_connectors WHERE tenant_id=$1 AND id=$2 AND enabled=true AND credentials_encrypted IS NOT NULL',[actor.tenantId,node.connectorId]);if(!c.rowCount)throw new HttpFailure(400,'Flow connector is not connected');}
- for(const node of definition.nodes)if(node.type==='WEBHOOK'){
-  const integration=await db.query('SELECT url FROM chatbot_integrations WHERE tenant_id=$1 AND id=$2 AND enabled=true',[actor.tenantId,node.integrationId]);
-  if(!integration.rowCount)throw new HttpFailure(400,'Flow references an unavailable integration');
-  webhookURL(String(integration.rows[0].url));
  }
  const saved=await store.publish(definition,draft.rows[0].draftRevision,sourceDefinition);
  await db.query(`INSERT INTO audit_events(tenant_id,actor_id,action,entity_type,entity_id) VALUES($1,$2,'FLOW_PUBLISHED','bot_flow',$3)`,[actor.tenantId,actor.userId,(botId?botId+':':'')+String(saved.rows[0].version)]);
