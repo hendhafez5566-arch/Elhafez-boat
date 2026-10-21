@@ -256,7 +256,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   const kind=e.dataTransfer?.getData('application/x-boat-block');
   if(!kinds.some(([type])=>type===kind))return;
   e.preventDefault();const at=canvas.coordinates(e.clientX,e.clientY);
-  addNode(kind);flow.layout??={};flow.layout[selected]=at;markDirty();renderAll();
+  addNode(kind,null,at);
  });
  const inspector=el('aside',undefined,'builder-inspector');
  properties.querySelector('h3').textContent='خصائص الخطوة';
@@ -450,7 +450,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      if(block.type==='MEDIA'){const kind=el('select');for(const k of ['image','video','audio','document']){const o=el('option',k);o.value=k;kind.append(o)}kind.value=block.mediaKind;kind.onchange=()=>{block.mediaKind=kind.value;markDirty()};row.append(label('نوع الوسائط',kind),label('التعليق',control(block.caption||'',v=>{block.caption=v})))}
      const move=offset=>{const j=i+offset;if(j<0||j>=node.blocks.length)return;[node.blocks[i],node.blocks[j]]=[node.blocks[j],node.blocks[i]];markDirty();renderEditor()};row.append(button('↑',()=>move(-1)),button('↓',()=>move(1)),button('حذف المحتوى',()=>{node.blocks.splice(i,1);markDirty();renderEditor()}));section.append(row);
     }
-    for(const [type,title]of [['TEXT','إضافة نص'],['MEDIA','إضافة وسائط'],['LINK','إضافة رابط']])section.append(button(title,()=>{node.blocks??=[];if(node.blocks.length>=10){notify('الحد الأقصى 10 محتويات إضافية','error');return}node.blocks.push(type==='TEXT'?{type,text:'رسالة إضافية'}:type==='LINK'?{type,text:'تفاصيل',url:'https://example.com'}:{type,mediaKind:'image',url:'https://example.com/image.jpg',caption:''});markDirty();renderEditor()}));host.append(section);
+    const contentActions=el('div',undefined,'builder-content-actions');
+    for(const [type,title]of [['TEXT','إضافة نص'],['MEDIA','إضافة وسائط'],['LINK','إضافة رابط']])contentActions.append(button(title,()=>{node.blocks??=[];if(node.blocks.length>=10){notify('الحد الأقصى 10 محتويات إضافية','error');return}node.blocks.push(type==='TEXT'?{type,text:'رسالة إضافية'}:type==='LINK'?{type,text:'تفاصيل',url:'https://example.com'}:{type,mediaKind:'image',url:'https://example.com/image.jpg',caption:''});markDirty();renderEditor()}));section.append(contentActions);host.append(section);
    }
    if(['SET_FIELD','CRM_ACTION','WEBHOOK','CONNECTOR','AI','CATALOG','SUBFLOW','BUSINESS_HOURS','DELAY'].includes(node.type)){const errors=el('fieldset');errors.append(el('legend','سياسة أخطاء الخطوة الحساسة'),label('عند فشل التنفيذ',target(node.errorNext||'',v=>{if(v)node.errorNext=v;else delete node.errorNext;markDirty();canvas.draw()},true)),el('small','الافتراضي توقف آمن مع تشخيص بلا بيانات العميل. المسار البديل يتراجع عن تغييرات المعاملة السابقة؛ لا إعادة تلقائية للعمليات غير الآمنة. الطلبات لها مسارات خطأ/مهلة ومحاولات GET محدودة مستقلة.'));host.append(errors);}
    mountCards(node,{host,el,label,control,button,changed:markDirty,render:renderEditor});
@@ -579,7 +580,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function renderAll(){clearTimeout(textEditTimer);
    $('builder-name').value=flow.name;channelSelect.value=flow.channel||'WHATSAPP';runtimeControls.variables(variableHost);renderStatus();renderBlocks();renderEditor();canvas.draw();canvas.highlight(selected);
  }
- function addNode(type,anchor=null){
+ function addNode(type,anchor=null,position=null){
    if(flow.nodes.length>=500){notify('وصلت للحد الأقصى 500 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
    if(anchor&&nodeById(graphOutputs(nodeById(anchor.nodeId)).find(e=>e.key===anchor.key)?.to)&&['END','HANDOFF'].includes(type)){notify('للحفاظ على المسار المتصل، أضف نهاية المحادثة بعد آخر خطوة بدل إدراجها وسط مسار موجود.','error');return;}
    const origin=anchor?nodeById(anchor.nodeId):null;
@@ -623,6 +624,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
      if(Array.isArray(inserted.choices))for(const choice of inserted.choices)choice.next=oldTarget;
      const pos=flow.layout?.[origin.id]||{x:80,y:80};flow.layout??={};flow.layout[id]={x:Math.min(8700,pos.x+365),y:Math.min(9000,pos.y+315)};
    }
+   if(position){flow.layout??={};flow.layout[id]=position}
    selected=id;selectedNodes=new Set([selected]);markDirty();renderAll();showInspector();
  }
  function bubble(message,side='bot'){
@@ -945,6 +947,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'));
  for(const child of [...actions.children])if(![paletteToggle].includes(child)&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
  displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
+ displayMenu.append(button('تنظيم الخطوات المحددة',()=>{stageExtras.open=true;operationsDialog.showModal()}));
  stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
  const editActions=el('div',undefined,'builder-edit-actions');
  for(const title of ['تراجع','إعادة']){const original=[...tools.querySelectorAll('button')].find(b=>b.textContent===title);if(original)editActions.append(button(title,()=>original.click()))}

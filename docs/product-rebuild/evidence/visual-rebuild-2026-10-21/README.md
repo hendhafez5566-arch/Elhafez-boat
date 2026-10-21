@@ -1,3 +1,7 @@
+## Final refinement captures
+
+After images were refreshed on21 October from a new isolated database, with the same logical11-node tourism definition/layout,Arabic100% and original viewports. Original Before bytes are preserved. The synthetic tenant/bot IDs differ across sessions. Initial connector measurements, real library drag/drop with one-step Undo/Redo, named arrangement navigation, and390/768/1024 Zoom/Fit with non-overlapping minimap now have additional executable assertions. See `after/results.json` and `FINAL_COMPLETION_2026-10-21.md` in implementation for current scope; no owner/device/provider acceptance is implied.
+
 # Actual Chromium visual acceptance — 21 October 2026
 
 Same synthetic bot ID is recorded in both results.json files. Same11-node tourism graph and saved layout, Arabic,100% zoom,1440×1000, welcome inspector open. Mobile390×844 preserves the same inspector. Large graph: same500 nodes/499 edges, same17 minus-button presses after100%. Baseline source:2f0f77c. Original hidden-overflow browser scrolling could shift the visible baseline area despite the same focus command; new overflow:clip prevents that drift. No generated images or competitor assets.

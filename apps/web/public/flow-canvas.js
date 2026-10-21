@@ -5,7 +5,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   const ns='http://www.w3.org/2000/svg';
   const titles={CONTROL:'تشغيل البوت',CONSENT:'موافقة العميل',CRM_ACTION:'إجراء CRM',BUSINESS_HOURS:'ساعات العمل',GOAL:'هدف التحويل',SET_FIELD:'تعيين قيمة حقل',RANDOMIZER:'توزيع عشوائي A/B',START:'بداية المحادثة',TEXT:'رسالة',BUTTONS:'أزرار الرد',LIST:'قائمة اختيارات',INPUT:'سؤال العميل',QUESTION:'سؤال',CONDITION:'شرط وتفرع',KEYWORD:'كلمات مفتاحية',CATALOG:'المنتجات والخدمات',HANDOFF:'تحويل لموظف',MEDIA:'صورة أو ملف',END:'نهاية المحادثة',TAG:'تصنيف',DELAY:'انتظار',AI:'المساعد الذكي',SUBFLOW:'مسار فرعي',WEBHOOK:'تكامل',CONNECTOR:'موصل',LINK:'رابط'};
   const edges=graphOutputs;let analytics=new Map(),analyticsSelect=()=>{};
-  let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,pathFocused=false,connectionGeneration=0,pendingFit=false;
+  let zoom=1,pan={x:36,y:36},source=null,active=null,selectedEdge=null,space=false,pathFocused=false,connectionGeneration=0,pendingFit=false,pendingGeometry=false;
   host.tabIndex=0;
   host.classList.add('flow-canvas');host.dir='ltr';host.setAttribute('role','region');
   host.setAttribute('aria-label','مساحة رسم المحادثة؛ Alt مع الأسهم لتحريك الخطوة المحددة؛ Shift يزيد المسافة. استخدم Tab لاختيار المخارج');
@@ -16,7 +16,9 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   const btn=(text,klass,action)=>{const b=mk('button',text,klass);b.type='button';b.onclick=action;return b};
   const nav=mk('div',undefined,'canvas-navigation');
   const zoomLabel=btn('100%','canvas-zoom',()=>zoomTo(1));zoomLabel.setAttribute('aria-label','إعادة التكبير إلى 100%');
-  nav.append(btn('−','',()=>zoomTo(zoom/1.2)),zoomLabel,btn('+','',()=>zoomTo(zoom*1.2)),btn('ملاءمة','',()=>fit()));host.append(nav);
+  const zoomOut=btn('−','',()=>zoomTo(zoom/1.2)),zoomIn=btn('+','',()=>zoomTo(zoom*1.2)),fitButton=btn('ملاءمة','',()=>fit());
+  for(const [control,name]of [[zoomOut,'تصغير المخطط'],[zoomIn,'تكبير المخطط'],[fitButton,'ملاءمة المخطط في المساحة']]){control.setAttribute('aria-label',name);control.title=name}
+  nav.setAttribute('aria-label','تكبير المخطط والتنقل');nav.append(zoomOut,zoomLabel,zoomIn,fitButton);host.append(nav);
   const map=document.createElementNS(ns,'svg');map.classList.add('canvas-minimap');map.setAttribute('viewBox','0 0 180 112');map.setAttribute('aria-label','خريطة المخطط؛ اضغط للانتقال');map.setAttribute('role','img');host.append(map);
   const breadcrumb=mk('nav',undefined,'canvas-breadcrumbs');breadcrumb.setAttribute('aria-label','المسار من البداية إلى الخطوة');host.append(breadcrumb);
   let mapBounds={x:0,y:0,scale:1},mapDirty=true,mapViewport=null;
@@ -50,6 +52,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     paintMap();svg.querySelectorAll('.canvas-edge').forEach(n=>{n.classList.toggle('connected',n.dataset.from===id||n.dataset.to===id);n.classList.toggle('path-muted',pathFocused&&!path.some((step,i)=>step===n.dataset.from&&path[i+1]===n.dataset.to))});
   }
   function draw(){
+    pendingGeometry=!host.clientWidth||!host.clientHeight;
     mapDirty=true;
     const f=getFlow();f.layout=Object.assign(Object.create(null),f.layout||{});
     stage.querySelectorAll('.canvas-node,.canvas-group').forEach(n=>n.remove());svg.replaceChildren();
@@ -231,7 +234,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
   host.addEventListener('pointerdown',e=>{if(e.pointerType!=='touch')return;touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(touches.size===2){e.preventDefault();e.stopImmediatePropagation();host.setPointerCapture(e.pointerId);const [a,b]=[...touches.values()],r=host.getBoundingClientRect(),x=(a.x+b.x)/2-r.left,y=(a.y+b.y)/2-r.top;pinch={distance:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),zoom,anchor:{x:(x-pan.x)/zoom,y:(y-pan.y)/zoom}}}},true);
   host.addEventListener('pointermove',e=>{if(e.pointerType!=='touch')return;if(touches.has(e.pointerId))touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(endingPinch){e.preventDefault();e.stopImmediatePropagation();return}if(pinch&&touches.size===2){e.preventDefault();e.stopImmediatePropagation();const [a,b]=[...touches.values()],r=host.getBoundingClientRect();zoom=Math.max(.01,Math.min(2,pinch.zoom*Math.hypot(a.x-b.x,a.y-b.y)/pinch.distance));pan={x:(a.x+b.x)/2-r.left-pinch.anchor.x*zoom,y:(a.y+b.y)/2-r.top-pinch.anchor.y*zoom};transform()}},true);
   for(const event of ['pointerup','pointercancel'])host.addEventListener(event,e=>{if(e.pointerType!=='touch')return;touches.delete(e.pointerId);if(pinch){endingPinch=true;pinch=null}if(!touches.size)endingPinch=false},true);
-  const resize=new ResizeObserver(()=>{if(pendingFit&&host.clientWidth&&host.clientHeight)fit();else paintMap()});resize.observe(host);
+  const resize=new ResizeObserver(()=>{if(host.clientWidth&&host.clientHeight&&pendingGeometry)draw();if(pendingFit&&host.clientWidth&&host.clientHeight)fit();else paintMap()});resize.observe(host);
   function focus(id){
     const group=getFlow().groups?.find(g=>g.collapsed&&g.nodeIds.includes(id));if(group){group.collapsed=false;changed();draw()}
     const p=positionsFor(getFlow())[id];if(!p)return fit();
