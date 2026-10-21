@@ -1,3 +1,7 @@
+## Visual review correction / semantic editor identity
+
+Actual gallery screenshot review found a misleading generic TEXT Inspector heading. Canvas and Inspector now share presentationKind() for cards/gallery, retaining the stored TEXT engine contract. The genuine browser suite asserts the gallery heading before capture.183 contrast pairs pass. Broad qualification completed feature/PG/mobile/scale cases and mixed load; its first runtime attempt then hit a fixed-phone fixture left by prior reuse of the disposable DB. A fresh named disposable database with all47 unchanged migrations is prepared for a complete clean run; no ownership assertion or engine rule is weakened.
+
 ## Bold transformation / final source candidate
 
 All five visual areas are implemented; final pointer-hover review caught a shared legacy teal hover on the simulator Send action and scoped it to Orbit violet.19 actual visual/mobile/authoring checks and183 rendered contrast pairs PASS;246 unit/TypeScript/build PASS. Final broad PostgreSQL/RLS/runtime/Chromium qualification and matched screenshots follow this source commit. Owner visual approval remains pending. No engine/schema/provider change.

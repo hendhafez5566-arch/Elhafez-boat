@@ -1,4 +1,4 @@
-import {componentMeta,componentIcon} from './flow-presentation.js';
+import {componentMeta,componentIcon,presentationKind} from './flow-presentation.js';
 import {pathToNode,boundedTranslation,setGraphOutput,nodeFootprint,placeWithoutOverlap,graphOutputs,arrangeFlow,NODE_WIDTH,MAX_POSITION} from './flow-geometry.js';
 /** Dependency-free, RTL-friendly flow canvas. Graph mutations stay in the existing draft editor. */
 export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSelection=()=>new Set(),selectMany=()=>{}}){
@@ -74,7 +74,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     for(const n of f.nodes){
       if(collapsed.has(n.id)){const proxy=collapsed.get(n.id);cards.set(n.id,proxy);for(const e of edges(n))if(positions[e.to])linkRequests.push({from:n.id,to:e.to,key:e.key,port:proxy});continue}
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
-      const visualKind=n.type==='TEXT'&&n.blocks?.some(b=>b.type==='GALLERY')?'GALLERY':n.type==='TEXT'&&n.blocks?.some(b=>b.type==='CARD')?'CARD':n.type;const visualTitle=({CARD:'بطاقة محتوى',GALLERY:'معرض بطاقات'})[visualKind]||titles[n.type]||'خطوة';
+      const visualKind=presentationKind(n);const visualTitle=({CARD:'بطاقة محتوى',GALLERY:'معرض بطاقات'})[visualKind]||titles[n.type]||'خطوة';
       card.dataset.nodeId=n.id;card.dataset.tone=componentMeta(visualKind).tone;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
       const metric=analytics.get(n.id);if(metric){const badge=btn('دخل '+metric.entered+' · أكمل '+metric.completed+' · انتظار '+metric.waiting+' · انقطاع '+metric.abandoned,'canvas-analytics',()=>analyticsSelect(n.id));badge.setAttribute('aria-label','تحليلات الخطوة '+n.id);card.append(badge);}
       card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(n.label||titles[n.type]||'محادثة')+' · '+n.id);
