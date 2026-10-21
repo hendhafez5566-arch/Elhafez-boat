@@ -1,3 +1,7 @@
+## 2026-10-21 — novice CDP display-menu navigation
+
+Same branch/PR #5; verified prior test checkpoint4e67472cf3194ec9a897db9062aa906b59419e1e. Updated the older novice CDP suite to open the new display menu before switching between linear/canvas modes; original assertions remain. This completes the remaining static selector audit for moved view controls. All browser/support modules parse. Product/source screenshot hashes unchanged. Next: observe full latest-source CI; no merge, deploy or real send.
+
 ## 2026-10-21 — replay regression and syntax gate
 
 Same branch/PR #5; verified prior source0fc7e9cbe9b87e5d043be49eb87647a5ea4e2ba6. CI39621417082 exposed a syntax mistake in the adapted replay test; product source was unchanged. Corrected it, preserved logout/trace/revision assertions, and ran all6 replay checks against real API/PostgreSQL/Chromium: PASS. Local Chromium total55;20 PostgreSQL and246 units/typecheck/build remain recorded. All browser/support modules parse; added early CI syntax gate. Latest full CI pending. Next: observe latest-head CI and fix remaining actual failures; no merge/deploy/live messages. Optional extra native DB run locally reached attachment scan and could not complete without local ClamAV; no passing claim for that extra run; remote CI supplies actual ClamAV.
