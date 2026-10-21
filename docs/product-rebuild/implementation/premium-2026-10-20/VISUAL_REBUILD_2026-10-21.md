@@ -36,3 +36,7 @@ The library uses the server's real component-capability matrix to label conditio
 The new authenticated matched visual/interaction suite is included in CI after scale fixtures. Same actual bot ID before/after,11 nodes, saved layout, same viewports/language/zoom/inspector; separate500-node comparison. The original baseline's browser focus could scroll its hidden-overflow container; this is documented rather than altering baseline source to conceal it. SHA256 manifest covers screenshots and relevant modules.
 
 First uploaded source checkpoint:c00abfeebdeba41771faeb102b86e59c4905343e. Its checks job passed; browser acceptance stopped at old offline navigation. Complete local rerun now passes. Latest-head CI pending observation after correction push. Owner visual approval and physical-device/screen-reader acceptance remain open;30 prior PASS labels are retained without promoting the six PARTIAL items.
+
+### Composite identity final refinement
+
+TEXT nodes with CARD/GALLERY blocks now show the correct visual subtype, icon and content count without changing runtime storage. Condition summaries use the real top-level AND/OR match; scheduled waits no longer imply zero seconds. The seven-case matched-tourism suite includes explicit subtype/summary assertions and passes. Responsive test waits for the drawer's media-query transition before opening it; no assertion removed. Remote checkpoint781bfc8 observed on the same PR/branch; its full CI39620615655 reached final runtime acceptance while final source CI remains separate.

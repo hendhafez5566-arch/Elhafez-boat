@@ -71,7 +71,8 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     for(const n of f.nodes){
       if(collapsed.has(n.id)){const proxy=collapsed.get(n.id);cards.set(n.id,proxy);for(const e of edges(n))if(positions[e.to])linkRequests.push({from:n.id,to:e.to,key:e.key,port:proxy});continue}
       const p=positions[n.id],card=mk('article',undefined,'canvas-node canvas-'+n.type.toLowerCase());
-      card.dataset.nodeId=n.id;card.dataset.tone=componentMeta(n.type).tone;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
+      const visualKind=n.type==='TEXT'&&n.blocks?.some(b=>b.type==='GALLERY')?'GALLERY':n.type==='TEXT'&&n.blocks?.some(b=>b.type==='CARD')?'CARD':n.type;const visualTitle=({CARD:'بطاقة محتوى',GALLERY:'معرض بطاقات'})[visualKind]||titles[n.type]||'خطوة';
+      card.dataset.nodeId=n.id;card.dataset.tone=componentMeta(visualKind).tone;card.dir='rtl';card.style.left=p.x+'px';card.style.top=p.y+'px';
       const metric=analytics.get(n.id);if(metric){const badge=btn('دخل '+metric.entered+' · أكمل '+metric.completed+' · انتظار '+metric.waiting+' · انقطاع '+metric.abandoned,'canvas-analytics',()=>analyticsSelect(n.id));badge.setAttribute('aria-label','تحليلات الخطوة '+n.id);card.append(badge);}
       card.tabIndex=0;card.setAttribute('aria-label','خطوة '+(n.label||titles[n.type]||'محادثة')+' · '+n.id);
       const chooseCard=(event={})=>{active=n.id;select(n.id,event.shiftKey);highlight(n.id)};
@@ -85,12 +86,12 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       });
       const head=mk('div',undefined,'canvas-node-head'),drag=btn(n.label||titles[n.type]||'خطوة','canvas-title',e=>{active=n.id;select(n.id,e.shiftKey);highlight(n.id)});
       drag.setAttribute('aria-label','اختيار وتحريك '+(titles[n.type]||'خطوة'));
-      const icon=mk('span',undefined,'canvas-kind-indicator');icon.append(componentIcon(n.type));
-      const heading=mk('div',undefined,'canvas-heading-copy');heading.append(mk('small',titles[n.type]||'خطوة','canvas-type-label'),drag);
+      const icon=mk('span',undefined,'canvas-kind-indicator');icon.append(componentIcon(visualKind));
+      const heading=mk('div',undefined,'canvas-heading-copy');heading.append(mk('small',visualTitle,'canvas-type-label'),drag);
       const edit=btn('⋯','canvas-node-edit',e=>{e.stopPropagation();chooseCard(e)});edit.setAttribute('aria-label','تحرير '+(n.label||titles[n.type]||n.id));
       head.append(icon,heading,edit);card.append(head);
       const msg=mk('div',undefined,'canvas-message');
-      const summary=n.type==='DELAY'?'انتظار '+(n.seconds||0)+' ثانية':n.type==='CONDITION'?(n.rules?'قواعد مركبة · '+(n.rules.mode||n.rules.operator||'AND'):[n.field,n.operator,n.value].filter(v=>v!==undefined).join(' · ')):n.type==='SET_FIELD'?n.field+' ← '+n.value:n.type==='CONNECTOR'?'مزامنة موصل · نجاح / خطأ / مهلة':null;
+      const summary=n.type==='DELAY'?(n.schedule?'استكمال في الموعد المحدد':'انتظار '+(n.seconds||0)+' ثانية'):n.type==='CONDITION'?(n.rules?'قواعد مركبة · '+(n.match==='any'?'OR':'AND'):[n.field,n.operator,n.value].filter(v=>v!==undefined).join(' · ')):n.type==='SET_FIELD'?n.field+' ← '+n.value:n.type==='CONNECTOR'?'مزامنة موصل · نجاح / خطأ / مهلة':null;
       const text=String(summary||n.text||n.caption||n.tag||(n.type==='START'?'أهلًا بعميلك — هنا تبدأ المحادثة':n.type==='CATALOG'?'عرض المنتجات والخدمات المعتمدة':n.type==='CONDITION'?'تحديد المسار حسب إجابة العميل':n.type==='END'?'انتهت المحادثة':'اضغط لتعديل محتوى هذه الخطوة'));
       msg.append(mk('p',text.slice(0,190),'canvas-message-text'));
       if(n.type==='MEDIA'||n.type==='LINK')msg.append(mk('small',n.mediaKind==='video'?'فيديو':n.mediaKind==='document'?'ملف':'مرفق / رابط','canvas-media-hint'));
@@ -101,6 +102,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
         if(n.type==='LIST')msg.append(mk('small',n.buttonText||'عرض القائمة','canvas-list-label'));msg.append(opts);
       }
       if(n.type==='CONDITION'||n.type==='KEYWORD')msg.append(mk('small',n.type==='CONDITION'?'قارن إجابة العميل وأكمل على المسار المناسب':'فحص الكلمات المفتاحية','canvas-media-hint'));
+      if(visualKind==='GALLERY'||visualKind==='CARD'){const content=(n.blocks||[]).flatMap(b=>b.type==='CARD'?[b.card]:b.type==='GALLERY'?b.cards:[]);msg.append(mk('small',visualTitle+' · '+content.length+' — '+content.map(c=>c.title).join(' · ').slice(0,100),'canvas-media-hint'))}
       card.append(msg);
       const ports=mk('div',undefined,'canvas-ports');
       const connectTo=target=>{
