@@ -47,7 +47,7 @@ try{
   if(origin===base)await until("document.body.dataset.authReady==='true'",'session initialization complete');
   else await sleep(500);
  }
- async function click(text,selector='button'){await evaluate(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(b=>b.textContent.trim()===${JSON.stringify(text)});if(!b)throw Error('Missing button '+${JSON.stringify(text)});b.click()})()`)}
+ async function click(text,selector='button'){await evaluate(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(b=>b.textContent.trim()===${JSON.stringify(text)}||b.getAttribute('aria-label')===${JSON.stringify(text)}||b.getAttribute('aria-label')==='إضافة '+${JSON.stringify(text)});if(!b)throw Error('Missing button '+${JSON.stringify(text)});b.click()})()`)}
  // Reconstruct actual original assets, never a mocked before image or a Git worktree.
  baselineDir=await mkdtemp(join(tmpdir(),'boat-original-'));
  execFileSync('tar',['-x','-C',baselineDir],{input:execFileSync('git',['archive','b02a3132751ed0b6acbbc5f1a928b83b04dcb572','apps/web'])});
