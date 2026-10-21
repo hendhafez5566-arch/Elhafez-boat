@@ -195,7 +195,7 @@ try{
  console.log('PASS concurrent real bot draft review: explicit local/remote choice, independent edit preserved, compiler validation, no write until save and no publish');
  // Real Chromium file selection: reject malformed JSON, then restore a validated backup locally.
  const backupPath=join(profile,'draft-backup.json');
- const documentNode=await send('DOM.getDocument');const fileNode=await send('DOM.querySelector',{nodeId:documentNode.root.nodeId,selector:'#flow-builder input[type=file]'});assert.ok(fileNode.nodeId);
+ const documentNode=await send('DOM.getDocument');const fileNode=await send('DOM.querySelector',{nodeId:documentNode.root.nodeId,selector:'input[aria-label="ملف نسخة المسودة"]'});assert.ok(fileNode.nodeId);
  await writeFile(backupPath,'{broken');await evaluate("document.getElementById('notice').textContent=''");await send('DOM.setFileInputFiles',{nodeId:fileNode.nodeId,files:[backupPath]});await until("document.getElementById('notice').textContent.includes('تعذر قراءة الملف')",'invalid backup rejected');
  assert.equal(await evaluate("document.getElementById('builder-name').value"),'اسم زميل الفريق');
  const backup=structuredClone(mergedSaved.draft.definition);backup.name='نسخة مسترجعة للاختبار';
