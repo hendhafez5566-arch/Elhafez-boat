@@ -20,7 +20,7 @@ async function scrubContact(db:SqlClient,t:string,id:string,user:string|null,ret
  await db.query('DELETE FROM chatbot_connector_links WHERE tenant_id=$1 AND contact_id=$2',[t,id]);
  await db.query("UPDATE chatbot_connector_jobs SET fields='{}'::jsonb,result_fields='{}'::jsonb,completion_pending=false,status='CANCELLED',last_error=NULL WHERE tenant_id=$1 AND contact_id=$2",[t,id]);
  for(const conversation of conversations.rows){const cid=conversation.id;
- await db.query("UPDATE chatbot_attachment_intakes SET status='CANCELLED',reference='',reason='ERASED' WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
+ await db.query("UPDATE chatbot_attachment_intakes SET status='CANCELLED',reference='',source_key='erased-'||id::text,reason='ERASED',completion_pending=false,continuation_status='SKIPPED' WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
  await db.query("UPDATE chatbot_media SET status='DELETED',content=NULL,name='[redacted]' WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);
  await db.query("UPDATE conversations SET status='CLOSED',assigned_user_id=NULL,external_sender_id=NULL WHERE tenant_id=$1 AND id=$2",[t,cid]);
  await db.query("UPDATE conversation_messages SET body='[تم حذف بيانات العميل]',payload=NULL,whatsapp_message_id=NULL WHERE tenant_id=$1 AND conversation_id=$2",[t,cid]);

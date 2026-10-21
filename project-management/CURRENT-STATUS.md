@@ -430,3 +430,6 @@ Incomplete premium Flow Studio batch on feat/premium-flow-builder-2026-10-20 fro
 
 
 2026-10-21 — F26 secure incoming assets: existing scanner/storage, authorized provider source queue (OFF by default), private Website upload/typed resume, CRM download and privacy race safety. Matrix 24 PASS / 12 PARTIAL / 0 wholly BLOCKED. See INCOMING_MEDIA_CHECKPOINT.md for bounds, retention and actual offline evidence. Next independent priorities: variables/consent, error policies, bilingual authoring and sustained graph performance.
+
+
+2026-10-21 — F26 closed after scan-gated provider continuation: exact session UUID generation, CLEAN-only managed input, existing retry/error graph, stale/STOP/privacy skip, concurrent once-only outbox and rollback-safe failures. Additional9 PG and provider CRM Chromium evidence; 231 units/build/typecheck. Matrix25 PASS /11 PARTIAL /0 wholly BLOCKED. INCOMING_MEDIA_CHECKPOINT.md is canonical. Next: independent F11/F14/F19/F34/F33; physical devices and live providers still unqualified. CI11de652 is fully successful; inspect newest source CI after push.

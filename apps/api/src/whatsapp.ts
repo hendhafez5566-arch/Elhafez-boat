@@ -175,7 +175,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const msgType=str(message.type),body=msgType==='order'?'[اهتمام بمنتجات كتالوج Meta — يحتاج مراجعة موظف]':msgType==='text'?limited(asObject(message.text).body,4000):msgType==='button'?limited(asObject(message.button).text,4000):action?'اختيار: '+action:'[رسالة واتساب غير نصية]';
  const inbound=await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,message_source,provider_at)
   VALUES($1,$2,'INBOUND',$3,$4,'CUSTOMER',$5) RETURNING id`,[tenantId,conversationId,body,messageId,receivedAt]);
- if(nativeInput?.kind==='ATTACHMENT'){const ref=attachmentReference(nativeInput.value);if(ref)await enqueueAttachment(db,tenantId,conversationId,accountId,messageId,ref);}
+ let attachmentIntakeId:string|undefined;if(nativeInput?.kind==='ATTACHMENT'){const ref=attachmentReference(nativeInput.value);if(ref)attachmentIntakeId=await enqueueAttachment(db,tenantId,conversationId,accountId,messageId,ref);}
  await db.query(`INSERT INTO whatsapp_conversation_states(tenant_id,conversation_id) VALUES($1,$2) ON CONFLICT DO NOTHING`,[tenantId,conversationId]);
  const row=(await db.query(`SELECT * FROM whatsapp_conversation_states WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId])).rows[0];
  if(new Date(String(conversation.rows[0].last_customer_message_at)).getTime()>receivedAt.getTime())return; // Store late message, never rewind the bot.
@@ -193,7 +193,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
    if(status==='HUMAN'){
      await respond(textPayload('تم تفعيل الردود الخدمية. الموظف المسؤول هيتابع محادثتك.'));return;
    }
-   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,inboundMessageId:String(inbound.rows[0].id),actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true,triggerEvent});
+   const restarted=await respondToFlow(db,{tenantId,conversationId,contactId,inboundMessageId:String(inbound.rows[0].id),attachmentIntakeId,actionId:'flow:restart',body:'ابدأ',fromWhatsApp:true,triggerEvent});
    for(const payload of restarted.payloads)await respond(payload);
    return;
  }
@@ -234,7 +234,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const flowOutput=await respondToFlow(db,{
    tenantId,conversationId,contactId,
    actionId:action==='home'?'flow:restart':action,
-   body,inboundMessageId:String(inbound.rows[0].id),fromWhatsApp:true,triggerEvent,nativeInput
+   body,inboundMessageId:String(inbound.rows[0].id),fromWhatsApp:true,triggerEvent,nativeInput,attachmentIntakeId
  });
  for(const payload of flowOutput.payloads)await respond(payload);
  return;

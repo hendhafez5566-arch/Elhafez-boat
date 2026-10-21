@@ -1,3 +1,6 @@
+import {respondToFlow} from './flow-service.js';
+import {deliverConversation} from './channels.js';
+import {recordFlowFailure} from './flow-observation.js';
 /** Verified webhook intake -> bounded source contract -> existing quarantine/scanner. */
 import {randomUUID} from 'node:crypto';
 import {HttpFailure,isUuid,allow,type SqlClient,type Actor} from './services.js';
@@ -13,7 +16,7 @@ export function attachmentSource(channel:string,reference:string):URL{
 }
 export async function enqueueAttachment(db:SqlClient,t:string,cid:string,account:string,key:string,input:AttachmentReference){
  if(!attachmentReference(JSON.stringify(input))||input.channel==='WEBSITE')throw new HttpFailure(400,'Invalid source reference');
- await db.query('INSERT INTO chatbot_attachment_intakes(tenant_id,conversation_id,channel,account_id,source_key,kind,reference) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(tenant_id,channel,account_id,source_key) DO NOTHING',[t,cid,input.channel,account,key,input.kind,input.reference]);
+ const inserted=await db.query('INSERT INTO chatbot_attachment_intakes(tenant_id,conversation_id,channel,account_id,source_key,kind,reference) VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(tenant_id,channel,account_id,source_key) DO UPDATE SET source_key=EXCLUDED.source_key RETURNING id',[t,cid,input.channel,account,key,input.kind,input.reference]);return String(inserted.rows[0].id);
 }
 export type MediaTransport={json:typeof providerHTTP;bytes:typeof providerBytes};
 const real:MediaTransport={json:providerHTTP,bytes:providerBytes};
@@ -38,4 +41,20 @@ export async function processIncomingMedia(db:SqlClient,t:string,transport?:Medi
  }catch(error){const timeout=Date.now()>=deadline||error instanceof ProviderTimeout;if(error instanceof ProviderFailure&&!timeout)phase=error.status===413?'SIZE_OR_TYPE':'DOWNLOAD_FAILED';const reason=timeout?'DEADLINE':phase;await db.query("UPDATE chatbot_attachment_intakes SET status=$3,reason=$4,reference='',completed_at=now() WHERE tenant_id=$1 AND id=$2",[t,j.id,timeout?'TIMEOUT':phase==='SOURCE_REJECTED'||phase==='SIZE_OR_TYPE'?'REJECTED':'FAILED',reason]);}
  return true;
 }
-export async function conversationMedia(db:SqlClient,a:Actor,cid:string){allow(a,['OWNER','MANAGER','AGENT','VIEWER']);if(!isUuid(cid))throw new HttpFailure(400,'Invalid conversation');const c=await db.query('SELECT 1 FROM conversations WHERE tenant_id=$1 AND id=$2',[a.tenantId,cid]);if(!c.rowCount)throw new HttpFailure(404,'Conversation unavailable');return {assets:(await db.query("SELECT id,name,mime,bytes,scan_status AS \"scanStatus\",scan_result AS \"scanResult\",created_at FROM chatbot_media WHERE tenant_id=$1 AND conversation_id=$2 AND status='ACTIVE' ORDER BY created_at DESC LIMIT 100",[a.tenantId,cid])).rows,intakes:(await db.query('SELECT id,channel,kind,status,reason,media_id AS "mediaId" FROM chatbot_attachment_intakes WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC LIMIT 100',[a.tenantId,cid])).rows}}
+export async function conversationMedia(db:SqlClient,a:Actor,cid:string){allow(a,['OWNER','MANAGER','AGENT','VIEWER']);if(!isUuid(cid))throw new HttpFailure(400,'Invalid conversation');const c=await db.query('SELECT 1 FROM conversations WHERE tenant_id=$1 AND id=$2',[a.tenantId,cid]);if(!c.rowCount)throw new HttpFailure(404,'Conversation unavailable');return {assets:(await db.query("SELECT id,name,mime,bytes,scan_status AS \"scanStatus\",scan_result AS \"scanResult\",created_at FROM chatbot_media WHERE tenant_id=$1 AND conversation_id=$2 AND status='ACTIVE' ORDER BY created_at DESC LIMIT 100",[a.tenantId,cid])).rows,intakes:(await db.query('SELECT id,channel,kind,status,reason,media_id AS "mediaId",continuation_status AS "continuationStatus" FROM chatbot_attachment_intakes WHERE tenant_id=$1 AND conversation_id=$2 ORDER BY created_at DESC LIMIT 100',[a.tenantId,cid])).rows}}
+
+/** Completion uses the original engine, exact persisted waiting generation and existing input failure policy. */
+export async function processIncomingMediaCompletion(db:SqlClient,t:string){
+ const pending=await db.query(`SELECT j.id,j.conversation_id,c.contact_id FROM chatbot_attachment_intakes j JOIN conversations c ON c.tenant_id=j.tenant_id AND c.id=j.conversation_id LEFT JOIN chatbot_media m ON m.tenant_id=j.tenant_id AND m.id=j.media_id WHERE j.tenant_id=$1 AND j.completion_pending AND (j.status IN ('REJECTED','FAILED','TIMEOUT','CANCELLED') OR j.status='STORED' AND (m.scan_status<>'PENDING' OR m.status='DELETED' OR m.id IS NULL)) ORDER BY j.created_at LIMIT 1`,[t]);if(!pending.rowCount)return false;const p=pending.rows[0];
+ const k=await db.query('SELECT status,do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2 FOR UPDATE SKIP LOCKED',[t,p.contact_id]);if(!k.rowCount)return false;
+ const c=await db.query('SELECT status,channel,bot_control FROM conversations WHERE tenant_id=$1 AND id=$2 FOR UPDATE SKIP LOCKED',[t,p.conversation_id]);if(!c.rowCount)return false;
+ const row=await db.query(`SELECT j.*,m.scan_status,m.status AS media_status,EXISTS(SELECT 1 FROM chatbot_flow_sessions s WHERE s.tenant_id=j.tenant_id AND s.conversation_id=j.conversation_id AND s.version=j.flow_version AND s.node_id=j.flow_node_id AND s.observation_token=j.flow_session_token) AS current_wait FROM chatbot_attachment_intakes j LEFT JOIN chatbot_media m ON m.tenant_id=j.tenant_id AND m.id=j.media_id WHERE j.tenant_id=$1 AND j.id=$2 AND j.completion_pending FOR UPDATE OF j`,[t,p.id]);if(!row.rowCount)return false;const j=row.rows[0];
+ if(!j.current_wait||k.rows[0].status==='ARCHIVED'||k.rows[0].do_not_contact||c.rows[0].status!=='OPEN'||['PAUSED','STOPPED','HANDOFF'].includes(String((c.rows[0].bot_control as any)?.mode||''))){await db.query("UPDATE chatbot_attachment_intakes SET completion_pending=false,continuation_status='SKIPPED' WHERE tenant_id=$1 AND id=$2",[t,j.id]);return true}
+ await db.query('SAVEPOINT attachment_completion');try{
+ const clean=j.status==='STORED'&&j.scan_status==='CLEAN'&&j.media_status==='ACTIVE';
+ const input={kind:'ATTACHMENT' as const,value:clean?JSON.stringify({channel:j.channel,kind:j.kind,reference:j.media_id}):''};
+ const result=await respondToFlow(db,{tenantId:t,conversationId:String(j.conversation_id),contactId:String(p.contact_id),actionId:'',body:'',fromWhatsApp:c.rows[0].channel==='WHATSAPP',nativeInput:input,attachmentResumeId:String(j.id)});
+ await deliverConversation(db,t,String(j.conversation_id),result.payloads,{staff:result.handedOff});await db.query("UPDATE chatbot_attachment_intakes SET completion_pending=false,continuation_status='DONE' WHERE tenant_id=$1 AND id=$2",[t,j.id]);await db.query('RELEASE SAVEPOINT attachment_completion');
+ }catch(error){await db.query('ROLLBACK TO SAVEPOINT attachment_completion');await recordFlowFailure(db,error);await db.query("UPDATE chatbot_attachment_intakes SET completion_pending=false,continuation_status='FAILED' WHERE tenant_id=$1 AND id=$2",[t,j.id]);}
+ return true;
+}

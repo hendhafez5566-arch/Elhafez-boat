@@ -39,3 +39,6 @@ F27/F35 now close at 24 PASS / 12 PARTIAL / 0 wholly BLOCKED; OBSERVABILITY_CHEC
 
 
 F26 secure retrieval/Website bundle saved; provider scan-gated exact continuation remains; INCOMING_MEDIA_CHECKPOINT.md supersedes item2. Migrations0044/0045, 231 units, 11 new PG/ClamAV and4 Chromium PASS. Matrix24/12/0. Provider fetch OFF by default; synthetic adapters only. Next: finish scan-gated provider continuation before F11/F14/F19/F34/F33; physical-device and actual provider qualification remain separate. Check newest CI after push; previous observability CI39590460890 failed old schedule browser first-page lookup, corrected in11de652 with actual scheduling PG/browser checks.
+
+
+2026-10-21 — F26 closed after scan-gated provider continuation: exact session UUID generation, CLEAN-only managed input, existing retry/error graph, stale/STOP/privacy skip, concurrent once-only outbox and rollback-safe failures. Additional9 PG and provider CRM Chromium evidence; 231 units/build/typecheck. Matrix25 PASS /11 PARTIAL /0 wholly BLOCKED. INCOMING_MEDIA_CHECKPOINT.md is canonical. Next: independent F11/F14/F19/F34/F33; physical devices and live providers still unqualified. CI11de652 is fully successful; inspect newest source CI after push.

@@ -80,7 +80,7 @@ export async function listFlowVersions(db:SqlClient,actor:Actor,botId?:string){
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
-export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;inboundMessageId?:string;triggerEvent?:import('./flow-triggers.js').TriggerEvent;nativeInput?:FlowInput;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
+export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;inboundMessageId?:string;attachmentIntakeId?:string;attachmentResumeId?:string;triggerEvent?:import('./flow-triggers.js').TriggerEvent;nativeInput?:FlowInput;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
  const ownership=await db.query('SELECT status,bot_control FROM conversations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,conversationId]);
  const control=(ownership.rows[0]?.bot_control||{}) as {mode?:string};
@@ -108,11 +108,13 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
    return {payloads:[{messaging_product:'whatsapp',type:'text',text:{preview_url:false,
      body:'تم تحويل محادثتك للموظف المختص. هيكمل معاك كل التفاصيل.'}}],handedOff:true};
  }
+ if(ctx.attachmentResumeId){const origin=await db.query(`SELECT 1 FROM chatbot_attachment_intakes j JOIN chatbot_flow_sessions s ON s.tenant_id=j.tenant_id AND s.conversation_id=j.conversation_id LEFT JOIN chatbot_media m ON m.tenant_id=j.tenant_id AND m.id=j.media_id WHERE j.tenant_id=$1 AND j.id=$2 AND j.conversation_id=$3 AND j.completion_pending AND s.version=j.flow_version AND s.node_id=j.flow_node_id AND s.observation_token=j.flow_session_token AND ((j.status='STORED' AND m.status='ACTIVE' AND m.scan_status='CLEAN' AND $4::jsonb->>'reference'=m.id::text) OR $5='')`,[tenantId,ctx.attachmentResumeId,conversationId,ctx.nativeInput?.value?ctx.nativeInput.value:'{}',ctx.nativeInput?.value||'']);if(!origin.rowCount)throw new HttpFailure(409,'Attachment wait no longer current');}
+ const attachmentPending=Boolean(ctx.attachmentIntakeId&&ctx.nativeInput?.kind==='ATTACHMENT');if(attachmentPending){const source=await db.query("SELECT 1 FROM chatbot_attachment_intakes WHERE tenant_id=$1 AND id=$2 AND conversation_id=$3 AND status='PENDING' AND reference=$4",[tenantId,ctx.attachmentIntakeId,conversationId,JSON.parse(ctx.nativeInput!.value).reference]);if(!source.rowCount)throw new HttpFailure(409,'Incoming attachment source unavailable');}
  const transport=await db.query('SELECT channel FROM conversations WHERE tenant_id=$1 AND id=$2',[tenantId,conversationId]);
  const channel=transport.rows[0]?.channel||(ctx.fromWhatsApp?'WHATSAPP':'WEBSITE');
  let validPostback=!actionId||(!previous&&actionId==='flow:restart');
  if(actionId&&previous?.version){const pinned=(await readVersion(Number(previous.version))).rows[0]?.definition as FlowDefinition|undefined;if(pinned)validPostback=validTriggerPostback({...pinned,nodes:Array.isArray(previous.runtime_nodes)?[...pinned.nodes,...previous.runtime_nodes]:pinned.nodes},typeof previous.node_id==='string'?previous.node_id:null,actionId,previousRuntime);}
- const triggered=validPostback&&!ctx.operatorResume&&!ctx.integrationResume&&!ctx.connectorResume&&!ctx.resume&&(!previous||body||actionId||ctx.triggerEvent)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined,{channel:channel as import('./flow-engine.js').FlowChannel,event:ctx.triggerEvent||(actionId?'POSTBACK':'MESSAGE')}):undefined;
+ const triggered=validPostback&&!ctx.operatorResume&&!ctx.integrationResume&&!ctx.connectorResume&&!ctx.attachmentResumeId&&!ctx.resume&&(!previous||body||actionId||ctx.triggerEvent)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined,{channel:channel as import('./flow-engine.js').FlowChannel,event:ctx.triggerEvent||(actionId?'POSTBACK':'MESSAGE')}):undefined;
  const restart=Boolean(triggered)||/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
  if(restart&&previous)await cancelConversationAutomation(db,tenantId,conversationId);
  let version=Number(previous?.version??0),flow:FlowDefinition;
@@ -169,7 +171,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  else if(waitingNode?.type==='DELAY'&&!restart)return {payloads:[],handedOff:false};
  await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,conversationId]);
  // Flow replies are untrusted until matching the current node & option ID.
- const inbound=ctx.nativeInput??(actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body});
+ const inbound=attachmentPending?undefined:ctx.nativeInput??(actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body});
  const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,channel:channel as import('./flow-engine.js').FlowChannel,onStep:(id,type)=>{observation.nodeId=id;observation.nodeType=type;},enter:Boolean(triggered||ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
  if(requestOutcome)result.trace.unshift({nodeId:waitingNode!.id,type:waitingNode!.type,outcome:requestOutcome,elapsedMs:0});
  flow=result.flow;
@@ -177,9 +179,10 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,runtime_nodes,updated_at,bot_id,runtime_state)
  VALUES($1,$2,$3,$4,$5::jsonb,$6::jsonb,$7::jsonb,now(),$8,$9::jsonb)
  ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=EXCLUDED.version,node_id=EXCLUDED.node_id,
- answers=EXCLUDED.answers,tags=EXCLUDED.tags,runtime_nodes=EXCLUDED.runtime_nodes,bot_id=EXCLUDED.bot_id,runtime_state=EXCLUDED.runtime_state,updated_at=now()`,[
+ answers=EXCLUDED.answers,tags=EXCLUDED.tags,runtime_nodes=EXCLUDED.runtime_nodes,bot_id=EXCLUDED.bot_id,runtime_state=EXCLUDED.runtime_state,updated_at=now(),observation_token=gen_random_uuid()`,[
    tenantId,conversationId,version,result.state.at,JSON.stringify(result.state.answers),JSON.stringify(result.state.tags),JSON.stringify(flow.nodes.filter(n=>n.id.startsWith('@catalog:')||result.flow.nodes.find(x=>x.id===n.id)?.type==='LIST')),botId,JSON.stringify(result.state.runtime||{})
  ]);
+ if(attachmentPending){const waiting=result.flow.nodes.find(n=>n.id===result.state.at);if(waiting?.type==='INPUT'&&waiting.acquisition?.kind==='ATTACHMENT'&&!result.finished&&!result.handoff)await db.query(`UPDATE chatbot_attachment_intakes j SET flow_version=s.version,flow_node_id=s.node_id,flow_session_at=s.updated_at,flow_session_token=s.observation_token,completion_pending=true,continuation_status='WAITING' FROM chatbot_flow_sessions s WHERE j.tenant_id=$1 AND j.id=$2 AND s.tenant_id=j.tenant_id AND s.conversation_id=j.conversation_id`,[tenantId,ctx.attachmentIntakeId]);}
  if(result.waiting){
   const dueAt=result.waiting.expiresAt||Date.now()+result.waiting.seconds*1000;
   await db.query(`INSERT INTO chatbot_delay_jobs(tenant_id,conversation_id,version,node_id,due_at,wait_token) VALUES($1,$2,$3,$4,to_timestamp($5::double precision/1000),$6) ON CONFLICT(tenant_id,conversation_id) DO UPDATE SET version=$3,node_id=$4,due_at=EXCLUDED.due_at,wait_token=EXCLUDED.wait_token,purpose='FLOW',status='PENDING',error=NULL`,[tenantId,conversationId,version,result.state.at,dueAt,result.waiting.token||null]);

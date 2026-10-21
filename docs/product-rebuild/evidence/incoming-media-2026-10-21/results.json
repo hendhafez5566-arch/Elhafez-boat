@@ -4,7 +4,8 @@
     "real Website file upload enters private quarantine and is inaccessible before security scan",
     "reload and temporary connection loss preserve pending upload identity; real scanner CLEAN resumes shared engine once",
     "real EICAR rejection is visible on mobile and never sent as a trusted attachment",
-    "authenticated actual CRM lists quarantine status and only allows clean tenant-private download"
+    "authenticated actual CRM lists quarantine status and only allows clean tenant-private download",
+    "actual provider CRM shows scanned private asset and exact engine continuation DONE after verified webhook/quarantine pipeline"
   ],
   "errors": [],
   "provider": "NONE; real PostgreSQL and Chromium"

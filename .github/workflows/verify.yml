@@ -124,6 +124,7 @@ jobs:
       - name: Private incoming files, authorized provider contracts and real ClamAV
         run: |
           node tests/incoming-media-db.mjs
+          node tests/incoming-media-continuation-db.mjs
           node tests/incoming-media-browser.mjs
       - name: Native data requests, quick replies and unsupported channel routes
         run: |
