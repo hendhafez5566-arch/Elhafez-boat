@@ -253,7 +253,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  simulatorDialog.append(simulatorHead,phoneShell);document.body.append(simulatorDialog);
  simulatorDialog.addEventListener('click',e=>{if(e.target===simulatorDialog)simulatorDialog.close()});
  function previewProblems(){
-    const nodes=new Map(flow.nodes.map(n=>[n.id,n])),visited=new Set(),pending=[flow.startId],broken=[];
+    const nodes=new Map(flow.nodes.map(n=>[n.id,n])),visited=new Set(),pending=[flow.startId,...(flow.triggers||[]).filter(t=>t.enabled).map(t=>t.targetNode)],broken=[];
     while(pending.length){
       const id=pending.shift();if(visited.has(id))continue;
       const node=nodes.get(id);if(!node){broken.push(id);continue}
@@ -442,9 +442,10 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
    if(node.type==='INPUT'){
     const section=el('fieldset',undefined,'builder-validation');section.append(el('legend','التحقق من الإجابة'));
-    const kind=el('select');for(const [value,title]of Object.entries({text:'نص',email:'بريد إلكتروني',phone:'هاتف',number:'رقم',date:'تاريخ YYYY-MM-DD',datetime:'تاريخ ووقت مع المنطقة الزمنية',location:'موقع: خط العرض، خط الطول'})){const option=el('option',title);option.value=value;kind.append(option)}kind.value=node.validation?.type||(/phone$/.test(node.field)?'phone':'text');
-    kind.onchange=()=>{node.validation={type:kind.value};markDirty();renderEditor()};section.append(label('نوع الإجابة',kind));
+    const kind=el('select');for(const [value,title]of Object.entries({text:'نص',email:'بريد إلكتروني',phone:'هاتف',number:'رقم',date:'تاريخ YYYY-MM-DD',datetime:'تاريخ ووقت مع المنطقة الزمنية',location:'موقع: خط العرض، خط الطول',attachment:'مرجع مرفق وارد أصلي'})){const option=el('option',title);option.value=value;kind.append(option)}kind.value=node.validation?.type||(/phone$/.test(node.field)?'phone':'text');
+    kind.onchange=()=>{node.validation={type:kind.value};delete node.acquisition;markDirty();renderEditor()};section.append(label('نوع الإجابة',kind));
     for(const [key,title]of [['min','أقل قيمة / طول'],['max','أكبر قيمة / طول']]){const c=control(node.validation?.[key]??'',v=>{node.validation??={type:kind.value};if(v==='')delete node.validation[key];else node.validation[key]=Number(v)});c.type='number';section.append(label(title,c))}
+    const acquisition=el('select');for(const [value,title]of [['','إدخال نصي'],['LOCATION','طلب موقع أصلي'],['PHONE','رد هاتف أصلي — Messenger'],['EMAIL','رد بريد أصلي — Messenger'],['ATTACHMENT','استقبال مرجع مرفق أصلي']]){const option=el('option',title);option.value=value;acquisition.append(option)}acquisition.value=node.acquisition?.kind||'';acquisition.onchange=()=>{if(acquisition.value){node.acquisition={kind:acquisition.value,unsupportedNext:node.acquisition?.unsupportedNext||flow.nodes.find(n=>n.type==='HANDOFF')?.id||flow.nodes.find(n=>n.type==='END'&&n.id!==node.next)?.id||node.next};node.validation={type:({LOCATION:'location',PHONE:'phone',EMAIL:'email',ATTACHMENT:'attachment'})[acquisition.value]}}else{delete node.acquisition;if(node.validation?.type==='attachment')node.validation={type:'text'}}markDirty();renderEditor()};section.append(label('طريقة جمع الإجابة',acquisition));if(node.acquisition)section.append(label('عند عدم دعم المكوّن في القناة',target(node.acquisition.unsupportedNext,v=>node.acquisition.unsupportedNext=v)),el('small','الموقع الأصلي: WhatsApp وTelegram. الهاتف والبريد: Messenger. المرفقات: قنوات المراسلة فقط؛ يُحفظ مرجع المزود كبيانات ولا يُنزّل أو يُعرض كملف آمن. تُطبّق المحاولات والتخطي والمهلة المعتادة.'));
     section.append(label('رسالة عند إجابة غير صحيحة',control(node.validation?.errorText||'',v=>{node.validation??={type:kind.value};if(v)node.validation.errorText=v;else delete node.validation.errorText})));host.append(section);
    }
    conversationControls(host,node);runtimeControls.policy(host,node);runtimeControls.schedule(host,node);runtimeControls.triggers(host,node);requestControls.render(host,node);
@@ -632,13 +633,15 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    for(const entry of r.trace||[]){const item=el('li',entry.nodeId+' · '+entry.type+' · '+entry.outcome);item.onclick=()=>{simulatorDialog.close();canvas.focus(entry.nodeId)};traceHost.append(item)}valuesHost.textContent=JSON.stringify(r.state.answers,null,2);canvas.highlight(r.state.at);
    preview=r.state;previewRuntimeNodes=r.runtimeNodes;$('builder-preview-options').replaceChildren();
    for(const message of r.messages){
-    if(message.type==='GALLERY'){if(['WHATSAPP','TELEGRAM'].includes(flow.channel||'WHATSAPP')){for(const c of message.cards){if(c.imageUrl)bubble('[صورة] '+c.imageUrl);bubble([c.title,c.subtitle,...(c.actions||[]).map(a=>a.title+': '+a.url)].filter(Boolean).join('\n'))}}else $('builder-preview').append(renderGallery(message.cards))}else bubble(message.text||('['+message.mediaKind+'] '+message.url));
+    if(message.type==='GALLERY'){if(['WHATSAPP','TELEGRAM'].includes(simulatedChannel.value)){for(const c of message.cards){if(c.imageUrl)bubble('[صورة] '+c.imageUrl);bubble([c.title,c.subtitle,...(c.actions||[]).map(a=>a.title+': '+a.url)].filter(Boolean).join('\n'))}}else $('builder-preview').append(renderGallery(message.cards))}else{if(message.inputRequest)bubble('['+simulatedChannel.value+' · طلب '+({LOCATION:'الموقع',ATTACHMENT:'مرجع المرفق',PHONE:'الهاتف',EMAIL:'البريد'})[message.inputRequest]+' — Mock]');bubble(message.text||('['+message.mediaKind+'] '+message.url));}
     if(message.choices)for(const c of message.choices){if(c.action==='URL'){const link=el('a',c.title,'builder-option');link.href=c.url;link.target='_blank';link.rel='noopener noreferrer';$('builder-preview-options').append(link)}else $('builder-preview-options').append(button(c.title,()=>execute(()=>serverPreview(c.id,atInputSkip(c)?'SKIP':undefined)),'builder-option'));}
    }
    if(r.botAction){bubble(r.botAction.operation==='STOP'?'انتهى تشغيل البوت.':'البوت متوقف مؤقتًا. الاستئناف هنا تجربة فقط.');if(r.botAction.operation==='PAUSE')$('builder-preview-options').append(button('استئناف التجربة',()=>{preview.at=r.botAction.next;previewRuntimeNodes=null;execute(()=>serverPreview())}));}
    if(r.waiting){const w=r.waiting;const isInput=w.kind==='INPUT'||w.kind==='CHOICE';bubble((isInput?'مهلة رد: ':'انتظار: ')+w.seconds+' ثانية — ساعة محاكاة');$('builder-preview-options').append(button(isInput?'محاكاة انتهاء المهلة':'استكمال التأخير في المعاينة',()=>{simulationNow=w.expiresAt||simulationNow+w.seconds*1000;if(isInput)execute(()=>serverPreview(w.token,'TIMEOUT'));else{preview.at=w.next;if(preview.runtime)delete preview.runtime.wait;execute(()=>serverPreview())}},'secondary'))}
 
    const at=(previewRuntimeNodes||flow.nodes).find(n=>n.id===preview.at);
+   if(at?.type==='INPUT'&&at.acquisition?.kind==='LOCATION')$('builder-preview-options').append(button('محاكاة مشاركة الموقع — Mock',()=>execute(()=>serverPreview('30.0444, 31.2357','LOCATION'))));
+   if(at?.type==='INPUT'&&at.acquisition?.kind==='ATTACHMENT')$('builder-preview-options').append(button('محاكاة مرفق وارد — Mock',()=>execute(()=>serverPreview(JSON.stringify({channel:simulatedChannel.value,kind:'document',reference:['WHATSAPP','TELEGRAM'].includes(simulatedChannel.value)?'MOCK_file_reference':'https://example.invalid/mock-document'}),'ATTACHMENT'))));
    if(at?.type==='INPUT'||at?.type==='QUESTION'){
     const form=el('form',undefined,'builder-preview-input'),inp=el('input'),send=el('button','إرسال','primary');inp.required=at.policy?.required!==false;send.type='submit';form.append(inp,send);form.onsubmit=e=>{e.preventDefault();execute(()=>serverPreview(isPhoneField(at.field)?normalizePhone(inp.value):inp.value.trim()))};$('builder-preview-options').append(form);inputWithHandoff(form,at.field);
    }
@@ -699,7 +702,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;
    lastRecoveryScope=recoveryScope();retainRecovery.checked=recoveryStore.enabled(lastRecoveryScope);
-   connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
+   simulatedChannel.value=flow.channel||'WHATSAPP';connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');primaryBar.append($('builder-unsaved').parentElement);

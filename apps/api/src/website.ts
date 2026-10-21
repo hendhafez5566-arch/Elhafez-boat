@@ -1,3 +1,4 @@
+import {cancelConversationAutomation} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
 import {randomBytes} from 'node:crypto';
 import {tokenDigest} from './auth.js';
@@ -66,7 +67,7 @@ export async function websiteSend(pool:SqlClient&SqlPool,bearer:string,origin:st
   try{await consumeUsage(db,tenantId,'inbound')}catch(e){if(e instanceof HttpFailure&&(e.status===403||e.status===429))return {received:true,paused:true};throw e}
   if(/^(start|ابدأ)$/i.test(text.trim()))await recordFlowConsent(db,tenantId,String(s.contact_id),String(s.conversation_id),{purpose:'SERVICE',decision:'GRANT',source:'CUSTOMER_COMMAND'});
   const consent=await db.query('SELECT do_not_contact FROM contacts WHERE tenant_id=$1 AND id=$2',[tenantId,s.contact_id]);if(consent.rows[0]?.do_not_contact)return {received:true};
-  if(s.status==='CLOSED'&&(s.bot_control as any)?.mode!=='STOPPED')await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,s.conversation_id]);
+  if(s.status==='CLOSED'&&(s.bot_control as any)?.mode!=='STOPPED'){await cancelConversationAutomation(db,tenantId,String(s.conversation_id));await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,s.conversation_id]);}
   if(s.status!=='HUMAN'){
    const result=await respondToFlow(db,{tenantId,conversationId:String(s.conversation_id),contactId:String(s.contact_id),actionId:actionId,body:text,fromWhatsApp:false});await deliverConversation(db,tenantId,String(s.conversation_id),result.payloads,{staff:result.handedOff});
   }return {received:true};

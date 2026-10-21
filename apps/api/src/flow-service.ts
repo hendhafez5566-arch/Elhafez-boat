@@ -1,6 +1,6 @@
 import {triggerMatches,validTriggerPostback,type TriggerContext} from './flow-triggers.js';
 import {definitionHash} from './flow-release.js';
-import {setBotControl} from './conversation-control.js';
+import {setBotControl,cancelConversationAutomation} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
 import {businessIsOpen} from './flow-time.js';
 import {flowReadiness} from './flow-release.js';
@@ -79,7 +79,7 @@ export async function listFlowVersions(db:SqlClient,actor:Actor,botId?:string){
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
-export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;triggerEvent?:import('./flow-triggers.js').TriggerEvent;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
+export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;triggerEvent?:import('./flow-triggers.js').TriggerEvent;nativeInput?:FlowInput;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string};operatorResume?:boolean}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
  const ownership=await db.query('SELECT status,bot_control FROM conversations WHERE tenant_id=$1 AND id=$2 FOR UPDATE',[tenantId,conversationId]);
  const control=(ownership.rows[0]?.bot_control||{}) as {mode?:string};
@@ -113,6 +113,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  if(actionId&&previous?.version){const pinned=(await readVersion(Number(previous.version))).rows[0]?.definition as FlowDefinition|undefined;if(pinned)validPostback=validTriggerPostback({...pinned,nodes:Array.isArray(previous.runtime_nodes)?[...pinned.nodes,...previous.runtime_nodes]:pinned.nodes},typeof previous.node_id==='string'?previous.node_id:null,actionId,previousRuntime);}
  const triggered=validPostback&&!ctx.operatorResume&&!ctx.integrationResume&&!ctx.connectorResume&&!ctx.resume&&(!previous||body||actionId||ctx.triggerEvent)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined,{channel:channel as import('./flow-engine.js').FlowChannel,event:ctx.triggerEvent||(actionId?'POSTBACK':'MESSAGE')}):undefined;
  const restart=Boolean(triggered)||/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
+ if(restart&&previous)await cancelConversationAutomation(db,tenantId,conversationId);
  let version=Number(previous?.version??0),flow:FlowDefinition;
  if(!previous||restart){
   const current=await readVersion();
@@ -164,8 +165,8 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  else if(waitingNode?.type==='DELAY'&&!restart)return {payloads:[],handedOff:false};
  await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,conversationId]);
  // Flow replies are untrusted until matching the current node & option ID.
- const inbound=actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body};
- const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,enter:Boolean(triggered||ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
+ const inbound=ctx.nativeInput??(actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body});
+ const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,channel:channel as import('./flow-engine.js').FlowChannel,enter:Boolean(triggered||ctx.operatorResume||asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
  if(requestOutcome)result.trace.unshift({nodeId:waitingNode!.id,type:waitingNode!.type,outcome:requestOutcome,elapsedMs:0});
  flow=result.flow;
  const contactAnswers=Object.fromEntries(Object.entries(result.state.answers).filter(([key])=>!flow.variables?.some(v=>v.key===key&&v.scope==='session')));
@@ -203,6 +204,7 @@ export function renderFlowMessages(flow:FlowDefinition,at:string|null,messages:F
  const node=flow.nodes.find(n=>n.id===at);
  const payloads:Record<string,unknown>[]=messages.map(message=>{
   if(message.type==='GALLERY')return {type:'elhafez_gallery',cards:message.cards};
+  if(message.type==='TEXT'&&message.inputRequest){if(message.inputRequest==='LOCATION'&&channel==='WHATSAPP')return {messaging_product:'whatsapp',type:'interactive',interactive:{type:'location_request_message',body:{text:message.text},action:{name:'send_location'}}};if(channel==='WHATSAPP')return {messaging_product:'whatsapp',type:'text',text:{body:message.text}};return {type:'elhafez_input_request',kind:message.inputRequest,text:message.text};}
   if(message.type==='TEXT')return {messaging_product:'whatsapp',type:'text',text:{preview_url:false,body:message.text}};
   if(message.type==='MEDIA'){
     const attachment:Record<string,unknown>={link:message.url};
@@ -269,7 +271,7 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
  return {...flow,nodes:[...new Map(nodes.map(n=>[n.id,n])).values()]};
 }
 
-export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event']}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
+export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event']}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
  let crmStage:string|undefined;let chosenHandoff:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy}|undefined;let blockedService=false;
  if(dryRun&&simulation){
   const channel=simulation.channel||definition.channel||'WHATSAPP';
@@ -280,7 +282,7 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
    if(trigger){state={at:trigger.targetNode,answers:{},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
   }
  }
- let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter});const messages=[...result.messages],trace=[...(result.trace||[])];
+ let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
   if(pending?.type==='CONTROL'&&result.botAction){
@@ -334,7 +336,7 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
   }
   if(pending?.type==='CONNECTOR'&&!pending.request){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'),undefined,{conversationId:context.conversationId,contactId:context.contactId,version:context.version!,nodeId:pending.id});}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
   flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId,context);
-  result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,simulation);messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
+  result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{...simulation,channel:simulation?.channel||context?.channel||definition.channel});messages.push(...result.messages);trace.push(...(result.trace||[]));if(blockedService)return {...result,pending:false,messages:[],trace,flow,crmStage,chosenHandoff,blockedService};
  }
  if(result.pending)throw new HttpFailure(400,'Dynamic node execution limit exceeded');
  return {...result,messages,trace,flow,chosenHandoff,blockedService,...(crmStage?{crmStage}:{})};

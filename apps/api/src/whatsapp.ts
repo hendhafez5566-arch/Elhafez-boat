@@ -1,3 +1,4 @@
+import {nativeLocation,nativeAttachment} from './flow-native-input.js';
 import {resolveConversationBot} from './bot-routing.js';
 import {cancelConversationAutomation,resumeControlledConversation} from './conversation-control.js';
 import {recordFlowConsent} from './flow-consent.js';
@@ -159,13 +160,14 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
   ON CONFLICT(tenant_id,phone) DO UPDATE SET updated_at=now() RETURNING id,do_not_contact`,[tenantId,name,from]);
  const contactId=String(contact.rows[0].id);
  const closed=await db.query("SELECT id FROM conversations WHERE tenant_id=$1 AND contact_id=$2 AND channel='WHATSAPP' AND status='CLOSED' AND coalesce(bot_control->>'mode','')<>'STOPPED' FOR UPDATE",[tenantId,contactId]);
- if(closed.rowCount)await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,closed.rows[0].id]);
+ if(closed.rowCount){await cancelConversationAutomation(db,tenantId,String(closed.rows[0].id));await db.query('DELETE FROM chatbot_flow_sessions WHERE tenant_id=$1 AND conversation_id=$2',[tenantId,closed.rows[0].id]);}
  const conversation=await db.query(`INSERT INTO conversations(tenant_id,contact_id,channel,last_message_at,last_customer_message_at,whatsapp_account_id) VALUES($1,$2,'WHATSAPP',$4,$4,$3)
   ON CONFLICT(tenant_id,contact_id,channel) WHERE channel='WHATSAPP'
   DO UPDATE SET last_message_at=greatest(conversations.last_message_at,$4::timestamptz),last_customer_message_at=greatest(conversations.last_customer_message_at,$4::timestamptz),whatsapp_account_id=$3,status=CASE WHEN conversations.status='CLOSED' AND coalesce(conversations.bot_control->>'mode','')<>'STOPPED' THEN 'OPEN' ELSE conversations.status END RETURNING id,status,last_customer_message_at`,[tenantId,contactId,accountId,receivedAt]);
  const conversationId=String(conversation.rows[0].id),status=str(conversation.rows[0].status);
  const interactive=asObject(message.interactive),reply=asObject(interactive.list_reply||interactive.button_reply);
  const action=limited(reply.id||asObject(message.button).payload,200);
+ const nativeInput=message.type==='location'?nativeLocation(asObject(message.location).latitude,asObject(message.location).longitude):['image','video','audio','document'].includes(str(message.type))?nativeAttachment('WHATSAPP',str(message.type),asObject(message[str(message.type)]).id):undefined;
  const triggerEvent=message.type==='location'?'LOCATION' as const:['image','video','audio','document','sticker'].includes(str(message.type))?'MEDIA' as const:action?'POSTBACK' as const:'MESSAGE' as const;
  const msgType=str(message.type),body=msgType==='order'?'[اهتمام بمنتجات كتالوج Meta — يحتاج مراجعة موظف]':msgType==='text'?limited(asObject(message.text).body,4000):msgType==='button'?limited(asObject(message.button).text,4000):action?'اختيار: '+action:'[رسالة واتساب غير نصية]';
  await db.query(`INSERT INTO conversation_messages(tenant_id,conversation_id,kind,body,whatsapp_message_id,message_source,provider_at)
@@ -228,7 +230,7 @@ async function incomingMessage(db:SqlClient,accountId:string,tenantId:string,mes
  const flowOutput=await respondToFlow(db,{
    tenantId,conversationId,contactId,
    actionId:action==='home'?'flow:restart':action,
-   body,fromWhatsApp:true,triggerEvent
+   body,fromWhatsApp:true,triggerEvent,nativeInput
  });
  for(const payload of flowOutput.payloads)await respond(payload);
  return;

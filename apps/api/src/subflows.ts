@@ -34,6 +34,7 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
    if((n.type==='TEXT'||n.type==='BUTTONS')&&n.blocks)n.blocks=n.blocks.map(b=>b.type==='MEDIA'?{...b,caption:template(b.caption||'')}:b.type==='CARD'?{...b,card:{...b.card,title:template(b.card.title),subtitle:template(b.card.subtitle||'')}}:b.type==='GALLERY'?{...b,cards:b.cards.map(c=>({...c,title:template(c.title),subtitle:template(c.subtitle||'')}))}:{...b,text:template(b.text)});
    if('field'in n)n.field=Object.hasOwn(bindings,n.field)?bindings[n.field]:n.field;
    if(n.type==='CONDITION'&&n.rules)n.rules=mapConditionRules(n.rules,field=>Object.hasOwn(bindings,field)?bindings[field]:field);
+   if(n.type==='INPUT'&&n.acquisition)n.acquisition.unsupportedNext=map(n.acquisition.unsupportedNext);
    if('policy'in n&&n.policy){for(const key of ['invalidNext','timeoutNext','skipNext'] as const)if(n.policy[key])n.policy[key]=map(n.policy[key]!)}
    if((n.type==='WEBHOOK'||n.type==='CONNECTOR')&&n.request){n.request.errorNext=map(n.request.errorNext);n.request.timeoutNext=map(n.request.timeoutNext);n.request.body=Object.fromEntries(Object.entries(n.request.body).map(([key,value])=>[key,template(value)]));n.request.mapping=n.request.mapping.map(m=>({...m,field:Object.hasOwn(bindings,m.field)?bindings[m.field]:m.field}))}
    if(n.type==='CONSENT'){n.acceptNext=map(n.acceptNext);n.declineNext=map(n.declineNext);if(n.withdrawNext)n.withdrawNext=map(n.withdrawNext)}

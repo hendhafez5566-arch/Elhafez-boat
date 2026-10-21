@@ -3,6 +3,7 @@ import {enqueueSocial} from './social.js';
 /** Channel adapter boundary. Payloads are generated internally, never accepted from visitors. */
 import {HttpFailure,type SqlClient} from './services.js';
 export function websitePayload(payload:Record<string,unknown>){
+ if(payload.type==='elhafez_input_request')return {type:'INPUT_REQUEST' as const,text:String(payload.text),inputKind:payload.kind as import('./flow-native-input.js').Acquisition['kind']};
  if(payload.type==='elhafez_gallery')return {type:'GALLERY' as const,cards:payload.cards as FlowCard[]};
  const interactive=payload.interactive as {body?:{text?:string};action?:{parameters?:{display_text:string;url:string};buttons?:{reply?:{id:string;title:string};type?:string;url?:string;title?:string}[];sections?:{rows:{id:string;title:string;description?:string}[]}[]}}|undefined;
  if(payload.type==='text')return {type:'TEXT',text:(payload.text as {body:string}).body};
