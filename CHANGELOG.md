@@ -1,3 +1,7 @@
+## 2026-10-21 — save lease CI repair
+
+Same premium branch / Draft PR #5; verified initial HEAD 0e4baf5. Actual successful/failed Actions inspected. Tab-close assertion now waits for actual bounded lock acquisition and verifies exclusion before close; application/CAS unchanged. 201 units/typecheck/build, fresh 40 migrations, 11 control + 6 save PostgreSQL scenarios and two four-scenario real Chromium runs PASS. Canonical matrix bottom corrected: 18 PASS / 18 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/SAVE_CI_REPAIR.md. Next: channel events/priority conflicts and native input contracts. No merge/deploy/providers; visual acceptance pending.
+
 ## 2026-10-19 — Isolated UI/UX real-user audit remediation (DRAFT, not deployed)
 
 - Audit basis: Cloud Browser checked 21 screens, with 20 documented issues and 98 scenarios (51 Pass, 17 Fail, 30 Blocked); neither mobile testing nor live Meta acceptance was completed by audit.

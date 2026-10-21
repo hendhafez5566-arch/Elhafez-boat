@@ -1,3 +1,7 @@
+## 2026-10-21 — save lease CI repair
+
+Same premium branch / Draft PR #5; verified initial HEAD 0e4baf5. Actual successful/failed Actions inspected. Tab-close assertion now waits for actual bounded lock acquisition and verifies exclusion before close; application/CAS unchanged. 201 units/typecheck/build, fresh 40 migrations, 11 control + 6 save PostgreSQL scenarios and two four-scenario real Chromium runs PASS. Canonical matrix bottom corrected: 18 PASS / 18 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/SAVE_CI_REPAIR.md. Next: channel events/priority conflicts and native input contracts. No merge/deploy/providers; visual acceptance pending.
+
 ## 2026-10-21 — consent replay and old inbox resume hardening
 
 Persisted per-prompt consent challenges reject old/cross-conversation/version callbacks; old inbox release uses the existing controlled pinned resume path. Mobile experiment columns remain readable in a horizontal scroller. 201 units/typecheck/build; 11 actual control PG scenarios and rerun 11 new desktop/mobile browser checks PASS. Cumulative new PG scenarios: 25. Matrix remains 18 PASS / 18 PARTIAL. See HARDENING_CHECKPOINT.md; final closure uses a new disposable PostgreSQL instance and explicit installed Chromium, preserving earlier failed attempt evidence. No external provider/merge/deploy or visual/remote-CI acceptance claim.
