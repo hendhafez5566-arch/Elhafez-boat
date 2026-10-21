@@ -121,6 +121,7 @@ jobs:
         run: |
           node tests/flow-native-input-db.mjs
           node tests/flow-native-input-browser.mjs
+          node tests/flow-scenario-browser.mjs
       - name: Exact nonblocking job ownership and safe conversation cancellation
         run: |
           node tests/flow-job-origin-db.mjs

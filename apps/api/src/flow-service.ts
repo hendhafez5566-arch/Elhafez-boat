@@ -271,18 +271,19 @@ export async function resolveFlow(db:SqlClient,tenantId:string,flow:FlowDefiniti
  return {...flow,nodes:[...new Map(nodes.map(n=>[n.id,n])).values()]};
 }
 
-export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event']}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
+export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDefinition,state:import('./flow-engine.js').FlowState,input?:FlowInput,dryRun=false,context?:{contactId:string;conversationId:string;version?:number;enter?:boolean;channel?:import('./flow-engine.js').FlowChannel},simulation?:{now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:TriggerContext['event'];persona?:Record<string,string>;enter?:boolean}):Promise<ReturnType<typeof advanceFlow>&{trace:import('./flow-engine.js').FlowTrace[];flow:FlowDefinition;crmStage?:string;chosenHandoff?:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy};blockedService?:boolean}>{
  let crmStage:string|undefined;let chosenHandoff:{assigned:string|null;policy:import('./flow-conversation-policy.js').HandoffPolicy}|undefined;let blockedService=false;
  if(dryRun&&simulation){
+  if(state.at===null&&simulation.persona)state={...state,answers:{...state.answers,...simulation.persona}};
   const channel=simulation.channel||definition.channel||'WHATSAPP';
   if(flowChannelIssues(definition,channel).some(i=>i.severity==='error'))throw new HttpFailure(400,'Flow is incompatible with simulated channel');
   if((!input||['TEXT','CHOICE'].includes(input.kind))&&(input?.kind!=='CHOICE'||validTriggerPostback(definition,state.at,input.value,state.runtime))){
    const event=simulation.event||(input?.kind==='CHOICE'?'POSTBACK':'MESSAGE');
    const trigger=[...(definition.triggers||[])].sort((a,b)=>b.priority-a.priority).find(t=>triggerMatches(t,input?.value||'',state.at===null,{channel,event}));
-   if(trigger){state={at:trigger.targetNode,answers:{},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
+   if(trigger){state={at:trigger.targetNode,answers:{...(simulation.persona||{})},tags:[]};input=undefined;context={contactId:'',conversationId:'',enter:true};}
   }
  }
- let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
+ let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter||dryRun&&simulation?.enter,channel:simulation?.channel||context?.channel||definition.channel});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
   if(pending?.type==='CONTROL'&&result.botAction){

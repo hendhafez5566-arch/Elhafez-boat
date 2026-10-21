@@ -36,7 +36,7 @@ import {inspectIntegration,listIntegrations,createIntegration,updateIntegration}
 import {savedReplies,createSavedReply,deleteSavedReply,updateSavedReply,inboxNote} from './inbox.js';
 import {aiSettings,saveAiSettings,previewAgent} from './ai.js';
 import {executeFlow} from './flow-service.js';
-import {validateFlow,initialFlowState} from './flow-engine.js';
+import {validVariableValue,validateFlow,initialFlowState} from './flow-engine.js';
 import {listCatalog,createCatalog,updateCatalog,changeCatalogStatus} from './catalog.js';
 import {getFlowConfig,saveFlowDraft,publishFlowDraft,listFlowVersions,rollbackFlow} from './flow-service.js';
 import {analyticsOverview} from './analytics.js';
@@ -329,14 +329,17 @@ const server=createServer(async(req,res)=>{
       if(incoming&&(!['TEXT','CHOICE','SKIP','TIMEOUT','LOCATION','ATTACHMENT'].includes(incoming.kind)||typeof incoming.value!=='string'||incoming.value.length>2000))throw new HttpFailure(400,'Invalid preview input');
       flow=await compileSubflows(tx,actor.tenantId,flow);
       const runtime=d.runtimeNodes;if(runtime!==undefined){try{const parsed=validateFlow({...flow,nodes:runtime},{runtime:true,draft:true});flow={...flow,nodes:[...flow.nodes.map(n=>n.type==='CATALOG'?(parsed.nodes.find(x=>x.id===n.id)||n):n),...parsed.nodes.filter(n=>n.id.startsWith('@catalog:'))]}}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid runtime preview')}}
-      const simulation=d.simulation as {now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:import('./flow-triggers.js').TriggerEvent}|undefined;
+      const simulation=d.simulation as {now?:number;seed?:number;requests?:Record<string,RequestMock>;staffAvailable?:boolean;channel?:import('./flow-engine.js').FlowChannel;event?:import('./flow-triggers.js').TriggerEvent;persona?:Record<string,string>;enter?:boolean;delivery?:'SUCCESS'|'REJECTED'|'TIMEOUT'}|undefined;
       if(simulation&&(typeof simulation!=='object'||simulation.now!==undefined&&(!Number.isFinite(simulation.now)||simulation.now<0||simulation.now>4102444800000)||simulation.seed!==undefined&&(!Number.isFinite(simulation.seed)||simulation.seed<0||simulation.seed>=1)))throw new HttpFailure(400,'Invalid simulation clock/seed');
       if(simulation?.channel!==undefined&&!['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(simulation.channel)||simulation?.event!==undefined&&!['MESSAGE','POSTBACK','MEDIA','LOCATION'].includes(simulation.event))throw new HttpFailure(400,'Invalid simulated channel/event');
+      if(simulation?.enter!==undefined&&typeof simulation.enter!=='boolean')throw new HttpFailure(400,'Invalid mock continuation');
+      if(simulation?.delivery!==undefined&&!['SUCCESS','REJECTED','TIMEOUT'].includes(simulation.delivery))throw new HttpFailure(400,'Invalid mock channel delivery');
+      if(simulation?.persona!==undefined){const p=simulation.persona;if(!p||typeof p!=='object'||Array.isArray(p)||Object.keys(p).length>100||Object.entries(p).some(([k,v])=>!/^[a-z][a-z0-9_]{0,39}$/.test(k)||typeof v!=='string'||v.length>500||!validVariableValue(flow.variables?.find(f=>f.key===k),v)))throw new HttpFailure(400,'Invalid mock persona fields');}
       if(simulation?.staffAvailable!==undefined&&typeof simulation.staffAvailable!=='boolean')throw new HttpFailure(400,'Invalid simulated availability');
       if(simulation?.requests!==undefined){try{validateRequestMocks(simulation.requests)}catch(e){throw new HttpFailure(400,e instanceof Error?e.message:'Invalid request mocks')}}
       if(state?.runtime?.consent){const c=state.runtime.consent;if(typeof c.nodeId!=='string'||c.nodeId.length>180||!isUuid(c.token)||typeof c.policyVersion!=='string'||c.policyVersion.length>80)throw new HttpFailure(400,'Invalid consent simulation challenge')}
       if(state?.runtime){const r=state.runtime;if(!r.attempts||typeof r.attempts!=='object'||Array.isArray(r.attempts)||Object.keys(r.attempts).length>100||Object.values(r.attempts).some(v=>!Number.isInteger(v)||v<0||v>10)||r.wait&&(!Number.isFinite(r.wait.expiresAt)||typeof r.wait.token!=='string'||!isUuid(r.wait.token)||typeof r.wait.nodeId!=='string')||r.experiments&&(typeof r.experiments!=='object'||Array.isArray(r.experiments)||Object.keys(r.experiments).length>100||Object.values(r.experiments).some(v=>typeof v!=='string'||v.length>40)))throw new HttpFailure(400,'Invalid simulation runtime state')}
-      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,botAction:r.botAction,runtimeNodes:r.flow.nodes};
+      const r=await executeFlow(tx,actor.tenantId,flow,state||initialFlowState(),incoming,true,undefined,simulation);return {trace:r.trace,state:r.state,messages:r.messages,handoff:r.handoff,finished:r.finished,waiting:r.waiting,botAction:r.botAction,runtimeNodes:r.flow.nodes,...(simulation?.delivery?{deliveryMock:{mock:true,channel:simulation.channel||flow.channel||'WHATSAPP',status:simulation.delivery,messageCount:r.messages.length}}:{})};
     }));
     if(req.method==='POST'&&pathname==='/api/v1/flows/inspect-draft'){
       allow(actor,['OWNER','MANAGER']);const input=await body(req);
