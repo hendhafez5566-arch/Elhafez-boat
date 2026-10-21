@@ -16,7 +16,7 @@ export type MessageBlock=RichBlock|{type:'TEXT';text:string}|{type:'MEDIA';media
 export type Choice = {id:string;title:string;description?:string;next:string;action?:'NODE'|'URL';url?:string;assign?:{field:string;value:string};effects?:ChoiceEffect[]};
 export type FlowNode = (
  | {id:string;type:'SUBFLOW';subflowId:string;version:number;bindings?:Record<string,string>;next:string}
- | {id:string;type:'CONNECTOR';connectorId:string;next:string}
+ | {id:string;type:'CONNECTOR';connectorId:string;next:string;request?:FlowRequest}
  | {id:string;type:'DELAY';seconds:number;next:string;schedule?:DelaySchedule;errorNext?:string}
  | {id:string;type:'START';next:string}
  | {id:string;type:'SET_FIELD';field:string;value:string;next:string;errorNext?:string}
@@ -91,7 +91,7 @@ export function mapConditionRules(rules:ConditionRule[],map:(field:string)=>stri
 export function flowDestinations(node:FlowNode):string[]{
  const destinations:string[]=[];if('next'in node)destinations.push(node.next);if('yes'in node)destinations.push(node.yes,node.no);if('choices'in node)destinations.push(...node.choices.filter(c=>c.action!=='URL').map(c=>c.next));
  if('policy'in node&&node.policy)for(const key of ['invalidNext','skipNext','timeoutNext'] as const)if(node.policy[key])destinations.push(node.policy[key]!);
- if(node.type==='WEBHOOK'&&node.request)destinations.push(node.request.errorNext,node.request.timeoutNext);
+ if((node.type==='WEBHOOK'||node.type==='CONNECTOR')&&node.request)destinations.push(node.request.errorNext,node.request.timeoutNext);
  if('errorNext'in node&&node.errorNext)destinations.push(node.errorNext);return destinations;
 }
 export function validateInputAnswer(node:Extract<FlowNode,{type:'INPUT'|'QUESTION'}>,raw:string):{valid:boolean;value:string;error:string}{
@@ -140,7 +140,7 @@ export function validateFlow(input:unknown,options:{draft?:boolean;runtime?:bool
   if(type==='GOAL')requireTrue(typeof raw.goal==='string'&&key.test(raw.goal),'Invalid goal key');
   if(type==='TAG'&&raw.mode!==undefined)requireTrue(['ADD','REMOVE'].includes(String(raw.mode)),'Invalid tag action');
   if(type==='RANDOMIZER'&&raw.sticky!==undefined)requireTrue(typeof raw.sticky==='boolean','Invalid experiment policy');
-  if(type==='WEBHOOK'&&raw.request!==undefined)validateFlowRequest(raw.request);
+  if((type==='WEBHOOK'||type==='CONNECTOR')&&raw.request!==undefined){validateFlowRequest(raw.request);if(type==='CONNECTOR')requireTrue(raw.request.method==='POST'&&raw.request.maxAttempts===1,'Native connector upserts cannot retry automatically');}
   if(type==='WEBHOOK')requireTrue(typeof raw.integrationId==='string'&&/^[0-9a-f-]{36}$/i.test(raw.integrationId),'Invalid webhook integration ID');
   if(type==='CATALOG'&&raw.category!==undefined)requireTrue(bounded(raw.category,80,0),'Invalid catalog category');
   if(type==='KEYWORD')requireTrue(Array.isArray(raw.keywords)&&raw.keywords.length>0&&raw.keywords.length<=20&&raw.keywords.every(k=>bounded(k,80)),'Invalid keywords');

@@ -34,7 +34,7 @@ export async function compileSubflows(db:SqlClient,tenantId:string,source:FlowDe
    if('field'in n)n.field=Object.hasOwn(bindings,n.field)?bindings[n.field]:n.field;
    if(n.type==='CONDITION'&&n.rules)n.rules=mapConditionRules(n.rules,field=>Object.hasOwn(bindings,field)?bindings[field]:field);
    if('policy'in n&&n.policy){for(const key of ['invalidNext','timeoutNext','skipNext'] as const)if(n.policy[key])n.policy[key]=map(n.policy[key]!)}
-   if(n.type==='WEBHOOK'&&n.request){n.request.errorNext=map(n.request.errorNext);n.request.timeoutNext=map(n.request.timeoutNext);n.request.body=Object.fromEntries(Object.entries(n.request.body).map(([key,value])=>[key,template(value)]));n.request.mapping=n.request.mapping.map(m=>({...m,field:Object.hasOwn(bindings,m.field)?bindings[m.field]:m.field}))}
+   if((n.type==='WEBHOOK'||n.type==='CONNECTOR')&&n.request){n.request.errorNext=map(n.request.errorNext);n.request.timeoutNext=map(n.request.timeoutNext);n.request.body=Object.fromEntries(Object.entries(n.request.body).map(([key,value])=>[key,template(value)]));n.request.mapping=n.request.mapping.map(m=>({...m,field:Object.hasOwn(bindings,m.field)?bindings[m.field]:m.field}))}
    if('errorNext'in n&&n.errorNext)n.errorNext=map(n.errorNext);
    if(n.type==='DELAY'){if(n.schedule?.mode==='AT'&&n.schedule.field)n.schedule.field=Object.hasOwn(bindings,n.schedule.field)?bindings[n.schedule.field]:n.schedule.field}
    if('next'in n)n.next=map(n.next);

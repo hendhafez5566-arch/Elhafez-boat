@@ -36,6 +36,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  };
  let mergeBase=null;
  let flow=preset(),selected='menu',published=null,dirty=false,draftRevision=0,previewRuntimeNodes=null;
+ let connectorChoices=[];
  let subflows=[],editingSubflowId=null,mainSnapshot=null;
  let selectedNodes=new Set([selected]),snippets=[];
  let preview={at:null,answers:{},tags:[]};
@@ -456,7 +457,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    }
    if(node.type==='DELAY')host.append(label('مدة الانتظار بالثواني (1 إلى 604800)',control(node.seconds,v=>{node.seconds=Number(v)})));
    if(node.type==='SUBFLOW'){host.append(label('معرف المسار الفرعي',control(node.subflowId,v=>{node.subflowId=v})),label('الإصدار المثبت',control(node.version,v=>{node.version=Number(v)})),label('ربط حقول الفرعي بحقول المستدعي — JSON',control(JSON.stringify(node.bindings||{}),v=>{try{node.bindings=JSON.parse(v)}catch{notify('ربط الحقول يجب أن يكون JSON صالحًا','error')}},true)));}
-   if(node.type==='CONNECTOR')host.append(label('معرف الموصل من صفحة الموصلات الأصلية',control(node.connectorId,v=>{node.connectorId=v})));
+   if(node.type==='CONNECTOR'){const choice=el('select');const empty=el('option','اختر خدمة مزامنة محفوظة');empty.value='';choice.append(empty);for(const c of connectorChoices){const o=el('option',c.name+(c.connected&&c.enabled?'':' — تحتاج إعدادًا'));o.value=c.id;choice.append(o)}choice.value=node.connectorId;choice.onchange=()=>{node.connectorId=choice.value;markDirty()};host.append(label('خدمة المزامنة',choice),el('p','انتظار النتيجة اختياري للبوتات القديمة. فعّله لاستخدام مسارات النجاح والفشل والمهلة.'));}
    if(node.type==='WEBHOOK')host.append(label('معرف التكامل من الإعدادات',control(node.integrationId,v=>{node.integrationId=v})));
    if(node.type==='CATALOG')host.append(label('تصنيف الكتالوج (فارغ = الكل)',control(node.category||'',v=>{node.category=v})));
    if(node.type==='KEYWORD'){
@@ -687,7 +688,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    const cfg=await api('/flows');$('page-title').textContent=state.botName?'أتمتة: '+state.botName:'مصمم المحادثات';flow=deep(cfg.draft.definition);mergeBase=deep(flow);published=cfg.published;draftRevision=cfg.draft.draftRevision;dirty=false;selected=flow.startId;
    selectedNodes=new Set([selected]);history=[deep(flow)];cursor=0;
    lastRecoveryScope=recoveryScope();retainRecovery.checked=recoveryStore.enabled(lastRecoveryScope);
-   await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
+   connectorChoices=state.demo?[]:await api('/connectors');await loadSnippets();renderAll();setEditorMode((state.editorMode||sessionStorage.getItem('eb-editor-mode:'+state.tenantId+':'+state.botId))==='simple');requestAnimationFrame(()=>canvas.fit());resetPreview();offerRecovery();
  }
  const guideHost=el('div',undefined,'boat-guide-mount');
  const primaryBar=$('builder-industry').closest('.builder-toolbar');
@@ -867,5 +868,5 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='z'&&!event.target.closest('input,textarea,select,[contenteditable]')){event.preventDefault();[...tools.querySelectorAll('button')].find(b=>b.textContent===(event.shiftKey?'إعادة':'تراجع'))?.click()}
  });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
- return {load,hasUnsavedChanges:()=>dirty,reset(){for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;requestOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
+ return {load,hasUnsavedChanges:()=>dirty,reset(){for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;requestOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

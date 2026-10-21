@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "native connector named selection, wait/mapping/error/timeout controls and genuine persisted draft roundtrip",
+    "actual shared server preview exercises success, provider error and timeout; Mock values never save or dispatch",
+    "actual mobile native queue filter and acknowledged reconciliation succeed without changing committed flow snapshot or execution trace"
+  ],
+  "errors": [],
+  "provider": "Explicit local Mock only"
+}

@@ -1,0 +1,8 @@
+PASS actual owner sees readiness approval blocker and saved-version diff; actual publication is denied
+PASS native comment form persists literal safe text and review request; author has no self-approve control
+PASS independent manager approves through actual UI; authenticated engine publication succeeds; mobile review renders
+PASS actual file import rejects foreign resource, accepts explicit local remap, changes only editor until normal save and retains published version
+PASS normal save invalidates approval, mobile readiness blocks publish and browser has no page errors
+PASS native connector named selection, wait/mapping/error/timeout controls and genuine persisted draft roundtrip
+PASS actual shared server preview exercises success, provider error and timeout; Mock values never save or dispatch
+PASS actual mobile native queue filter and acknowledged reconciliation succeed without changing committed flow snapshot or execution trace

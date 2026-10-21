@@ -1,3 +1,5 @@
+[Native connector actual desktop/mobile screenshots and test logs](evidence/connector-2026-10-21/) · [Checkpoint and remaining boundary](implementation/premium-2026-10-20/CONNECTOR_CHECKPOINT.md)
+
 # New authoring evidence — 21 October 2026
 
 [Real desktop/mobile screenshots, five Chromium checks and PostgreSQL/unit regression logs](evidence/authoring-2026-10-21/). [Scope and matrix checkpoint](implementation/premium-2026-10-20/AUTHORING_CHECKPOINT.md). Visual acceptance is pending.

@@ -62,7 +62,7 @@ export async function listFlowVersions(db:SqlClient,actor:Actor,botId?:string){
 }
 
 /** Run published flow after signed Meta webhook receipt and under tenant transaction. */
-export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string}}){
+export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversationId:string;contactId:string;actionId:string;body:string;fromWhatsApp:boolean;resume?:{version:number;nodeId:string;waitToken?:string};integrationResume?:{jobId:string;token:string};connectorResume?:{jobId:string;token:string}}){
  const {tenantId,conversationId,contactId,actionId,body}=ctx;
  const session=await db.query(`SELECT version,node_id,answers,tags,runtime_nodes,bot_id,runtime_state FROM chatbot_flow_sessions
  WHERE tenant_id=$1 AND conversation_id=$2 FOR UPDATE`,[tenantId,conversationId]);
@@ -86,7 +86,7 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
    return {payloads:[{messaging_product:'whatsapp',type:'text',text:{preview_url:false,
      body:'تم تحويل محادثتك للموظف المختص. هيكمل معاك كل التفاصيل.'}}],handedOff:true};
  }
- const triggered=!ctx.integrationResume&&!ctx.resume&&(!previous||body)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined):undefined;
+ const triggered=!ctx.integrationResume&&!ctx.connectorResume&&!ctx.resume&&(!previous||body)?await matchTrigger(db,tenantId,body,!previous,botVersions?String(botId):undefined):undefined;
  const restart=Boolean(triggered)||/^(القائمة|الرئيسية|ابدأ|start|menu)$/i.test(body.trim())||actionId==='flow:restart';
  let version=Number(previous?.version??0),flow:FlowDefinition;
  if(!previous||restart){
@@ -120,28 +120,30 @@ export async function respondToFlow(db:SqlClient,ctx:{tenantId:string;conversati
  if(['WHATSAPP','WEBSITE','MESSENGER','INSTAGRAM','TELEGRAM'].includes(String(channel))&&flowChannelIssues(flow,channel as import('./flow-engine.js').FlowChannel).some(i=>i.severity==='error'))throw new HttpFailure(409,'Flow content is incompatible with this conversation channel');
  const waitingNode=flow.nodes.find(n=>n.id===state.at);
  let resumedInput:FlowInput|undefined;let requestOutcome:string|undefined;
- if(ctx.integrationResume){
-  const completion=await db.query("SELECT flow_version,flow_node_id,wait_token,result_outcome,result_fields FROM chatbot_integration_jobs WHERE tenant_id=$1 AND id=$2 AND conversation_id=$3 AND completion_pending=true",[tenantId,ctx.integrationResume.jobId,conversationId]);const job=completion.rows[0];
-  if(!job||waitingNode?.type!=='WEBHOOK'||!waitingNode.request||Number(job.flow_version)!==version||job.flow_node_id!==state.at||job.wait_token!==ctx.integrationResume.token||state.runtime?.wait?.token!==ctx.integrationResume.token)return {payloads:[],handedOff:false};
+ const asyncResume=ctx.integrationResume??ctx.connectorResume;
+ if(asyncResume){
+  const queue=ctx.connectorResume?'chatbot_connector_jobs':'chatbot_integration_jobs';
+  const completion=await db.query(`SELECT flow_version,flow_node_id,wait_token,result_outcome,result_fields FROM ${queue} WHERE tenant_id=$1 AND id=$2 AND conversation_id=$3 AND completion_pending=true`,[tenantId,asyncResume.jobId,conversationId]);const job=completion.rows[0];
+  if(!job||(waitingNode?.type!==(ctx.connectorResume?'CONNECTOR':'WEBHOOK'))||!waitingNode.request||Number(job.flow_version)!==version||job.flow_node_id!==state.at||job.wait_token!==asyncResume.token||state.runtime?.wait?.token!==asyncResume.token)return {payloads:[],handedOff:false};
   let outcome=state.runtime.wait.expiresAt<=Date.now()?'TIMEOUT':String(job.result_outcome);const fields=(job.result_fields||{}) as Record<string,string>;
-  if(outcome==='SUCCESS'&&Object.entries(fields).some(([key,value])=>typeof value!=='string'||value.length>500||!validVariableValue(flow.variables?.find(v=>v.key===key),value))){outcome='ERROR';await db.query("UPDATE chatbot_integration_jobs SET result_outcome='ERROR',result_fields='{}',last_error='TYPED_RESPONSE_INVALID' WHERE tenant_id=$1 AND id=$2",[tenantId,ctx.integrationResume.jobId])}
+  if(outcome==='SUCCESS'&&Object.entries(fields).some(([key,value])=>typeof value!=='string'||value.length>500||!validVariableValue(flow.variables?.find(v=>v.key===key),value))){outcome='ERROR';await db.query(`UPDATE ${queue} SET result_outcome='ERROR',result_fields='{}',last_error='TYPED_RESPONSE_INVALID' WHERE tenant_id=$1 AND id=$2`,[tenantId,asyncResume.jobId])}
   if(outcome==='SUCCESS')Object.assign(state.answers,fields);state.at=outcome==='SUCCESS'?waitingNode.next:outcome==='TIMEOUT'?waitingNode.request.timeoutNext:waitingNode.request.errorNext;delete state.runtime.wait;requestOutcome='request_'+outcome.toLowerCase();
  }
  if(ctx.resume){
   if(!previous||Number(previous.version)!==ctx.resume.version||previous.node_id!==ctx.resume.nodeId)return {payloads:[],handedOff:false};
   if(state.runtime?.wait){if(ctx.resume.waitToken!==state.runtime.wait.token)return {payloads:[],handedOff:false};if(state.runtime.wait.expiresAt>Date.now())return {payloads:[],handedOff:false,deferredUntil:state.runtime.wait.expiresAt}}
   else if(ctx.resume.waitToken)return {payloads:[],handedOff:false};
-  if(waitingNode?.type==='WEBHOOK'&&waitingNode.request){state.at=waitingNode.request.timeoutNext;if(state.runtime)delete state.runtime.wait;requestOutcome='request_timeout';await db.query("UPDATE chatbot_integration_jobs SET status=CASE WHEN status='PROCESSING' THEN 'UNCERTAIN' ELSE 'CANCELLED' END,completion_pending=false,last_error='FLOW_DEADLINE' WHERE tenant_id=$1 AND conversation_id=$2 AND wait_token=$3 AND flow_request IS NOT NULL AND status IN ('PENDING','PROCESSING')",[tenantId,conversationId,ctx.resume.waitToken])}
+  if((waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR')&&waitingNode.request){state.at=waitingNode.request.timeoutNext;if(state.runtime)delete state.runtime.wait;requestOutcome='request_timeout';await db.query(`UPDATE ${waitingNode.type==='CONNECTOR'?'chatbot_connector_jobs':'chatbot_integration_jobs'} SET status=CASE WHEN status='PROCESSING' THEN 'UNCERTAIN' ELSE 'CANCELLED' END,completion_pending=false,last_error='FLOW_DEADLINE' WHERE tenant_id=$1 AND conversation_id=$2 AND wait_token=$3 AND flow_request IS NOT NULL AND status IN ('PENDING','PROCESSING')`,[tenantId,conversationId,ctx.resume.waitToken])}
   else if(waitingNode?.type==='DELAY'){state.at=waitingNode.next;if(state.runtime)delete state.runtime.wait}
   else if((waitingNode?.type==='INPUT'||waitingNode?.type==='BUTTONS'||waitingNode?.type==='LIST')&&waitingNode.policy?.timeoutNext&&state.runtime?.wait)resumedInput={kind:'TIMEOUT',value:state.runtime.wait.token};
   else return {payloads:[],handedOff:false};
- }else if(!ctx.integrationResume&&waitingNode?.type==='WEBHOOK'&&waitingNode.request&&!restart)return {payloads:[],handedOff:false};
+ }else if(!asyncResume&&(waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR')&&waitingNode.request&&!restart)return {payloads:[],handedOff:false};
  else if(waitingNode?.type==='DELAY'&&!restart)return {payloads:[],handedOff:false};
  await db.query("UPDATE chatbot_delay_jobs SET status='CANCELLED' WHERE tenant_id=$1 AND conversation_id=$2 AND status='PENDING'",[tenantId,conversationId]);
  // Flow replies are untrusted until matching the current node & option ID.
  const inbound=actionId?{kind:'CHOICE' as const,value:actionId}:{kind:'TEXT' as const,value:body};
- const result=await executeFlow(db,tenantId,flow,state,ctx.integrationResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,enter:Boolean(ctx.integrationResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'))});
- if(requestOutcome)result.trace.unshift({nodeId:waitingNode!.id,type:'WEBHOOK',outcome:requestOutcome,elapsedMs:0});
+ const result=await executeFlow(db,tenantId,flow,state,asyncResume?undefined:ctx.resume?resumedInput:triggered?undefined:inbound,false,{contactId,conversationId,version,enter:Boolean(asyncResume||ctx.resume&&(waitingNode?.type==='DELAY'||waitingNode?.type==='WEBHOOK'||waitingNode?.type==='CONNECTOR'))});
+ if(requestOutcome)result.trace.unshift({nodeId:waitingNode!.id,type:waitingNode!.type,outcome:requestOutcome,elapsedMs:0});
  flow=result.flow;
  const contactAnswers=Object.fromEntries(Object.entries(result.state.answers).filter(([key])=>!flow.variables?.some(v=>v.key===key&&v.scope==='session')));
  await db.query(`INSERT INTO chatbot_flow_sessions(tenant_id,conversation_id,version,node_id,answers,tags,runtime_nodes,updated_at,bot_id,runtime_state)
@@ -244,17 +246,17 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
  let flow=definition.nodes.some(n=>n.type==='SUBFLOW')?await compileSubflows(db,tenantId,definition):definition,result=advanceFlow(flow,state,input,simulation?.seed!==undefined?()=>simulation.seed!:undefined,{now:simulation?.now,enter:context?.enter});const messages=[...result.messages],trace=[...(result.trace||[])];
  for(let hops=0;result.pending&&hops<20;hops++){
   const pending=flow.nodes.find(n=>n.id===result.state.at);
-  if(pending?.type==='WEBHOOK'&&pending.request){
+  if((pending?.type==='WEBHOOK'||pending?.type==='CONNECTOR')&&pending.request){
    if(!dryRun){
     if(!context||context.version===undefined)throw new HttpFailure(409,'Response request requires a pinned conversation');
     const request=pending.request,total=request.timeoutSeconds*request.maxAttempts+2*(request.maxAttempts-1)+1,token=randomUUID(),expiresAt=Date.now()+total*1000;
     result.state.runtime??={attempts:{}};result.state.runtime.wait={nodeId:pending.id,token,expiresAt};
     const payload=Object.fromEntries(Object.entries(request.body).map(([key,value])=>[key,importRender(value,result.state.answers,500)]));
-    try{await enqueueIntegration(db,tenantId,pending.integrationId,payload,{conversationId:context.conversationId,contactId:context.contactId,version:context.version,nodeId:pending.id,token,request,deadline:expiresAt});
+    try{if(pending.type==='CONNECTOR')await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,{...result.state.answers,...payload},'flow:'+context.conversationId+':'+token,{conversationId:context.conversationId,version:context.version,nodeId:pending.id,token,request,deadline:expiresAt});else await enqueueIntegration(db,tenantId,pending.integrationId,payload,{conversationId:context.conversationId,contactId:context.contactId,version:context.version,nodeId:pending.id,token,request,deadline:expiresAt});
     trace.push({nodeId:pending.id,type:pending.type,outcome:'request_queued',elapsedMs:0});return {...result,pending:false,messages,trace,flow,waiting:{seconds:total,next:request.timeoutNext,kind:'INTEGRATION' as const,expiresAt,token}};
     }catch(error){if(!(error instanceof HttpFailure))throw error;delete result.state.runtime.wait;trace.push({nodeId:pending.id,type:pending.type,outcome:'request_enqueue_error',elapsedMs:0});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:request.errorNext}:n)}}
    }else{
-   const mock=simulation?.requests?.[pending.id]||{outcome:'SUCCESS' as const,body:{}},request=pending.request;let next=request.errorNext,outcome='mock_request_http_error';
+   const mock=simulation?.requests?.[pending.id]||{outcome:'SUCCESS' as const,body:pending.type==='CONNECTOR'?{external_id:'MOCK-123',provider:'MOCK'}:{}},request=pending.request;let next=request.errorNext,outcome='mock_request_http_error';
    if(mock.outcome==='TIMEOUT'){next=request.timeoutNext;outcome='mock_request_timeout'}
    else if(mock.outcome==='SUCCESS'){try{const fields=mapRequestResponse(request,mock.body??{});for(const [key,value]of Object.entries(fields))if(!validVariableValue(flow.variables?.find(v=>v.key===key),value))throw Error('Response field type mismatch');Object.assign(result.state.answers,fields);next=pending.next;outcome='mock_request_success'}catch{outcome='mock_request_mapping_error'}}
    trace.push({nodeId:pending.id,type:pending.type,outcome,elapsedMs:0});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next}:n)};
@@ -270,7 +272,7 @@ export async function executeFlow(db:SqlClient,tenantId:string,definition:FlowDe
    }catch(e){if(!pending.errorNext)throw e;next=pending.errorNext;outcome='crm_error'}
    trace.push({nodeId:pending.id,type:pending.type,outcome,elapsedMs:performance.now()-started});flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next}:n)};
   }
-  if(pending?.type==='CONNECTOR'){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'));}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
+  if(pending?.type==='CONNECTOR'&&!pending.request){if(!dryRun){if(!context)throw new HttpFailure(409,'Connector requires a customer conversation');await enqueueConnector(db,tenantId,pending.connectorId,context.contactId,result.state.answers,createHash('sha256').update(context.conversationId+':'+pending.connectorId+':'+pending.id+':'+JSON.stringify(result.state.answers)).digest('hex'));}flow={...flow,nodes:flow.nodes.map(n=>n.id===pending.id?{id:n.id,type:'START' as const,next:pending.next}:n)};}
   flow=await resolveFlow(db,tenantId,flow,result.state.answers,input?.value||'',result.state.at||'',dryRun,context?.contactId);
   result=advanceFlow(flow,result.state,undefined,simulation?.seed!==undefined?()=>simulation.seed!:undefined,simulation);messages.push(...result.messages);trace.push(...(result.trace||[]));
  }

@@ -1,0 +1,15 @@
+PASS draft trigger inert until atomic publication
+PASS retry count and immutable deadline survive separate real transactions; exhausted route cancels job
+PASS optional skip uses current node callback and never writes missing answer
+PASS durable timeout resumes through actual worker exactly once and premature clocks requeue
+PASS same-node re-entry rejects stale token and late answer follows timeout
+PASS reply/worker race serializes one timeout transition under real conversation lock
+PASS real CRM stage/assignee changes and session-only fields stay out of CRM including human-keyword handoff
+PASS persisted timing/goals, preview excluded, value-free analytics and real RLS isolation
+PASS foreign-company CRM assignee cannot publish; pinned version and active triggers remain unchanged
+PASS legacy null-bot pinned session is retained and included only in legacy-bot analytics
+PASS ordered execution IDs and exact cursor pagination retain every real transition without customer values
+PASS conversation trace rejects cross-company and same-company wrong-bot identifiers
+PASS historical events remain visible with explicit unknown order and legacy scope
+PASS diagnostics expose saved failed-continuation status and pinned node without raw error payloads
+PASS 14 PostgreSQL control scenarios; no external provider calls

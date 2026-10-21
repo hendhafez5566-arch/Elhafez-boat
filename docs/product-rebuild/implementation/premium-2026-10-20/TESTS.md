@@ -1,3 +1,7 @@
+# Native result package — 21 October 2026
+
+[CONNECTOR_CHECKPOINT.md](CONNECTOR_CHECKPOINT.md): shared existing queues/runtime with committed waits/results, no resend, privacy/operations and real desktop/mobile UI. 189 units, 13 new PG scenarios and 3 new Chromium checks PASS; 13 PASS / 23 PARTIAL.
+
 # Current package — 21 October 2026
 
 See [AUTHORING_CHECKPOINT.md](AUTHORING_CHECKPOINT.md): unified readiness/version comparison, safe resource remapping and revision-bound independent reviews. 185 units, 10 new PostgreSQL and 5 real desktop/mobile Chromium checks PASS. Matrix 13 PASS / 23 PARTIAL; visual approval pending.

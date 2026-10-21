@@ -164,7 +164,7 @@ const server=createServer(async(req,res)=>{
       if(req.method==='DELETE'&&botTrigger[2])return json(res,200,await run(async tx=>deleteTrigger(tx,actor,botTrigger[2],await botScope(tx,actor,id,true))));
     }
     const requestOps=/^\/api\/v1\/bots\/([^/]+)\/flow-requests(?:\/([^/]+)\/reconcile)?$/.exec(pathname);
-    if(requestOps&&req.method==='GET'&&!requestOps[2]){const params=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>flowRequestJobs(tx,actor,requestOps[1],{status:params.get('status')||undefined,before:params.get('before')||undefined})))}
+    if(requestOps&&req.method==='GET'&&!requestOps[2]){const params=new URL(req.url||'/','http://local').searchParams;return json(res,200,await run(tx=>flowRequestJobs(tx,actor,requestOps[1],{kind:params.get('kind')||undefined,status:params.get('status')||undefined,before:params.get('before')||undefined})))}
     if(requestOps&&req.method==='POST'&&requestOps[2])return json(res,200,await runBody((tx,input)=>reconcileFlowRequest(tx,actor,requestOps[1],requestOps[2],input)));
     const tracePath=/^\/api\/v1\/bots\/([^/]+)\/flow-traces(?:\/([^/]+))?$/.exec(pathname);
     if(tracePath&&req.method==='GET'){if(tracePath[2])return json(res,200,await run(tx=>flowConversationTrace(tx,actor,tracePath[1],tracePath[2],new URL(req.url||'/','http://local').searchParams)));return json(res,200,await run(tx=>flowTraceSessions(tx,actor,tracePath[1])))}
