@@ -1,5 +1,19 @@
 # Premium continuation handover — 21 October 2026
 
+## Latest handover — observability and secure incoming files
+
+This continuation started at verified local/remote8881696f7cf6cd655830b46c26a0978f756a1a57. Same branch and Draft PR5; no protected-branch merge or deployment. Saved source packages: f0a6988 (F27/F35),11de652 (existing schedule-test pagination fix),dcd5c04 (secure file retrieval/Website),7c7a69c (scan-gated exact provider continuation), followed by final pause/file funnel qualification in this checkpoint commit. Verify newest remote HEAD before any edit.
+
+**25 PASS /11 PARTIAL /0 wholly BLOCKED**; canonical matrix top and bottom match all36rows.231 units, TypeScript and build PASS.28 new actual PostgreSQL16 scenarios (7 observability +11 secure-media/real ClamAV +10 scan-gated continuation),8 new actual Chromium scenarios (3 funnel +5 files/CRM), plus strengthened existing native webhook acceptance. Actual screenshots/results and SHA256 manifest under ../../evidence/flow-observability-2026-10-21/ and ../../evidence/incoming-media-2026-10-21/. Original completion/media, integration, native-input and analytics regressions ran locally; GitHub runs the full old/new suite, database restore and isolated Compose/outage tests.
+
+Migrations0043–0047 are additive and applied ONLY to disposable local/CI databases. Existing engine, message/outbox, scanner and tenant permissions are reused. No real provider/customer interaction. `INBOUND_MEDIA_FETCH_ENABLED=0` remains the default; production ClamAV signatures/configuration and live provider accounts require separate qualification. Historical uncorrelated messages/events remain unknown. No visual approval is claimed.
+
+Last confirmed fully successful remote gate at checkpoint writing: dcd5c04 /39592793177; earlier11de652 /39591573912 also SUCCESS. The7c7a69c run39593797191 is a separate gate; final checkpoint has its own run. Check actual latest commit status rather than inheriting ancestor success. See final response for status observed at delivery.
+
+**Next first task: F11.** Review flow variable schema/validation and flow-controls.js variable library, consent_events and flow-consent.ts. Implement bounded consent-purpose/policy metadata and context-aware token autocomplete with keyboard/caret insertion across real content fields; preserve contact/session scope and never turn declarative metadata into fabricated consent. Cover immutable published snapshots, privacy export/erasure, forged/stale metadata, API/RLS and desktop/mobile. Then F14 universal sensitive-step policies and F19 component/channel contracts, followed by F34 bilingual authoring and F33 sustained graph performance. F01/F32 still need touch/accessibility/physical-device qualification. F23 retains non-JSON/header and production/crash/load qualification; F24/F29/F30 actual external-provider portions remain unqualified. Full visual redesign is still deferred.
+
+Everything in these bundles is committed/pushed at its stable boundary; no unfinished feature edits are intentionally left. The following sections retain the previous session's history and older intermediate checkpoints; this latest section and the canonical matrix supersede their totals/next-task descriptions.
+
 Repository hendhafez5566-arch/Elhafez-boat, same branch `feat/premium-flow-builder-2026-10-20`, same [Draft PR #5](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/5). Started from verified remote 0e4baf59b179eceedfecd93bc1163cda67a94bab. Current functional source bddfa02edde92ac950a61f78c3f10eeef072fb0d; later handover-only commits may follow. GitHub push/remote SHA confirmed after each stable package.
 
 ## Saved packages

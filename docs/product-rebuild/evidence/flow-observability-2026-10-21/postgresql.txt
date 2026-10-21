@@ -1,0 +1,8 @@
+PASS real committed paths produce exact distinct conversation/customer funnels and waiting/abandoned/stopped/completed states
+PASS actual inbound and delivered Website payloads correlate to execution without customer content
+PASS actual failed PostgreSQL transaction rolls back new conversation while value-free audit survives separately; failure is excluded from funnel denominator
+PASS actual forced RLS, foreign bot/conversation and unpublished version guards hold
+PASS published-version comparison preserves pinned cohorts without simulator counts
+PASS actual enabled retention removes old diagnostic metadata without deleting live customer conversations
+PASS actual indefinite PAUSE remains explicit waiting after two days, never terminal or abandoned
+PASS 7 funnel/observability PostgreSQL scenarios

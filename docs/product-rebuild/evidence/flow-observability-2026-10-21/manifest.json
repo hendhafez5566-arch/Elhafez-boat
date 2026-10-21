@@ -1,0 +1,26 @@
+{
+  "date": "2026-10-21",
+  "source": "actual disposable PostgreSQL16 / real ClamAV / actual Chromium; provider transports offline only",
+  "files": [
+    {
+      "name": "canvas-node-drilldown-desktop.png",
+      "sha256": "c326887c7dc990ae2dc34dc59d76d8018ff56f14dc1486b688276f509d34797f"
+    },
+    {
+      "name": "funnel-comparison-desktop.png",
+      "sha256": "72911014db80c56b2da65bab4d7a6b8a91a4bb323f1b5ef7613efcb4e6e14b6a"
+    },
+    {
+      "name": "funnel-mobile.png",
+      "sha256": "fb86a336639e040614e78aaf4777d7fddd98f5433d01aa2011ad7b7f5e14daae"
+    },
+    {
+      "name": "postgresql.txt",
+      "sha256": "da3a1c38617b80d99b07586f0ab9ba99375d8577866dcdeda94f54e523086a72"
+    },
+    {
+      "name": "results.json",
+      "sha256": "17d03e13e88dd360e6a585565f955e1bd83d73d24e440cf7d46bf5f05ad9696b"
+    }
+  ]
+}

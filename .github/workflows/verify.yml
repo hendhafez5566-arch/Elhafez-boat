@@ -242,5 +242,9 @@ jobs:
             docs/product-rebuild/evidence/requests-2026-10-20/results.json
             docs/product-rebuild/evidence/integrated-2026-10-20/*.png
             docs/product-rebuild/evidence/integrated-2026-10-20/results.json
+            docs/product-rebuild/evidence/flow-observability-2026-10-21/*.png
+            docs/product-rebuild/evidence/flow-observability-2026-10-21/results.json
+            docs/product-rebuild/evidence/incoming-media-2026-10-21/*.png
+            docs/product-rebuild/evidence/incoming-media-2026-10-21/results.json
           if-no-files-found: ignore
           retention-days: 7
