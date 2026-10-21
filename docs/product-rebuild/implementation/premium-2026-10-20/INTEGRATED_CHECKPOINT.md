@@ -1,3 +1,7 @@
+# Latest verified continuation — 21 October 2026
+
+[COMPLETION_2026-10-21.md](COMPLETION_2026-10-21.md) supersedes the historical checkpoint below: source ab042d0, 14 PASS / 22 PARTIAL, 194 units, 38 migrations, 65 dedicated browser checks, full runtime + restore + latest Node 22/Compose PASS locally. Remote Actions UNVERIFIED (Forbidden); visual approval pending.
+
 ## Current final handover
 
 [CI-CLOSURE.md](CI-CLOSURE.md) supersedes prior pending gates: 10 PASS / 26 PARTIAL; full local acceptance, backup/restore and packaged smoke pass. Remote CI remains unverified (Forbidden). No release/visual approval implied.

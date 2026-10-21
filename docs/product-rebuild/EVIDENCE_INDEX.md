@@ -1,3 +1,7 @@
+# Final continuation evidence — 21 October 2026
+
+[Full logs, latest regression images/results and source/image hashes](evidence/regression-2026-10-21/) · [Final completion boundary/next tasks](implementation/premium-2026-10-20/COMPLETION_2026-10-21.md) · [36-row matrix](implementation/premium-2026-10-20/F01-F36.md). 194 units / 65 dedicated browser checks PASS locally; latest remote CI unverified; design not owner-approved.
+
 [Customer timezone, actual scheduled waits and mobile cancellation screenshots/results](evidence/schedule-2026-10-21/) · [Scope](implementation/premium-2026-10-20/SCHEDULE_CHECKPOINT.md)
 
 [Native connector actual desktop/mobile screenshots and test logs](evidence/connector-2026-10-21/) · [Checkpoint and remaining boundary](implementation/premium-2026-10-20/CONNECTOR_CHECKPOINT.md)

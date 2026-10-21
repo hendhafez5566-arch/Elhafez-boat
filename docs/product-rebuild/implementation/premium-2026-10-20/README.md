@@ -1,3 +1,7 @@
+# Latest verified continuation — 21 October 2026
+
+[COMPLETION_2026-10-21.md](COMPLETION_2026-10-21.md) supersedes the historical checkpoint below: source ab042d0, 14 PASS / 22 PARTIAL, 194 units, 38 migrations, 65 dedicated browser checks, full runtime + restore + latest Node 22/Compose PASS locally. Remote Actions UNVERIFIED (Forbidden); visual approval pending.
+
 # Calendar package — 21 October 2026
 
 [SCHEDULE_CHECKPOINT.md](SCHEDULE_CHECKPOINT.md): customer timezones, long closed calendars and exact wait inspection/cancellation. 194 units, 6 real PG and 3 new desktop/mobile browser checks PASS. Matrix 14 PASS / 22 PARTIAL. Visual approval pending.
