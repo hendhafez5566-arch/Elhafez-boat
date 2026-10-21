@@ -1,3 +1,7 @@
+# Current continuation — 21 October 2026
+
+[CONTINUATION_HANDOVER_2026-10-21.md](CONTINUATION_HANDOVER_2026-10-21.md) is the current continuation: functional source bddfa02; 22 PASS / 14 PARTIAL; 221 units/typecheck/build; 42 migrations; 20 new PG and 15 new Chromium scenarios. Full native source CI 39568310794 SUCCESS; replay source CI 39569623866 in progress at writing. Historical checkpoints below remain historical. Visual approval pending.
+
 # Latest verified continuation — 21 October 2026
 
 [COMPLETION_2026-10-21.md](COMPLETION_2026-10-21.md) supersedes the historical checkpoint below: source ab042d0, 14 PASS / 22 PARTIAL, 194 units, 38 migrations, 65 dedicated browser checks, full runtime + restore + latest Node 22/Compose PASS locally. Remote Actions UNVERIFIED (Forbidden); visual approval pending.

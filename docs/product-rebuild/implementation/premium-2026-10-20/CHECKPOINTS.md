@@ -1,3 +1,7 @@
+# Current continuation — 21 October 2026
+
+[CONTINUATION_HANDOVER_2026-10-21.md](CONTINUATION_HANDOVER_2026-10-21.md) is the current continuation: functional source bddfa02; 22 PASS / 14 PARTIAL; 221 units/typecheck/build; 42 migrations; 20 new PG and 15 new Chromium scenarios. Full native source CI 39568310794 SUCCESS; replay source CI 39569623866 in progress at writing. Historical checkpoints below remain historical. Visual approval pending.
+
 ## 2026-10-21 — complete shared-engine Mock scenario replay / F15
 
 Same premium branch / Draft PR #5 after 2684a97. Typed persona, deterministic seed, clock/channel/provider/delivery mocks and bounded memory-only full replay. Fresh consent/timeout tokens rebound symbolically, delay/pause terminal continuations enter correctly, changed source/result rejected; logout/bot/user changes invalidate and clear transient scenario data. No persisted session/provider call. 221 units/typecheck/build and six actual desktop/mobile Chromium/API replay/lifecycle checks PASS. Matrix 22 PASS / 14 PARTIAL / 0 BLOCKED. Details: docs/product-rebuild/implementation/premium-2026-10-20/SCENARIO_REPLAY_CHECKPOINT.md. Next large package: F35/F27 existing message/outbox correlation, failed-transaction observation and persisted funnel/abandonment analytics. F26 content download/scan/widget upload remains explicit. No merge/deploy/live send; visual approval pending.
