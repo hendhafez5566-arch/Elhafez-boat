@@ -1,0 +1,16 @@
+{
+  "checks": [
+    "persisted group folding hides internals, keeps external edges and expands to editable nodes with path breadcrumbs",
+    "structured card title/action/gallery reorder editor saves through real API and PostgreSQL without JSON editing",
+    "shared-engine simulator renders real card galleries/composite buttons and executes field/tag effects before downstream message",
+    "real preflight/publication accepts validated content and rejects unsafe card action URLs",
+    "real mobile Website Chat fetches published galleries, follows real button callback and displays persisted typed-action result; no external provider",
+    "named settings disclosure exposes vertical alignment/distribution; saved coordinates and two Undo operations preserve original layout",
+    "real Shift multi-selection alignment and distribution persist correct coordinates through API",
+    "actual Shift rectangle selects three nodes and pointer group drag preserves every relative offset",
+    "group creation/fold save, search expansion, breadcrumbs and path focus preserve graph connections"
+  ],
+  "errors": [],
+  "chromium": "154.0.8037.57",
+  "date": "2026-10-21T16:16:30.502Z"
+}
