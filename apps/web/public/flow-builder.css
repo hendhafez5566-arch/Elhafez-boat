@@ -62,39 +62,43 @@
 .builder-stage-extras .builder-toolbar { margin: 10px 0px 4px; }
 .builder-stage-extras button { font-size: 12px; padding: 7px 10px; }
 .builder-selection { color: rgb(87, 71, 143); background: rgb(240, 235, 255); border-radius: 8px; padding: 8px; font-size: 12px; }
-.flow-canvas { height: clamp(530px, 80dvh, 1100px); min-height: 200px; overflow: clip; position: relative; direction: ltr; background: radial-gradient(rgb(205, 208, 221) 1px, transparent 1px) 0% 0% / 22px 22px rgb(245, 246, 250); touch-action: none; cursor: grab; isolation: isolate; }
+.flow-canvas { height: clamp(530px,80dvh,1100px); min-height: 200px; overflow: clip; position: relative; direction: ltr; background: radial-gradient(#b9b1ca 1px,transparent 1px) 0 0 / 24px 24px var(--studio-canvas); touch-action: none; cursor: grab; isolation: isolate; }
 .flow-canvas:active { cursor: grabbing; }
 .flow-stage { position: absolute; left: 0px; top: 0px; width: 10000px; height: 10000px; transform-origin: 0px 0px; will-change: transform; }
 .flow-lines { position: absolute; inset: 0px; width: 10000px; height: 10000px; pointer-events: none; overflow: visible; z-index: 1; }
-.flow-lines path { fill: none; stroke: rgb(180, 175, 198); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-.flow-lines .canvas-edge.connected { stroke: rgb(130, 118, 186); stroke-width: 2.5; }
-.flow-lines .canvas-edge.edge-selected { stroke: rgb(97, 85, 214); stroke-width: 4; }
+.flow-lines path { fill: none; stroke: #776786; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.flow-lines .canvas-edge.connected { stroke: #77608f; stroke-width: 2.5; }
+.flow-lines .canvas-edge.edge-selected { stroke: var(--studio-brand); stroke-width: 4; }
 .flow-lines .canvas-edge-hit { stroke: transparent; stroke-width: 20; pointer-events: stroke; cursor: pointer; }
 .flow-lines .canvas-ghost { stroke: rgb(115, 96, 202); stroke-width: 3; stroke-dasharray: 8, 5; }
-.canvas-node { position: absolute; width: 286px; background: rgb(255, 255, 255); border-right: 1px solid rgb(224, 226, 236); border-bottom: 1px solid rgb(224, 226, 236); border-left: 1px solid rgb(224, 226, 236); border-image: none; border-top: 3px solid var(--tone,#6352d9); border-radius: 12px; box-shadow: rgba(37, 36, 60, 0.03) 0px 3px 8px, rgba(37, 36, 60, 0.024) 0px 12px 28px; z-index: 3; color: rgb(41, 40, 63); cursor: default; }
-.canvas-node:hover { border-color: rgb(179, 166, 213); box-shadow: rgba(44, 37, 66, 0.114) 0px 8px 24px; }
-.canvas-node.selected { outline: 2px solid var(--tone,#6352d9); outline-offset: 3px; border-color: var(--tone,#6352d9); box-shadow: 0 0 0 6px var(--tone-soft,#efecff),0 14px 30px #25243c13; }
-.canvas-kind-indicator svg { width: 18px; height: 18px; fill: none; stroke: currentcolor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.canvas-node-head { display: flex; gap: 10px; align-items: center; padding: 13px 14px; border-bottom: 1px solid rgb(240, 240, 246); background: white; border-radius: 10px 10px 0px 0px; cursor: move; }
-.canvas-kind-indicator { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 10px; background: var(--tone-soft,#efecff); color: var(--tone,#6352d9); }
-.canvas-start .canvas-kind-indicator { background: rgb(226, 245, 233); color: rgb(49, 128, 88); }
-.canvas-condition .canvas-kind-indicator { background: rgb(255, 241, 216); color: rgb(154, 107, 39); }
-.canvas-handoff .canvas-kind-indicator { background: rgb(255, 233, 226); color: rgb(173, 103, 81); }
-#flow-builder .canvas-node .canvas-title { display: block; border: 0px; background: transparent; color: rgb(46, 43, 67); font-size: 13px; font-weight: 700; text-align: start; padding: 0px; cursor: grab; touch-action: none; min-height: 24px; width:100%;max-width: 185px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.canvas-message { padding: 15px 16px; }
-.canvas-message-text { font-size: 14px; line-height: 1.8; background: transparent; border: 0px; border-radius: 0px; padding: 0px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0px; max-height: 150px; overflow: auto; min-height: 32px; color: rgb(77, 77, 100); }
+.canvas-node { position: absolute; width: 286px; background: white; border: 1px solid #bfb5cd; border-radius: 18px; box-shadow: var(--studio-shadow); z-index: 3; color: var(--studio-ink); cursor: default; }
+.canvas-node:hover { border-color: var(--tone); box-shadow: var(--studio-shadow-raised); }
+.canvas-node.selected { outline: 3px solid var(--studio-brand); outline-offset: 4px; border-color: var(--studio-brand); box-shadow: 0 0 0 8px #5b21b618, var(--studio-shadow-raised); }
+.canvas-kind-indicator svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.canvas-node-head { display: flex; gap: 10px; align-items: center; padding: 16px 14px; border-bottom: 1px solid color-mix(in srgb,var(--tone) 25%,white); background: var(--tone-soft); border-radius: 17px 17px 0 0; cursor: move; }
+.canvas-kind-indicator { width: 44px; height: 44px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 13px; background: var(--tone); color: white; box-shadow: 0 4px 10px color-mix(in srgb,var(--tone) 25%,transparent); }
+#flow-builder .canvas-node .canvas-title { display: block; border: 0; background: transparent; color: var(--studio-ink); font-size: 16px; font-weight: 800; text-align: start; padding: 0; cursor: grab; touch-action: none; min-height: 28px; width: 100%; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-message { padding: 16px; }
+.canvas-message-text { font-size: 15px; line-height: 1.8; background: #f7f5fb; border: 1px solid #e0dbea; border-radius: 12px 3px 12px 12px; padding: 12px; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; max-height: 170px; overflow: auto; min-height: 36px; color: var(--studio-ink); }
 .canvas-card-choices { display: grid; gap: 5px; margin-top: 8px; }
-.canvas-card-choice { padding: 9px 12px; border: 1px solid rgb(231, 229, 241); border-radius: 7px; color: rgb(85, 71, 163); text-align: center; font-size: 12px; background: rgb(250, 249, 255); }
+.canvas-card-choice { padding: 10px 12px; border: 1px solid #c7b6e0; border-radius: 10px; color: var(--studio-brand); text-align: center; font-size: 14px; background: white; box-shadow: 0 2px 4px #24143f08; }
 .canvas-card-choice small { display: block; color: rgb(119, 112, 128); }
-.canvas-media-hint, .canvas-list-label { display: block; font-size: 12px; color: rgb(119, 112, 128); margin-top: 8px; }
-.canvas-ports { padding: 9px 14px; border-top: 1px solid rgb(236, 236, 244); background: rgb(252, 252, 254); border-radius: 0px 0px 11px 11px; display: grid; gap: 6px; position: relative; }
+.canvas-media-hint, .canvas-list-label { display: block; font-size: 13px; color: var(--studio-muted); margin-top: 10px; }
+ .canvas-mini-gallery { display: flex; gap: 8px; margin-top: 12px; overflow: hidden; }
+.canvas-mini-card { flex: 1 0 100px; padding: 12px 10px; border: 1px solid #c7b6e0; border-radius: 10px; background: linear-gradient(150deg,var(--tone-soft),white); color: var(--studio-ink); font-size: 13px; line-height: 1.7; }
+.canvas-mini-card svg { display: block; width: 22px; height: 22px; fill: none; stroke: var(--tone); stroke-width: 1.8; margin-bottom: 8px; }
+.canvas-input-preview { margin-top: 12px; padding: 10px 12px; border: 1px dashed var(--tone); border-radius: 9px; color: var(--tone); font-size: 13px; background: var(--tone-soft); }
+.canvas-status { display: block; margin-top: 5px; font-size: 12px; font-weight: 800; color: #a21834; }
+.canvas-node[data-status="error"] { border: 2px solid #b4233d; }
+.canvas-node[data-status="error"] .canvas-node-head { background: #fff0f2; }
+.canvas-ports { padding: 12px 14px; border-top: 1px solid #dcd6e6; background: #f7f5fb; border-radius: 0 0 17px 17px; display: grid; gap: 8px; position: relative; }
 .canvas-node button { font: inherit; cursor: pointer; }
-#flow-builder .canvas-node .canvas-input { position: absolute; left: -12px; top: 12px; border: 2px solid rgb(181, 168, 214); border-radius: 50%; background: rgb(255, 255, 255); color: rgb(116, 102, 133); font-size: 0px; padding: 0px; min-height: 24px; width: 24px; height: 24px; margin: 0px; display: block; }
+#flow-builder .canvas-node .canvas-input { position: absolute; left: -12px; top: 12px; border: 3px solid var(--tone); border-radius: 50%; background: white; color: var(--tone); font-size: 0; padding: 0; min-height: 24px; width: 24px; height: 24px; margin: 0; display: block; }
 .canvas-port::after { content: ""; position: absolute; right: -7px; width: 12px; height: 12px; background: var(--tone,#8a7dc1); border: 2px solid rgb(255, 255, 255); border-radius: 50%; pointer-events: none; }
 .canvas-port { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-#flow-builder .canvas-node .canvas-output { border: 0px; background: transparent; color: rgb(117, 102, 131); font-size: 12px; padding: 3px; min-height: 30px; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; touch-action: none; }
+#flow-builder .canvas-node .canvas-output { border: 0; background: transparent; color: var(--tone); font-size: 13px; font-weight: 700; padding: 3px; min-height: 32px; max-width: 210px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; touch-action: none; }
 #flow-builder .canvas-node .canvas-output.connecting { color: rgb(97, 85, 214); background: rgb(240, 234, 255); }
-#flow-builder .canvas-node .canvas-add { background: rgb(240, 235, 255); color: rgb(120, 97, 193); border: 1px solid rgb(222, 211, 250); border-radius: 50%; width: 28px; min-height: 28px; height: 28px; font-size: 19px; padding: 0px; }
+#flow-builder .canvas-node .canvas-add { background: var(--tone); color: white; border: 2px solid white; border-radius: 50%; width: 30px; min-height: 30px; height: 30px; font-size: 20px; padding: 0; box-shadow: 0 0 0 1px var(--tone); }
 .canvas-group { position: absolute; pointer-events: none; border: 2px dashed rgb(184, 167, 215); background: transparent; border-radius: 20px; z-index: 2; }
 .canvas-group-title { position: absolute; top: 8px; right: 12px; color: rgb(119, 93, 145); font-size: 13px; }
 .canvas-navigation button:hover { background: rgb(240, 237, 255); }
@@ -188,7 +192,7 @@ body.bot-studio .builder-inspector, body.bot-studio .builder-palette { height: 1
 .builder-view-actions > button { flex: 0 0 auto; }
 .builder-graph-search { width: 100%; }
 .builder-view-advanced { display: none; }
-.flow-canvas { height: 530px; min-height: 400px; }
+.flow-canvas { height: clamp(530px,80dvh,1100px); min-height: 200px; overflow: clip; position: relative; direction: ltr; background: radial-gradient(#b9b1ca 1px,transparent 1px) 0 0 / 24px 24px var(--studio-canvas); touch-action: none; cursor: grab; isolation: isolate; }
 .builder-picker-grid { grid-template-columns: 1fr; }
 body.bot-studio #flow-builder { overflow: hidden; height: 100dvh; padding: 0px; }
 body.bot-studio .builder-studio { height: 0px; flex: 1 1 0%; }
@@ -275,12 +279,12 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
 .builder-quick-item strong { display: block; font-size: 13px; font-weight: 650; line-height: 1.7; }
 .builder-quick-item small { display: block; font-size: 11px; color: rgb(96, 98, 118); line-height: 1.6; margin-top: 2px; }
 .builder-quick-symbol svg { width: 19px; height: 19px; fill: none; stroke: currentcolor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-[data-tone="green"] { --tone: #21815e; --tone-soft: #e4f5ed; }
-[data-tone="amber"] { --tone: #956018; --tone-soft: #fff2d9; }
-[data-tone="blue"] { --tone: #3869bc; --tone-soft: #eaf1ff; }
-[data-tone="rose"] { --tone: #b24e71; --tone-soft: #fcebf2; }
-[data-tone="teal"] { --tone: #227d85; --tone-soft: #e4f4f3; }
-[data-tone="violet"] { --tone: #6352d9; --tone-soft: #efecff; }
+[data-tone="green"] { --tone: #126747; --tone-soft: #d6f3e5; }
+[data-tone="amber"] { --tone: #824600; --tone-soft: #ffebc2; }
+[data-tone="blue"] { --tone: #1956a8; --tone-soft: #ddeaff; }
+[data-tone="rose"] { --tone: #a52244; --tone-soft: #ffe0e8; }
+[data-tone="teal"] { --tone: #006b67; --tone-soft: #d2f1eb; }
+[data-tone="violet"] { --tone: #5926ad; --tone-soft: #eae0ff; }
 .builder-library-empty { font-size: 12px; color: rgb(89, 90, 112); padding: 18px; }
 .builder-edit-actions { display: flex; gap: 3px; border-inline-end: 1px solid var(--studio-line); padding-inline-end: 8px; }
 .builder-display-menu { font-size: 11px; position: relative; flex: 0 0 auto; }
@@ -327,7 +331,7 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
 .builder-palette::before { content: "المكتبة · زر إخفاء المكونات لإغلاقها"; font-size: 10px; color: rgb(89, 90, 112); display: block; margin-bottom: 10px; }
 }
 .canvas-heading-copy { flex: 1 1 0%; min-width: 0px; }
-.canvas-type-label { display: block; font-size: 11px; line-height: 1.5; color: var(--tone,#6352d9); margin-bottom: 1px; }
+.canvas-type-label { display: block; font-size: 12px; font-weight: 700; line-height: 1.6; color: var(--tone); margin-bottom: 3px; }
 .canvas-node .canvas-node-edit { opacity: 0; width: 26px; border: 0px; background: rgb(243, 242, 248); color: rgb(81, 74, 106); font-size: 19px; padding: 0px; flex: 0 0 auto; border-radius: 6px; min-height: 28px !important; }
 .canvas-node:hover .canvas-node-edit, .canvas-node:focus-within .canvas-node-edit, .canvas-node.selected .canvas-node-edit { opacity: 1; }
 .canvas-breadcrumbs button { background: rgba(255, 255, 255, 0.867); border: 1px solid rgb(227, 227, 237); color: rgb(85, 81, 109); min-height: 28px !important; pointer-events: auto; font-size: 11px; padding: 5px 8px; border-radius: 20px; white-space: nowrap; }

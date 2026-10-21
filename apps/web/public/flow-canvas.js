@@ -59,7 +59,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
     const defs=document.createElementNS(ns,'defs'),marker=document.createElementNS(ns,'marker');
     marker.id='flow-arrow';for(const [k,v] of Object.entries({markerWidth:'9',markerHeight:'9',refX:'8',refY:'3',orient:'auto'}))marker.setAttribute(k,v);
     const arrow=document.createElementNS(ns,'path');arrow.setAttribute('d','M0,0 L8,3 L0,6');arrow.setAttribute('fill','#8276ba');marker.append(arrow);defs.append(marker);svg.append(defs);
-    const positions=positionsFor(f);for(const [id,p]of Object.entries(positions))if(!f.layout[id])f.layout[id]=p;const width=NODE_WIDTH,linkRequests=[],cards=new Map();
+    const positions=positionsFor(f);for(const [id,p]of Object.entries(positions))if(!f.layout[id])f.layout[id]=p;const width=NODE_WIDTH,linkRequests=[],cards=new Map(),nodeIds=new Set(f.nodes.map(node=>node.id));
     const collapsed=new Map(),proxyPositions=new Map();
     for(const group of f.groups||[]){
       const points=group.nodeIds.map(id=>positions[id]).filter(Boolean);if(points.length<2)continue;
@@ -92,6 +92,7 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       const icon=mk('span',undefined,'canvas-kind-indicator');icon.append(componentIcon(visualKind));
       const heading=mk('div',undefined,'canvas-heading-copy');heading.append(mk('small',visualTitle,'canvas-type-label'),drag);
       const edit=btn('⋯','canvas-node-edit',e=>{e.stopPropagation();chooseCard(e)});edit.setAttribute('aria-label','تحرير '+(n.label||titles[n.type]||n.id));
+      if(graphOutputs(n).some(output=>!nodeIds.has(output.to))){card.dataset.status='error';heading.append(mk('small','مسار غير متصل','canvas-status'))}
       head.append(icon,heading,edit);card.append(head);
       const msg=mk('div',undefined,'canvas-message');
       const summary=n.type==='DELAY'?(n.schedule?'استكمال في الموعد المحدد':'انتظار '+(n.seconds||0)+' ثانية'):n.type==='CONDITION'?(n.rules?'قواعد مركبة · '+(n.match==='any'?'OR':'AND'):[n.field,n.operator,n.value].filter(v=>v!==undefined).join(' · ')):n.type==='SET_FIELD'?n.field+' ← '+n.value:n.type==='CONNECTOR'?'مزامنة موصل · نجاح / خطأ / مهلة':null;
@@ -106,6 +107,8 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       }
       if(n.type==='CONDITION'||n.type==='KEYWORD')msg.append(mk('small',n.type==='CONDITION'?'قارن إجابة العميل وأكمل على المسار المناسب':'فحص الكلمات المفتاحية','canvas-media-hint'));
       if(visualKind==='GALLERY'||visualKind==='CARD'){const content=(n.blocks||[]).flatMap(b=>b.type==='CARD'?[b.card]:b.type==='GALLERY'?b.cards:[]);msg.append(mk('small',visualTitle+' · '+content.length+' — '+content.map(c=>c.title).join(' · ').slice(0,100),'canvas-media-hint'))}
+      if(visualKind==='GALLERY'||visualKind==='CARD'){const mini=mk('div',undefined,'canvas-mini-gallery');for(const content of (n.blocks||[]).flatMap(b=>b.type==='CARD'?[b.card]:b.type==='GALLERY'?b.cards:[]).slice(0,2)){const tile=mk('div',undefined,'canvas-mini-card');tile.append(componentIcon('CARD'),mk('strong',content.title));mini.append(tile)}msg.append(mini)}
+      if(n.type==='INPUT'||n.type==='QUESTION')msg.append(mk('div','إجابة العميل…','canvas-input-preview'));
       card.append(msg);
       const ports=mk('div',undefined,'canvas-ports');
       const connectTo=target=>{

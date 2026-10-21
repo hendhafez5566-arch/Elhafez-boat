@@ -1,3 +1,7 @@
+## Bold transformation / Package B
+
+Semantic full node headers,44px original icons,16px titles,readable bubbles,gallery miniatures,input affordances,clear selection and actual disconnected-route badges now replace the thin-strip white cards. Graph position/storage remains unchanged; missing-target lookup is a Set to preserve bounded500-node work.17 actual visual/authoring checks and4 scale/LTR/pinch checks PASS. Rendered contrast and complete icon/copy vocabulary are checked by tests/studio-contrast.mjs. Next C: library/Inspector. Owner acceptance remains open.
+
 ## Bold visual transformation / Package A
 
 Owner rejected the previous visual presentation. Continue same branch/PR5 from verifiedadc939b. Central Orbit tokens, deep plum command header, stronger primary action, readable shared typography and complete original SVG/descriptions are implemented. Authenticated17-check baseline/authoring suite passes with the new foundation. This is packageA only; nodes/library/Inspector/preview and final contrast/visual acceptance remain next. No engine/schema/provider changes. See docs/product-rebuild/implementation/premium-bold-2026-10-21/DESIGN_DECISIONS.md.
