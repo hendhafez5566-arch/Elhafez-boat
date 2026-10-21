@@ -1,3 +1,7 @@
+# Backup compatibility closure — 21 October 2026
+
+Restores with already-valid local references now retain the original explicit-confirm/Undo/local-only journey after portable inspection; unavailable references still require re-mapping. Original novice restore assertions are unchanged and pass within full combined runtime through post-logout invalidation. 194 units and 11 new combined browser scenarios PASS; same branch / Draft PR #5, matrix 14 PASS / 22 PARTIAL. Final backup/evidence confirmation follows. Details: `docs/product-rebuild/implementation/premium-2026-10-20/IMPORT_COMPATIBILITY.md`. No merge, deployment or external provider; visual acceptance pending.
+
 # Customer scheduling package — 21 October 2026
 
 Same branch / Draft PR #5 after 807aa1c. F21 closed: customer-zone field/fallback, bounded one-year holiday/calendar search with DST gap/fold support, existing pinned DELAY job pagination and exact no-send cancellation/human handoff. 194 units, 6 PG, 3 new desktop/mobile checks PASS; all 11 combined authoring/native/schedule browser checks PASS. Matrix 14 PASS / 22 PARTIAL. Details: `docs/product-rebuild/implementation/premium-2026-10-20/SCHEDULE_CHECKPOINT.md`. Next: combined fresh DB/full runtime gate. Remaining scopes stay explicit in canonical matrix; visual acceptance pending. No merge/deploy/real providers.

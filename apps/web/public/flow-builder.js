@@ -816,7 +816,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    try{
      let parsed;try{parsed=JSON.parse(await file.text())}catch{throw new Error('تعذر قراءة الملف؛ اختر نسخة JSON صحيحة')}
      const definition=parsed?.definition||parsed;
-     if(state.botId){await flowAuthoring.portable(definition);return}
+     if(state.botId&&await flowAuthoring.portable(definition))return;
      const inspected=await api('/flows/inspect-draft',{method:'POST',body:definition});
      if(state.tenantId!==scope.tenantId||state.botId!==scope.botId||JSON.stringify(flow)!==scope.local)throw new Error('تغيرت مساحة التحرير أثناء الفحص. اختر الملف مجددًا.');
      if(!confirm('استرجاع النسخة داخل المحرر سيستبدل تعديلاتك المحلية. لن تتغير مسودة الخادم أو النسخة المنشورة قبل الحفظ والنشر. هل تتابع؟'))return;
