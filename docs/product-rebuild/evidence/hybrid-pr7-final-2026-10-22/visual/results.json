@@ -1,5 +1,5 @@
 {
-  "sourceCommit": "20d39b7b60a15a9a7a276a2876d512a12cd3428b",
+  "sourceCommit": "70066550f5ff56503d4971761867e6eec39c40fe",
   "phase": "after",
   "checks": [
     "initial hidden-to-visible Canvas remeasures connector endpoints against rendered ports",

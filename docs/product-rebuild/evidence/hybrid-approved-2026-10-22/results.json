@@ -8,7 +8,8 @@
     "independent bot creation does not alter saved first bot",
     "server simulation follows collected input and condition to handoff",
     "docked preview runs real server engine and accepts branch selection",
-    "mobile fits viewport and shared preview uses accessible modal"
+    "mobile fits viewport and shared preview uses accessible modal",
+    "manager navigation keeps accessible brand and preview label across mobile/desktop and bot reopen"
   ],
   "errors": []
 }

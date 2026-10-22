@@ -1,4 +1,4 @@
-> Final-source captures refreshed for PR #7. Source/test commit `20d39b7b60a15a9a7a276a2876d512a12cd3428b`. The full 500-step mobile → desktop → manager regression now passes without changing the old assertions. See [final correction and acceptance](FINAL-ACCEPTANCE.md), including the two navigation proof images.
+> Final-source captures refreshed for PR #7. Source/test commit `70066550f5ff56503d4971761867e6eec39c40fe`. The full 500-step mobile → desktop → manager regression now passes without changing the old assertions. See [final correction and acceptance](FINAL-ACCEPTANCE.md), including the two navigation proof images.
 
 # Approved reference versus authenticated implementation
 

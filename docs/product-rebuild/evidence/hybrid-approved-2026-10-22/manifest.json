@@ -1,5 +1,5 @@
 {
-  "source_commit": "20d39b7b60a15a9a7a276a2876d512a12cd3428b",
+  "source_commit": "70066550f5ff56503d4971761867e6eec39c40fe",
   "base_commit": "9f074a6f138a8db5046899128edcb3414afa930a",
   "reference_sha256": "9fbca0448e1e0a07f6c5dc6b1008b324bd8de6f7fc787c9cf5fa0328547d0b1b",
   "viewport": {
@@ -13,26 +13,28 @@
     ]
   },
   "sha256": {
-    "apps/web/public/flow-builder.js": "25572e77a4d9061d661464647528097f50e1d2b80607f9542c9b47b931396d0c",
+    "apps/web/public/flow-builder.js": "a89543c800f95500e3eb73491bbcf344183114bfc8639f9bd01e0df3566c1eb1",
     "apps/web/public/flow-basic-builder.js": "c2719b2253ef916e693f1a57f3424a95fc12c703879bbdd01fdb4e29956801dd",
     "apps/web/public/flow-builder.css": "a9eca3e7fcaaf7a6f47542879a23af7974a63ee65844963f4974eca2c74bd161",
     "apps/web/public/flow-canvas.js": "9df55b873ce89bcb26efe7eee50f5bb649eb15aafc75d3e89e21c6f919fd5e4c",
-    "tests/hybrid-approved-browser.mjs": "aa46bdd7035de4fa2a96b831d8b72ad68b2311289c414882b70feabd3c97cdaa",
-    "tests/hybrid-package-smoke.mjs": "a359e44b8149aefd777123a737769817423d34802aea1444295c4df876a1038c"
+    "tests/hybrid-approved-browser.mjs": "38b36b3398a9d1ab7e90c2fe516bc4dbc58049594d50a221f96594e69d1e3e3c",
+    "tests/hybrid-package-smoke.mjs": "a359e44b8149aefd777123a737769817423d34802aea1444295c4df876a1038c",
+    "apps/web/public/app.js": "be09b871ba968a248e8089d1ab2d51a75cffe18016e663ce30d1e7ae732512a1"
   },
   "screenshots": {
     "reference-basic.png": "23a76f9a51c2707e97875ad59c17822dcff3ecd05a34d08f20a1a83aff2fd2f2",
+    "12-manager-return-preview.png": "cd1478591a38ca6d26e1e82006ffdfa6dd26bbb2e00f6eb729135c2fd3e7523a",
     "09-mobile.png": "c3ccbbfd9429df5b82229c8dd41e9ea8f2a4aa0b699b8eb385f8df4c6dd8b027",
-    "08-side-preview.png": "580aec24d956f4b1fa4ff6af0e4bba4f75ec3b258626bfe5b4289b25a81a0db0",
+    "08-side-preview.png": "751048b2fb0145f6aa682136a1508ca159d19e874fff43aa5ba5b26894474afc",
     "10-saved-reopened.png": "15c4375e7749ae4a051e808191edeec85aa05fc172cb35d54af2cb3ddad26bc9",
-    "05-buttons-editor.png": "4dcfd95e9bcaa156e718e27947861cb7ea26822d215bc316522b5b3ca624eeb0",
+    "05-buttons-editor.png": "01786700d853dd85c97ac1bf1b9aea0992f3ea7f0ac6d6467a934281afee27e4",
     "11-mobile-preview.png": "98687f3501148e0fbc1a8eb71eec88c1d0957ac48acab72e9ad56efbd75e6832",
     "06-condition-editor.png": "31ec6c8000eb62a7d3a2c10e9ad4f725136e6bcb91632133062f2e9beddae027",
-    "04-message-editor.png": "0bff3a5d87df0f25751fb248f0870d21aab9941c64d1c235cffe953d6a1fa6a5",
+    "04-message-editor.png": "e62db7c0fd1d316eba221a30bfe330977613804036817670fb9db89010a74b12",
     "03-component-library.png": "83afca413ffccbca5957fc0be5f4fb0d1d38d5c95a1c1c7fcfde94f4097ebe06",
-    "01-flow-desktop.png": "ff4af131f31d1f3020672c9187737a3a6dcfdeb8beb29cbc1b73ba99cb5f3507",
+    "01-flow-desktop.png": "cf06c340961acd5c88d85919e8ceb8f12b515185353e0a76103efc98f7b0c36a",
     "02-basic-desktop.png": "99e449760085a1daeaebf2b237d76d0c91e8b236a5faba88f5bd63ce6400e2c8",
-    "07-insert-step.png": "54e59df5d6722e0d7c376fe9c5ef25a993fc77ba2f11d2088aa12de0165ef0c8",
+    "07-insert-step.png": "dbebebf58d332003896dcad125593068e9e01cc808c242f77a74c060b86e39c2",
     "reference-flow.png": "79f7279da520f1fb773070bf111b28f5c8d844744b912984b2d981a6b44db243"
   }
 }
