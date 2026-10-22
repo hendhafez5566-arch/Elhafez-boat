@@ -228,6 +228,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const actions=el('div',undefined,'builder-view-actions');
  const paletteToggle=button('إخفاء المكونات',()=>{palette.hidden=!palette.hidden;workspace.classList.toggle('palette-collapsed',palette.hidden);paletteToggle.textContent=palette.hidden?'إظهار المكونات':'إخفاء المكونات';paletteToggle.setAttribute('aria-expanded',String(!palette.hidden))});
  const focusToggle=button('ملء الشاشة',()=>{const on=document.body.classList.toggle('studio-focus');focusToggle.textContent=on?'إنهاء ملء الشاشة':'ملء الشاشة';stagePanel.scrollIntoView({block:'start'});requestAnimationFrame(()=>{window.scrollTo(0,0);canvas.focus(selected||flow.startId)})});
+ focusToggle.classList.add('builder-focus-toggle');
  const advancedView=el('details',undefined,'builder-view-advanced');
   advancedView.append(el('summary','أدوات العرض المتقدمة'));
   const advancedButtons=el('div',undefined,'actions');
