@@ -730,3 +730,6 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
  #flow-builder .studio-header .builder-status {grid-area:3/1/4/3;max-width:none;overflow:hidden;white-space:nowrap}
  .studio-header .builder-edit-actions {grid-area:3/3/4/5}
 }
+.builder-preview-dialog .builder-phone-bar {background:#f3fafb;color:#24465b;border-color:#d9e9ed}
+.builder-preview-dialog .builder-phone-bar strong {color:#24465b}
+.builder-preview-dialog .builder-phone-bar small {color:#526f7d}
