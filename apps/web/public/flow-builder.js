@@ -985,7 +985,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  primaryBar.append(simpleMode,previewButton);
  const templateButton=button('قوالب جاهزة',()=>{setEditorMode(true);const templates=basicHost.querySelector('.hybrid-basic-templates');templates.open=!templates.open;templates.scrollIntoView({block:'nearest'})},'secondary studio-templates-button');
  primaryBar.append(templateButton);
- stageHead.append(channelSelect.closest('label'),$('builder-unsaved').parentElement);
+ stageHead.append(channelSelect.closest('label'));primaryBar.append($('builder-unsaved').parentElement);
  studioBack.append(el('strong','ELHAFEZ BOAT','studio-wordmark'));
  brand.textContent='E';
  primaryBar.classList.add('studio-header');paletteToggle.setAttribute('aria-expanded','true');

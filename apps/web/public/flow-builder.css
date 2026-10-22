@@ -723,3 +723,10 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
  #flow-builder > .studio-header {grid-template-rows:38px 38px 30px}
  #flow-builder .studio-header .builder-edit-actions button {min-height:28px;padding:4px 12px}
 }
+#flow-builder .studio-header .builder-status {display:flex;direction:rtl;max-width:145px;flex:none;margin:0;font-size:10px}
+#flow-builder .studio-header .builder-status span {font-size:10px;color:#365f80;background:#edf5fb;padding:4px 6px}
+#flow-builder .studio-header .builder-status #builder-unsaved {background:#eaf8f2;color:#25684f}
+@media(max-width:800px){
+ #flow-builder .studio-header .builder-status {grid-area:3/1/4/3;max-width:none;overflow:hidden;white-space:nowrap}
+ .studio-header .builder-edit-actions {grid-area:3/3/4/5}
+}
