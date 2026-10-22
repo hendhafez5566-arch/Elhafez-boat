@@ -1,0 +1,4 @@
+PASS actual owner/manager-only Mock proposal has bounded audited usage without retaining private prompt/output or enabling a live adapter
+PASS concurrent actual review is actor/tenant/hash scoped, idempotent, immutable and never saves/publishes a flow
+PASS actual concurrent-safe daily proposal quota rejects excess without a paid call or unaudited output
+PASS 3 offline governance PostgreSQL scenarios

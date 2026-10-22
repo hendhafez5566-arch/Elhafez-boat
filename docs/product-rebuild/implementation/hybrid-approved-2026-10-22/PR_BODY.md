@@ -2,6 +2,6 @@ The approved hybrid reference previously had only a first Basic-mode slice in th
 
 The engine, schema, lockfile, authentication, tenant boundaries and save/publish APIs are unchanged. No merge, Railway deployment, external account connection or real provider message is part of this delivery.
 
-Validation: TypeScript/build and 250 unit tests pass; focused PostgreSQL bot/RLS/role checks pass; nine hybrid Chromium groups and three context-policy browser regressions pass; final production Node22/Alpine image builds and passes actual DB-health/login/bot-API/asset smoke checks. Screenshot manifest, original-reference comparison, exact commands and scope limits are in `docs/product-rebuild/implementation/hybrid-approved-2026-10-22/REVIEW.md`.
+Validation: TypeScript/build and 250 unit tests pass; focused PostgreSQL bot/RLS/role checks pass; nine hybrid Chromium groups, 29 premium Chromium checks, three context-policy/two offline browser regressions, and 183 contrast pairs pass; final production Node22/Alpine image builds and passes actual DB-health/login/bot-API/asset smoke checks. Screenshot manifest, original-reference comparison, exact commands and scope limits are in `docs/product-rebuild/implementation/hybrid-approved-2026-10-22/REVIEW.md`.
 
 Keep this PR Draft. Owner visual approval, physical-device qualification, and broader historical/external acceptance remain pending; no 100% parity claim.
