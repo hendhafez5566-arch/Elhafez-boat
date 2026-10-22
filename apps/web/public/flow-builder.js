@@ -260,6 +260,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   onEdit:id=>{selected=id;selectedNodes=new Set([id]);renderBlocks();renderEditor();canvas.highlight(id);showInspector()},
   onLocate:id=>{setEditorMode(false);selected=id;selectedNodes=new Set([id]);renderBlocks();renderEditor();canvas.highlight(id);canvas.focus(id);showInspector()},
   onInsert:anchor=>openInsert(anchor),onPreview:()=>showSimulator(),
+  onDuplicate:id=>{selected=id;selectedNodes=new Set([id]);copySelection();pasteSelection()},
   onTemplate:industry=>{$('builder-industry').value=industry;$('builder-load-preset').click()},
   onAdvanced:()=>setEditorMode(false)
  });
@@ -281,8 +282,9 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  inspector.hidden=true;
  function showInspector(){inspector.hidden=false;workspace.classList.add('inspector-open')}
  const simulatorDialog=el('dialog',undefined,'builder-preview-dialog');
+ simulatorDialog.setAttribute('aria-label','تجربة المحادثة');
  const simulatorHead=el('header',undefined,'builder-dialog-header');
- simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>simulatorDialog.close()));
+ simulatorHead.append(el('strong','تجربة محادثة العميل — محاكاة وليست اتصالًا حقيقيًا'),button('إغلاق ×',()=>closeSimulator()));
  const phoneShell=el('div',undefined,'builder-phone-shell');
  const phoneBar=el('div','Elhafez Boat · محادثة تجريبية','builder-phone-bar');
  const previewStatus=el('p','','builder-preview-status');previewStatus.setAttribute('role','status');previewStatus.setAttribute('aria-live','polite');$('builder-preview').setAttribute('role','log');$('builder-preview').setAttribute('aria-live','polite');
@@ -299,8 +301,19 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     }
     return {broken:[...new Set(broken)],disconnected:flow.nodes.filter(n=>!visited.has(n.id)).map(n=>n.id)};
   }
+  const previewDock=el('aside',undefined,'builder-preview-dock');previewDock.hidden=true;
+  previewDock.setAttribute('aria-label','معاينة المحادثة التجريبية');workspace.append(previewDock);
+  previewDock.addEventListener('keydown',event=>{if(event.key==='Escape'){closeSimulator();document.querySelector('.studio-preview-button')?.focus()}});
+  function closeSimulator(){
+    simulatorDialog.close();previewDock.hidden=true;workspace.classList.remove('preview-docked');
+    simulatorDialog.append(simulatorHead);
+    if(typeof simulatorLayout!=='undefined')simulatorDialog.append(simulatorLayout);
+  }
   function showSimulator(){
-    if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');
+    if(matchMedia('(min-width:1100px)').matches){
+      simulatorDialog.close();previewDock.append(simulatorHead,simulatorLayout);previewDock.hidden=false;workspace.classList.add('preview-docked');
+    }else{closeSimulator();
+    if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');}
     const problems=previewProblems();
     if(!problems.broken.length&&!problems.disconnected.length){resetPreview();return}
     $('builder-preview').replaceChildren(el('p','المسار يحتاج إصلاحًا قبل التجربة. افتح الخطوة المبيّنة ووصلها بمسار المحادثة.','builder-preview-warning'));
@@ -328,7 +341,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  pickerSearch.oninput=paintPicker;
  const advanced=el('details',undefined,'builder-extras');
  advanced.append(el('summary','مكتبة الخطوات والمسارات المتقدمة'),linked,reuseHost);
- workspace.replaceChildren(palette,stagePanel,inspector);stageExtras.append(advanced);
+ workspace.replaceChildren(palette,stagePanel,inspector,previewDock);stageExtras.append(advanced);
 
  let autosaveTimer=null,saving=false,saveState='';
  const recoveryKey=()=>state.tenantId&&state.userId?'eb-recovery:'+state.tenantId+':'+state.userId+':'+(state.botId||'default'):null;
@@ -744,7 +757,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   const replayGeneration=simulationGeneration;try{for(const step of tape){if(replayGeneration!==simulationGeneration)throw Error('انتهت جلسة السيناريو.');simulatedChannel.value=step.simulation.channel;simulationNow=step.simulation.now;if(step.input.entry){const e=step.input.entry,expected=lastSimulationResponse?.waiting?.next||lastSimulationResponse?.botAction?.next;if(preview.at!==e.from||e.to!==expected)throw Error('تغير مسار الاستكمال؛ ابدأ تجربة جديدة.');preview.at=e.to;if(preview.runtime)delete preview.runtime.wait;if(e.clearRuntimeNodes)previewRuntimeNodes=null;}const [value,kind]=replayInput(step.input,preview);await serverPreview(value,kind,step);if(replayGeneration!==simulationGeneration)return;}scenarioStatus.textContent='تطابقت إعادة السيناريو: '+tape.length+' خطوة. لم تُحفظ جلسة ولم يُستدع مزود.';}catch(error){if(replayGeneration!==simulationGeneration)return;scenarioStatus.textContent='تعذرت مطابقة السيناريو: '+error.message;throw error;}finally{if(replayGeneration===simulationGeneration){replaying=false;scenarioControls.disabled=false;}}
  }
  function resetPreview(){if(replaying)return;scenarioSteps=[];scenarioDefinition='';lastSimulationResponse=null;scenarioStatus.textContent='';simulationNow=simulatedClock.value?new Date(simulatedClock.value).getTime():Date.now();simulationGeneration++;previewBusy=false;traceHost.replaceChildren();valuesHost.textContent='{}';previewRuntimeNodes=null;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();if(flow.nodes.length===1){bubble('ابدأ من علامة + لإضافة أول رسالة، ثم جرّب المحادثة هنا.');return;}previewAdvance()}
- function forgetScenario(){simulationGeneration++;previewBusy=false;replaying=false;scenarioSteps=[];scenarioDefinition='';lastSimulationResponse=null;persona.value='{}';seed.value='0.5';channelDelivery.value='SUCCESS';scenarioStatus.textContent='';scenarioControls.disabled=false;traceHost.replaceChildren();valuesHost.textContent='{}';simulatorDialog.close();}
+ function forgetScenario(){closeSimulator();simulationGeneration++;previewBusy=false;replaying=false;scenarioSteps=[];scenarioDefinition='';lastSimulationResponse=null;persona.value='{}';seed.value='0.5';channelDelivery.value='SUCCESS';scenarioStatus.textContent='';scenarioControls.disabled=false;traceHost.replaceChildren();valuesHost.textContent='{}';simulatorDialog.close();}
  async function load(){
    const owner=JSON.stringify([state.tenantId,state.userId,state.botId]);if(owner!==scenarioOwner){forgetScenario();flowFunnel.reset();scenarioOwner=owner;}
    document.body.classList.toggle('bot-studio',Boolean(state.botId));
@@ -961,13 +974,20 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');operationsButton.setAttribute('aria-label','إعدادات المسار');primaryBar.append(operationsButton);
  // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
  const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'),modeMenuButton);
- for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
+ for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode)displayMenu.append(child);
  displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
  displayMenu.append(button('تنظيم الخطوات المحددة',()=>{stageExtras.open=true;operationsDialog.showModal()}));
  stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
  const editActions=el('div',undefined,'builder-edit-actions');
  for(const title of ['تراجع','إعادة']){const original=[...tools.querySelectorAll('button')].find(b=>b.textContent===title);if(original)editActions.append(button(title,()=>original.click()))}
- actions.prepend(editActions);stageExtras.remove();operationsBody.append(stageExtras);
+ primaryBar.append(editActions);stageExtras.remove();operationsBody.append(stageExtras);
+ const previewButton=button('المعاينة الجانبية',()=>showSimulator(),'primary studio-preview-button');
+ primaryBar.append(simpleMode,previewButton);
+ const templateButton=button('قوالب جاهزة',()=>{setEditorMode(true);const templates=basicHost.querySelector('.hybrid-basic-templates');templates.open=!templates.open;templates.scrollIntoView({block:'nearest'})},'secondary studio-templates-button');
+ primaryBar.append(templateButton);
+ stageHead.append(channelSelect.closest('label'),$('builder-unsaved').parentElement);
+ studioBack.append(el('strong','ELHAFEZ BOAT','studio-wordmark'));
+ brand.textContent='E';
  primaryBar.classList.add('studio-header');paletteToggle.setAttribute('aria-expanded','true');
  const paletteClose=button('إغلاق المكتبة ×',()=>{palette.hidden=true;workspace.classList.add('palette-collapsed');paletteToggle.textContent='إظهار المكونات';paletteToggle.setAttribute('aria-expanded','false')},'builder-palette-close');palette.prepend(paletteClose);
  const compactStudio=matchMedia('(max-width:800px)');if(compactStudio.matches)paletteClose.click();compactStudio.addEventListener('change',event=>{if(event.matches&&!workspace.classList.contains('builder-linear-mode'))paletteClose.click()});
@@ -977,6 +997,9 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  simulatorLab.append(mockSettings,diagnostics);simulatorLayout.append(phoneShell,simulatorLab);simulatorDialog.append(simulatorLayout);
  simulatorHead.querySelector('strong').textContent='تجربة المحادثة';
  phoneBar.replaceChildren(el('span','✦','builder-chat-avatar'),el('strong','مساعد العملاء'),el('small','محادثة تجريبية · لا يوجد إرسال فعلي'));
+ matchMedia('(min-width:1100px)').addEventListener('change',event=>{
+  if(!event.matches&&!previewDock.hidden){closeSimulator();simulatorDialog.showModal()}
+ });
  window.addEventListener('beforeunload',event=>{if(dirty){event.preventDefault();event.returnValue=''}});
  return {load,hasUnsavedChanges:()=>dirty,reset(){clearTimeout(textEditTimer);variableSuggestions.reset();forgetScenario();previewStatus.textContent='';simulatorDialog.setAttribute('aria-busy','false');scenarioOwner='';forgetDraftMutation(recoveryKey()+':mutation');for(const d of [...recoveryDialogs]){d.close();d.remove()}recoveryDialogs.clear();if(lastRecoveryScope){recoveryStore.clearUser(lastRecoveryScope);const prefix='eb-recovery:'+lastRecoveryScope.tenantId+':'+lastRecoveryScope.userId+':';for(let i=sessionStorage.length-1;i>=0;i--){const item=sessionStorage.key(i);if(item?.startsWith(prefix))sessionStorage.removeItem(item)}}lastRecoveryScope=null;retainRecovery.checked=false;flowFunnel.reset();experiments.reset();conversationOps.reset();requestOps.reset();scheduledOps.reset();flowAuthoring.reset();flowDiagnostics.reset();clearTimeout(autosaveTimer);const key=recoveryKey();if(key)sessionStorage.removeItem(key);closeConflict();conflictDialog.replaceChildren();guide.reset();connectorChoices=[];subflows=[];editingSubflowId=null;mainSnapshot=null;library.replaceChildren();mode.textContent='تحرير المسار الرئيسي';flow=preset();mergeBase=null;published=null;dirty=false;draftRevision=0;previewRuntimeNodes=null;selected=flow.startId;history=[deep(flow)];cursor=0;preview={at:null,answers:{},tags:[]};$('builder-preview').replaceChildren();$('builder-preview-options').replaceChildren();renderAll()}};
 }

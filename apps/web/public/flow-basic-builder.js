@@ -3,7 +3,7 @@
  * Presentation only: no copied flow, API, save state, interpreter or persistence.
  * The inspector, insertion menu, and simulation are shared with the advanced editor.
  */
-export function mountHybridBasicBuilder({host,getFlow,labels,getOutputs,onEdit,onLocate,onInsert,onPreview,onTemplate,onAdvanced}){
+export function mountHybridBasicBuilder({host,getFlow,labels,getOutputs,onEdit,onLocate,onInsert,onPreview,onTemplate,onAdvanced,onDuplicate}){
  const make=(tag,content,klass)=>{
   const node=document.createElement(tag);
   if(content!==undefined&&content!==null)node.textContent=String(content);
@@ -48,7 +48,10 @@ export function mountHybridBasicBuilder({host,getFlow,labels,getOutputs,onEdit,o
   heading.append(make('small','خطوة '+(index+1)+' · '+(labels[node.type]||node.type)),make('h4',title(node)));
   const edit=action('تعديل',()=>onEdit(node.id),'hybrid-edit');
   edit.setAttribute('aria-label','تعديل خطوة '+title(node));
-  header.append(icon,heading,edit);
+  const tools=make('div',undefined,'hybrid-step-tools');
+  tools.append(edit,action('عرض بالمخطط',()=>onLocate(node.id),'hybrid-locate'));
+  if(node.type!=='START'&&onDuplicate)tools.append(action('نسخ',()=>onDuplicate(node.id),'hybrid-duplicate'));
+  header.append(icon,heading,tools);
   const content=make('div',undefined,'hybrid-step-content');
   content.append(make('p',summary(node),'hybrid-step-message'));
   if(Array.isArray(node.blocks)){
@@ -74,24 +77,30 @@ export function mountHybridBasicBuilder({host,getFlow,labels,getOutputs,onEdit,o
    const text=make('div',undefined,'hybrid-route-copy');
    text.append(make('small',output.label||'التالي'));
    const target=map.get(output.to);
-   text.append(make('span',target?title(target):'غير موصول'));
+   if(target)text.append(action(title(target),()=>onEdit(target.id),'hybrid-route-target'));
+   else text.append(make('span','غير موصول'));
+   row.append(action('تغيير الوجهة',()=>onEdit(node.id),'hybrid-route-edit'));
    const plus=action('+ إضافة خطوة',()=>onInsert({nodeId:node.id,key:output.key}),'hybrid-insert');
    plus.setAttribute('aria-label','إضافة خطوة بعد '+title(node)+' في مسار '+String(output.label||'التالي'));
    row.append(text,plus);routes.append(row);
   }
   if(!outputs.length)routes.append(make('span','هذه نهاية المسار.','hybrid-step-hint'));
   const footer=make('footer',undefined,'hybrid-step-footer');
-  footer.append(action('عرض في المخطط ↗',()=>onLocate(node.id),'hybrid-goto'));
+  if(outputs.length===1)footer.append(action('+',()=>onInsert({nodeId:node.id,key:outputs[0].key}),'hybrid-between'));
+  footer.setAttribute('aria-label','إضافة بعد '+title(node));
   card.append(header,content,routes,footer);
   return card;
  }
  const hero=make('div',undefined,'hybrid-basic-hero');
  const heading=make('div',undefined,'hybrid-basic-heading');
- heading.append(make('span','BASIC BUILDER · سهل للمبتدئين','hybrid-kicker'),make('h2','ابنِ المحادثة خطوة بخطوة'),make('p','اختار خطوة وعدّلها أو أضف خطوة جديدة. كل تعديل يظهر فورًا في المخطط المتقدم ويحفظ ضمن نفس مسودة البوت.'));
+ heading.append(make('span','BASIC BUILDER · سهل للمبتدئين','hybrid-kicker'),make('h2','اصنع محادثة خطوة بخطوة'),make('p','كل بطاقة تمثل رسالة أو قرارًا. عدّلها أو أضف خطوة بعدها؛ التغييرات تظهر في المخطط.'));
  const controls=make('div',undefined,'hybrid-basic-controls');
  controls.append(action('▶ تجربة المحادثة',onPreview,'hybrid-preview'),action('عرض المخطط المتقدم ↗',onAdvanced,'hybrid-advanced'));
- hero.append(heading,controls);
- const templateStrip=make('div',undefined,'hybrid-basic-templates');
+ const count=make('div',undefined,'hybrid-count');
+ count.append(make('strong','','hybrid-count-value'),make('small','خطوات في البوت'));
+ hero.append(heading,count,controls);
+ const templateStrip=make('details',undefined,'hybrid-basic-templates');
+ templateStrip.append(make('summary','▦ اختر قالب'));
  templateStrip.append(make('strong','ابدأ من قالب جاهز:'));
  for(const [value,label]of [['general','عام'],['shop','متجر'],['clinic','عيادة'],['tourism','سياحة'],['restaurant','مطعم']])
   templateStrip.append(action(label,()=>onTemplate(value),'hybrid-template'));
@@ -105,6 +114,7 @@ export function mountHybridBasicBuilder({host,getFlow,labels,getOutputs,onEdit,o
  function render(){
   const flow=getFlow();if(!flow||!Array.isArray(flow.nodes))return;
   const {connected,disconnected,map}=orderedNodes(flow);
+  count.children[0].textContent=String(flow.nodes.length);
   status.textContent=String(connected.length)+' خطوة متصلة · '+String(disconnected.length)+' خطوة غير متصلة · '+String(flow.nodes.length)+' إجمالي';
   timeline.replaceChildren();
   for(let i=0;i<connected.length;i++)timeline.append(renderNode(connected[i],map,i));

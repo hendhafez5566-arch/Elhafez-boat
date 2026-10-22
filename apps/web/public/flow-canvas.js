@@ -185,7 +185,8 @@ export function createCanvas({host,getFlow,select,changed,notify,addAfter,getSel
       const key=edge.from+'~'+edge.to;
       const count=incoming.get(key)||0;incoming.set(key,count+1);
       let data;
-      if(endX-startX>=100){
+      // Adjacent cards still have a clear forward corridor; do not route above them.
+      if(endX-startX>=24){
         const mid=startX+(endX-startX)/2+Math.min(20,count*10);
         data=`M${startX},${startY} C${mid},${startY} ${mid},${endY} ${endX},${endY}`;
       }else if(to.y>from.y+origin.offsetHeight+15){
