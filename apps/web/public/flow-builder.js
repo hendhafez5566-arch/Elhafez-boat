@@ -958,7 +958,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');operationsButton.setAttribute('aria-label','إعدادات المسار');primaryBar.append(operationsButton);
  // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
  const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'));
- for(const child of [...actions.children])if(![paletteToggle].includes(child)&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
+ for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
  displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
  displayMenu.append(button('تنظيم الخطوات المحددة',()=>{stageExtras.open=true;operationsDialog.showModal()}));
  stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
