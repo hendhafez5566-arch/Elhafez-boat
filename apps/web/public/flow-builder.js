@@ -354,11 +354,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{if(!control.hasAttribute('aria-label'))control.setAttribute('aria-label',title);const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
  let textEditTimer;const control=(value,change,large=false,liveText=false)=>{
-   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096;c.dataset.templateEditor='true';c.dir=$('builder-editor').dir||'auto'}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();basicBuilder.render();if(liveText){canvas.previewText(selected);const row=$('builder-nodes').querySelector('[data-step-id="'+selected+'"] .builder-node p');if(row)row.textContent=c.value.slice(0,90);clearTimeout(textEditTimer);textEditTimer=setTimeout(()=>{canvas.draw();renderBlocks()},150)}else{canvas.draw();renderBlocks()}});return c;
+   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096;c.dataset.templateEditor='true';c.dir=$('builder-editor').dir||'auto'}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();if(workspace.classList.contains('builder-linear-mode'))basicBuilder.render();if(liveText){canvas.previewText(selected);const row=$('builder-nodes').querySelector('[data-step-id="'+selected+'"] .builder-node p');if(row)row.textContent=c.value.slice(0,90);clearTimeout(textEditTimer);textEditTimer=setTimeout(()=>{canvas.draw();renderBlocks()},150)}else{canvas.draw();renderBlocks()}});return c;
  };
  const target=(value,change,optional=false)=>{
    const s=el('select');if(optional){const blank=el('option','بدون مسار خطأ مخصص');blank.value='';s.append(blank)}for(const node of flow.nodes){const option=el('option',(types[node.type]||'خطوة')+' — '+String(node.text||'').slice(0,28));option.value=node.id;s.append(option)}
-   s.value=value;s.addEventListener('change',()=>{change(s.value);markDirty();renderBlocks();basicBuilder.render();canvas.draw()});return s;
+   s.value=value;s.addEventListener('change',()=>{change(s.value);markDirty();renderBlocks();if(workspace.classList.contains('builder-linear-mode'))basicBuilder.render();canvas.draw()});return s;
  };
  const requestMocks={};
  const requestControls=mountRequestControls({el,button,label,control,target,changed:()=>{markDirty();canvas.draw()},repaint:()=>renderEditor(),getFlow:()=>flow,getMock:id=>requestMocks[id],setMock:(id,value)=>requestMocks[id]=value});
@@ -591,7 +591,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    $('builder-unsaved').textContent=saveState||(dirty?'تعديلات غير محفوظة':'المسودة محفوظة أو جاهزة للتعديل');$('builder-unsaved').setAttribute('role','status');$('builder-save').disabled=saving;
  }
  function renderAll(){clearTimeout(textEditTimer);
-   $('builder-name').value=flow.name;channelSelect.value=flow.channel||'WHATSAPP';runtimeControls.variables(variableHost);renderStatus();renderBlocks();renderEditor();basicBuilder.render();canvas.draw();canvas.highlight(selected);
+   $('builder-name').value=flow.name;channelSelect.value=flow.channel||'WHATSAPP';runtimeControls.variables(variableHost);renderStatus();renderBlocks();renderEditor();if(workspace.classList.contains('builder-linear-mode'))basicBuilder.render();canvas.draw();canvas.highlight(selected);
  }
  function addNode(type,anchor=null,position=null){
    if(flow.nodes.length>=500){notify('وصلت للحد الأقصى 500 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
