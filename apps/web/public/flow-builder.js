@@ -1,4 +1,5 @@
 import {componentGroups,componentTile,composeInspector} from './flow-presentation.js';
+import {mountHybridBasicBuilder} from './flow-basic-builder.js';
 import {mountLocalization} from './flow-localization.js';
 import {mountVariableSuggestions} from './flow-variable-suggestions.js';
 import {mountFlowFunnel} from './flow-funnel.js';
@@ -220,6 +221,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const more=el('details',undefined,'builder-more-list');
  more.append(el('summary','المزيد من المكونات'),palette.querySelector('.builder-toolbar'));palette.append(more);
  const stagePanel=el('section',undefined,'builder-stage');
+ const basicHost=el('div',undefined,'builder-basic-builder');
+ basicHost.setAttribute('aria-label','منشئ المحادثة خطوة بخطوة');
  const stageHead=el('header',undefined,'builder-stage-head');
  stageHead.append(el('h3','مساحة تصميم المحادثة'),el('p','اضغط على الرسالة لتحريرها، أو اضغط + لإضافة خطوة داخل المسار.'));
  const actions=el('div',undefined,'builder-view-actions');
@@ -234,12 +237,15 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function setEditorMode(linear){
    workspace.classList.toggle('builder-linear-mode',linear);const compact=!linear&&matchMedia('(max-width:800px)').matches;palette.hidden=compact;workspace.classList.toggle('palette-collapsed',compact);paletteToggle.disabled=linear;paletteToggle.textContent=compact?'إظهار المكونات':'إخفاء المكونات';paletteToggle.setAttribute('aria-expanded',String(!compact));
    simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
+   modeMenuButton.textContent=simpleMode.textContent;
    if(state.botId)sessionStorage.setItem('eb-editor-mode:'+state.tenantId+':'+state.botId,linear?'simple':'canvas');
-   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open')}
+   if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open');basicBuilder.render()}
    else{canvas.draw();requestAnimationFrame(()=>canvas.fit())}
  }
  const simpleMode=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
  simpleMode.classList.add('builder-mode-switch');
+ // Keep original dropdown navigation working without hiding the obvious toolbar switch.
+ const modeMenuButton=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
  actions.prepend(simpleMode);
  const graphSearch=el('input');graphSearch.type='search';graphSearch.className='builder-graph-search';graphSearch.placeholder='انتقل إلى خطوة…';graphSearch.setAttribute('aria-label','بحث المخطط بالاسم أو النص أو المعرف');
  const searchResults=el('div',undefined,'builder-search-results');searchResults.hidden=true;
@@ -247,7 +253,16 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  stageHead.append(actions,graphSearch,searchResults,advancedView);
  const stageExtras=el('details',undefined,'builder-stage-extras');
  stageExtras.append(el('summary','أدوات المسار المتقدمة'),tools);
- stagePanel.append(stageHead,stageExtras,canvasHost);
+ stagePanel.append(stageHead,stageExtras,canvasHost,basicHost);
+ // Both modes edit one authoritative draft and share its inspector and validation.
+ const basicBuilder=mountHybridBasicBuilder({
+  host:basicHost,getFlow:()=>flow,labels:types,getOutputs:graphOutputs,
+  onEdit:id=>{selected=id;selectedNodes=new Set([id]);renderBlocks();renderEditor();canvas.highlight(id);showInspector()},
+  onLocate:id=>{setEditorMode(false);selected=id;selectedNodes=new Set([id]);renderBlocks();renderEditor();canvas.highlight(id);canvas.focus(id);showInspector()},
+  onInsert:anchor=>openInsert(anchor),onPreview:()=>showSimulator(),
+  onTemplate:industry=>{$('builder-industry').value=industry;$('builder-load-preset').click()},
+  onAdvanced:()=>setEditorMode(false)
+ });
  canvasHost.setAttribute('aria-label','لوحة تصميم المحادثات التفاعلية');
  canvasHost.addEventListener('dragover',e=>{
   if(e.dataTransfer&&Array.from(e.dataTransfer.types).includes('application/x-boat-block')){e.preventDefault();e.dataTransfer.dropEffect='copy'}
@@ -342,11 +357,11 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const nodeById=id=>flow.nodes.find(n=>n.id===id);
  const label=(title,control)=>{if(!control.hasAttribute('aria-label'))control.setAttribute('aria-label',title);const wrap=el('label',undefined,'builder-field');wrap.append(el('span',title),control);return wrap};
  let textEditTimer;const control=(value,change,large=false,liveText=false)=>{
-   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096;c.dataset.templateEditor='true';c.dir=$('builder-editor').dir||'auto'}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();if(liveText){canvas.previewText(selected);const row=$('builder-nodes').querySelector('[data-step-id="'+selected+'"] .builder-node p');if(row)row.textContent=c.value.slice(0,90);clearTimeout(textEditTimer);textEditTimer=setTimeout(()=>{canvas.draw();renderBlocks()},150)}else{canvas.draw();renderBlocks()}});return c;
+   const c=el(large?'textarea':'input');if(large){c.rows=3;c.maxLength=4096;c.dataset.templateEditor='true';c.dir=$('builder-editor').dir||'auto'}c.value=String(value??'');c.addEventListener('input',()=>{change(c.value);markDirty();if(workspace.classList.contains('builder-linear-mode'))basicBuilder.render();if(liveText){canvas.previewText(selected);const row=$('builder-nodes').querySelector('[data-step-id="'+selected+'"] .builder-node p');if(row)row.textContent=c.value.slice(0,90);clearTimeout(textEditTimer);textEditTimer=setTimeout(()=>{canvas.draw();renderBlocks()},150)}else{canvas.draw();renderBlocks()}});return c;
  };
  const target=(value,change,optional=false)=>{
    const s=el('select');if(optional){const blank=el('option','بدون مسار خطأ مخصص');blank.value='';s.append(blank)}for(const node of flow.nodes){const option=el('option',(types[node.type]||'خطوة')+' — '+String(node.text||'').slice(0,28));option.value=node.id;s.append(option)}
-   s.value=value;s.addEventListener('change',()=>{change(s.value);markDirty();renderBlocks();canvas.draw()});return s;
+   s.value=value;s.addEventListener('change',()=>{change(s.value);markDirty();renderBlocks();if(workspace.classList.contains('builder-linear-mode'))basicBuilder.render();canvas.draw()});return s;
  };
  const requestMocks={};
  const requestControls=mountRequestControls({el,button,label,control,target,changed:()=>{markDirty();canvas.draw()},repaint:()=>renderEditor(),getFlow:()=>flow,getMock:id=>requestMocks[id],setMock:(id,value)=>requestMocks[id]=value});
@@ -579,7 +594,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
    $('builder-unsaved').textContent=saveState||(dirty?'تعديلات غير محفوظة':'المسودة محفوظة أو جاهزة للتعديل');$('builder-unsaved').setAttribute('role','status');$('builder-save').disabled=saving;
  }
  function renderAll(){clearTimeout(textEditTimer);
-   $('builder-name').value=flow.name;channelSelect.value=flow.channel||'WHATSAPP';runtimeControls.variables(variableHost);renderStatus();renderBlocks();renderEditor();canvas.draw();canvas.highlight(selected);
+   $('builder-name').value=flow.name;channelSelect.value=flow.channel||'WHATSAPP';runtimeControls.variables(variableHost);renderStatus();renderBlocks();renderEditor();if(workspace.classList.contains('builder-linear-mode'))basicBuilder.render();canvas.draw();canvas.highlight(selected);
  }
  function addNode(type,anchor=null,position=null){
    if(flow.nodes.length>=500){notify('وصلت للحد الأقصى 500 خطوة. احذف خطوة غير مستخدمة أولًا.','error');return;}
@@ -945,8 +960,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const brand=el('span','✦','studio-brand-mark');brand.setAttribute('aria-hidden','true');studioBack.textContent='إدارة البوتات';studioBack.prepend(brand);
  const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');operationsButton.setAttribute('aria-label','إعدادات المسار');primaryBar.append(operationsButton);
  // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
- const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'));
- for(const child of [...actions.children])if(![paletteToggle].includes(child)&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
+ const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'),modeMenuButton);
+ for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
  displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
  displayMenu.append(button('تنظيم الخطوات المحددة',()=>{stageExtras.open=true;operationsDialog.showModal()}));
  stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
