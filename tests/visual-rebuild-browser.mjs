@@ -84,6 +84,11 @@ try{
  if(phase!=='before'){const selected=page.locator('.canvas-node.selected'),prior=await selected.getAttribute('style');await page.getByRole('button',{name:'إضافة رسالة نصية',exact:true}).dragTo(page.locator('.flow-canvas'),{targetPosition:{x:260,y:240}});assert.equal(await page.locator('.canvas-node').count(),500);assert.equal(await selected.getAttribute('style'),prior);assert.equal((await api(path)).data.draft.definition.nodes.length,500);check('actual rejected501st library drop preserves all500 nodes and the selected node position');await page.getByRole('button',{name:'إغلاق التنبيه',exact:true}).click();}
  await shot('10-large-graph');check('actual500-node save/reopen and499 connectors at matching fixed zoom');
  if(phase!=='before'){await page.setViewportSize({width:390,height:844});await page.reload();await page.waitForFunction(()=>document.querySelectorAll('.canvas-node').length===500);await page.locator('.builder-palette').waitFor({state:'hidden'});await studioClick(page,'عرض مبسط بالخطوات');await page.locator('.builder-basic-builder').waitFor({state:'visible'});assert.equal(await page.locator('.builder-basic-builder .hybrid-step').count(),500);assert.equal(await page.locator('.builder-palette').isVisible(),false);assert.notEqual(await page.locator('.builder-basic-builder').evaluate(n=>getComputedStyle(n).position),'absolute');assert.equal(await page.locator('.builder-palette-close').isVisible(),false);check('fresh mobile load starts with a clear Canvas; Basic Builder remains fully scrollable and shows all 500 steps without palette traps');}
- if(phase!=='before')await authorTourismFlow({page,base,api,check,dir});
+ if(phase!=='before'){
+  await page.setViewportSize({width:1440,height:1000});
+  await page.getByRole('button',{name:'إدارة البوتات',exact:true}).waitFor({state:'visible'});
+  await shot('21-basic-500-desktop-navigation');
+  await authorTourismFlow({page,base,api,check,dir});
+ }
  assert.deepEqual(errors,[]);await writeFile(dir+'/results.json',JSON.stringify({sourceCommit:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),phase,checks,errors,fixture:{botId,nodes:11,language:'ar',zoom:'100%',selected:'welcome',viewport:[1440,1000],mobile:[390,844]},provider:'NONE; actual PostgreSQL/API/Chromium'},null,2)+'\n');
 }finally{await browser?.close();for(const p of children)p.kill('SIGTERM')}

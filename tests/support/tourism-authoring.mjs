@@ -6,6 +6,8 @@ import {studioClick,revealStudioControl} from './studio-navigation.mjs';
 export async function authorTourismFlow({page,base,api,check,dir}){
  await page.setViewportSize({width:1440,height:1000});
  await studioClick(page,'إدارة البوتات');
+ await page.locator('.bot-quick-create > summary').waitFor({state:'visible'});
+ await page.screenshot({path:dir+'/22-bot-manager-navigation.png'});
  await page.locator('.bot-quick-create > summary').click();
  const form=page.locator('.bot-create-form');
  await form.locator('[name=name]').fill('قبول التأليف · شركة سياحة');
