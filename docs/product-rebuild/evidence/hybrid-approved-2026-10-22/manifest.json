@@ -1,0 +1,40 @@
+{
+  "source_commit": "314e54b3f7ffbfa956e03470721fd2e5e4321801",
+  "base_commit": "9f074a6f138a8db5046899128edcb3414afa930a",
+  "reference_sha256": "9fbca0448e1e0a07f6c5dc6b1008b324bd8de6f7fc787c9cf5fa0328547d0b1b",
+  "viewport": {
+    "desktop": [
+      1490,
+      940
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "sha256": {
+    "apps/web/public/flow-builder.js": "8d048fafeee87bac1338e487b044cdd8e95c1ceb5d6d6f22005fe09d65c60401",
+    "apps/web/public/flow-basic-builder.js": "c2719b2253ef916e693f1a57f3424a95fc12c703879bbdd01fdb4e29956801dd",
+    "apps/web/public/flow-builder.css": "a9eca3e7fcaaf7a6f47542879a23af7974a63ee65844963f4974eca2c74bd161",
+    "apps/web/public/flow-canvas.js": "9df55b873ce89bcb26efe7eee50f5bb649eb15aafc75d3e89e21c6f919fd5e4c",
+    "tests/hybrid-approved-browser.mjs": "a86ed2d25681465234b2a7b1deb84d5fa4a90b5fcaab9f51df9a3b59c8d5252e",
+    "tests/hybrid-package-smoke.mjs": "a359e44b8149aefd777123a737769817423d34802aea1444295c4df876a1038c",
+    "apps/web/public/app.js": "be09b871ba968a248e8089d1ab2d51a75cffe18016e663ce30d1e7ae732512a1"
+  },
+  "screenshots": {
+    "reference-basic.png": "23a76f9a51c2707e97875ad59c17822dcff3ecd05a34d08f20a1a83aff2fd2f2",
+    "12-manager-return-preview.png": "cd1478591a38ca6d26e1e82006ffdfa6dd26bbb2e00f6eb729135c2fd3e7523a",
+    "09-mobile.png": "c3ccbbfd9429df5b82229c8dd41e9ea8f2a4aa0b699b8eb385f8df4c6dd8b027",
+    "08-side-preview.png": "8e0999bbc0cff66a59724a7260247e42a90062279175c3eab3089734925e1216",
+    "10-saved-reopened.png": "261f95aea89c5cb2eb0d71ebab66a2737c2325be7df85d4e1eca2ff418d06b22",
+    "05-buttons-editor.png": "01786700d853dd85c97ac1bf1b9aea0992f3ea7f0ac6d6467a934281afee27e4",
+    "11-mobile-preview.png": "98687f3501148e0fbc1a8eb71eec88c1d0957ac48acab72e9ad56efbd75e6832",
+    "06-condition-editor.png": "59011292eb6dec54b1661706474f059bdfa7a8603f62457cf06456131436a8d4",
+    "04-message-editor.png": "a428ec9104b3f6c6db86c24a8daf5fb9cf58bf75aa14b166f201dbe9b89d8efc",
+    "03-component-library.png": "11210e05b00b918aa925ba0d372f4933fa746782017072483271a4107941052e",
+    "01-flow-desktop.png": "ff4af131f31d1f3020672c9187737a3a6dcfdeb8beb29cbc1b73ba99cb5f3507",
+    "02-basic-desktop.png": "99e449760085a1daeaebf2b237d76d0c91e8b236a5faba88f5bd63ce6400e2c8",
+    "07-insert-step.png": "dbebebf58d332003896dcad125593068e9e01cc808c242f77a74c060b86e39c2",
+    "reference-flow.png": "79f7279da520f1fb773070bf111b28f5c8d844744b912984b2d981a6b44db243"
+  }
+}

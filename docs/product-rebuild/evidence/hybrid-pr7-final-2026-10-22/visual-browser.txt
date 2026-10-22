@@ -1,0 +1,19 @@
+PASS initial hidden-to-visible Canvas remeasures connector endpoints against rendered ports
+PASS delayed/fault-injected preview exposes loading and recoverable error without hiding the conversation
+PASS ten actual matched Chromium screenshots; real stored 11-node tourism graph, Arabic,100% zoom,1440x1000 and390x844
+PASS search groups/empty state and add/edit/Undo retain the original graph
+PASS real library pointer drag/drop adds a step; visible Redo/Undo restore the exact11-node graph
+PASS display-menu arrangement shortcut opens actual named alignment/distribution tools and Escape returns to Canvas
+PASS message edit persists via actual UI save and reopen without losing11 nodes
+PASS select/disconnect/Undo restores all original edges
+PASS shared real server simulation traverses gallery,input validation,condition and employee handoff
+PASS mobile library opens/closes with visible controls and no horizontal page overflow
+PASS real mobile simulator uses full-width conversation and gallery/input interaction remains usable
+PASS 390/768/1024 actual Zoom in/out and Fit work; minimap never overlaps navigation and no horizontal page overflow
+PASS actual rejected501st library drop preserves all500 nodes and the selected node position
+PASS actual500-node save/reopen and499 connectors at matching fixed zoom
+PASS fresh mobile load starts with a clear Canvas; Basic Builder remains fully scrollable and shows all 500 steps without palette traps
+PASS actual bot-manager UI creates a blank bot with one Start node
+PASS visible library and Inspector author welcome, three buttons, two gallery cards, name question, condition and handoff
+PASS visible UI creates a blank tourism bot, welcome, three routed buttons, gallery, customer input, condition and handoff; save/reopen preserves every setting
+PASS UI-authored tourism flow actually simulates gallery, typed name, condition and employee handoff through the shared engine

@@ -1,0 +1,4 @@
+PASS opt-in actual draft survives closing its tab; restoration validates without writing or publishing
+PASS actual Chromium process/profile restart restores only the authenticated scoped backup; server and publication remain unchanged
+PASS real storage events pause autosave; per-tab backups survive another save; stale manual save keeps the actual 409 review and local edit
+PASS actual logout removes opted-in identity backups and session recovery and closes recovery dialogs

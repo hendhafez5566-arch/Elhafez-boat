@@ -1,0 +1,1 @@
+PASS 183 rendered contrast pairs (text/icons4.5:1,boundaries3:1); 27 distinct component SVGs/descriptions

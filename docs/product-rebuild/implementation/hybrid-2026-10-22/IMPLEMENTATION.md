@@ -1,3 +1,5 @@
+> Continuation on 22 October: the authentic approved HTML is now supplied and checksum-verified. The responsive shared simulator dock and contextual Basic/Canvas workspace are implemented on `feat/approved-hybrid-ui`. See [current implementation, evidence and remaining qualification](../hybrid-approved-2026-10-22/REVIEW.md). The first-slice statements below describe historical PR #6, not the current continuation. No claim of full pixel parity or owner approval.
+
 # Elhafez Boat — approved BotSailor × Manychat hybrid integration
 
 Date: 22 October 2026. Branch: `feat/hybrid-builder-approved-2026-10-22`. Draft PR: #6.

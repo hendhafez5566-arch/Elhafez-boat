@@ -57,3 +57,20 @@ test('template and advanced actions delegate to existing editor rather than pers
   assert.equal(host.find(n=>n.className==='hybrid-step-end'),null);
  }finally{globalThis.document=before;}
 });
+
+test('basic route targets, duplication and between-step insertion delegate stable IDs without mutating branches',()=>{
+ const before=globalThis.document;globalThis.document={createElement:tag=>new Element(tag)};
+ try{
+  const flow={startId:'start',nodes:[{id:'start',type:'START',next:'menu'},{id:'menu',type:'BUTTONS',choices:[{id:'a',title:'الأول',next:'end'},{id:'b',title:'الثاني',next:'menu'}]},{id:'end',type:'END',text:'نهاية'}]};
+  const initial=JSON.stringify(flow),events=[],host=new Element('div');
+  const app=mountHybridBasicBuilder({host,getFlow:()=>flow,labels:{START:'بداية',BUTTONS:'قائمة',END:'نهاية'},getOutputs:n=>n.choices?n.choices.map(c=>({key:'choice:'+c.id,label:c.title,to:c.next})):n.next?[{key:'next',label:'التالي',to:n.next}]:[],onEdit:id=>events.push(['edit',id]),onLocate:()=>{},onInsert:anchor=>events.push(['insert',anchor]),onPreview:()=>{},onTemplate:()=>{},onAdvanced:()=>{},onDuplicate:id=>events.push(['duplicate',id])});
+  app.render();
+  host.find(n=>n.className==='hybrid-route-target'&&n.textContent==='نهاية').click();
+  host.find(n=>n.className==='hybrid-duplicate').click();
+  host.find(n=>n.className==='hybrid-between').click();
+  assert.deepEqual(events,[['edit','end'],['duplicate','menu'],['insert',{nodeId:'start',key:'next'}]]);
+  assert.equal(JSON.stringify(flow),initial);
+  assert.equal(host.find(n=>n.className==='hybrid-count-value').textContent,'3');
+  assert.equal(host.all(n=>n.className==='hybrid-duplicate').length,2,'start cannot be duplicated');
+ }finally{globalThis.document=before}
+});
