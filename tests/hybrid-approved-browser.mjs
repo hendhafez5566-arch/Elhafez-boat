@@ -2,7 +2,7 @@
 import {chromium} from 'playwright-core';
 import assert from 'node:assert/strict';
 import {readFile,mkdir,writeFile} from 'node:fs/promises';
-import {studioClick} from './support/studio-navigation.mjs';
+import {studioClick,revealStudioControl} from './support/studio-navigation.mjs';
 const a=JSON.parse(await readFile('acceptance-evidence/variable-context-account.json','utf8'));
 const base=process.env.WEB_BASE_URL||'http://127.0.0.1:3100';
 const dir='docs/product-rebuild/evidence/hybrid-approved-2026-10-22';await mkdir(dir,{recursive:true});
@@ -50,5 +50,9 @@ try{
  if(await page.locator('.flow-canvas').isHidden())await studioClick(page,'عرض المخطط المرئي');
  await page.locator('.builder-view-actions').getByRole('button',{name:'تجربة المحادثة',exact:true}).click();await page.locator('.builder-preview-dialog[open]').waitFor();await shot('12-manager-return-preview');await page.locator('.builder-preview-dialog').getByRole('button',{name:'إغلاق ×',exact:true}).click();
  check('manager navigation keeps accessible brand and preview label across mobile/desktop and bot reopen');
+ const beforeAutosave=(await api(path)).data.draft.definition.name;
+ await page.locator('#builder-name').fill('نسخة مستردة تحتاج مراجعة');await revealStudioControl(page,page.getByLabel('حفظ تلقائي اختياري',{exact:true}));await page.getByLabel('حفظ تلقائي اختياري',{exact:true}).check();await page.getByRole('dialog',{name:'إعدادات وأدوات المسار',exact:true}).getByRole('button',{name:'إغلاق ×',exact:true}).click();
+ await page.waitForTimeout(1700);assert.equal((await api(path)).data.draft.definition.name,beforeAutosave,'enabling autosave alone cannot persist pre-existing unsaved/recovered changes');
+ const editedAutosave=page.waitForResponse(r=>r.url().includes('/flows/draft')&&r.request().method()==='PUT');await page.locator('#builder-name').fill('تعديل مراجع للحفظ التلقائي');assert.equal((await editedAutosave).status(),200);assert.equal((await api(path)).data.draft.definition.name,'تعديل مراجع للحفظ التلقائي');check('autosave opt-in preserves pending review until the next user edit, which really saves');
  assert.deepEqual(errors,[]);await writeFile(dir+'/results.json',JSON.stringify({checks,errors},null,2));
 }catch(error){await shot('failure');console.error('PAGE ERRORS',errors);throw error}finally{await browser.close()}
