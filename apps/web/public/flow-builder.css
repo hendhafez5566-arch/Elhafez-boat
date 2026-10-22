@@ -708,9 +708,6 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
 #flow-builder .canvas-node .canvas-add {background:white;color:#1681c8;border:1px solid #9ac8e9;box-shadow:none;width:26px;min-height:26px;height:26px}
 .canvas-type-label {font-size:10px;color:#58718c}
 .canvas-navigation,.builder-display-menu summary {border-color:#d8e4f0}
-@media(max-width:800px){
- #flow-builder .builder-stage-head .builder-view-actions > .primary {display:none}
-}
 .builder-linear-mode .builder-view-actions > button:disabled {display:none}
 #flow-builder .builder-linear-mode .builder-stage-head {display:none}
 .studio-header .builder-edit-actions {gap:2px;border:0;padding:0}

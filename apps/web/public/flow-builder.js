@@ -259,7 +259,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
   host:basicHost,getFlow:()=>flow,labels:types,getOutputs:graphOutputs,
   onEdit:id=>{selected=id;selectedNodes=new Set([id]);renderBlocks();renderEditor();canvas.highlight(id);showInspector()},
   onLocate:id=>{setEditorMode(false);selected=id;selectedNodes=new Set([id]);renderBlocks();renderEditor();canvas.highlight(id);canvas.focus(id);showInspector()},
-  onInsert:anchor=>openInsert(anchor),onPreview:()=>showSimulator(),
+  onInsert:anchor=>openInsert(anchor),onPreview:()=>showSimulator({dock:true}),
   onDuplicate:id=>{selected=id;selectedNodes=new Set([id]);copySelection();pasteSelection()},
   onTemplate:industry=>{$('builder-industry').value=industry;$('builder-load-preset').click()},
   onAdvanced:()=>setEditorMode(false)
@@ -309,8 +309,8 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
     simulatorDialog.append(simulatorHead);
     if(typeof simulatorLayout!=='undefined')simulatorDialog.append(simulatorLayout);
   }
-  function showSimulator(){
-    if(matchMedia('(min-width:1100px)').matches){
+  function showSimulator({dock=false}={}){
+    if(dock&&matchMedia('(min-width:1100px)').matches){
       simulatorDialog.close();previewDock.append(simulatorHead,simulatorLayout);previewDock.hidden=false;workspace.classList.add('preview-docked');
     }else{closeSimulator();
     if(simulatorDialog.showModal)simulatorDialog.showModal();else simulatorDialog.setAttribute('open','');}
@@ -974,14 +974,14 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');operationsButton.setAttribute('aria-label','إعدادات المسار');primaryBar.append(operationsButton);
  // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
  const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'),modeMenuButton);
- for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode)displayMenu.append(child);
+ for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
  displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
  displayMenu.append(button('تنظيم الخطوات المحددة',()=>{stageExtras.open=true;operationsDialog.showModal()}));
  stageHead.replaceChildren(actions,graphSearch,displayMenu,searchResults);
  const editActions=el('div',undefined,'builder-edit-actions');
  for(const title of ['تراجع','إعادة']){const original=[...tools.querySelectorAll('button')].find(b=>b.textContent===title);if(original)editActions.append(button(title,()=>original.click()))}
  primaryBar.append(editActions);stageExtras.remove();operationsBody.append(stageExtras);
- const previewButton=button('المعاينة الجانبية',()=>showSimulator(),'primary studio-preview-button');
+ const previewButton=button('المعاينة الجانبية',()=>showSimulator({dock:true}),'primary studio-preview-button');
  primaryBar.append(simpleMode,previewButton);
  const templateButton=button('قوالب جاهزة',()=>{setEditorMode(true);const templates=basicHost.querySelector('.hybrid-basic-templates');templates.open=!templates.open;templates.scrollIntoView({block:'nearest'})},'secondary studio-templates-button');
  primaryBar.append(templateButton);
