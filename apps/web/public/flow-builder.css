@@ -435,3 +435,93 @@ body.bot-studio .flow-canvas { height: auto; flex: 1 1 0%; min-height: 240px; }
 .builder-library-channel{font-size:11px;color:#615775;line-height:1.7;padding:8px;background:#f6f4fc;border-radius:7px;margin:0 0 12px}.builder-quick-item .builder-channel-hint{font-size:11px;color:#8a5a22;margin-top:4px}.builder-simulator-lab>#builder-export{margin-block:8px;font-size:12px;padding:8px}
 
 .builder-linear-mode .builder-palette-close { display:none; }
+
+
+/* Hybrid Basic Builder: one draft, an accessible sequence rather than a second editor. */
+#flow-builder .builder-basic-builder { display:none; }
+#flow-builder .builder-linear-mode .builder-basic-builder {
+ display:block; padding:24px clamp(14px,3vw,42px) 48px; width:100%; min-width:0;
+ background:#f1f6fc; direction:rtl; color:#19324e; overflow:visible;
+}
+#flow-builder .builder-linear-mode .builder-palette { display:none; }
+#flow-builder .builder-linear-mode .builder-stage {
+ display:flex; flex-direction:column; min-width:0; width:100%;
+ border:0; background:#f1f6fc; height:auto;
+}
+#flow-builder .builder-linear-mode .builder-stage-head { background:#fff; }
+#flow-builder .builder-linear-mode .builder-graph-search { display:none; }
+#flow-builder .builder-linear-mode .builder-stage > .flow-canvas {display:none;}
+.builder-basic-builder .hybrid-basic-hero {
+ background:linear-gradient(120deg,#0b3377,#1658a0); border-radius:19px; color:#fff;
+ padding:28px 32px; display:flex;align-items:center;justify-content:space-between;gap:22px;
+ box-shadow:0 12px 28px #0b33772e;max-width:1024px;margin:0 auto 18px;
+}
+.builder-basic-builder .hybrid-kicker {font-size:12px; color:#95edca; font-weight:800;letter-spacing:.03em}
+.builder-basic-builder .hybrid-basic-heading h2 {font-size:24px;color:#fff;margin:8px 0;line-height:1.5}
+.builder-basic-builder .hybrid-basic-heading p {font-size:13px;line-height:1.9;color:#e7f1fb;max-width:570px;margin:0}
+.builder-basic-builder .hybrid-basic-controls {display:flex;flex-wrap:wrap;gap:10px;flex-shrink:0}
+.builder-basic-builder button {font:inherit;cursor:pointer;min-height:40px}
+.builder-basic-builder .hybrid-preview {background:#16b57e;color:#fff;border:1px solid #0b9465;padding:10px 16px;border-radius:10px;font-weight:800}
+.builder-basic-builder .hybrid-advanced {color:#fff;border:1px solid #bed6f9;padding:10px 16px;border-radius:10px;font-weight:700;background:#ffffff19}
+.builder-basic-builder .hybrid-basic-templates {
+ display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:0 auto 16px;max-width:1024px;
+ background:#fff;padding:13px 16px;border:1px solid #dce7f5;border-radius:13px;
+}
+.builder-basic-builder .hybrid-basic-templates strong {color:#153966;font-size:13px}
+.builder-basic-builder .hybrid-basic-templates small {color:#576b83;line-height:1.6}
+.builder-basic-builder .hybrid-template {background:#eaf2fc;border:1px solid #c5d8ef;border-radius:8px;color:#13416d;padding:7px 13px;font-weight:700}
+.builder-basic-builder .hybrid-basic-status {font-size:12px;color:#49647f;max-width:790px;margin:0 auto 12px}
+.builder-basic-builder .hybrid-timeline {max-width:790px;margin:0 auto;display:grid;gap:20px;position:relative}
+.builder-basic-builder .hybrid-timeline:before {content:"";position:absolute;inset:12px 27px 12px auto;border-right:2px dashed #bdd3ea;pointer-events:none}
+.builder-basic-builder .hybrid-step {
+ position:relative;background:#fff;border:1px solid #d7e2ee;border-radius:16px;
+ box-shadow:0 7px 23px #1d4d7e0c;overflow:hidden;margin-right:60px;
+}
+.builder-basic-builder .hybrid-step::before {content:"";position:absolute;right:-37px;top:28px;width:18px;height:18px;background:#1e82cb;border:4px solid #fff;box-shadow:0 0 0 2px #bad2ed;border-radius:50%}
+.builder-basic-builder .hybrid-step-head {display:flex;gap:14px;align-items:center;padding:14px 18px;border-bottom:1px solid #d9e9f7;background:#eaf4ff}
+.builder-basic-builder .hybrid-step-start .hybrid-step-head {background:#e4fbf2}
+.builder-basic-builder .hybrid-step-branch .hybrid-step-head {background:#fff4dc}
+.builder-basic-builder .hybrid-step-input .hybrid-step-head {background:#e7f4ff}
+.builder-basic-builder .hybrid-step-handoff .hybrid-step-head {background:#fff0f2}
+.builder-basic-builder .hybrid-step-icon {width:43px;height:43px;flex:none;border-radius:11px;display:grid;place-items:center;background:#0c58ae;color:#fff;font-size:20px;font-weight:900}
+.builder-basic-builder .hybrid-step-start .hybrid-step-icon {background:#128963}
+.builder-basic-builder .hybrid-step-branch .hybrid-step-icon {background:#bd801d}
+.builder-basic-builder .hybrid-step-input .hybrid-step-icon {background:#1174b9}
+.builder-basic-builder .hybrid-step-handoff .hybrid-step-icon {background:#ba3153}
+.builder-basic-builder .hybrid-step-heading {flex:1;min-width:0}
+.builder-basic-builder .hybrid-step-heading small {display:block;color:#48677e;font-size:11px;font-weight:700}
+.builder-basic-builder .hybrid-step-heading h4 {font-size:17px;line-height:1.5;color:#123555;margin:4px 0 0;font-weight:800;overflow-wrap:anywhere}
+.builder-basic-builder .hybrid-edit {background:#fff;color:#075aa8;border:1px solid #b6d7f5;padding:8px 15px;border-radius:9px;font-weight:800}
+.builder-basic-builder .hybrid-step-content {padding:16px 20px}
+.builder-basic-builder .hybrid-step-message {background:#f6f9fe;color:#253c55;font-size:15px;line-height:1.9;border-radius:10px;padding:15px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;border:1px solid #e4ecf6}
+.builder-basic-builder .hybrid-step-hint {color:#53677f;font-size:12px;line-height:1.8}
+.builder-basic-builder .hybrid-choice-preview,.builder-basic-builder .hybrid-card-pills {display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.builder-basic-builder .hybrid-choice,.builder-basic-builder .hybrid-card-pill {background:#e9f4ff;color:#134d81;border:1px solid #bedbf6;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700}
+.builder-basic-builder .hybrid-routes {border-top:1px solid #e7edf5;padding:10px 20px;display:grid;gap:8px}
+.builder-basic-builder .hybrid-route {display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #e6edf4;border-radius:9px;padding:10px 12px;background:#fafcff}
+.builder-basic-builder .hybrid-route-copy {display:grid;gap:4px;min-width:0}
+.builder-basic-builder .hybrid-route-copy small {font-size:12px;color:#53647b}
+.builder-basic-builder .hybrid-route-copy span {color:#173e60;font-size:13px;font-weight:750;overflow-wrap:anywhere}
+.builder-basic-builder .hybrid-insert {background:#dff8ed;color:#076e4b;border:1px solid #a3dec2;border-radius:8px;padding:8px 11px;font-weight:800;white-space:nowrap}
+.builder-basic-builder .hybrid-step-footer {padding:11px 20px;background:#f5f9ff;display:flex;justify-content:flex-end}
+.builder-basic-builder .hybrid-goto {color:#0c559c;text-decoration:underline;text-underline-offset:4px;font-weight:700;font-size:12px}
+.builder-basic-builder .hybrid-warning {max-width:790px;margin:26px auto 10px;background:#fff4e1;border:1px solid #e6c38b;border-radius:10px;padding:13px;color:#7f4a11}
+.builder-basic-builder .hybrid-detached-list {display:flex;flex-wrap:wrap;gap:14px;max-width:790px;margin:10px auto}
+.builder-basic-builder button:hover {filter:brightness(.95)}
+.builder-basic-builder button:focus-visible {outline:3px solid #178edd;outline-offset:3px}
+@media(max-width:800px){
+ #flow-builder .builder-linear-mode .builder-basic-builder {padding:14px 9px 34px}
+ .builder-basic-builder .hybrid-basic-hero {display:block;padding:20px 17px;border-radius:14px}
+ .builder-basic-builder .hybrid-basic-controls {margin-top:15px}
+ .builder-basic-builder .hybrid-basic-heading h2 {font-size:21px}
+ .builder-basic-builder .hybrid-timeline:before {right:15px}
+ .builder-basic-builder .hybrid-step {margin-right:39px}
+ .builder-basic-builder .hybrid-step::before {right:-32px;width:13px;height:13px}
+ .builder-basic-builder .hybrid-step-head {padding:12px 10px;gap:9px;flex-wrap:wrap}
+ .builder-basic-builder .hybrid-step-icon {width:34px;height:34px}
+ .builder-basic-builder .hybrid-step-heading h4 {font-size:15px}
+ .builder-basic-builder .hybrid-edit {padding:7px 10px}
+ .builder-basic-builder .hybrid-step-content,.builder-basic-builder .hybrid-routes {padding:12px}
+ .builder-basic-builder .hybrid-route {flex-wrap:wrap}
+ .builder-basic-builder .hybrid-step-message {font-size:14px}
+}
