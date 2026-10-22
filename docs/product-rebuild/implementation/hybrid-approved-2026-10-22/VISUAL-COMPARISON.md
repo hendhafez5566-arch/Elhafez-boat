@@ -1,3 +1,5 @@
+> Final-source captures refreshed for PR #7. Source/test commit `20d39b7b60a15a9a7a276a2876d512a12cd3428b`. The full 500-step mobile → desktop → manager regression now passes without changing the old assertions. See [final correction and acceptance](FINAL-ACCEPTANCE.md), including the two navigation proof images.
+
 # Approved reference versus authenticated implementation
 
 Both desktop captures use **1490×940**. Reference images render the supplied approved HTML, checksum `9fbca0448e1e0a07f6c5dc6b1008b324bd8de6f7fc787c9cf5fa0328547d0b1b`. App images show the real modified platform with synthetic authenticated data. Reference and application use their respective representative graphs, so this is a layout/interaction comparison, not a numerical pixel-difference claim.

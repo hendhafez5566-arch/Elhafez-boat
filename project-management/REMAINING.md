@@ -1,3 +1,15 @@
+## PR #7 final correction — 22 October 2026
+
+Continue the same `feat/approved-hybrid-ui` branch and Draft PR [#7](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/7). Verified starting SHA `6488c0f31e7da343dda6ddd2c472e1b6770adb8a`; corrected source/test SHA `20d39b7b60a15a9a7a276a2876d512a12cd3428b`.
+
+Fixed the root cause of the 500-step mobile Basic → desktop manager failure: branding changed the back button's accessible name. The original production handler now has a stable Arabic accessible name/tooltip and visible desktop caption. Existing tests/assertions/helpers were not weakened. Added screenshots and a positive visible-role check to the historical scenario.
+
+Final local verification: 250 unit/typecheck/build; 3 scale/localization PostgreSQL checks; existing RLS and independent-bot/role suites; 19 historical visual Chromium groups; 9 hybrid Chromium groups; production Docker build and actual packaged DB-health/login/API/assets smoke all passed. Updated real Chromium screenshots and reference comparison are committed. No engine/schema/dependency/lockfile/CRM/channel contract change, merge or Railway deployment.
+
+[Final report and source-bound evidence](../docs/product-rebuild/implementation/hybrid-approved-2026-10-22/FINAL-ACCEPTANCE.md). The exact delivery-HEAD push+PR CI receipt is attached separately to PR #7 after both runs finish, so recording results does not change the verified commit. Next action: inspect that exact-HEAD receipt and owner visual review. The platform retains real validation/publishing/advanced controls absent from the prototype; no 100% pixel, physical-device or external-provider claim.
+
+---
+
 ## 22 October 2026 — approved hybrid implementation (current branch)
 
 Branch `feat/approved-hybrid-ui`; verified base `9f074a6f138a8db5046899128edcb3414afa930a`; application/test source commit `6f3dcfe648620e77bed141c4f80f7414f8966086` (following documentation commit records evidence). Real shared-draft Basic/Canvas, responsive shared-engine preview dock, context editing/insertion/duplication, compact approved workspace and adjacent forward-edge routing correction are implemented. Files: `flow-builder.js`, `flow-basic-builder.js`, `flow-builder.css`, `flow-canvas.js`; hybrid unit/browser/package tests. No schema/dependency/lockfile change, merge, provider send or Railway deployment.

@@ -1,3 +1,5 @@
+> Superseded acceptance status: see [PR #7 final correction and exact-HEAD CI receipt](FINAL-ACCEPTANCE.md). The original delivery evidence and historical limitations below are retained for traceability.
+
 # Approved hybrid UI — implementation review
 
 22 October 2026. Branch `feat/approved-hybrid-ui`, based on the verified remote `feat/stage0-foundation` at `9f074a6f138a8db5046899128edcb3414afa930a`.
