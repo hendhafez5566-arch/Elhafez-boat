@@ -237,12 +237,15 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  function setEditorMode(linear){
    workspace.classList.toggle('builder-linear-mode',linear);const compact=!linear&&matchMedia('(max-width:800px)').matches;palette.hidden=compact;workspace.classList.toggle('palette-collapsed',compact);paletteToggle.disabled=linear;paletteToggle.textContent=compact?'إظهار المكونات':'إخفاء المكونات';paletteToggle.setAttribute('aria-expanded',String(!compact));
    simpleMode.textContent=linear?'عرض المخطط المرئي':'عرض مبسط بالخطوات';
+   modeMenuButton.textContent=simpleMode.textContent;
    if(state.botId)sessionStorage.setItem('eb-editor-mode:'+state.tenantId+':'+state.botId,linear?'simple':'canvas');
    if(linear){inspector.hidden=true;workspace.classList.remove('inspector-open');basicBuilder.render()}
    else{canvas.draw();requestAnimationFrame(()=>canvas.fit())}
  }
  const simpleMode=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
  simpleMode.classList.add('builder-mode-switch');
+ // Keep original dropdown navigation working without hiding the obvious toolbar switch.
+ const modeMenuButton=button('عرض مبسط بالخطوات',()=>setEditorMode(!workspace.classList.contains('builder-linear-mode')),'secondary');
  actions.prepend(simpleMode);
  const graphSearch=el('input');graphSearch.type='search';graphSearch.className='builder-graph-search';graphSearch.placeholder='انتقل إلى خطوة…';graphSearch.setAttribute('aria-label','بحث المخطط بالاسم أو النص أو المعرف');
  const searchResults=el('div',undefined,'builder-search-results');searchResults.hidden=true;
@@ -957,7 +960,7 @@ export function initFlowBuilder({state,api:baseApi,notify,execute}){
  const brand=el('span','✦','studio-brand-mark');brand.setAttribute('aria-hidden','true');studioBack.textContent='إدارة البوتات';studioBack.prepend(brand);
  const operationsButton=button('إعدادات المسار',()=>operationsDialog.showModal(),'secondary studio-operations-button');operationsButton.setAttribute('aria-label','إعدادات المسار');primaryBar.append(operationsButton);
  // Only build essentials stay in the canvas toolbar; duplicates remain available in menus.
- const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'));
+ const displayMenu=el('details',undefined,'builder-display-menu');displayMenu.append(el('summary','العرض والأدوات'),modeMenuButton);
  for(const child of [...actions.children])if(child!==paletteToggle&&child!==simpleMode&&child.textContent!=='تجربة المحادثة')displayMenu.append(child);
  displayMenu.addEventListener('click',event=>{if(event.target.closest('button'))displayMenu.open=false});
  displayMenu.append(button('تنظيم الخطوات المحددة',()=>{stageExtras.open=true;operationsDialog.showModal()}));
