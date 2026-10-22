@@ -1,0 +1,8 @@
+PASS ten actual matched Chromium screenshots; real stored 11-node tourism graph, Arabic,100% zoom,1440x1000 and390x844
+PASS search groups/empty state and add/edit/Undo retain the original graph
+PASS message edit persists via actual UI save and reopen without losing11 nodes
+PASS select/disconnect/Undo restores all original edges
+PASS shared real server simulation traverses gallery,input validation,condition and employee handoff
+PASS mobile library opens/closes with visible controls and no horizontal page overflow
+PASS actual500-node save/reopen and499 connectors at matching fixed zoom
+PASS fresh mobile load starts with a clear canvas; linear steps remain a normal scroll surface with no dismiss trap

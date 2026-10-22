@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual scoped operator UI distinguishes two owned jobs from preserved unknown company jobs",
+    "real operator pause cancels owned jobs through authenticated API while preserving historical unknown jobs",
+    "mobile resume uses pinned waiting input and does not recreate cancelled nonblocking work"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium"
+}

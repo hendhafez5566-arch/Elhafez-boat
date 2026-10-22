@@ -1,13 +1,56 @@
-# Elhafez Boat — Tourism WhatsApp Sales Platform
+# Elhafez Boat
 
-A multi-tenant Arabic-first SaaS for tourism companies. Each company manages programs, offers, customers and booking requests from a simple dashboard; customers use official WhatsApp interactive lists, reply buttons and WhatsApp Flows, with an optional grounded AI assistant and human handoff.
+General-purpose Arabic/RTL SaaS chatbot platform for companies and shops. Configurable flows, approved product/service information, lead qualification and employee handoff. **Not an ERP, reservation, payment or accounting system.**
 
-**Status:** Planning/bootstrap only. No application code or live WhatsApp integration implemented.
+Working branch: `feat/stage0-foundation`; PR #1 remains unmerged. Substantial source implementation exists, but the full requested feature scope and final acceptance are **not complete**. Do not commercially deploy based on build success.
 
-## Start here
-1. Read [AGENTS.md](AGENTS.md).
-2. Read [Master Plan](docs/01-MASTER-PLAN.md), [Architecture](docs/02-ARCHITECTURE.md), [Bot & Flows](docs/04-WHATSAPP-BOT.md), and [Dashboard](docs/06-DASHBOARD.md).
-3. Check [Current Status](project-management/CURRENT-STATUS.md) and [Handover](project-management/HANDOVER.md).
-4. Inspect GitHub commits and code before claiming anything is complete.
+## Run
 
-**Important:** This project is independent of the legacy Elhafez accounting/ERP system. No existing business logic is to be copied implicitly.
+Node 22+, PostgreSQL 16+ and separate migration/runtime/platform DB roles are required.
+
+```
+npm ci --ignore-scripts
+cp .env.example .env
+npm run build
+npm run db:migrate
+npm run db:bootstrap
+```
+
+Fill private environment values before migration/bootstrap. In separate terminals run `npm run dev:api`, `npm run dev:web`, `npm run dev:worker`. Open http://localhost:3000 and use your bootstrap company slug/email/password. Owner administration is `/platform.html` after `npm run db:platform:bootstrap`.
+
+Full instructions: [Local setup](docs/11-LOCAL-SETUP.md). No default passwords or real provider keys are included.
+
+## Current implementation
+
+Canvas with drag/pan/zoom, connections, undo/redo/duplicate, draft validation, publish/history/rollback; server-backed preview; deterministic messages/buttons/lists/questions/conditions/tags/media/links/handoff; dynamic approved catalog, keyword branches, optional extractive grounded AI and queued safe webhooks. Team inbox includes ownership, saved replies, notes, unread filters and close. Delay scheduling, dynamic catalog lists, global triggers, Website Chat, managed media, supported interactive template parameters and consented campaign sequences now have source and connected UI; REST keys support scoped catalog/lead reads.
+
+Official WhatsApp Cloud API source includes signed webhooks, receipts, outbox, window/consent checks and retries. Actual provider activation requires your Meta account and credentials and is unverified. AI, external destinations and other channels are not claimed live.
+
+## Exact status
+
+- [Authoritative scope](docs/00-SCOPE-CHATBOT-ONLY.md)
+- [Current status and evidence](project-management/CURRENT-STATUS.md)
+- [Unfinished features and acceptance](project-management/REMAINING.md)
+- [Handover](project-management/HANDOVER.md)
+
+Confirmed locally: clean install/build, JS/DOM safeguards and static HTTP serving. GitHub CI on [7fc3626](https://github.com/hendhafez5566-arch/Elhafez-boat/commit/7fc36262f120560582d86c9614ded23e71fd3aa1) passed **28/28 unit tests**, migrations 0001–0022 and a real PostgreSQL catalog-isolation/RLS gate ([run](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39072771700)). Authenticated browser/mobile, live provider, performance and backup/restore acceptance remain unverified. Full evidence: project-management/VERIFICATION-2026-10-18.md.
+
+Current continuation includes migration 0022. Configure MEDIA_PUBLIC_ORIGIN, widget origins and INTEGRATION_SECRET_ENCRYPTION_KEY as applicable. Native Sheets/CRM/store connectors and advanced template formats remain unsupported; final acceptance remains deferred. See docs/17-LEGACY-RETIREMENT.md for the clean CI/test scope migration.
+
+
+## Advanced builder additions — 2026-10-18
+Company-specific reusable **linear sections** can be saved/imported from the Flow Builder; **Shift+click** canvas nodes to visually group them. Editing imported copies does not change published versions. Approved **Meta MARKETING image/video carousel templates** (2–10 provider-defined cards) can be filled card by card in the template editor. Both features are source-implemented; real Meta carousel delivery has not been verified.
+Read [implementation and limitations](docs/18-FLOW-REUSE-AND-CAROUSEL.md). Development CI [run 39076237206](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39076237206) passed 43/43 tests, migration 0023 and tenant RLS; **final acceptance is still outstanding**.
+
+Advanced runtime source delivery, setup and explicit limits: [docs/19-ADVANCED-RUNTIME.md](docs/19-ADVANCED-RUNTIME.md). Includes migration 0024. Meta Commerce templates are implemented in the subsequent continuation below; live provider/scanner acceptance remains open.
+
+Meta Commerce templates and tenant mappings: [docs/20-META-COMMERCE.md](docs/20-META-COMMERCE.md). Apply migration 0025; provider activation remains unverified.
+
+
+## Latest CI runtime evidence — 2026-10-18
+
+**Source has advanced beyond some historical descriptions above:** native connectors, subflows, social adapters and Meta Commerce source exist on this draft branch. **25 migrations** are now required. See `docs/19-ADVANCED-RUNTIME.md` and `docs/20-META-COMMERCE.md` for account-specific setup; not all providers have live credentials.
+
+[GitHub run 39105138303](https://github.com/hendhafez5566-arch/Elhafez-boat/actions/runs/39105138303) **PASS**: 70/70 Node checks, PostgreSQL schema/RLS, two separate tenants running with an actual non-BYPASSRLS runtime role, catalog/FAQ, flow publish, Website Chat visitor → lead → employee handoff, duplicate/origin protection, worker DELAY continuation exactly once, Chrome desktop/mobile-viewport login & canvas, and genuine disposable `pg_dump`/`pg_restore`. Five actual screenshots are in the `elhafez-browser-acceptance` CI artifact.
+
+These are test-environment validations, **not proof of live Meta/Google/Shopify/provider connection, real ClamAV/AI model, production multi-replica load, or commercial readiness**. Full test scope and honest limitations: [acceptance evidence](project-management/ACCEPTANCE-EXECUTION-2026-10-18.md).

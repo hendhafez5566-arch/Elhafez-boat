@@ -1,40 +1,35 @@
-# Master implementation plan
+# Master Plan — Industry-neutral chatbot builder
 
-Status values: NOT STARTED, IN PROGRESS, BLOCKED, VERIFIED DONE. All work currently NOT STARTED except documentation bootstrap.
+Authoritative scope: [universal chatbot SaaS](00-SCOPE-CHATBOT-ONLY.md). **All previous travel booking, payments, finance and ERP plans are obsolete.**
 
-## Stage 0 — Specification and foundation
-- [ ] Confirm data model, role matrix, exact booking rules, customer UX and visual design.
-- [ ] Establish TypeScript monorepo, package manager lockfile, lint/format/typecheck, CI, test runner, env templates, local Docker setup, migrations, seed fixtures.
-- [ ] Define API contracts, WhatsApp adapter interfaces, action IDs and workflow schemas.
-- [ ] Add security baseline and tenant-scoped authorization tests.
-**Gate:** clean install, CI passing, migrations and tenant isolation tested.
+## 1. Core generic engine and builder — IN PROGRESS
+- Unified flow node schema: TEXT / BUTTONS / LIST / INPUT / CONDITION / TAG / LINK / MEDIA / HANDOFF / END.
+- Industry presets and browser-only preview; validation of node links, choices, publish rules and no immediate infinite loops.
+- Tenant-specific mutable drafts, immutable published revisions and pinned conversational sessions.
+- Friendly visual editor with editable node properties and connections (canvas now implemented; browser acceptance pending).
+- Generic catalog of approved products, services and offers; company-defined category labels, optional descriptions, price text and HTTPS links.
 
-## Stage 1 — Vertical slice
-- [ ] Tenant and user auth/roles.
-- [ ] Programs CRUD, images, price tiers, dates, availability and publish/unpublish.
-- [ ] Versioned menu engine, interactive list/reply-button renderer and simulator.
-- [ ] WhatsApp webhook verify/receive/send adapter with idempotency, signature checks and queue.
-- [ ] WhatsApp Flow form mapping, submission validation and draft booking creation.
-- [ ] Booking inbox with human review/confirmation and immutable price/terms snapshot.
-**Gate:** add published Umrah program -> list shown -> customer selects -> sees details -> submits Flow -> provisional booking appears for staff. Verify first in simulator, then live API after credentials/eligibility.
+## 2. Customer communication
+- Official WhatsApp Business Cloud API webhook signature validation, interactive replies, dynamic published flows, human handoff, message queues and customer opt-out.
+- Reply keyword/trigger rules, segment tags and custom fields; approved response knowledge base.
+- Optional template and consent management, broadcasts and scheduled messages strictly according to Meta policy (not mandatory MVP).
 
-## Stage 2 — Sales operations
-- [ ] Unified inbox, assignment, takeover/handoff, internal notes, customer CRM, statuses, follow-up tasks, reporting.
-- [ ] Offers/campaigns, opt-in and opt-out, template management and 24h service-window policy.
-**Gate:** multi-agent handoff, no duplicate sends, compliant follow-up and audit trail tested.
+## 3. Team and lead workspace
+- Shared inbox; customer details, captured custom answers and tags, lead stages, agent assignment and handoff.
+- Analytics for inquiry flow completions, leads and staff workload; simple permissions.
+- Company onboarding and tenant isolation; platform owner subscriptions only as needed to operate the SaaS.
 
-## Stage 3 — Grounded AI
-- [ ] Knowledge base, safe retrieval, tools for program search, availability and lead qualification.
-- [ ] Guardrails for prices, booking/payment actions and escalation; AI evaluation set in Arabic.
-**Gate:** no fabricated business facts in adversarial and regression tests.
+## 4. Extensions after the core is clean
+- Rich WhatsApp-specific Flows, template variations, interactive catalog previews, safe API/webhook/Sheets/Shopify/WooCommerce integrations and optional grounded AI provider.
+- Add channels later through adapters (website, Facebook, Instagram, Telegram) without coupling generic engine to any industry.
 
-## Stage 4 — Multi-tenant commercial release
-- [ ] Self-service company onboarding and WhatsApp connection where supported, subscription/billing, quotas and usage visibility.
-- [ ] Monitoring, backups + restore drill, retention/deletion, load tests, rate limits, runbooks, disaster recovery.
-- [ ] Pilot with real companies; fix verified defects before sale.
-**Gate:** independent tenant security, E2E WhatsApp acceptance, recovery, performance and operational signoff.
+## 5. Final acceptance as ONE stage (owner instruction)
+- Fresh code checkout, clean npm install/lockfile, migrations 0001–0022 and real PostgreSQL/RLS tests.
+- Visual/mobile flow builder, actual published WhatsApp lists/buttons/media, lead capture/handoff, consent/security, concurrency and message retries.
+- Meta test number and supported channel restrictions, privacy, performance, monitoring and backup/restore.
+- Only then merge draft PR, deploy pilot and assess commercial readiness.
 
-## Out of scope initially
-Automatic payment confirmation without verified payment provider; guaranteed availability without inventory check; ERP coupling; unapproved bulk messaging; arbitrary unvalidated customer-authored executable flows.
+**DO NOT BUILD** an internal reservation, inventory, payment, invoicing, supplier, accounting or traveler-document system.
 
-Each gate needs evidence (commands, test results, screenshots where applicable) and explicit owner approval. No invented completion percentages.
+## 2026-10-18 implementation checkpoint
+Core delay/catalog pagination/triggers/website chat/media/template components/campaign sequences and usage controls now have source and connected UI. This document is not an acceptance certificate. CURRENT-STATUS.md and REMAINING.md distinguish implemented code, unsupported advanced features and the final acceptance gate.

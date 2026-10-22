@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED (2026-10-17)** — The owner rejected ERP/booking/finance expansion. The authoritative scope is [WhatsApp chatbot-only lead assistant](00-SCOPE-CHATBOT-ONLY.md). Any booking, payment, refund, traveler records or system-management requirements in this older document are **NOT product requirements and MUST NOT be built**. Human staff handles all reservations and follow-up outside the bot.
+
 # Product vision
 
 Elhafez Boat is a subscription SaaS for multiple independent tourism companies. The company's staff manage offers and travel programs without programming. Their customers primarily navigate WhatsApp with interactive lists and reply buttons; WhatsApp Flows collect structured booking information. Free-text AI answers only using approved company data and routes back to menus or a human.

@@ -1,0 +1,4 @@
+PASS actual 200/500 graph drafts/layouts publish and reopen while older conversation stays pinned to 200-node version
+PASS 501-node graph is rejected atomically; RLS isolation and saved revision remain intact
+PASS immutable bilingual values survive scoped storage/publication and actual conversation switches language in same execution
+PASS 3 scale/localization PostgreSQL scenarios

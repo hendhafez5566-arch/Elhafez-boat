@@ -1,0 +1,81 @@
+# Isolated local acceptance. Requires caller-supplied disposable passwords/keys.
+# No provider accounts are connected. API/worker internal network denies external egress; web has a separate ingress bridge.
+x-app: &app
+  image: elhafez-boat:ci
+  build: {context: ..}
+  networks: [isolated]
+x-runtime: &runtime
+  DATABASE_URL: postgresql://boat_local_runtime:${TEST_RUNTIME_PASSWORD:?Set URL-safe test password at least 20 characters}@db:5432/elhafez_ci
+  WHATSAPP_TOKEN_ENCRYPTION_KEY: ${TEST_ENCRYPTION_KEY:?Set base64 32-byte disposable key}
+  INTEGRATION_SECRET_ENCRYPTION_KEY: ${TEST_ENCRYPTION_KEY:?Set base64 32-byte disposable key}
+  RATE_LIMIT_SECRET: ${TEST_RATE_LIMIT_SECRET:?Set random shared disposable secret}
+  META_GRAPH_VERSION: v24.0
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: elhafez_ci
+      POSTGRES_PASSWORD: ${TEST_DB_PASSWORD:?Set URL-safe disposable admin password}
+    volumes: [acceptance-db:/var/lib/postgresql/data]
+    networks: [isolated]
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres -d elhafez_ci]
+      interval: 3s
+      timeout: 3s
+      retries: 25
+  migrate:
+    <<: *app
+    command: [node, scripts/migrate.mjs]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?required}@db:5432/elhafez_ci
+    depends_on: {db: {condition: service_healthy}}
+  grants:
+    <<: *app
+    command: [node, scripts/disposable-runtime-role.mjs]
+    environment:
+      MIGRATION_DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?required}@db:5432/elhafez_ci
+      TEST_RUNTIME_PASSWORD: ${TEST_RUNTIME_PASSWORD:?required}
+      CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
+    depends_on: {migrate: {condition: service_completed_successfully}}
+  api:
+    <<: *app
+    command: [node, .build/apps/api/src/server.js]
+    environment:
+      <<: *runtime
+      PORT: 4000
+      # Administrative connection is disposable only; not a production role model.
+      PLATFORM_DATABASE_URL: postgresql://postgres:${TEST_DB_PASSWORD:?required}@db:5432/elhafez_ci
+      META_APP_SECRET: isolated-test-not-a-provider-secret
+      META_WEBHOOK_VERIFY_TOKEN: isolated-test-not-a-provider-token
+    depends_on: {grants: {condition: service_completed_successfully}}
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  worker:
+    <<: *app
+    command: [node, .build/apps/worker/main.js]
+    environment: *runtime
+    depends_on: {api: {condition: service_healthy}}
+    restart: on-failure
+  web:
+    <<: *app
+    networks: [isolated, ingress]
+    command: [node, apps/web/server.mjs]
+    environment: {WEB_PORT: 3000, API_INTERNAL_ORIGIN: 'http://api:4000'}
+    ports: ['127.0.0.1:3016:3000']
+    depends_on: {api: {condition: service_healthy}}
+  simulators:
+    image: node:22-alpine
+    working_dir: /suite
+    command: [node, --test, tests/delivery-faults.test.mjs]
+    volumes:
+      - ../tests:/suite/tests:ro
+      - ../.build:/suite/.build:ro
+    networks: [isolated]
+networks:
+  isolated: {internal: true}
+  ingress: {driver: bridge}
+volumes:
+  acceptance-db:

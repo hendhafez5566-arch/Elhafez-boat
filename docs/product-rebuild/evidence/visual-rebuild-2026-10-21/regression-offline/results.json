@@ -1,0 +1,9 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual Mock draft/rewrite proposals require scoped audited acceptance, remain undoable drafts and never publish or call a provider",
+    "actual owner form editor exports pinned official-component subset with unapproved status, then saves internal form through normal draft path on mobile"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium"
+}

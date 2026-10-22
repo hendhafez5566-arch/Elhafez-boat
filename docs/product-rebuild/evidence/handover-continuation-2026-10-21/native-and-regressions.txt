@@ -1,0 +1,56 @@
+PASS unique wait-token queue, ignored inbound duplicates, stable key and exactly one committed success continuation
+PASS mapping response failure routes atomically without applying invalid fields
+PASS typed response failure routes atomically without applying invalid fields
+PASS POST HTTP 429 takes error branch with no automatic replay
+PASS ambiguous POST timeout is quarantined and follows timeout without resend
+PASS committed in-flight claim blocks second worker; expired interrupted claim never resends and ignores late success
+PASS real concurrent website/privacy contact-first locks and response continuation complete without deadlock or HTTP replay
+PASS durable stored response survives actual PostgreSQL delivery rollback and resumes without repeating HTTP
+PASS human takeover while HTTP is in flight prevents fields, continuation and automated delivery
+PASS publication during wait preserves pinned request and downstream version
+PASS same-node restart changes wait token and cancels stale job before dispatch
+PASS existing deadline worker takes timeout and cancels undispatched request once
+PASS opt-out and unavailable/expired messaging channel stop dispatch
+PASS expired WhatsApp authorization and explicit reauthorization prevent integration side effects even inside service window
+PASS bounded safe GET retry retains one job/idempotency key and one successful continuation
+PASS real forced RLS, other-tenant worker and author-role boundaries remain enforced
+PASS integration disabled after publication follows enqueue-error route without creating a job
+PASS owner erasure refuses unreconciled in-flight/uncertain request attempts
+PASS owner erasure scrubs stored mapped responses and request payloads, cancels pending work and prevents all continuation
+PASS 19 durable integration scenarios; every HTTP dispatch is an explicit local mock
+PASS optional governance preserves ordinary publication and existing immutable version
+PASS same readiness/publication approval gate, optional owner policy and no network probe
+PASS competing review requests coalesce; author and low-privilege decisions are denied
+PASS independent approval permits actual publish; identical decision retries create one audit and opposing retry fails
+PASS saving invalidates old approval and release diff reports actual persisted changes
+PASS changes requested, re-review and revoked reviewer eligibility fail closed at publication
+PASS authored revision/step threads, replies, resolution/reopen and literal untrusted text preserved
+PASS forced RLS and same-tenant wrong-bot thread isolation, view-only access and authoring permissions
+PASS portable inspection denies foreign references, validates explicit local remap and never saves/publishes
+PASS resource blockers are per-node and use same publication guards, without endpoint/credential disclosure
+PASS 10 real authoring PostgreSQL scenarios
+PASS real native HubSpot upsert builder -> published engine -> committed claim -> HTTP-boundary Mock -> mapped result -> one continuation under competing workers
+PASS legacy fire-and-forget connector queue still executes through the same provider implementation and retains DONE status
+PASS provider rejection follows saved error route without retry or mapped field write
+PASS actual elapsed request budget classifies ambiguous write timeout and completes timeout route once, without resend
+PASS native diagnostics preserve author/bot/tenant scope and omit private fields; unreconciled ambiguity blocks erasure
+PASS native audited reconciliation coalesces concurrent retries, never repeats HTTP/flow and permits complete owner erasure
+PASS seeded committed interrupted-dispatch state becomes UNCERTAIN and timeout without HTTP replay
+PASS human takeover cancels queued native continuation and prevents external dispatch
+PASS disabled native resource follows error route, using the same readiness/dispatch permission boundary
+PASS native normalized result fields use atomic typed validation; invalid value takes error route without corrupting session
+PASS all four existing native provider adapters return only normalized external_id/provider through explicit HTTP mocks
+PASS native worker diagnostics enforce actual foreign-tenant RLS and bot ownership
+PASS actual PostgreSQL delivery fault rolls back only continuation; recovered worker uses saved native result without a second external call
+PASS 13 native connector PostgreSQL scenarios
+PASS actual Telegram webhook normalizer, native request outbox and pinned engine persist native coordinates; typed spoof retains original deadline
+PASS native attachment reference persists once through receipt dedupe; no file download or reference leakage into trace
+PASS actual Messenger inbound path consumes native phone/email response as typed data and queues correct profile quick reply contracts
+PASS unsupported Website native reply follows actual explicit fallback without fabricated data or native payload
+PASS native data collection preserves real forced RLS and bot isolation
+PASS 5 native input PostgreSQL scenarios
+Starting actual Chromium
+PASS actual native collection editor and explicit unsupported-channel graph port persist through authenticated draft API
+PASS real shared server simulator accepts explicit Mock native coordinates and displays actual typed result
+PASS actual unsupported Website fallback and mobile email quick-reply authoring use channel-aware mock input paths
+PASS 3 native input Chromium scenarios

@@ -1,0 +1,7 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { passwordHash, verifyPassword, login, authenticate, tokenDigest } from '../.build/apps/api/src/auth.js';
+const tenant='11111111-1111-4111-8111-111111111111';const user='22222222-2222-4222-8222-222222222222';
+test('password hashing includes random salt and validates password',async()=>{const a=await passwordHash('long-password-123');const b=await passwordHash('long-password-123');assert.notEqual(a,b);assert.equal(await verifyPassword('long-password-123',a),true);assert.equal(await verifyPassword('incorrect',a),false)});
+test('login issues opaque token whose raw value is never stored',async()=>{const hashed=await passwordHash('long-password-123');const calls=[];const db={query:async(sql,p)=>{calls.push({sql,p});return calls.length===1?{rowCount:1,rows:[{tenant_id:tenant,user_id:user,password_hash:hashed,role:'OWNER'}]}:{rowCount:1,rows:[]}}};const session=await login(db,{tenantSlug:'agency',email:'owner@example.com',password:'long-password-123'});assert.match(session.token,/^[A-Za-z0-9_-]{43}$/);assert.equal(calls[1].p[0],tokenDigest(session.token));assert.notEqual(calls[1].p[0],session.token)});
+test('authentication fetches actor by hashed bearer token',async()=>{const token='a'.repeat(43);const db={query:async(sql,p)=>{assert.equal(p[0],tokenDigest(token));return {rowCount:1,rows:[{tenant_id:tenant,user_id:user,role:'MANAGER'}]}}};const actor=await authenticate(db,'Bearer '+token);assert.equal(actor.tenantId,tenant);assert.equal(actor.role,'MANAGER')});

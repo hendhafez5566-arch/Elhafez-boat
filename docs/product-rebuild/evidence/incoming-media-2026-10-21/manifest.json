@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-21",
+  "source": "actual disposable PostgreSQL16 / real ClamAV / actual Chromium; provider transports offline only",
+  "files": [
+    {
+      "name": "crm-private-files-desktop.png",
+      "sha256": "39eabac146ac489930d3a2a453df6061d78ce51424fb8978b932651513452989"
+    },
+    {
+      "name": "provider-continuation-postgresql.txt",
+      "sha256": "1e44e3175394f4eab908484be83dad694f7696a18752fab65048fdd86a755238"
+    },
+    {
+      "name": "provider-scanned-completion-desktop.png",
+      "sha256": "aaba3368ddc3e1bf3c8769a0a1eb177debc4dd24dcb465bee1969a6e93e1d481"
+    },
+    {
+      "name": "results.json",
+      "sha256": "3b936172e1a5e250f4b06872e5c34c9d2aaf82089ab5a59b5c117c81522f62e2"
+    },
+    {
+      "name": "secure-media-postgresql.txt",
+      "sha256": "c0a087b6594e3bc3d5bb2437fa6498ef2b77db0f528bc0b7c1502d9afc934c38"
+    },
+    {
+      "name": "unit-typecheck-build.txt",
+      "sha256": "ab31a665716fa06b73284d9d685b1ef1acd229b511636acef47d750428be5516"
+    },
+    {
+      "name": "website-clean-resume-desktop.png",
+      "sha256": "69522b2763d997ca223d44109f3508a32d69da0a41167f3219be703f33e9aa48"
+    },
+    {
+      "name": "website-quarantine-desktop.png",
+      "sha256": "5ee296644c756737ec31bfb664f632dc21c2fd338c9d5e02095151838fef2961"
+    },
+    {
+      "name": "website-rejected-mobile.png",
+      "sha256": "96128f70a25ac653d5863547184db92d90b7c7fad65c52e5d32e3a28015ad6f6"
+    }
+  ]
+}

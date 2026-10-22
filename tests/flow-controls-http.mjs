@@ -1,0 +1,18 @@
+/** Authenticated loopback-only HTTP checks; reads disposable synthetic credentials from ignored file. */
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const base=new URL(process.env.WEB_BASE_URL||'http://127.0.0.1:3100');if(!['127.0.0.1','localhost'].includes(base.hostname))throw Error('Loopback test gateway required');
+const account=JSON.parse(await readFile(process.env.ACCEPTANCE_BROWSER_ACCOUNT||'acceptance-evidence/browser-account.json','utf8'));
+const login=await fetch(new URL('/api/v1/auth/login',base),{method:'POST',headers:{'content-type':'application/json','x-boat-csrf':'1',origin:base.origin},body:JSON.stringify({tenantSlug:account.slug,email:account.email,password:account.password})});assert.equal(login.status,200,'Synthetic login');const cookie=login.headers.getSetCookie().map(c=>c.split(';')[0]).join(';');assert.ok(cookie,'Server-managed session');
+const api=async(path,body)=>{const r=await fetch(new URL('/api/v1'+path,base),{method:body?'POST':'GET',headers:{'content-type':'application/json','x-boat-csrf':'1',origin:base.origin,cookie},...(body?{body:JSON.stringify(body)}:{})});return {status:r.status,data:await r.json()}};
+const flow={name:'HTTP channel fixture',startId:'s',channel:'MESSENGER',nodes:[{id:'s',type:'START',next:'menu'},{id:'menu',type:'BUTTONS',text:'x'.repeat(641),choices:[{id:'url',title:'Details',action:'URL',url:'https://example.invalid',next:''},{id:'reply',title:'Continue',next:'end'}]},{id:'end',type:'END',text:'Local done'}]};
+let r=await api('/flows/preflight',flow);assert.equal(r.status,200);assert.equal(r.data.publishable,false);assert.ok(r.data.issues.some(i=>i.code==='CHANNEL_BUTTON_TEXT'));
+for(const [channel,allowed]of [['WEBSITE',true],['TELEGRAM',true],['WHATSAPP',false],['INSTAGRAM',false]]){r=await api('/flows/preflight',{...flow,channel});assert.equal(r.data.publishable,allowed,channel)}
+console.log('PASS real authenticated HTTP channel lint: Messenger 640-character template bound, Website/Telegram URL mixture, WhatsApp/Instagram rejection');
+const timed={name:'HTTP timeout fixture',startId:'s',nodes:[{id:'s',type:'START',next:'ask'},{id:'ask',type:'INPUT',text:'Email',field:'email',validation:{type:'email'},policy:{timeoutSeconds:1,timeoutNext:'end'},next:'end'},{id:'end',type:'END',text:'Local done'}]},now=Date.parse('2026-10-20T10:00Z');
+const first=await api('/flows/preview',{definition:timed,simulation:{now}});assert.equal(first.status,200);r=await api('/flows/preview',{definition:timed,state:first.data.state,input:{kind:'TIMEOUT',value:first.data.waiting.token},simulation:{now:now+1000}});assert.equal(r.data.finished,true);assert.equal(r.data.state.answers.email,undefined);assert.ok(r.data.trace.some(t=>t.outcome==='timeout'));assert.equal((await api('/flows/preview',{definition:timed,state:{...first.data.state,runtime:{attempts:{ask:100}}}})).status,400);
+assert.equal((await api('/flows/preview',{definition:timed,state:{...first.data.state,runtime:{...first.data.state.runtime,wait:{...first.data.state.runtime.wait,token:'-'.repeat(36)}}}})).status,400);
+console.log('PASS real HTTP preview validates runtime metadata and executes deterministic token/deadline timeout');
+assert.equal((await api('/flows/assist',{mode:'LIVE',task:'DRAFT',text:'No provider'})).status,400);r=await api('/flows/assist',{mode:'MOCK',task:'DRAFT',text:'Local draft'});assert.equal(r.data.providerCalled,false);assert.equal(r.data.requiresReview,true);assert.equal(r.data.definition.nodes.length,4);
+assert.equal((await api('/auth/logout',{})).status,200);assert.equal((await api('/flows/capabilities')).status,401);
+console.log('PASS MOCK-only review contract and session revocation on the new API paths; no provider calls');

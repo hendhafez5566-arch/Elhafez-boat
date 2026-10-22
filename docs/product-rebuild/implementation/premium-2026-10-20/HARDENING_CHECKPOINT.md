@@ -1,0 +1,11 @@
+# Consent challenge and legacy inbox hardening — 21 October 2026
+
+Each CONSENT prompt now issues a persisted random challenge bound to its node and notice version. Only that exact current challenge can accept/refuse/withdraw; it is consumed before recording the decision. A callback from another conversation, consumed prompt or earlier policy is rejected and cannot create consent. Compact consent-specific callback IDs avoid growth with deeply namespaced subflow node IDs. Preview validates challenge metadata and displays Arabic choice labels rather than tokens. Tests explicitly exercise cross-conversation replay, prompt re-entry, changed notice version and actual stored consent event counts.
+
+The old inbox OPEN/release route now delegates controlled PAUSED/HANDOFF sessions to the same pinned resume path; it cannot reset a controlled session and replay earlier work. Completed paths and service-withdrawal/stopped guards remain preserved.
+
+201 units + TypeScript/build PASS. Eleven real PostgreSQL control/consent scenarios PASS, including old inbox release and repeated consumed callback rejection. The 4 control, 4 save and 3 experiment actual Chromium checks PASS again after these changes. Save browser fixture uses available isolated ports and confirms its own API/web startup, so it cannot accidentally connect to a stale process. Its crash-release check waits for the browser to acknowledge lock release before asserting actual reacquisition; no application guard or acceptance outcome is weakened. A deliberately dropped save response remains an expected failed network request, not a page error.
+
+Actual mobile experiment inspection exposed excessive table wrapping. Columns now keep readable Arabic words in a keyboard-focusable horizontal scroller with column headers/caption. Actual corrected screenshot is in `../../evidence/experiments-2026-10-21/experiment-comparison-mobile.png`. Design remains unapproved by owner.
+
+Fresh comprehensive acceptance is still in progress. Earlier full attempts are not counted as PASS: first omitted the installed Chromium path; second correctly rejected reused provider-fixture phone ownership in the retained disposable database. The new closure run uses a fresh PostgreSQL container and explicit CHROME_BIN; tests and production guards are unchanged.

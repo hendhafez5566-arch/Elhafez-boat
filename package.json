@@ -1,0 +1,27 @@
+{
+  "name": "elhafez-boat",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "node scripts/clean-build.mjs && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "check": "npm run typecheck && npm test",
+    "db:migrate": "node --env-file-if-exists=.env scripts/migrate.mjs",
+    "db:bootstrap": "node --env-file-if-exists=.env scripts/bootstrap-owner.mjs",
+    "db:platform:bootstrap": "node --env-file-if-exists=.env scripts/bootstrap-platform.mjs",
+    "dev:web": "npm run dev -w @elhafez/web",
+    "dev:api": "npm run dev -w @elhafez/api",
+    "dev:worker": "npm run dev -w @elhafez/worker"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "playwright-core": "^1.64.1",
+    "typescript": "~5.9.3"
+  }
+}

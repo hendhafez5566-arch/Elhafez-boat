@@ -1,0 +1,30 @@
+Elhafez Boat dashboard http://127.0.0.1:3100
+Elhafez Boat API listening on 4100
+PASS initial fit waits for visible workspace instead of fitting a hidden zero-size canvas
+PASS cursor zoom invariant at 3 points
+PASS inspector does not jump camera
+PASS select/disconnect/undo/redo preserves other edges
+PASS reconnect commits once; Escape retains original
+PASS real pointer node drag and position undo
+PASS real port drag ghost and connection
+PASS multi-selection clipboard and undo
+PASS tourism name/phone/compound branch/handoff transcript and trace
+PASS in-flight save acknowledgment cannot erase newer edit
+PASS offline failure and reload recovery preserve local draft
+PASS optional debounced autosave persists without publish
+PASS real optimistic conflict preserves local edits
+PASS 50 nodes render/save/reopen 545 ms
+PASS 48 actual property input edits and save 782 ms
+PASS 100 nodes render/save/reopen 492 ms
+PASS 98 actual property input edits and save 1790 ms
+PASS 390/768/1024/1440 and CSS 200% layout (not OS/browser UI zoom)
+PASS SET_FIELD, composite text/media and weighted randomizer run in actual server preview
+PASS composite message and weighted branch properties reopen correctly
+PASS policy editor persists optional input, skip/retry/timeout routes
+PASS actual simulator advances timeout clock and explicit skip without external messaging
+PASS nested AND/OR controls and inline START trigger remain draft-only
+PASS real HTTP preflight, simulation validation, provider-mode rejection and preview-excluded analytics
+PASS mock text suggestion requires explicit review, reject preserves and accept saves through normal draft
+PASS internal form two-screen editor, required/email sandbox validation and draft roundtrip; no Meta call
+PASS mock generated definition is reviewed and rejection never replaces current graph
+PASS mock generated draft acceptance uses undo stack and never publishes

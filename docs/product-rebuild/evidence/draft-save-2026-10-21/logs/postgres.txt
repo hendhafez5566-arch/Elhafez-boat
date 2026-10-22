@@ -1,0 +1,7 @@
+PASS competing identical mutations create one draft revision, one receipt and one audit across real PostgreSQL transactions
+PASS lost acknowledgement replay returns original result; changed content or base revision cannot reuse the key
+PASS late replay cannot overwrite a newer draft and explicitly reports that review is required
+PASS same key is scoped independently by bot; actual forced RLS, foreign bot and agent write boundaries hold
+PASS receipts store no graph; expired mutation retries retain normal monotonic revision protection
+PASS old clients without mutation ID keep ordinary CAS behavior; malformed IDs fail before any draft mutation
+PASS 6 draft-save PostgreSQL scenarios

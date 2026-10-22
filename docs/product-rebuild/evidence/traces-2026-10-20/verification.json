@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-20T17:49:40.505806+00:00",
+  "parent": "66031dd20bcb1301a0cb8282e4a2dbc64aa7999c",
+  "unitPass": 161,
+  "postgresScenarios": 14,
+  "chromiumChecks": 6,
+  "combinedAcceptance": "PASS: API/runtime, broad, novice, premium, trace Chromium; post-logout and zero campaign jobs/outbound messages",
+  "F35": "PARTIAL",
+  "sourceSha256": {
+    ".github/workflows/verify.yml": "b739e86613fae43ee896cdc8a2086eaa182cebebc7f66549bf16f4f0d862bafb",
+    "apps/api/src/flow-service.ts": "9d8d3dac728dbe63c905043f7022cf6cc7c43b97be716329001b12e93d744f15",
+    "apps/api/src/flow-trace.ts": "a8928cd5e4462e8d038b9d9ba638b3b716f4b5e7bcbb0ac56316ce53da71d7e9",
+    "apps/api/src/server.ts": "2b893c66f965bf6a4110f319354aa72fe7a2083b9591ed7ca7ccd07f2b5828e8",
+    "apps/web/public/flow-builder.css": "ddaa6fbec3c7f0ac7677a97eb7440044b441a0667ce9476c0facda79ff521908",
+    "apps/web/public/flow-builder.js": "5acdbc215d34f262297f757c153ee5255d1cc2b7037c9df5094c43b590d0a0a6",
+    "apps/web/public/flow-diagnostics.js": "be620b4b791a9395fd54fd8cd32f84c65b43f037fc3c9e73b109bb4aab3c81c2",
+    "apps/web/server.mjs": "e8176583e34c0a4585a8654ff3793ebfca0c18dea91e98ee9a63cf1bf5bc4f3a",
+    "packages/database/migrations/0034_flow_trace_order.sql": "cd617ae001363726eb6cc6b6cf1ff73d801e55a50120aeac137b626886a5f564",
+    "tests/flow-controls-db.mjs": "452ba571ea3863a5667e5806f9f14760cb49ee4f2889764a1461364bfad8f494",
+    "tests/flow-trace-browser.mjs": "8c846cbe7d722f0a69a34ad5d65a78a591c2a67ac6c72b92ebecb76344980c45",
+    "tests/flow-trace.test.mjs": "d9ede06a1b9647886928d0c537a0348a577c11f7e34089bb1c3a89d571717a67",
+    "tests/runtime-acceptance.mjs": "1ebdc948f0a8b86479710b0b60acef8edaf41b182e6f21743bf7e7079c6d6dd0"
+  },
+  "screenshotsSha256": {
+    "actual-session-list.png": "766cacff90d43edaa4a8f473e5c691202e477558013fe7f93cfd3a4075ca24e3",
+    "failed-wait-diagnostic.png": "128a57f5d982fd6113e16d001a2ecabbc32a07aedc2f5ad7dfa8b9d3bbe61155",
+    "mobile-conversation-trace.png": "b08cafcd5a10a388890a8d2263f2502611f1fd50cbb58bb1b069ada4b8b23d58",
+    "ordered-conversation-trace.png": "99a3fffc82eecee62cf8abdded7ed39ecb47370923702f3beca0fafd0612eea1"
+  },
+  "testedExecutableHead": "f7651bedb086fcc7f39ef75e616920b63a0e91a5",
+  "rls": "PASS",
+  "legacyBotsTeamCrm": "PASS",
+  "repeatMigration": "PASS",
+  "radicalVisualRedesignApproved": false
+}

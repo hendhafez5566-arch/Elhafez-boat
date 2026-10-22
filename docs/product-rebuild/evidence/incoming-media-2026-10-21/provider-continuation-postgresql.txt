@@ -1,0 +1,11 @@
+PASS actual verified provider webhook leaves input waiting without invalid attempts until CLEAN, then consumes managed asset once
+PASS same-version same-node restart changes exact waiting generation and rejects stale clean completion
+PASS explicit bot stop remains authoritative after scan and cannot be resurrected by file completion
+PASS rejected source and failed download use existing retry/exhaustion graph route, never store raw references as answers
+PASS actual EICAR quarantine fails the existing input policy; a subsequent CLEAN file safely succeeds
+PASS two real completion workers produce one committed answer and one terminal outbox message
+PASS real continuation rollback leaves no answer/send, records value-free failure and prevents automatic replay
+PASS new publication does not move pending scanned attachment off its pinned original bot version
+PASS forced RLS and foreign worker tenant cannot inspect or complete attachments
+PASS real pending scan remains waiting in funnel after two days without an input timer; same UUID generation still resumes correctly
+PASS 10 scan-gated provider continuation scenarios

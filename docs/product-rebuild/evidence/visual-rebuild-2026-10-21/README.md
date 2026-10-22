@@ -1,0 +1,34 @@
+## Final refinement captures
+
+After images were refreshed on21 October from a new isolated database, with the same logical11-node tourism definition/layout,Arabic100% and original viewports. Original Before bytes are preserved. The synthetic tenant/bot IDs differ across sessions. Initial connector measurements, real library drag/drop with one-step Undo/Redo, named arrangement navigation, and390/768/1024 Zoom/Fit with non-overlapping minimap now have additional executable assertions. See `after/results.json` and `FINAL_COMPLETION_2026-10-21.md` in implementation for current scope; no owner/device/provider acceptance is implied.
+
+# Actual Chromium visual acceptance — 21 October 2026
+
+The initial checkpoint used one synthetic bot ID for both phases. The final refreshed After uses a new disposable bot ID with the same logical fixture and layout; the original Before files remain unchanged. Same11-node tourism graph and saved layout, Arabic,100% zoom,1440×1000, welcome inspector open. Mobile390×844 preserves the same inspector. Large graph: same500 nodes/499 edges, same17 minus-button presses after100%. Baseline source:2f0f77c. Original hidden-overflow browser scrolling could shift the visible baseline area despite the same focus command; new overflow:clip prevents that drift. No generated images or competitor assets.
+
+| View | Original HEAD | Rebuilt UI |
+|---|---|---|
+| Workspace | [Before](before/01-workspace.png) | [After](after/01-workspace.png) |
+| Node cards | [Before](before/02-node-cards.png) | [After](after/02-node-cards.png) |
+| Connectors | [Before](before/03-connectors.png) | [After](after/03-connectors.png) |
+| Library | [Before](before/04-library.png) | [After](after/04-library.png) |
+| Inspector | [Before](before/05-inspector.png) | [After](after/05-inspector.png) |
+| Message editor | [Before](before/06-message-editor.png) | [After](after/06-message-editor.png) |
+| Condition editor | [Before](before/07-condition-editor.png) | [After](after/07-condition-editor.png) |
+| Simulator | [Before](before/08-preview.png) | [After](after/08-preview.png) |
+| Mobile inspector | [Before](before/09-mobile.png) | [After](after/09-mobile.png) |
+| 500 nodes | [Before](before/10-large-graph.png) | [After](after/10-large-graph.png) |
+
+Node/connector crops show the same full canvas independently. `package-a`/`package-c`/`package-d` are intermediate presentation-only captures with a6-node preset, not final matched/runtime evidence. `attempts/` retains a failed pre-fix capture. Final real API suites: regression-premium28; after8; regression-scale4; regression-context3; regression-authoring5; regression-offline2 + regression-replay6 =56 Chromium checks, no page errors. PostgreSQL suites:3 scale +10 authoring +4 context +3 governance =20 scenarios. TypeScript/build246 unit tests PASS. See individual logs and results files; physical touch/screen readers/live providers remain unqualified.
+
+CI first checkpoint c00abfe: checks succeeded; browser job failed because the old offline test clicked a newly nested summary without opening its menu. Navigation helper now opens actual disclosure controls and preserves all original assertions. Rerun of the complete failed offline suite passes locally; latest source CI must be assessed independently.
+
+## Additional actual authoring and responsive evidence
+
+- [UI-authored tourism simulation](after/11-authored-tourism-preview.png)
+- [UI-authored tourism graph after Fit](after/12-authored-tourism-workspace.png)
+- [Unobstructed mobile Canvas](after/13-mobile-canvas.png)
+- [Tablet Canvas](after/14-tablet-canvas.png)
+- [Actual saved synthetic definition](after/authored-tourism.json)
+
+The17 checks in after/results.json include real authoring, persistence, simulation,501st-drop rejection, drag/Undo/Redo, connector geometry, and responsive controls. Physical-device and owner acceptance remain separate.

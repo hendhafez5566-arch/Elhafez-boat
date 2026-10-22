@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "actual 200-node authenticated save/reopen,12 edits,60 pans, keyboard zoom and measured memory preserve all nodes/edges",
+    "actual 500-node authenticated save/reopen,12 edits,60 pans, keyboard zoom and measured memory preserve all nodes/edges",
+    "actual English LTR manual value editing saves independently from Arabic and shared runtime emits localized token-aware content",
+    "actual Chromium-emulated two-finger pinch changes transform without changing graph; no physical-device claim"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium"
+}

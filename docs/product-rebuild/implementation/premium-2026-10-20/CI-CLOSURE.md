@@ -1,0 +1,35 @@
+# Latest verified continuation — 21 October 2026
+
+[COMPLETION_2026-10-21.md](COMPLETION_2026-10-21.md) supersedes the historical checkpoint below: source ab042d0, 14 PASS / 22 PARTIAL, 194 units, 38 migrations, 65 dedicated browser checks, full runtime + restore + latest Node 22/Compose PASS locally. Remote Actions UNVERIFIED (Forbidden); visual approval pending.
+
+# Account handover closed locally — 20 October 2026
+
+Same existing branch `feat/premium-flow-builder-2026-10-20` / [Draft PR #5](https://github.com/hendhafez5566-arch/Elhafez-boat/pull/5), verified starting remote HEAD `b9679ce714d7bed38df0478716456789b2582569`. No new GitHub branch/PR, merge, Railway deployment, real provider account, actual customer send or paid AI call.
+
+## Saved functional checkpoints
+
+- `e8edb1e`: reproduces the original plain-object `preventDefault` failure and replaces the collision probe with a real, hit-test-visible six-move Chromium pointer drag. It additionally verifies a trusted pointerdown and retains the non-overlap assertion.
+- `b22b9bf`: author/tenant/bot-scoped request metadata paging/status, explicit audited UNCERTAIN reconciliation, one decision/audit under concurrent retries, stale-attempt and completion guards, no HTTP/CRM/flow replay, privacy erasure compatibility. Nullable constrained migration 0036 on the existing queue. Actual mobile clicks exposed and fixed the drawer/backdrop parent stacking context.
+- `2be26d2`: opt-in personal-device draft copies survive actual tab closure AND Chromium process/profile restart. Separate per-tab copies, advisory autosave pause, exact-match acknowledgement cleanup, validated review/Undo, real 409 protection and logout cleanup. At most three bounded copies/seven days; default remains session-only. These are ordinary browser-profile data, not encryption. The intermediate `8c77cfa` is evidence-file renaming only.
+
+## Final gates actually executed
+
+Accepted application source is `2be26d2`. The exact tested application/harness/script bytes are in [verification.json](../../evidence/handover-2026-10-20/final/verification.json). Final harness correction keeps the authenticated API-only contract client on its primary real IPv6 gateway; the independent novice/team/premium clients retain their IPv4 gateway. No limit increase, counter clearing, skipped login or forged forwarding header. The operations login now checks its actual HTTP response explicitly instead of reporting only a timeout.
+
+- **182 Unit / typecheck / build PASS**, zero failed/skipped.
+- **Fresh PostgreSQL 16:** migrations 0001–0036, forced RLS, legacy backfill/bots/CRM/team/reporting PASS; 14 controls/trace, 19 durable request, 5 rich-content and 7 request-operation scenarios PASS; actual ClamAV/media/setup/inbox/platform regression PASS. Every transport scenario is an explicit local mock.
+- **Full combined runtime EXIT 0** with `CI_LOCAL_CLOSURE=1 CI_TRACE_BROWSER=1 CI_INTEGRATED_BROWSER=1 CI_OPS_BROWSER=1 CI_DRAFT_RECOVERY=1`. Includes API/worker crash/reconnect and distributed throttle, mixed workload with zero pending delays, broad/novice UI, public API/widget request success/error/timeout, and all six dedicated suites: premium 28, integrated 8, requests 3, traces 6, operations 5, recovery 4 — **54 dedicated browser checks**. The 81 page/viewport loading visits alone are not feature acceptance.
+- **Backup/restore EXIT 0:** exact full-row fingerprints of every public table, including reconciliation data, media and ciphertext; 36 migrations restored. Intentionally truncated restore fails only in a new isolated database; source/successful restore remain intact. Restored least-privilege delayed work completes once. The backup script now accepts an explicit disposable service and rejects ambiguous/invalid selection rather than silently picking the first local PostgreSQL container.
+- **Node 22 non-root image build and actual HTTP PASS:** packaged new module routes, real owner login and bot/request APIs against PostgreSQL, UID 1000, no private env or build CA in the image. This cloud requires its injected public proxy CA: a temporary Dockerfile outside the checkout mounts that CA only for the dependency RUN. TLS/integrity verification stays enabled; repository Dockerfile is unchanged. This is not a claim of an unchanged-network canonical Docker build. Local Compose replica tests were not repeated; the existing remote workflow retains them.
+
+[Raw final logs, selected actual screenshots and six result files](../../evidence/handover-2026-10-20/final/). [Request operations images/results](../../evidence/operations-2026-10-20/). [Browser restart/cross-tab images/results](../../evidence/recovery-2026-10-20/). Historical premium/trace/request/integrated evidence bytes were retained; refreshed regression snapshots live in the new final directory. Synthetic fixtures only; no private fixture credentials/tokens are committed.
+
+## Current F01–F36 and next work
+
+[Canonical matrix](F01-F36.md): **10 PASS, 26 PARTIAL, 0 wholly BLOCKED**. The five integrated capabilities F03/F05/F06/F25/F31 are accepted in their stated local contract after the combined regression. The rebuild is not declared complete or visually approved.
+
+Remaining priorities are real: native CONNECTOR response/error contracts and broader F23 qualification; F36 exclusive cross-tab leases/server mutation idempotency; portable reference remapping and unified publish readiness/release diff; consent/unsubscribe and human pause/resume/availability policies; broader triggers/native input/components; customer timezone/closed-calendar extremes; experiment attribution/funnel/delivery correlation; approval/comments and bilingual authoring; sustained profiling and physical touch/native zoom/screen-reader/contrast acceptance. F24 official Meta Flow/data-exchange qualification and F29/F30 actual AI provider work remain externally blocked within PARTIAL. Radical redesign remains deferred.
+
+GitHub fetch/push and remote branch SHA work; Actions API requests return **Forbidden**, so **remote CI green is not verified**. Local results do not substitute for that observation. Protected target `feat/stage0-foundation` stays `cc702b795f1c7aa0d0b75fec6655574f4f2ec57b`, main stays `c8acec40d44803417e9e21a381d7e7f9b0d41fe0`.
+
+Environment install/start instructions were saved to the configuration draft, including the writable npm/buildx caches, retained local service startup, fresh disposable CI database rule, real local scanner and temporary public-CA trust bridge. Saving did not publish an environment or deploy the product. For code rollback keep additive 0036 columns/data; a prior application version can ignore them. No data-destructive rollback, production migration or deployment was performed.

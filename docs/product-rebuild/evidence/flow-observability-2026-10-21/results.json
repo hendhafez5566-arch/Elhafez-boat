@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-21",
+  "checks": [
+    "authenticated real API version comparison displays actual distinct conversation funnels",
+    "actual Canvas counts survive closing report and reopen node branch drilldown without mutating draft",
+    "mobile actual report and authenticated correlated message certainty expose metadata only"
+  ],
+  "errors": [],
+  "provider": "NONE; real PostgreSQL and Chromium"
+}

@@ -1,0 +1,140 @@
+TAP version 13
+# Subtest: production WhatsApp sender against loopback simulator: delivery and ambiguous faults
+ok 1 - production WhatsApp sender against loopback simulator: delivery and ambiguous faults
+  ---
+  duration_ms: 53.418904
+  type: 'test'
+  ...
+# Subtest: no automatic retry for 408/5xx/unknown outcomes; only explicit throttle retries
+ok 2 - no automatic retry for 408/5xx/unknown outcomes; only explicit throttle retries
+  ---
+  duration_ms: 0.197414
+  type: 'test'
+  ...
+# Subtest: invalid account identifiers fail before any transport
+ok 3 - invalid account identifiers fail before any transport
+  ---
+  duration_ms: 0.69792
+  type: 'test'
+  ...
+# Subtest: provider fixture contracts, OAuth refresh and duplicate idempotency keys (harness coverage only)
+ok 4 - provider fixture contracts, OAuth refresh and duplicate idempotency keys (harness coverage only)
+  ---
+  duration_ms: 55.398594
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 175.695515
+ Container boat-completion-20261021-migrate-1  Recreate
+ Container boat-completion-20261021-migrate-1  Recreated
+ Container boat-completion-20261021-grants-1  Recreate
+ Container boat-completion-20261021-grants-1  Recreated
+ Container boat-completion-20261021-api-2  Recreate
+ Container boat-completion-20261021-api-1  Recreate
+ Container boat-completion-20261021-api-2  Recreated
+ Container boat-completion-20261021-api-1  Recreated
+ Container boat-completion-20261021-web-1  Recreate
+ Container boat-completion-20261021-worker-2  Recreate
+ Container boat-completion-20261021-worker-1  Recreate
+ Container boat-completion-20261021-web-1  Recreated
+ Container boat-completion-20261021-worker-2  Recreated
+ Container boat-completion-20261021-worker-1  Recreated
+ Container boat-completion-20261021-db-1  Starting
+ Container boat-completion-20261021-db-1  Started
+ Container boat-completion-20261021-db-1  Waiting
+ Container boat-completion-20261021-db-1  Healthy
+ Container boat-completion-20261021-migrate-1  Starting
+ Container boat-completion-20261021-migrate-1  Started
+ Container boat-completion-20261021-migrate-1  Waiting
+ Container boat-completion-20261021-migrate-1  Exited
+ Container boat-completion-20261021-grants-1  Starting
+ Container boat-completion-20261021-grants-1  Started
+ Container boat-completion-20261021-grants-1  Waiting
+ Container boat-completion-20261021-grants-1  Exited
+ Container boat-completion-20261021-api-1  Starting
+ Container boat-completion-20261021-api-1  Started
+ Container boat-completion-20261021-api-2  Starting
+ Container boat-completion-20261021-api-2  Started
+ Container boat-completion-20261021-api-1  Waiting
+ Container boat-completion-20261021-api-2  Waiting
+ Container boat-completion-20261021-api-1  Waiting
+ Container boat-completion-20261021-api-2  Waiting
+ Container boat-completion-20261021-api-1  Healthy
+ Container boat-completion-20261021-api-2  Healthy
+ Container boat-completion-20261021-worker-1  Starting
+ Container boat-completion-20261021-api-1  Healthy
+ Container boat-completion-20261021-api-2  Healthy
+ Container boat-completion-20261021-web-1  Starting
+ Container boat-completion-20261021-worker-1  Started
+ Container boat-completion-20261021-worker-2  Starting
+ Container boat-completion-20261021-web-1  Started
+ Container boat-completion-20261021-worker-2  Started
+ Container boat-completion-20261021-grants-1  Waiting
+ Container boat-completion-20261021-api-1  Waiting
+ Container boat-completion-20261021-api-2  Waiting
+ Container boat-completion-20261021-worker-1  Waiting
+ Container boat-completion-20261021-worker-2  Waiting
+ Container boat-completion-20261021-web-1  Waiting
+ Container boat-completion-20261021-db-1  Waiting
+ Container boat-completion-20261021-migrate-1  Waiting
+ Container boat-completion-20261021-worker-1  Healthy
+ Container boat-completion-20261021-worker-2  Healthy
+ Container boat-completion-20261021-web-1  Healthy
+ Container boat-completion-20261021-migrate-1  Exited
+ Container boat-completion-20261021-grants-1  Exited
+ Container boat-completion-20261021-db-1  Healthy
+ Container boat-completion-20261021-api-1  Healthy
+ Container boat-completion-20261021-api-2  Healthy
+{"status":"ok","service":"api","database":"reachable","whatsappConnected":false} retained
+----------
+        1
+(1 row)
+
+ migrated
+----------
+        1
+(1 row)
+
+ Container boat-completion-20261021-db-1  Stopping
+ Container boat-completion-20261021-db-1  Stopped
+ Container boat-completion-20261021-db-1  Starting
+ Container boat-completion-20261021-db-1  Started
+{"status":"ok","service":"api","database":"reachable","whatsappConnected":false} retained
+----------
+        1
+(1 row)
+
+worker-2  | WhatsApp outbox worker started
+api-2     | Elhafez Boat API listening on 4000
+api-2     | API database connection lost { code: '57P01' }
+worker-2  | Worker client connection lost { code: '57P01' }
+worker-2  | Worker database connection lost { code: '57P01' }
+worker-1  | WhatsApp outbox worker started
+worker-1  | Worker client connection lost { code: '57P01' }
+worker-1  | Worker database connection lost { code: '57P01' }
+api-1     | Elhafez Boat API listening on 4000
+api-1     | API database connection lost { code: '57P01' }
+ Container boat-completion-20261021-web-1  Stopping
+ Container boat-completion-20261021-worker-2  Stopping
+ Container boat-completion-20261021-worker-1  Stopping
+ Container boat-completion-20261021-worker-1  Stopped
+ Container boat-completion-20261021-worker-2  Stopped
+ Container boat-completion-20261021-web-1  Stopped
+ Container boat-completion-20261021-api-2  Stopping
+ Container boat-completion-20261021-api-1  Stopping
+ Container boat-completion-20261021-api-2  Stopped
+ Container boat-completion-20261021-api-1  Stopped
+ Container boat-completion-20261021-grants-1  Stopping
+ Container boat-completion-20261021-grants-1  Stopped
+ Container boat-completion-20261021-migrate-1  Stopping
+ Container boat-completion-20261021-migrate-1  Stopped
+ Container boat-completion-20261021-db-1  Stopping
+ Container boat-completion-20261021-db-1  Stopped
+PASS latest local image: isolated Compose 2 API + 2 workers, 38 migrations, simulator suite, PostgreSQL outage/reconnect and exact retained fixture

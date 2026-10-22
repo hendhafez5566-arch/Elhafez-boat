@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED (2026-10-17)** — The owner rejected ERP/booking/finance expansion. The authoritative scope is [WhatsApp chatbot-only lead assistant](00-SCOPE-CHATBOT-ONLY.md). Any booking, payment, refund, traveler records or system-management requirements in this older document are **NOT product requirements and MUST NOT be built**. Human staff handles all reservations and follow-up outside the bot.
+
 # Official WhatsApp bot design
 
 Use official WhatsApp Business Platform Cloud API; no browser automation or unofficial libraries.

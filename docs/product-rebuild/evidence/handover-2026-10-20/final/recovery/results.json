@@ -1,0 +1,11 @@
+{
+  "checks": [
+    "opt-in actual draft survives closing its tab; restoration validates without writing or publishing",
+    "actual Chromium process/profile restart restores only the authenticated scoped backup; server and publication remain unchanged",
+    "real storage events pause autosave; per-tab backups survive another save; stale manual save keeps the actual 409 review and local edit",
+    "actual logout removes opted-in identity backups and session recovery and closes recovery dialogs"
+  ],
+  "errors": [],
+  "chromium": "154.0.8037.57",
+  "date": "2026-10-20T20:39:27.441Z"
+}

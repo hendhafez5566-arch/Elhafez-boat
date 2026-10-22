@@ -1,0 +1,12 @@
+{
+  "name": "@elhafez/worker",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env ../../.build/apps/worker/main.js",
+    "start": "node --env-file-if-exists=../../.env ../../.build/apps/worker/main.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}

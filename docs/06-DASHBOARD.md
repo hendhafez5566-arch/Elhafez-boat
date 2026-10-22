@@ -1,3 +1,5 @@
+> **HISTORICAL / SUPERSEDED (2026-10-17)** — The owner rejected ERP/booking/finance expansion. The authoritative scope is [WhatsApp chatbot-only lead assistant](00-SCOPE-CHATBOT-ONLY.md). Any booking, payment, refund, traveler records or system-management requirements in this older document are **NOT product requirements and MUST NOT be built**. Human staff handles all reservations and follow-up outside the bot.
+
 # Dashboard UX specification
 
 Arabic-first, full RTL, mobile-first, accessible, high-contrast. Positive green, warning amber, negative red. Avoid pale text, cluttered filters, huge tables and long help text. Compact pagination and clear actions. Two modes: Simple for everyday staff, Advanced for owners/admins.

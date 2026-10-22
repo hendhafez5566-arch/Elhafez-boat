@@ -1,0 +1,19 @@
+# Optional HTTPS ingress overlay. Start only after owner approves hosting/domain/cost.
+# Use a NEW Compose project name and fresh DB volume, never a production project.
+services:
+  edge:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      STAGING_HOST: ${STAGING_HOST:?Set a real owner-approved DNS hostname}
+    ports: ['80:80', '443:443']
+    volumes:
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
+      - staging-tls:/data
+      - staging-config:/config
+    networks: [internal]
+    depends_on:
+      web: {condition: service_started}
+volumes:
+  staging-tls:
+  staging-config:

@@ -1,19 +1,18 @@
-# Mandatory instructions for any new AI coding session
+# Elhafez Boat — Mandatory instructions for developer agents
 
-Read README.md, docs/01-MASTER-PLAN.md, docs/02-ARCHITECTURE.md, docs/04-WHATSAPP-BOT.md, docs/05-MENUS-AND-FLOWS.md, docs/06-DASHBOARD.md, docs/07-BUSINESS-RULES.md, docs/08-SECURITY.md, docs/09-TEST-STRATEGY.md, docs/10-DECISIONS.md, project-management/CURRENT-STATUS.md and project-management/HANDOVER.md.
+**READ FIRST:** `docs/00-SCOPE-CHATBOT-ONLY.md`. Latest owner decision: **a general-purpose chatbot SaaS for ALL businesses and shops**, not a tourism-only chatbot and not an ERP.
 
-Then verify the actual repository tree, branch, latest commit, tests, open PRs/issues and deployment state. Documentation is not proof of implementation. Never invent passing tests, screenshots, live integrations or progress.
+## Product
+- Businesses connect messaging accounts and configure conversation flows without code: messages, buttons, lists, questions/custom fields, conditions, tags, media/links, human handoff, FAQs, product/service information.
+- The same flow builder works for retail, clinics, real estate, restaurants, education, tourism and other industries. Do not hardcode UMRAH/HAJJ as universal categories.
+- Platform facilitates communication, collects intent and hands off to employees. Employees handle actual orders, bookings, payments, refunds and fulfilment outside this software.
+- Maintain per-tenant isolation, least privilege, Meta policy compliance, secure secrets and signed webhooks. No fictional offer/price/availability.
+- WhatsApp Cloud API and Website Chat now have source adapters; live acceptance is still separate. Messenger/Instagram/Telegram now have source adapters; no live provider activation is implied. Read docs/19-ADVANCED-RUNTIME.md for account types and limits.
+- Preserve git history and safely retire previous booking/room/finance overbuild; **do not extend it**.
 
-## Work rules
-- Build maintainable, Arabic-first RTL, accessible, mobile-friendly SaaS; prefer simplicity and modularity over patches.
-- Company/tenant isolation on every data query and authorization boundary.
-- Official WhatsApp Business Platform only; lists/buttons/Flows are provider-controlled UI. Check current Meta constraints before implementing.
-- Menus and conversation workflows are data-driven, versioned, validated and published atomically; immutable stable action IDs, never route by visible Arabic labels.
-- AI cannot fabricate price, inventory, travel dates, policies, confirmations or payment outcomes. All business actions validated by deterministic services.
-- Human handoff must prevent simultaneous bot responses.
-- Booking request != confirmed booking. Preserve price/terms snapshots and audit changes.
-- Never commit credentials, access tokens, PII, customer chat transcripts or production exports.
-- Implement tests for each change. Do not weaken tests to make builds pass.
-- Before ending ANY coding session, update CURRENT-STATUS.md and HANDOVER.md with verified branch/SHA, changed files, executed commands/results, blockers and exact next action. Update COMPLETED/REMAINING/CHANGELOG as needed.
-- Use feature branches and reviewed PRs for implementation; avoid direct risky production deployments.
-- If access/credentials missing, finish safe offline work and document blocker precisely rather than pretending completion.
+## Workflow
+- Repository: `hendhafez5566-arch/Elhafez-boat`, PUBLIC by owner decision.
+- Continue branch `feat/stage0-foundation`, draft PR #1. Check real HEAD and state before editing.
+- Inspect files; implement real code, don't claim missing features complete. Minimize dependencies and never commit API tokens/actual customer data.
+- Keep one formal comprehensive acceptance test phase **after all approved chatbot features are built**; small compilation/syntax safeguards during development are acceptable.
+- Update `project-management/CURRENT-STATUS.md`, `HANDOVER.md`, `REMAINING.md` and changelog after source edits, with verifiable feature status.

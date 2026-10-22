@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "real HTTP trace cursor paging rejects forged cursors and retains historical uncertainty",
+    "actual committed path, execution correlation, pinned revision and timings display without answers",
+    "trace node opens current draft step without modifying or replacing the draft",
+    "saved FAILED continuation is visible with pinned node and no raw failure payload",
+    "390px RTL trace dialog keeps outcomes and timings inside viewport",
+    "logout removes diagnostics and delayed authenticated response cannot restore them"
+  ],
+  "errors": [],
+  "chromium": "154.0.8037.57",
+  "date": "2026-10-20T18:45:08.817Z"
+}

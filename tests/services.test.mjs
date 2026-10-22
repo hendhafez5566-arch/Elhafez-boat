@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {allow,withTenantTransaction,HttpFailure} from '../.build/apps/api/src/services.js';
+import {createCatalog} from '../.build/apps/api/src/catalog.js';
+const actor={tenantId:'11111111-1111-4111-8111-111111111111',userId:'22222222-2222-4222-8222-222222222222',role:'OWNER'};
+const db=(responses)=>{const calls=[];return {calls,query:async(sql,params=[])=>{calls.push({sql,params});return responses.shift()??{rowCount:0,rows:[]}}};};
+test('viewer cannot create catalog items',async()=>{const c=db([]);await assert.rejects(createCatalog(c,{...actor,role:'VIEWER'},{kind:'SERVICE',title:'خدمة'}),e=>e.status===403);assert.equal(c.calls.length,0)});
+test('catalog uses authenticated tenant instead of body tenant',async()=>{const c=db([{rowCount:1,rows:[{id:'item'}]}]);await createCatalog(c,actor,{tenantId:'malicious',kind:'SERVICE',title:'خدمة'});assert.equal(c.calls.find(x=>x.sql.includes('INSERT INTO chatbot_catalog_items')).params[0],actor.tenantId)});
+test('invalid actor denied before SQL',()=>assert.throws(()=>allow({...actor,tenantId:'invalid'},['OWNER']),HttpFailure));
+test('tenant transaction sets RLS scope and commits',async()=>{const c=db([]);c.release=()=>{c.released=true};const pool={connect:async()=>c};await withTenantTransaction(pool,actor,async client=>{await client.query('SELECT 1');return 3});assert.equal(c.calls[0].sql,'BEGIN');assert.deepEqual(c.calls[1].params,[actor.tenantId]);assert.equal(c.calls.at(-1).sql,'COMMIT');assert.equal(c.released,true)});
+test('tenant transaction rolls back on failure',async()=>{const c=db([]);c.release=()=>{};await assert.rejects(withTenantTransaction({connect:async()=>c},actor,async()=>{throw new Error('fail')}));assert.equal(c.calls.at(-1).sql,'ROLLBACK')});

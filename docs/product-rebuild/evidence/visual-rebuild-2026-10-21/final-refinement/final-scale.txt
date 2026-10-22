@@ -1,0 +1,6 @@
+Starting actual Chromium
+PASS actual 200-node authenticated save/reopen,12 edits,60 pans, keyboard zoom and measured memory preserve all nodes/edges
+PASS actual 500-node authenticated save/reopen,12 edits,60 pans, keyboard zoom and measured memory preserve all nodes/edges
+PASS actual English LTR manual value editing saves independently from Arabic and shared runtime emits localized token-aware content
+PASS actual Chromium-emulated two-finger pinch changes transform without changing graph; no physical-device claim
+PASS 4 scale/localization Chromium scenarios

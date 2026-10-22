@@ -1,0 +1,34 @@
+import {supportsAcquisition,nativeInputCapabilities} from './flow-native-input.js';
+import {triggerConflicts} from './flow-triggers.js';
+import type {FlowDefinition,FlowChannel} from './flow-engine.js';
+export type FlowIssue={severity:'error'|'warning';nodeId?:string;code:string;message:string};
+export const channelCapabilities={WHATSAPP:{...nativeInputCapabilities.WHATSAPP,buttons:3,listRows:10,urlButtons:1,mixedUrl:false},WEBSITE:{...nativeInputCapabilities.WEBSITE,buttons:3,listRows:10,urlButtons:3,mixedUrl:true},TELEGRAM:{...nativeInputCapabilities.TELEGRAM,buttons:3,listRows:10,urlButtons:3,mixedUrl:true},MESSENGER:{...nativeInputCapabilities.MESSENGER,buttons:3,listRows:10,urlButtons:3,mixedUrl:true},INSTAGRAM:{...nativeInputCapabilities.INSTAGRAM,buttons:3,listRows:10,urlButtons:0,mixedUrl:false}} as const;
+export function flowChannelIssues(flow:FlowDefinition,channel:FlowChannel=flow.channel||'WHATSAPP'):FlowIssue[]{
+ const issues:FlowIssue[]=[],cap=channelCapabilities[channel];
+ for(const conflict of triggerConflicts(flow.triggers||[]))issues.push({severity:'error',code:'TRIGGER_PRIORITY_CONFLICT',message:'التريجران '+(conflict.first+1)+' و'+(conflict.second+1)+' قد يتطابقان بأولوية متساوية؛ اختر أولويتين مختلفتين.'});
+ for(const [i,t]of (flow.triggers||[]).entries())if(t.enabled&&t.kind==='EVENT'&&t.phrase==='LOCATION'&&(t.channel||channel)==='WEBSITE')issues.push({severity:'error',code:'TRIGGER_UNSUPPORTED_EVENT',message:'التريجر '+(i+1)+': دردشة الموقع لا تستقبل موقعًا أصليًا حاليًا.'});
+ if(flow.forms?.length)issues.push({severity:'warning',code:'FORM_DRAFT_ONLY',message:'النماذج مسودات داخلية فقط؛ لا توجد مراجع Meta معتمدة أو إرسال حي.'});
+ for(const node of flow.nodes){
+  if(node.type==='INPUT'&&node.acquisition?.kind==='ATTACHMENT'&&channel!=='WEBSITE'&&process.env.INBOUND_MEDIA_FETCH_ENABLED!=='1')issues.push({severity:'warning',nodeId:node.id,code:'INBOUND_MEDIA_FETCH_DISABLED',message:'جلب ملفات المزود متوقف افتراضيًا؛ تبقى المحادثة بانتظار الفحص أو مسار المهلة حتى يفعّله المالك صراحةً.'});
+  if(node.type==='INPUT'&&node.acquisition){let current:typeof node|undefined=node;const visited=new Set<string>();while(current?.acquisition&&!supportsAcquisition(channel,current.acquisition.kind)){if(visited.has(current.id)){issues.push({severity:'error',nodeId:node.id,code:'NATIVE_FALLBACK_CYCLE',message:'مسارات بديل الإدخال الأصلي تحتوي حلقة على '+channel});break}visited.add(current.id);const next=flow.nodes.find(n=>n.id===current!.acquisition!.unsupportedNext);current=next?.type==='INPUT'?next:undefined;}}
+
+  if(node.type==='BUTTONS'||node.type==='LIST'){
+   const urls=node.choices.filter(c=>c.action==='URL'),replies=node.choices.length-urls.length;
+   if(channel==='MESSENGER'&&urls.length&&node.text.length>640)issues.push({severity:'error',nodeId:node.id,code:'CHANNEL_BUTTON_TEXT',message:'نص رسالة أزرار الروابط في Messenger لا يتجاوز 640 حرفًا.'});
+   if(urls.length&&(node.type==='LIST'||urls.length>cap.urlButtons||!cap.mixedUrl&&replies>0))issues.push({severity:'error',nodeId:node.id,code:'CHANNEL_URL_BUTTONS',message:channel+' لا يدعم هذا المزيج من أزرار الروابط والردود.'});
+  }
+  if((node.type==='TEXT'||node.type==='BUTTONS')&&node.blocks?.some(b=>b.type==='CARD'||b.type==='GALLERY')&&['WHATSAPP','TELEGRAM'].includes(channel))issues.push({severity:'warning',nodeId:node.id,code:'GALLERY_FALLBACK',message:'البطاقات على '+channel+' تُعرض كصور ونصوص وروابط مرتبة؛ ليست معرضًا أصليًا.'});
+  if(node.type==='INPUT'&&node.acquisition&&!supportsAcquisition(channel,node.acquisition.kind))issues.push({severity:'warning',nodeId:node.id,code:'NATIVE_INPUT_FALLBACK',message:'المكوّن '+node.acquisition.kind+' غير مدعوم على '+channel+'؛ سيُنفّذ مسار البديل الصريح.'});
+  if(node.type==='INPUT'&&!node.acquisition&&node.validation?.type==='location')issues.push({severity:'warning',nodeId:node.id,code:'LOCATION_TEXT_FALLBACK',message:'الموقع يُجمع كإحداثيات نصية؛ لا يوجد طلب موقع أصلي لهذه الخطوة.'});
+  if(node.type==='LIST'&&['TELEGRAM','MESSENGER','INSTAGRAM'].includes(channel))issues.push({severity:'warning',nodeId:node.id,code:'LIST_ADAPTER_FALLBACK',message:'قائمة '+channel+' تُعرض بأزرار/Quick Replies وفق محول القناة، لا كقائمة WhatsApp أصلية.'});
+  if(node.type==='MEDIA'&&channel==='INSTAGRAM'&&node.mediaKind!=='image')issues.push({severity:'warning',nodeId:node.id,code:'MEDIA_LINK_FALLBACK',message:'هذا النوع في Instagram يُعرض كنص ورابط؛ لا يُرسل كمرفق أصلي.'});
+  if(node.type==='AI')issues.push({severity:'warning',nodeId:node.id,code:'AI_PROVIDER_READINESS',message:'المحاكاة تستخدم Mock؛ جاهزية مزود AI تحتاج فحصًا منفصلًا.'});
+ }
+ return issues;
+}
+/** Implemented adapter contracts, not live provider qualification. Every runtime node is accounted for. */
+export function componentCapabilities(){
+ const channels=Object.keys(channelCapabilities) as FlowChannel[],internal=['START','SUBFLOW','CONNECTOR','DELAY','SET_FIELD','RANDOMIZER','BUSINESS_HOURS','GOAL','CRM_ACTION','CATALOG','WEBHOOK','AI','KEYWORD','CONDITION','TAG','CONTROL','HANDOFF','END'];
+ const names=[...internal,'TEXT','BUTTONS','LIST','QUESTION','INPUT','MEDIA','LINK','CONSENT','CARD','GALLERY','LOCATION','PHONE','EMAIL','ATTACHMENT','FORM'];
+ return {qualification:'LOCAL_ADAPTER_CONTRACT_ONLY',channels,rows:names.map(component=>({component,channels:Object.fromEntries(channels.map(channel=>{let mode='NATIVE',detail='محتوى أو إدخال تدعمه محولات القناة الحالية';if(internal.includes(component)){mode='ENGINE';detail=component==='AI'?'محاكاة Mock؛ المزود الحقيقي غير مؤهل':component==='WEBHOOK'||component==='CONNECTOR'?'الطابور الحالي مع سياسات الأمان والمهلة؛ تفعيل التكامل مستقل':'خطوة داخلية في المحرك الحالي، لا عنصر مزود مستقل'}else if(component==='FORM'){mode='DRAFT_ONLY';detail='مسودة داخلية؛ لا تُرسل كـWhatsApp Flow رسمي'}else if(['LOCATION','PHONE','EMAIL','ATTACHMENT'].includes(component)){if(!supportsAcquisition(channel,component as 'LOCATION'|'PHONE'|'EMAIL'|'ATTACHMENT')){mode='EXPLICIT_ROUTE';detail='يلزم مسار البديل الصريح قبل جمع أي قيمة'}else detail=component==='ATTACHMENT'?'ملف خاص؛ لا قبول قبل CLEAN واستكمال الانتظار الصحيح':'إدخال أصلي؛ القيم الوهمية في المحاكاة موسومة Mock'}else if(['CARD','GALLERY'].includes(component)&&['WHATSAPP','TELEGRAM'].includes(channel)){mode='FALLBACK';detail='صور ونصوص وروابط مرتبة، دون معرض أصلي'}else if(component==='LIST'&&['TELEGRAM','MESSENGER','INSTAGRAM'].includes(channel)){mode='FALLBACK';detail=channel==='TELEGRAM'?'أزرار inline مع callback موثق':'Quick Replies بنصوص مختصرة؛ لا قائمة WhatsApp أصلية'}else if(component==='MEDIA'&&channel==='INSTAGRAM'){mode='CONDITIONAL';detail='الصورة أصلية؛ الصوت والفيديو والمستند يتحول إلى نص ورابط'}else if(component==='BUTTONS'){mode='CONDITIONAL';detail=`حتى ${channelCapabilities[channel].buttons} ردود؛ روابط ${channelCapabilities[channel].urlButtons}؛ مزج ${channelCapabilities[channel].mixedUrl?'مسموح':'غير مدعوم'}`;}return [channel,{mode,detail}]}))}))};
+}

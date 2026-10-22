@@ -1,0 +1,9 @@
+{$STAGING_HOST} {
+  # No request logs: avoid retaining phone IDs, tokens or customer messages.
+  header {
+    Strict-Transport-Security "max-age=31536000"
+    X-Content-Type-Options "nosniff"
+    Referrer-Policy "no-referrer"
+  }
+  reverse_proxy web:3000
+}

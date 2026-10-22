@@ -1,0 +1,334 @@
+PASS atomic workspace setup, retained unpublished draft, retry idempotency, owner guard, invalid rollback and tenant separation
+PASS real ClamAV clean/quarantine/offline/recovery; private preview tenant guards; independent published-bot reference deletion denied; unused deletion succeeds
+PASS real simultaneous agent takeover, exactly one owner, denied competing/closed reply and stored assigned website reply
+PASS real platform company provision/owner activation/company login hint, single-use invitation and administrative-only audit fields
+PASS local integration inspection with zero queued jobs; real secret encryption/rotation without disclosure, disable and tenant denial; no outbound connection
+PASS draft trigger inert until atomic publication
+PASS retry count and immutable deadline survive separate real transactions; exhausted route cancels job
+PASS optional skip uses current node callback and never writes missing answer
+PASS durable timeout resumes through actual worker exactly once and premature clocks requeue
+PASS same-node re-entry rejects stale token and late answer follows timeout
+PASS reply/worker race serializes one timeout transition under real conversation lock
+PASS real CRM stage/assignee changes and session-only fields stay out of CRM including human-keyword handoff
+PASS persisted timing/goals, preview excluded, value-free analytics and real RLS isolation
+PASS foreign-company CRM assignee cannot publish; pinned version and active triggers remain unchanged
+PASS legacy null-bot pinned session is retained and included only in legacy-bot analytics
+PASS ordered execution IDs and exact cursor pagination retain every real transition without customer values
+PASS conversation trace rejects cross-company and same-company wrong-bot identifiers
+PASS historical events remain visible with explicit unknown order and legacy scope
+PASS diagnostics expose saved failed-continuation status and pinned node without raw error payloads
+PASS 14 PostgreSQL control scenarios; no external provider calls
+PASS unique wait-token queue, ignored inbound duplicates, stable key and exactly one committed success continuation
+PASS persisted TEXT/header contract reaches durable worker and atomically maps safe scalar fields through existing queue/continuation
+PASS mapping response failure routes atomically without applying invalid fields
+PASS typed response failure routes atomically without applying invalid fields
+PASS POST HTTP 429 takes error branch with no automatic replay
+PASS ambiguous POST timeout is quarantined and follows timeout without resend
+PASS committed in-flight claim blocks second worker; expired interrupted claim never resends and ignores late success
+PASS real concurrent website/privacy contact-first locks and response continuation complete without deadlock or HTTP replay
+PASS durable stored response survives actual PostgreSQL delivery rollback and resumes without repeating HTTP
+PASS human takeover while HTTP is in flight prevents fields, continuation and automated delivery
+PASS publication during wait preserves pinned request and downstream version
+PASS same-node restart changes wait token and cancels stale job before dispatch
+PASS existing deadline worker takes timeout and cancels undispatched request once
+PASS opt-out and unavailable/expired messaging channel stop dispatch
+PASS expired WhatsApp authorization and explicit reauthorization prevent integration side effects even inside service window
+PASS bounded safe GET retry retains one job/idempotency key and one successful continuation
+PASS real forced RLS, other-tenant worker and author-role boundaries remain enforced
+PASS integration disabled after publication follows enqueue-error route without creating a job
+PASS owner erasure refuses unreconciled in-flight/uncertain request attempts
+PASS owner erasure scrubs stored mapped responses and request payloads, cancels pending work and prevents all continuation
+PASS 20 durable integration scenarios; every HTTP dispatch is an explicit local mock
+PASS published rich card/gallery and button-effect definition roundtrip, groups/collapse retained, real website route
+PASS actual website delivery stores native galleries and ordered composite content before interactive buttons
+PASS real visitor button effects persist typed fields/tags in session and CRM once under replayed message ID
+PASS new publication preserves existing conversation version and previously delivered card content
+PASS real cross-company bot/message denial, author role boundary and widget origin restriction retained
+PASS 5 integrated rich-content PostgreSQL scenarios
+PASS real Website Chat -> published request -> committed ambiguous worker outcome and timeout continuation
+PASS metadata diagnostics exclude body, mapped values, endpoint, credentials and customer content
+PASS author-only diagnostics/reconciliation; forced RLS, tenant and same-tenant wrong-bot guards
+PASS explicit evidence/stale-attempt guard; competing retries produce one audited resolution and no HTTP/flow/CRM replay
+PASS PENDING/PROCESSING/unsettled completion cannot be overridden; verified not-delivered is terminal without resend
+PASS real bounded cursor pagination, no repeated rows, literal status filters and safe error-code projection
+PASS verified reconciliation allows existing owner erasure; private payload/response scrubbed while operational decision remains
+PASS 7 real request-operations PostgreSQL scenarios
+PASS optional governance preserves ordinary publication and existing immutable version
+PASS same readiness/publication approval gate, optional owner policy and no network probe
+PASS competing review requests coalesce; author and low-privilege decisions are denied
+PASS independent approval permits actual publish; identical decision retries create one audit and opposing retry fails
+PASS saving invalidates old approval and release diff reports actual persisted changes
+PASS changes requested, re-review and revoked reviewer eligibility fail closed at publication
+PASS authored revision/step threads, replies, resolution/reopen and literal untrusted text preserved
+PASS forced RLS and same-tenant wrong-bot thread isolation, view-only access and authoring permissions
+PASS portable inspection denies foreign references, validates explicit local remap and never saves/publishes
+PASS resource blockers are per-node and use same publication guards, without endpoint/credential disclosure
+PASS 10 real authoring PostgreSQL scenarios
+PASS real native HubSpot upsert builder -> published engine -> committed claim -> HTTP-boundary Mock -> mapped result -> one continuation under competing workers
+PASS legacy fire-and-forget connector queue still executes through the same provider implementation and retains DONE status
+PASS provider rejection follows saved error route without retry or mapped field write
+PASS actual elapsed request budget classifies ambiguous write timeout and completes timeout route once, without resend
+PASS native diagnostics preserve author/bot/tenant scope and omit private fields; unreconciled ambiguity blocks erasure
+PASS native audited reconciliation coalesces concurrent retries, never repeats HTTP/flow and permits complete owner erasure
+PASS seeded committed interrupted-dispatch state becomes UNCERTAIN and timeout without HTTP replay
+PASS human takeover cancels queued native continuation and prevents external dispatch
+PASS disabled native resource follows error route, using the same readiness/dispatch permission boundary
+PASS native normalized result fields use atomic typed validation; invalid value takes error route without corrupting session
+PASS all four existing native provider adapters return only normalized external_id/provider through explicit HTTP mocks
+PASS native worker diagnostics enforce actual foreign-tenant RLS and bot ownership
+PASS actual PostgreSQL delivery fault rolls back only continuation; recovered worker uses saved native result without a second external call
+PASS 13 native connector PostgreSQL scenarios
+PASS published engine collects customer timezone and persists real twenty-day calendar wait; metadata excludes answers
+PASS invalid customer zone actually follows published scheduling error branch without creating a job
+PASS explicit acknowledgement, exact due/token/version, bot/tenant/role guards prevent stale or unauthorized cancellation
+PASS competing cancellation retries produce one audit, cancelled deadline and real human/CRM handoff with no message send
+PASS legacy seconds-only tokenless wait remains inspectable and durable worker delivers its pinned continuation exactly once
+PASS bounded real pending schedule pagination has no duplicate rows and remains scoped to pinned DELAY nodes
+PASS 6 scheduled conversation PostgreSQL scenarios
+PASS actual owner/manager-only Mock proposal has bounded audited usage without retaining private prompt/output or enabling a live adapter
+PASS concurrent actual review is actor/tenant/hash scoped, idempotent, immutable and never saves/publishes a flow
+PASS actual concurrent-safe daily proposal quota rejects excess without a paid call or unaudited output
+PASS 3 offline governance PostgreSQL scenarios
+Starting actual Chromium
+PASS actual Mock draft/rewrite proposals require scoped audited acceptance, remain undoable drafts and never publish or call a provider
+PASS actual owner form editor exports pinned official-component subset with unapproved status, then saves internal form through normal draft path on mobile
+PASS 2 offline contract Chromium scenarios
+PASS actual 200/500 graph drafts/layouts publish and reopen while older conversation stays pinned to 200-node version
+PASS 501-node graph is rejected atomically; RLS isolation and saved revision remain intact
+PASS immutable bilingual values survive scoped storage/publication and actual conversation switches language in same execution
+PASS 3 scale/localization PostgreSQL scenarios
+Starting actual Chromium
+PASS actual 200-node authenticated save/reopen,12 edits,60 pans, keyboard zoom and measured memory preserve all nodes/edges
+PASS actual 500-node authenticated save/reopen,12 edits,60 pans, keyboard zoom and measured memory preserve all nodes/edges
+PASS actual English LTR manual value editing saves independently from Arabic and shared runtime emits localized token-aware content
+PASS actual Chromium-emulated two-finger pinch changes transform without changing graph; no physical-device claim
+PASS 4 scale/localization Chromium scenarios
+PASS initial hidden-to-visible Canvas remeasures connector endpoints against rendered ports
+PASS delayed/fault-injected preview exposes loading and recoverable error without hiding the conversation
+PASS ten actual matched Chromium screenshots; real stored 11-node tourism graph, Arabic,100% zoom,1440x1000 and390x844
+PASS search groups/empty state and add/edit/Undo retain the original graph
+PASS real library pointer drag/drop adds a step; visible Redo/Undo restore the exact11-node graph
+PASS display-menu arrangement shortcut opens actual named alignment/distribution tools and Escape returns to Canvas
+PASS message edit persists via actual UI save and reopen without losing11 nodes
+PASS select/disconnect/Undo restores all original edges
+PASS shared real server simulation traverses gallery,input validation,condition and employee handoff
+PASS mobile library opens/closes with visible controls and no horizontal page overflow
+PASS real mobile simulator uses full-width conversation and gallery/input interaction remains usable
+PASS 390/768/1024 actual Zoom in/out and Fit work; minimap never overlaps navigation and no horizontal page overflow
+PASS actual rejected501st library drop preserves all500 nodes and the selected node position
+PASS actual500-node save/reopen and499 connectors at matching fixed zoom
+PASS fresh mobile load starts with a clear canvas; linear steps remain a normal scroll surface with no dismiss trap
+PASS actual bot-manager UI creates a blank bot with one Start node
+PASS visible library and Inspector author welcome, three buttons, two gallery cards, name question, condition and handoff
+PASS visible UI creates a blank tourism bot, welcome, three routed buttons, gallery, customer input, condition and handoff; save/reopen preserves every setting
+PASS UI-authored tourism flow actually simulates gallery, typed name, condition and employee handoff through the shared engine
+PASS actual immutable metadata survives publication; forged consent never grants; trusted same-execution context reflects accepted policy without storing system tokens
+PASS real withdrawal and tenant RLS protect consent metadata; no notice/body/actor identifiers are returned
+PASS real SQL-aborted sensitive action recovers through savepoint, rolls back partial CRM changes, safely routes and retains redacted failure audit
+PASS privacy erasure removes collected values/session and leaves only value-free consent metadata
+PASS 4 context/policy PostgreSQL scenarios
+Starting actual Chromium
+PASS actual caret autocomplete inserts customer and trusted consent tokens via keyboard, preserves metadata and normal authenticated save
+PASS actual authenticated complete component/channel contract matrix distinguishes fallback, explicit unsupported route and internal draft-only assets
+PASS actual mobile mixed-script editor suggestions close with Escape and expose no customer values
+PASS 3 context/policy Chromium scenarios
+PASS real committed paths produce exact distinct conversation/customer funnels and waiting/abandoned/stopped/completed states
+PASS actual inbound and delivered Website payloads correlate to execution without customer content
+PASS actual failed PostgreSQL transaction rolls back new conversation while value-free audit survives separately; failure is excluded from funnel denominator
+PASS actual forced RLS, foreign bot/conversation and unpublished version guards hold
+PASS published-version comparison preserves pinned cohorts without simulator counts
+PASS actual enabled retention removes old diagnostic metadata without deleting live customer conversations
+PASS actual indefinite PAUSE remains explicit waiting after two days, never terminal or abandoned
+PASS 7 funnel/observability PostgreSQL scenarios
+Starting actual Chromium
+PASS authenticated real API version comparison displays actual distinct conversation funnels
+PASS actual Canvas counts survive closing report and reopen node branch drilldown without mutating draft
+PASS mobile actual report and authenticated correlated message certainty expose metadata only
+PASS 3 flow observability Chromium scenarios
+PASS real session-bound Website upload remains private until actual ClamAV CLEAN, then resumes typed engine exactly once
+PASS real origin, visitor-conversation ownership, tenant RLS and private download prevent cross-session/company access
+PASS real antivirus rejects EICAR; HTML, oversized files and quarantined sends never become trusted assets
+PASS offline provider contract binds account/reference, idempotently downloads bounded bytes and reuses real quarantine/scanner
+PASS source traversal rejected before download; provider timeout and invalid type have explicit terminal safe outcomes
+PASS all four provider adapters use authorized source contracts; WhatsApp credentials stay on official hosts and social CDN gets no token
+PASS visitor rate cap rejects excessive uploads independently of tenant storage quota
+PASS concurrent uploads from separate visitors obey one tenant quota with no overshoot
+PASS scanner outage fails closed and durable pending asset resumes safely after scanner restart
+PASS deterministic concurrent real visitor upload/privacy erasure avoids FK lock deadlock and erases the racing bytes
+PASS actual privacy erasure clears incoming bytes, references and visitor authorization; pending retrieval cannot resurrect data
+PASS 11 secure incoming media PostgreSQL/scanner scenarios
+PASS actual verified provider webhook leaves input waiting without invalid attempts until CLEAN, then consumes managed asset once
+PASS same-version same-node restart changes exact waiting generation and rejects stale clean completion
+PASS explicit bot stop remains authoritative after scan and cannot be resurrected by file completion
+PASS rejected source and failed download use existing retry/exhaustion graph route, never store raw references as answers
+PASS actual EICAR quarantine fails the existing input policy; a subsequent CLEAN file safely succeeds
+PASS two real completion workers produce one committed answer and one terminal outbox message
+PASS real continuation rollback leaves no answer/send, records value-free failure and prevents automatic replay
+PASS new publication does not move pending scanned attachment off its pinned original bot version
+PASS forced RLS and foreign worker tenant cannot inspect or complete attachments
+PASS real pending scan remains waiting in funnel after two days without an input timer; same UUID generation still resumes correctly
+PASS 10 scan-gated provider continuation scenarios
+Starting actual Chromium
+PASS real Website file upload enters private quarantine and is inaccessible before security scan
+PASS reload and temporary connection loss preserve pending upload identity; real scanner CLEAN resumes shared engine once
+PASS real EICAR rejection is visible on mobile and never sent as a trusted attachment
+PASS authenticated actual CRM lists quarantine status and only allows clean tenant-private download
+PASS actual provider CRM shows scanned private asset and exact engine continuation DONE after verified webhook/quarantine pipeline
+PASS 5 secure incoming media Chromium scenarios
+PASS actual Telegram webhook normalizer, native request outbox and pinned engine persist native coordinates; typed spoof retains original deadline
+PASS verified native attachment waits for real quarantine/CLEAN, resumes once with managed UUID, retains receipt dedupe and never leaks source reference into trace
+PASS actual Messenger inbound path consumes native phone/email response as typed data and queues correct profile quick reply contracts
+PASS unsupported Website native reply follows actual explicit fallback without fabricated data or native payload
+PASS native data collection preserves real forced RLS and bot isolation
+PASS 5 native input PostgreSQL scenarios
+Starting actual Chromium
+PASS actual native collection editor and explicit unsupported-channel graph port persist through authenticated draft API
+PASS real shared server simulator accepts explicit Mock native coordinates and displays actual typed result
+PASS actual unsupported Website fallback and mobile email quick-reply authoring use channel-aware mock input paths
+PASS 3 native input Chromium scenarios
+Starting actual Chromium
+PASS actual UI replays native input/persona/seed/channel failure exactly, without draft revision or persisted trace changes
+PASS full actual consent/input/delay path rebinds fresh consent challenge and enters terminal continuation without restarting
+PASS real mobile timeout replay rebinds the new durable wait token and reproduces fallback
+PASS existing provider HTTP-error and timeout Mock paths replay through the shared interpreter without configured provider resources
+PASS real preview API rejects invalid typed persona and unsupported mock delivery status
+PASS actual logout clears persona/tape/diagnostics and closes the simulator
+PASS 6 scenario Chromium checks
+PASS real interpreter attributes both nonblocking queues to exact conversation/version/step, without a request wait
+PASS pause cancels only owned jobs; same-contact other conversation and unknown historical jobs remain untouched
+PASS role-scoped diagnostics show owned counts and explicit unknown company jobs without guessing, under forced RLS
+PASS enqueue rejects mismatched contact or invalid origin before queue insertion
+PASS both actual legacy workers recheck conversation ownership before any mock HTTP dispatch
+PASS competing workers serialize attributed nonblocking jobs and keep existing successful terminal statuses
+PASS deterministic real contact-lock/control race finishes without deadlock or post-stop dispatch
+PASS superseded pinned-version jobs cannot dispatch after restart/version change
+PASS explicit same-version customer restart cancels previous owned effects without touching unknown legacy jobs
+PASS 9 owned nonblocking PostgreSQL scenarios
+Starting actual Chromium
+PASS actual scoped operator UI distinguishes two owned jobs from preserved unknown company jobs
+PASS real operator pause cancels owned jobs through authenticated API while preserving historical unknown jobs
+PASS mobile resume uses pinned waiting input and does not recreate cancelled nonblocking work
+PASS 3 job origin Chromium scenarios
+PASS draft events remain inert; publication atomically activates exact bot/channel scope
+PASS actual runtime chooses higher keyword priority and enters trigger-only terminal target
+PASS actual postback event takes event route rather than display-title keyword matching
+PASS forced RLS, foreign bot, author roles and channel isolation hold
+PASS conflicting publication preserves published version and existing active triggers
+PASS legacy trigger API uses same conflict guard and normal publication recovers
+PASS 6 channel event PostgreSQL scenarios
+Starting actual Chromium
+PASS actual trigger editor saves event/channel/priority through scoped API and persisted draft
+PASS shared authenticated preview chooses real trigger priority and rejects unsupported event kinds
+PASS mobile event inspector remains usable; actual readiness rejects ambiguous priorities without publication
+PASS 3 channel-event Chromium scenarios
+PASS pause cancels durable timeout, suppresses bot responses, rejects stale CAS and resumes with a fresh wait token
+PASS stopped flow stays stopped on customer input, requires explicit restart, and preserves role/tenant isolation
+PASS old inbox release resumes the pinned controlled path instead of resetting its node and replaying prior work
+PASS only issued current-prompt choice records marketing consent; consumed prompt replay cannot grant again after re-entry
+PASS marketing withdrawal does not stop service; service withdrawal prevents staff restart and staff cannot forge a grant
+PASS real public website receipts are idempotent; STOP/START records separate service withdrawal and restoration
+PASS service refusal records actual customer decision and stops outbound replies in the same transaction
+PASS unavailable team follows explicit fallback; available team assigns a real tenant member and blocks competing bot replies
+PASS durable human inactivity resumes pinned continuation once through the existing queue and engine
+PASS idle queue release and close outcomes are terminal and never repeat a worker continuation
+PASS published pause action persists and timed resume survives a separate worker transaction
+PASS 11 conversation-control PostgreSQL scenarios
+Starting actual Chromium
+Chromium ready
+PASS actual operator controls pause/resume the persisted pinned conversation through authenticated API
+PASS real scoped consent history and withdrawal controls render on mobile
+PASS saved consent node and all decision ports are editable in actual designer
+PASS real preview endpoint simulates consent acceptance/refusal and staff availability without sending
+PASS 4 conversation-control Chromium scenarios
+PASS competing identical mutations create one draft revision, one receipt and one audit across real PostgreSQL transactions
+PASS lost acknowledgement replay returns original result; changed content or base revision cannot reuse the key
+PASS late replay cannot overwrite a newer draft and explicitly reports that review is required
+PASS same key is scoped independently by bot; actual forced RLS, foreign bot and agent write boundaries hold
+PASS receipts store no graph; expired mutation retries retain normal monotonic revision protection
+PASS old clients without mutation ID keep ordinary CAS behavior; malformed IDs fail before any draft mutation
+PASS 6 draft-save PostgreSQL scenarios
+Starting actual Chromium
+Browser request failed /api/v1/bots/ef5e9c14-6b58-4886-9257-2b5f9d9ea6f8/flows/draft net::ERR_FAILED
+PASS real committed save with deliberately dropped response retries the same mutation and creates exactly one server revision
+PASS actual Web Locks exclude an overlapping second-tab save and preserve its separate edits on mobile
+PASS after lease release, stale second-tab content still reaches ordinary revision review and cannot overwrite the newer draft
+PASS closing a tab releases its browser-owned lease automatically without expiry races
+PASS 4 draft-save Chromium scenarios
+PASS actual published sticky allocations, returns and repeated goals count one conversation and one conversion per initial variant
+PASS goal-before-exposure is excluded; timestamp and within-execution order govern attribution
+PASS conversion window is seven days after allocation; late goals and immature versus mature cohorts are explicit
+PASS unordered historical assignment is excluded and separately reported rather than inventing event order
+PASS recent re-entry cannot reclassify a first exposure outside the selected observation period
+PASS non-sticky/mixed exposure is surfaced without moving the conversation between denominator cohorts
+PASS immutable published versions keep independent weights/cohorts; zero-sample variants have no invented conversion rate
+PASS actual RLS/foreign bot, published node validation, bounded periods and value-free metadata isolation hold
+PASS 8 experiment PostgreSQL scenarios
+Starting actual Chromium
+PASS actual published latest-version zero-sample comparison uses no fixture/simulator counters
+PASS actual UI switches pinned version and displays real cohort/conversion/unknown-order counts
+PASS mobile comparison remains scrollable/accessibly labelled and invalid published goal is denied by real API
+PASS 3 experiment Chromium scenarios
+PASS actual owner sees readiness approval blocker and saved-version diff; actual publication is denied
+PASS native comment form persists literal safe text and review request; author has no self-approve control
+PASS independent manager approves through actual UI; authenticated engine publication succeeds; mobile review renders
+PASS actual file import rejects foreign resource, accepts explicit local remap, changes only editor until normal save and retains published version
+PASS normal save invalidates approval, mobile readiness blocks publish and browser has no page errors
+PASS native connector named selection, wait/mapping/error/timeout controls and genuine persisted draft roundtrip
+PASS actual shared server preview exercises success, provider error and timeout; Mock values never save or dispatch
+PASS actual mobile native queue filter and acknowledged reconciliation succeed without changing committed flow snapshot or execution trace
+PASS actual scheduling inspector persists fallback/customer-zone field and long closed calendar through normal draft save
+PASS real authenticated shared-engine simulator computes long customer-zone wait without provider access
+PASS actual paginated desktop/mobile schedule UI requires acknowledgement and cancels exact pinned wait with human handoff and idempotent no-send retry
+PASS real CRM follow-up task, role-scoped endpoint, lead priority and tenant-isolated analytics
+PASS real Website Chat: published greeting, origin restriction, dedupe, lead qualification and staff handoff
+PASS background worker heartbeat for both scoped tenant queues
+PASS real delayed conversation continuation from PostgreSQL worker, exactly once
+PASS public API/widget + real restricted worker/HTTP boundary: mapped response, HTTP failure and timeout, one POST per wait
+PASS platform admin pool reconnects; company token cannot access platform administration
+PASS API SIGKILL/restart, competing worker survival, idle PostgreSQL disconnect/reconnect, durable session and completed delay preserved
+PASS HTTP load {"requests":400,"concurrency":40,"apiInstances":2,"workers":2,"elapsedMs":1535.0498499999994,"requestsPerSecond":260.57785680380357,"p50Ms":107.24838400000226,"p95Ms":372.1368430000002,"p99Ms":445.0591650000024,"serverResources":[{"name":"api","cpuMs":400,"peakSampledRssBytes":65802240},{"name":"api-replica","cpuMs":360,"peakSampledRssBytes":65437696},{"name":"worker","cpuMs":80,"peakSampledRssBytes":71618560},{"name":"worker-restarted","cpuMs":250,"peakSampledRssBytes":53190656}],"scope":"authenticated catalog reads only; not full workload capacity"}
+(node:28309) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS distributed throttle: 40 attempts, exactly 20 accepted / 20 HTTP 429 outcomes
+PASS 40 concurrent authenticated catalog requests in 141ms (CI smoke, not load benchmark)
+PASS LOCAL CLOSURE 30-second mixed real HTTP workload with 4 companies / 200 clients, pinned subflows, delays, inbox/leads/catalog; EXPLAIN ANALYZE
+ACCEPTANCE FAILURE: AssertionError [ERR_ASSERTION]: {"error":"Phone number is already connected"}
+
+409 !== 200
+
+    at call (file:///workspace/Elhafez-boat/tests/coexistence-acceptance.mjs:15:43)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async coexistenceAcceptance (file:///workspace/Elhafez-boat/tests/coexistence-acceptance.mjs:24:15)
+    at async localClosure (file:///workspace/Elhafez-boat/tests/local-closure.mjs:102:77)
+    at async file:///workspace/Elhafez-boat/tests/runtime-acceptance.mjs:290:60 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 409,
+  expected: 200,
+  operator: 'strictEqual',
+  diff: 'simple'
+}
+worker-2: WhatsApp outbox worker started
+
+api-restarted: Elhafez Boat API listening on 4000
+
+api-restarted: API database connection lost { code: '57P01' }
+
+api-replica: API database connection lost { code: '57P01' }
+
+api-restarted: Platform database connection lost { code: '57P01' }
+
+worker-restarted: WhatsApp outbox worker started
+
+worker-2: WhatsApp worker stopped
+
+worker-restarted: WhatsApp worker stopped
+
+mixed-worker-2: WhatsApp outbox worker started
+
+mixed-worker-1: WhatsApp outbox worker started
+
+mixed-worker-1: WhatsApp worker stopped
+
+mixed-worker-2: WhatsApp worker stopped
+

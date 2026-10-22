@@ -1,0 +1,26 @@
+{
+  "source_sha": "907144450e8490fcb11e32a7786cfb7f1a5ac49d",
+  "core_sha": "bd3042df402fc2d485e3249ff09d62b3aa810cf8",
+  "pr": 4,
+  "branch": "feat/codex-product-rebuild-2026-10-19",
+  "unit": {
+    "passed": 118,
+    "failed": 0,
+    "skipped": 0
+  },
+  "postgresql": "PASS: tenant/role checks, atomic CRM bulk, paginated contact history, independent bots, campaign consent review without enqueue",
+  "full_core_runtime_browser_exit": 0,
+  "final_targeted_runtime_browser_exit": 0,
+  "campaign_review_jobs": 0,
+  "campaign_review_outbound_messages": 0,
+  "viewports": [
+    1366,
+    768,
+    390,
+    320
+  ],
+  "screenshots": "continuation-*.png; actual Chromium/isolated PostgreSQL fixtures",
+  "remote_ci": "UNVERIFIED: GitHub API Forbidden",
+  "prohibited_operations": "No merge, Railway deployment, real provider authentication, paid AI or real customer messaging",
+  "remaining": "Partial screen/workflow cases remain in EXECUTION-LEDGER; not full 22-screen completion"
+}

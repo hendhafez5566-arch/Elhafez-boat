@@ -1,0 +1,271 @@
+name: Verify
+on:
+  push:
+  pull_request:
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: elhafez_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elhafez_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/elhafez_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Browser acceptance module syntax
+        run: for file in tests/*.mjs tests/support/*.mjs; do node --check "$file" || exit 1; done
+      - run: npm run check
+      - run: node tests/flow-load.mjs
+      - run: npm run db:migrate
+      - run: CI_DB_INTEGRATION=1 node tests/db-integration.mjs
+      - name: Independent bots, legacy backfill and channel isolation
+        run: node tests/bots-db.mjs
+      - name: Durable flow policies, CRM scopes and transition telemetry
+        run: node tests/flow-controls-db.mjs
+
+  acceptance-runtime:
+    name: Disposable PostgreSQL and headless browser acceptance
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: elhafez_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elhafez_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      MIGRATION_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/elhafez_ci
+      CI_RUNTIME_ACCEPTANCE: '1'
+      CI_ACCEPTANCE_DISPOSABLE_DB: 'YES'
+      CI_TRACE_BROWSER: '1'
+      CI_INTEGRATED_BROWSER: '1'
+      CI_OPS_BROWSER: '1'
+      CI_DRAFT_RECOVERY: '1'
+      PREMIUM_EVIDENCE_DIR: docs/product-rebuild/evidence/continuation-2026-10-20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Before screenshots archive the exact handoff ancestor.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned workspace dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Build app and worker
+        run: npm run build
+      - name: Apply all PostgreSQL migrations
+        run: npm run db:migrate
+      - name: Check headless Chrome availability
+        shell: bash
+        run: |
+          command -v google-chrome || command -v chromium || command -v chromium-browser
+          CHROME_BIN="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          echo "CHROME_BIN=$CHROME_BIN" >> "$GITHUB_ENV"
+      - name: Real ClamAV daemon with isolated acceptance signatures
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clamav-daemon
+          mkdir -p /tmp/boat-clam-db
+          python3 - <<'PY_CLAM'
+          from pathlib import Path
+          import os
+          eicar=b'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*'
+          Path('/tmp/boat-clam-db/acceptance.ndb').write_text('EicarAcceptance:0:*:'+eicar.hex()+'\n')
+          Path('/tmp/boat-clamd.conf').write_text('Foreground yes\nLocalSocket /tmp/boat-clamd.sock\nLocalSocketMode 666\nDatabaseDirectory /tmp/boat-clam-db\nPidFile /tmp/boat-clamd.pid\nLogFile /tmp/boat-clamd.log\nStreamMaxLength 8M\n')
+          PY_CLAM
+          clamd --config-file=/tmp/boat-clamd.conf >/tmp/boat-clam-start.log 2>&1 &
+          for i in {1..40}; do test -S /tmp/boat-clamd.sock && break; sleep 1; done
+          test -S /tmp/boat-clamd.sock || { cat /tmp/boat-clam-start.log; exit 1; }
+          echo 'CLAMAV_SOCKET=/tmp/boat-clamd.sock' >> "$GITHUB_ENV"
+          echo 'CI_LOCAL_CLOSURE=1' >> "$GITHUB_ENV"
+      - name: Atomic company setup, media safety, inbox concurrency and platform isolation
+        run: node tests/completion-db.mjs
+      - name: Ordered conversation traces and isolated browser fixture
+        run: TRACE_BROWSER_FIXTURE=1 node tests/flow-controls-db.mjs
+      - name: Durable integration claims, continuations and tenant isolation
+        run: node tests/flow-integration-db.mjs
+      - name: Rich messages, button actions and isolated widget fixture
+        run: RICH_BROWSER_FIXTURE=1 node tests/rich-flow-db.mjs
+      - name: Audited request reconciliation, scope and no replay
+        run: OPS_BROWSER_FIXTURE=1 node tests/flow-request-ops-db.mjs
+      - name: Scoped authoring readiness, portability and independent reviews
+        run: node tests/flow-authoring-db.mjs
+      - name: Native connector waits, normalized results, no replay and privacy
+        run: node tests/flow-connector-db.mjs
+      - name: Customer timezone, long calendars and precise wait cancellation
+        run: node tests/flow-schedule-db.mjs
+      - name: Offline HTTP formats, form compilation and audited Mock proposals
+        run: |
+          node tests/offline-contract-db.mjs
+          node tests/offline-contract-browser.mjs
+      - name: Bilingual content, 200/500 graph performance and emulated touch
+        run: |
+          node tests/flow-scale-locale-db.mjs
+          node tests/flow-scale-locale-browser.mjs
+          node tests/studio-contrast.mjs
+          node tests/visual-rebuild-browser.mjs
+      - name: Context variables, consent metadata, sensitive errors and component contracts
+        run: |
+          node tests/flow-context-policy-db.mjs
+          node tests/flow-context-policy-browser.mjs
+      - name: Committed funnels, rollback diagnostics and Canvas observability
+        run: |
+          node tests/flow-analytics-db.mjs
+          node tests/flow-analytics-browser.mjs
+      - name: Private incoming files, authorized provider contracts and real ClamAV
+        run: |
+          node tests/incoming-media-db.mjs
+          node tests/incoming-media-continuation-db.mjs
+          node tests/incoming-media-browser.mjs
+      - name: Native data requests, quick replies and unsupported channel routes
+        run: |
+          node tests/flow-native-input-db.mjs
+          node tests/flow-native-input-browser.mjs
+          node tests/flow-scenario-browser.mjs
+      - name: Exact nonblocking job ownership and safe conversation cancellation
+        run: |
+          node tests/flow-job-origin-db.mjs
+          node tests/flow-job-origin-browser.mjs
+      - name: Channel events, priority conflicts and native event provenance
+        run: |
+          node tests/flow-channel-events-db.mjs
+          node tests/flow-channel-events-browser.mjs
+      - name: Conversation ownership, human policies and customer consent
+        run: node tests/conversation-control-db.mjs
+      - name: Conversation controls and consent in Chromium desktop/mobile
+        run: node tests/conversation-control-browser.mjs
+      - name: Idempotent saves, forced RLS and real cross-tab browser leases
+        run: |
+          node tests/flow-save-db.mjs
+          node tests/flow-save-browser.mjs
+      - name: Real first-exposure experiment cohorts and desktop/mobile comparison
+        run: |
+          node tests/flow-experiments-db.mjs
+          node tests/flow-experiments-browser.mjs
+      - name: Authoring, native connector and scheduled wait desktop/mobile UI
+        run: CI_CONNECTOR_BROWSER=1 CI_SCHEDULE_BROWSER=1 node tests/flow-authoring-browser.mjs
+      - name: Real non-owner runtime / web browser acceptance
+        run: node tests/runtime-acceptance.mjs
+      - name: Backup and restore disposable PostgreSQL data
+        run: bash scripts/ci-backup-restore.sh
+      - name: Production-style Docker build and packaged web HTTP smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --tag elhafez-boat:ci .
+          docker run --rm --entrypoint sh elhafez-boat:ci -c 'test ! -f /app/.env && test -f /app/.build/apps/api/src/server.js && test -f /app/apps/web/public/app.js'
+          name="elhafez_ci_web_${GITHUB_RUN_ID}"
+          trap 'docker rm -f "$name" >/dev/null 2>&1 || true' EXIT
+          docker run --detach --name "$name" --publish 127.0.0.1:3015:3000 --env WEB_PORT=3000 --env API_INTERNAL_ORIGIN=http://127.0.0.1:4000 --entrypoint node elhafez-boat:ci apps/web/server.mjs
+          ready=0
+          for i in {1..35}; do
+            if curl --fail --silent http://127.0.0.1:3015/ > /tmp/elhafez-container-home.html; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          grep -q 'Elhafez Boat' /tmp/elhafez-container-home.html
+          curl --fail --silent --show-error http://127.0.0.1:3015/flow-builder.js >/dev/null
+          curl --fail --silent --show-error http://127.0.0.1:3015/widget.js >/dev/null
+          echo 'PASS Docker image builds, excludes root .env, and serves real web UI/widget assets'
+      - name: Isolated Compose replicas, simulator suite and database outage recovery
+        shell: bash
+        run: |
+          set -euo pipefail
+          export TEST_DB_PASSWORD="$(openssl rand -hex 24)"
+          export TEST_RUNTIME_PASSWORD="$(openssl rand -hex 24)"
+          export TEST_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+          export TEST_RATE_LIMIT_SECRET="$(openssl rand -hex 32)"
+          compose=(docker compose -p boat-acceptance -f deploy/compose.acceptance.yaml)
+          trap 'status=$?; if [ "$status" -ne 0 ]; then "${compose[@]}" logs --no-color --tail 35 api worker web; fi; "${compose[@]}" stop >/dev/null 2>&1 || true; exit "$status"' EXIT
+          "${compose[@]}" config --quiet
+          "${compose[@]}" run --rm simulators
+          "${compose[@]}" up -d --wait --wait-timeout 120 --scale api=2 --scale worker=2 web worker
+          test "$(docker network inspect boat-acceptance_isolated --format '{{.Internal}}')" = true
+          curl --fail --silent http://127.0.0.1:3016/health >/dev/null
+          "${compose[@]}" exec -T db psql -v ON_ERROR_STOP=1 -U postgres -d elhafez_ci -c "INSERT INTO tenants(slug,name) VALUES('compose-persistence','Isolated compose fixture'); INSERT INTO tenant_subscriptions(tenant_id,plan_code,status,current_period_ends_at) SELECT id,'STARTER','TRIAL',now()+interval '14 days' FROM tenants WHERE slug='compose-persistence'"
+          "${compose[@]}" stop db
+          sleep 3
+          "${compose[@]}" start db
+          ready=0
+          for i in {1..40}; do
+            if curl --fail --silent http://127.0.0.1:3016/health >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          test "$ready" -eq 1
+          test "$("${compose[@]}" exec -T db psql -U postgres -d elhafez_ci -Atc "SELECT count(*) FROM tenants WHERE slug='compose-persistence'" | tr -d '\r')" = 1
+          for container in $("${compose[@]}" ps -q api worker); do
+            test "$(docker inspect "$container" --format '{{.RestartCount}}')" = 0
+          done
+          healthy=0
+          for i in {1..20}; do
+            if "${compose[@]}" exec -T api node scripts/ops-health.mjs; then healthy=1; break; fi
+            sleep 1
+          done
+          test "$healthy" -eq 1
+          echo 'PASS isolated Compose: 2 API / 2 workers with isolated backend network, loopback web, fixtures, persistent database and outage recovery without process restart'
+          export BOOTSTRAP_TENANT_SLUG=local-pilot
+          export BOOTSTRAP_TENANT_NAME='Local pilot'
+          export BOOTSTRAP_EMAIL=local-owner@example.invalid
+          export BOOTSTRAP_PASSWORD="$(openssl rand -hex 24)"
+          docker compose -p boat-acceptance -f deploy/compose.acceptance.yaml -f deploy/compose.local.yaml config --quiet
+          docker compose -p boat-acceptance -f deploy/compose.acceptance.yaml -f deploy/compose.local.yaml run --rm local-owner
+          node --input-type=module <<'LOCAL_PILOT'
+          import assert from 'node:assert/strict';
+          const r=await fetch('http://127.0.0.1:3016/api/v1/auth/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({tenantSlug:process.env.BOOTSTRAP_TENANT_SLUG,email:process.env.BOOTSTRAP_EMAIL,password:process.env.BOOTSTRAP_PASSWORD})});
+          const d=await r.json();assert.equal(r.status,200);assert.ok(d.token);
+          console.log('PASS local Compose overlay/bootstrap and actual disposable owner login; no credentials printed');
+          LOCAL_PILOT
+      - name: Upload non-sensitive browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: elhafez-browser-acceptance
+          path: |
+            acceptance-evidence/*.png
+            acceptance-evidence/http-load.json
+            acceptance-evidence/browser-pages.json
+            acceptance-evidence/local-closure.json
+            docs/product-rebuild/evidence/continuation-2026-10-20/*.png
+            docs/product-rebuild/evidence/continuation-2026-10-20/results.json
+            docs/product-rebuild/evidence/traces-2026-10-20/*.png
+            docs/product-rebuild/evidence/traces-2026-10-20/results.json
+            docs/product-rebuild/evidence/requests-2026-10-20/*.png
+            docs/product-rebuild/evidence/requests-2026-10-20/results.json
+            docs/product-rebuild/evidence/integrated-2026-10-20/*.png
+            docs/product-rebuild/evidence/integrated-2026-10-20/results.json
+            docs/product-rebuild/evidence/flow-observability-2026-10-21/*.png
+            docs/product-rebuild/evidence/flow-observability-2026-10-21/results.json
+            docs/product-rebuild/evidence/incoming-media-2026-10-21/*.png
+            docs/product-rebuild/evidence/incoming-media-2026-10-21/results.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/*.png
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/results.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/after/authored-tourism.json
+            docs/product-rebuild/evidence/premium-bold-2026-10-21/contrast.json
+            docs/product-rebuild/evidence/scale-locale-2026-10-21/performance.json
+          if-no-files-found: ignore
+          retention-days: 7

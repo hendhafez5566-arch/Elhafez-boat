@@ -1,0 +1,5 @@
+Starting actual Chromium
+PASS actual published latest-version zero-sample comparison uses no fixture/simulator counters
+PASS actual UI switches pinned version and displays real cohort/conversion/unknown-order counts
+PASS mobile comparison remains scrollable/accessibly labelled and invalid published goal is denied by real API
+PASS 3 experiment Chromium scenarios

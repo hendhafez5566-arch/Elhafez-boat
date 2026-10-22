@@ -1,0 +1,8 @@
+{
+  "name": "@elhafez/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file-if-exists=../../.env server.mjs"
+  }
+}

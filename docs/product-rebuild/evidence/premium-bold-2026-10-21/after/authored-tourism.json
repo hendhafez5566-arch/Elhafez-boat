@@ -1,0 +1,133 @@
+{
+  "botId": "1ff04e0c-343d-4f23-aac4-4c5b80af1b4d",
+  "definition": {
+    "name": "قبول التأليف · شركة سياحة",
+    "nodes": [
+      {
+        "id": "start",
+        "next": "step2",
+        "type": "START"
+      },
+      {
+        "id": "step2",
+        "next": "step4",
+        "text": "أهلًا بك في الحافظ للسياحة. كيف نساعدك؟",
+        "type": "TEXT",
+        "label": "ترحيب السياحة"
+      },
+      {
+        "id": "step4",
+        "text": "اختر الخدمة المناسبة",
+        "type": "BUTTONS",
+        "label": "خدمات السياحة",
+        "choices": [
+          {
+            "id": "option",
+            "next": "step5",
+            "title": "البرامج السياحية"
+          },
+          {
+            "id": "option2",
+            "next": "step9",
+            "title": "استفسار العروض"
+          },
+          {
+            "id": "option3",
+            "next": "step8",
+            "title": "تحدث مع موظف"
+          }
+        ]
+      },
+      {
+        "id": "step5",
+        "next": "step6",
+        "text": "اختر من المحتوى المعتمد",
+        "type": "TEXT",
+        "label": "برامج الرحلات",
+        "blocks": [
+          {
+            "type": "GALLERY",
+            "cards": [
+              {
+                "title": "رحلات داخل مصر",
+                "subtitle": ""
+              },
+              {
+                "title": "رحلات خارج مصر",
+                "subtitle": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "step6",
+        "next": "step7",
+        "text": "ما اسمك؟",
+        "type": "INPUT",
+        "field": "customer_name",
+        "label": "جمع الاسم"
+      },
+      {
+        "id": "step7",
+        "no": "step6",
+        "yes": "step8",
+        "type": "CONDITION",
+        "field": "customer_name",
+        "label": "التحقق من الاسم",
+        "operator": "exists"
+      },
+      {
+        "id": "step8",
+        "text": "تم تحويل طلبك إلى فريق خدمة العملاء.",
+        "type": "HANDOFF",
+        "label": "خدمة العملاء"
+      },
+      {
+        "id": "step9",
+        "next": "step8",
+        "text": "يراجع الموظف العروض المعتمدة معك.",
+        "type": "TEXT",
+        "label": "استفسارات العروض"
+      }
+    ],
+    "groups": [],
+    "layout": {
+      "start": {
+        "x": 64,
+        "y": 70
+      },
+      "step2": {
+        "x": 455,
+        "y": 442
+      },
+      "step4": {
+        "x": 846,
+        "y": 442
+      },
+      "step5": {
+        "x": 1237,
+        "y": 442
+      },
+      "step6": {
+        "x": 64,
+        "y": 955
+      },
+      "step7": {
+        "x": 455,
+        "y": 955
+      },
+      "step8": {
+        "x": 846,
+        "y": 955
+      },
+      "step9": {
+        "x": 1237,
+        "y": 955
+      }
+    },
+    "channel": "WEBSITE",
+    "startId": "start"
+  },
+  "transport": "NONE; all graph mutations through visible UI"
+}

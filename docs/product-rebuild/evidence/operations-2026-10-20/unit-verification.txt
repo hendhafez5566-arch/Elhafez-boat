@@ -1,0 +1,225 @@
+
+> elhafez-boat@0.1.0 check
+> npm run typecheck && npm test
+
+
+> elhafez-boat@0.1.0 typecheck
+> tsc --noEmit
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+
+> elhafez-boat@0.1.0 test
+> npm run build && node --test tests/*.test.mjs
+
+
+> elhafez-boat@0.1.0 build
+> node scripts/clean-build.mjs && tsc -p tsconfig.build.json
+
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+✔ pinned subflow resolves under tenant scope, captures mapped fields and returns to caller (4.353305ms)
+✔ subflow missing version, circular references, expansion and depth fail closed (2.296632ms)
+✔ subflow binding does not inherit Object.prototype keys (0.259596ms)
+✔ connector node pauses for server execution and validates provider ID (0.293707ms)
+✔ Telegram receives only private chats and dedupe uses update id (0.17446ms)
+✔ Meta social ignores echoes/delivery and retains provider message IDs (0.265546ms)
+✔ social adapters obey text and callback boundaries (0.263713ms)
+✔ access keys cannot escalate to secrets, export or publishing (0.115181ms)
+✔ provider destinations reject non-TLS and unapproved hosts before network (0.314739ms)
+✔ privacy refuses staff erasure, weak confirmation and unsafe retention (0.871999ms)
+✔ missing malware scanner cannot approve any asset (0.223452ms)
+✔ public media query requires CLEAN scan within the routed company (0.495969ms)
+✔ planned answers never synthesize business content (1.614074ms)
+✔ preview uses tenant-scoped approved information and cannot send (1.259526ms)
+✔ daily export follows server UTC window and includes leap-day zero activity (1.33631ms)
+✔ 90-day report crosses year boundaries and exports no contact payload (0.22789ms)
+✔ CSV numeric conversion prevents raw count strings becoming spreadsheet formulas (0.78495ms)
+✔ password hashing includes random salt and validates password (105.857685ms)
+✔ login issues opaque token whose raw value is never stored (47.626028ms)
+✔ authentication fetches actor by hashed bearer token (0.379204ms)
+✔ empty bot can be saved as a single Start draft but cannot be published (1.236191ms)
+✔ service template collects name and phone through stable button IDs then hands off (1.534176ms)
+✔ setup preview and creation share validated greeting and optional phone capture (0.633264ms)
+✔ delay yields durable waiting state without sending future messages early (2.954741ms)
+✔ delay duration rejects zero and excessive waits (0.238204ms)
+✔ dynamic catalog paginates within 10 rows and selected item uses approved snapshot (1.199577ms)
+✔ untrusted choice cannot skip to a handoff node (0.244695ms)
+✔ interactive template compiles approved body, media header and URL suffix (0.686402ms)
+✔ template rejects missing variables and unsupported carousel (0.166839ms)
+✔ campaign sequence enforces a full day between template steps (0.490421ms)
+✔ media rejects executable HTML and recognizes supported magic bytes (0.18119ms)
+✔ widget rejects wildcard origins and unauthorized staff before writes (0.432514ms)
+✔ encrypted integration secrets authenticate ciphertext and are never plaintext (3.97394ms)
+✔ draft revision conflict prevents overwriting a newer draft (0.309522ms)
+✔ Meta comment extractor only considers new supported comments (0.647435ms)
+✔ matching is explicit and no unknown/comment text is copied into replies (0.170254ms)
+✔ rule writes require company account, bounded content, and explicit enable (0.804619ms)
+✔ approval is per-tenant and only from REVIEW (0.175121ms)
+✔ private replies are addressed by comment ID through channel-specific messages edge (0.220749ms)
+✔ CRM assigns only a tenant member to active lead with audit (1.158657ms)
+✔ assignment refuses members not belonging to company (0.208731ms)
+✔ production WhatsApp sender against loopback simulator: delivery and ambiguous faults (33.05361ms)
+✔ no automatic retry for 408/5xx/unknown outcomes; only explicit throttle retries (0.244214ms)
+✔ invalid account identifiers fail before any transport (0.509509ms)
+✔ provider fixture contracts, OAuth refresh and duplicate idempotency keys (harness coverage only) (72.709405ms)
+✔ persistent draft requires opt-in and survives a new tab without crossing user/company/bot (1.034231ms)
+✔ independent tabs preserve distinct edits; an old save acknowledgement only removes its exact definition (0.580956ms)
+✔ expiry/malformed/bounded retention and logout remove only the current authenticated identity (0.833321ms)
+✔ quota/disabled storage failures do not throw or remove existing browser data (1.841484ms)
+✔ durable input keeps original deadline across invalid retries and exhausts exactly once (3.041301ms)
+✔ optional skip routes explicitly, required skip never writes an answer (0.548737ms)
+✔ timeout validates token and deadline; late valid reply cannot override timeout (0.26863ms)
+✔ valid input cancels counters/deadline and preserves previous contact answers (0.175752ms)
+✔ policy validation rejects incomplete routes, unbounded retry/timeout and required skip (0.533665ms)
+✔ nested AND/OR supports numeric, membership, strict dates and tags without coercing missing numbers (1.069854ms)
+✔ typed enum input, boolean assignment and variable failures preserve graph error routes (0.410591ms)
+✔ business windows handle closed boundary, weekend, overnight, holidays and DST gap (22.828958ms)
+✔ smart delay takes error branch for unavailable dates and business branch is deterministic (0.260168ms)
+✔ sticky experiment keeps branch across an independent re-entry and records value-free goal event (0.353797ms)
+✔ URL actions never become routing ports or accepted reply callbacks; WhatsApp preflight rejects mixed actions (3.824417ms)
+✔ every policy and error port is editable and draft triggers validate independently from legacy metadata (0.46944ms)
+✔ authoring assistance is explicit MOCK, validated and never applies or publishes its suggestion (0.695406ms)
+✔ internal multiscreen form draft survives normal definition validation and rejects duplicate fields/invalid routes (0.483781ms)
+✔ pinned subflow compiler remaps timeout/skip/error ports, nested rule fields and typed session registry (1.471201ms)
+✔ calendar rollover datetimes and maximum rewrite length remain bounded (0.37606ms)
+✔ manual drag never commits a rectangle on another card (0.770408ms)
+✔ large branching graph auto layout is bounded and avoids collisions (4.652311ms)
+✔ already free point is preserved and does not rewrite graph content (0.090435ms)
+✔ maximum-size 100-step graph remains bounded and collision-free (10.929342ms)
+✔ independent edits combine without mutating inputs or changing stable step IDs (1.184865ms)
+✔ same-field disagreement requires explicit selection and preserves the chosen value (0.408499ms)
+✔ different fields on the same node merge and identical concurrent changes do not conflict (0.749406ms)
+✔ delete versus concurrent edit is explicit, including selection of deletion (0.199858ms)
+✔ one-sided additions/deletions and server order are preserved (0.156703ms)
+✔ same added ID with different content and incompatible node types stay atomic (0.227069ms)
+✔ choice arrays stay atomic so row order and routing are never guessed (0.241449ms)
+✔ independent layout positions merge and object key order is not a false conflict (0.20091ms)
+✔ structurally independent edits can still be semantically invalid and must pass compiler validation (0.866771ms)
+✔ request contracts reject unsafe paths, duplicate mappings, unbounded values and automatic POST retry (0.874913ms)
+✔ response mapping copies only own bounded scalar fields, without coercing objects or partial writes (0.336592ms)
+✔ server preview executes success/error/timeout and mapping failure without SQL or transport (2.737158ms)
+✔ typed response validation is atomic and mock data is bounded (0.529548ms)
+✔ request error/timeout are stable graph ports and live runtime requires a pinned conversation (0.953951ms)
+✔ trusted continuation enters terminal and input destinations without restarting or consuming stale input (0.260307ms)
+✔ capture a two-step linear reusable section with one exit (1.796216ms)
+✔ insert cloned section without changing original flow or published semantics (0.450982ms)
+✔ repeated import never collides with previously imported IDs (0.210323ms)
+✔ reject branched reusable sections and non-linear jumps (1.204815ms)
+✔ reuse validation keeps HTTPS/content and field constraints (0.271234ms)
+✔ visual groups are persisted only for valid non-overlapping nodes (0.226297ms)
+✔ reusable library inserts only into the authenticated company (0.363322ms)
+✔ trace cursor retains microseconds/order and handles historical unknown execution without inventing one (1.359826ms)
+✔ forged, oversized, invalid calendar and unbounded trace cursors fail as HTTP 400 (0.466525ms)
+✔ diagnostics reject invalid role/bot before telemetry SQL and enforce session scope before reading events (0.422249ms)
+✔ publish rejects an invalid startId even when exactly one START exists (1.731539ms)
+✔ draft keeps incomplete links; publish refuses them (0.317954ms)
+✔ question captures custom answer and safely ends (1.354498ms)
+✔ canvas positions survive draft validation (0.659783ms)
+✔ approved catalog validates data and rejects executable links (0.202862ms)
+✔ AI exact fallback accepts approved source only (0.534146ms)
+✔ SSRF refuses private/reserved IPv4 and non-allowlisted destinations (2.721144ms)
+✔ preview webhook node cannot enqueue external side effects (0.638111ms)
+✔ automatic loops remain rejected (0.513525ms)
+✔ Arabic approved-source matching handles nonliteral price questions without inventing data (1.099598ms)
+✔ ambiguous or weak matching safely declines rather than guessing an offer (0.733643ms)
+✔ guided setup creates publishable source flows for all business sectors and goals (5.218153ms)
+✔ guided setup collects customer answers before tagging and employee handoff (0.449309ms)
+✔ guide rejects blank names and keeps business content out of the catalog (0.321499ms)
+✔ very long free-form business values are bounded to valid published schemas (0.152066ms)
+✔ Arabic plain description suggests a matching company and goal offline (2.786331ms)
+✔ insights renders a real nonzero lead capture percentage and preserves zero (16.180018ms)
+✔ draft FAQ update changes only selected tenant-scoped DRAFT and records an audit event (0.707895ms)
+✔ published FAQ cannot be edited by draft endpoint (0.320818ms)
+✔ FAQ draft edit rejects a viewer and invalid draft payload (0.1344ms)
+✔ SPM uses official product header and exact named parameters without invented button payload (1.529539ms)
+✔ SPM rejects forged structure, missing named values, unexpected names and media override (0.374728ms)
+✔ catalog button compiles only action thumbnail for selected mapped product (0.267949ms)
+✔ MPM respects 30 total products and 10 sections (0.284734ms)
+✔ MPM rejects repeated SKUs, mixed catalogs, empty sections and unavailable thumbnail (0.262041ms)
+✔ approved two-card product prototype permits sending up to 10 catalog cards (0.336651ms)
+✔ product carousel rejects 11 cards, duplicate product, mixed catalogs and media overrides (0.251524ms)
+✔ product URL carousel sends only approved dynamic URL suffix parameters (0.188791ms)
+✔ mixed media/product metadata and unsupported product buttons fail closed (0.176363ms)
+✔ public template callers cannot inject provider product/catalog identifiers (0.57733ms)
+✔ local item lookups include both tenant and connected account; missing mappings stop dispatch (0.352816ms)
+✔ only owner can disable mappings and invalid persisted refs never dispatch (0.338514ms)
+✔ cart/referred-product events retain only IDs, never trust customer prices or create orders (0.168471ms)
+✔ provider verification checks current WABA catalog, product membership/approval and phone visibility (0.615647ms)
+✔ rendered named/numbered variables cannot overflow header or product body bounds (0.158676ms)
+✔ typed answers reject malformed values without losing earlier answers, then route with trace (2.901533ms)
+✔ typed input rules cover Arabic phone/number, strict dates, zoned time and coordinate bounds (0.646483ms)
+✔ all/any truth tables and missing numeric values are explicit (0.170304ms)
+✔ invalid structured rules fail validation, legacy input and condition still run unchanged (0.710779ms)
+✔ choice port identity survives reorder and 100 automatic steps execute within the supported graph limit (1.493235ms)
+✔ composite content emits in order through legacy TEXT and rejects unsafe resources or nesting (0.524371ms)
+✔ disconnected choice can be saved as draft but cannot publish (0.184254ms)
+✔ SET_FIELD persists bounded mapped answers and weighted random branches execute deterministically under injected RNG (0.458723ms)
+✔ pinned subflow bindings remap structured rules, actions, tokens and random branch destinations (3.92712ms)
+✔ step names and internal notes persist in definitions but are never customer messages (0.225225ms)
+✔ publication checks tenant and scan status for media nested in composite messages (8.585108ms)
+✔ low-cost Railway manual-pilot launchers have valid Node syntax (44.79408ms)
+✔ manual Railway pilot refuses startup without runtime secrets and RLS database (21.621129ms)
+✔ manual Railway pilot refuses paid AI provider credentials before startup (23.564224ms)
+✔ database initializer refuses production connection and cannot contact it (37.273917ms)
+✔ ordered legacy content and rich card/gallery + composite buttons share the existing interpreter (2.866941ms)
+✔ rich content rejects unsafe resources, nested/unknown content and unbounded card/action budgets (0.475679ms)
+✔ node/URL/effect contracts are bounded, atomic and safe against forged URL callbacks (0.940591ms)
+✔ all five channel renderers use native cards or explicit supported fallbacks without unofficial WhatsApp gallery payloads (0.770899ms)
+✔ group translation preserves offsets at every boundary and paths remain finite through cycles (0.279145ms)
+✔ card images nested under buttons cannot bypass managed-media company/scan checks (1.851538ms)
+✔ raw webhook authentication rejects forged, changed and malformed signatures (1.077615ms)
+✔ encrypted connector credentials detect tampering and require the original key after restore (0.607656ms)
+✔ SSRF refuses metadata/private/mapped/reserved IPs and credential/query webhook URLs (3.42383ms)
+✔ API scopes do not authorize lookalike paths or privileged owner operations (0.152016ms)
+✔ viewer cannot create catalog items (0.90619ms)
+✔ catalog uses authenticated tenant instead of body tenant (0.897227ms)
+✔ invalid actor denied before SQL (0.116453ms)
+✔ tenant transaction sets RLS scope and commits (0.680844ms)
+✔ tenant transaction rolls back on failure (0.15487ms)
+✔ dashboard session cookie is HttpOnly, same-site, scoped and bounded (0.641716ms)
+✔ bearer auth takes precedence and cookies accept only opaque session tokens (0.20849ms)
+✔ cookie-only mutating operations demand custom CSRF header (0.34283ms)
+✔ render provider-approved two-card carousel from explicit values (2.359594ms)
+✔ carousel needs values for every card (0.370842ms)
+✔ carousel rejects unapproved extra card values (0.15393ms)
+✔ carousel rejects non-HTTPS media (0.10701ms)
+✔ unsupported carousel card structures fail closed (0.096434ms)
+✔ unapproved more-than-two carousel buttons rejected (0.117264ms)
+✔ carousel accepts only a single carousel component (0.066319ms)
+✔ normal approved template remains supported without carousel data (0.084265ms)
+✔ auto arrangement reserves enough room for Arabic branching cards (0.932769ms)
+✔ phone answers reject letters and normalize Arabic digits (1.273848ms)
+✔ production HTTPS request boundary uses pinned offline transport, JSON response and stable idempotency header (15.0563ms)
+✔ GET fields are URL encoded and HMAC binds method, target/query and stable job key (1.650028ms)
+✔ bounded request transport rejects HTTP 429, invalid/oversized JSON and total timeout (1006.237264ms)
+✔ mixed private DNS is rejected before any HTTP call (0.374868ms)
+✔ WhatsApp onboarding validates WABA ownership, rejects redirects/malformed provider data, and safely reconnects (13.799808ms)
+✔ official signup remains gated until explicit platform readiness; only owner can start and origins are exact (1.528146ms)
+✔ Meta window event origin/type validation rejects forged and malformed results (0.190053ms)
+✔ app echoes preserve outbound identity and provider timestamp; history cannot open a customer service window (0.807863ms)
+✔ one-character WhatsApp sender profile uses a contact name accepted by PostgreSQL (0.124555ms)
+ℹ tests 181
+ℹ suites 0
+ℹ pass 181
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2190.799608
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
