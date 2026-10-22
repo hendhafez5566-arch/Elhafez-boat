@@ -8,3 +8,4 @@ PASS server simulation follows collected input and condition to handoff
 PASS docked preview runs real server engine and accepts branch selection
 PASS mobile fits viewport and shared preview uses accessible modal
 PASS manager navigation keeps accessible brand and preview label across mobile/desktop and bot reopen
+PASS autosave opt-in preserves pending review until the next user edit, which really saves
