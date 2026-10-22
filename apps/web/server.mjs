@@ -41,6 +41,7 @@ const assets={
  '/flow-geometry.js':['flow-geometry.js','text/javascript; charset=utf-8'],
  '/flow-merge.js':['flow-merge.js','text/javascript; charset=utf-8'],
  '/flow-builder.js':['flow-builder.js','text/javascript; charset=utf-8'],
+ '/flow-basic-builder.js':['flow-basic-builder.js','text/javascript; charset=utf-8'],
  '/flow-onboarding.js':['flow-onboarding.js','text/javascript; charset=utf-8'],
  '/analytics-export.js':['analytics-export.js','text/javascript; charset=utf-8'],
  '/insights-ui.js':['insights-ui.js','text/javascript; charset=utf-8'],
