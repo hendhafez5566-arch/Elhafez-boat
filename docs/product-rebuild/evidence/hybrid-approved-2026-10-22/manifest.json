@@ -1,0 +1,38 @@
+{
+  "source_commit": "bce553a18d667b2ab2afabce2576d12e681f07a7",
+  "base_commit": "9f074a6f138a8db5046899128edcb3414afa930a",
+  "reference_sha256": "9fbca0448e1e0a07f6c5dc6b1008b324bd8de6f7fc787c9cf5fa0328547d0b1b",
+  "viewport": {
+    "desktop": [
+      1490,
+      940
+    ],
+    "mobile": [
+      390,
+      844
+    ]
+  },
+  "sha256": {
+    "apps/web/public/flow-builder.js": "dbb02b2d08d2d13f72583c91a93d4696019e12d30ad9563dcaf7a67739fca607",
+    "apps/web/public/flow-basic-builder.js": "c2719b2253ef916e693f1a57f3424a95fc12c703879bbdd01fdb4e29956801dd",
+    "apps/web/public/flow-builder.css": "6a5e191236ed2ce9745955a61a02744f63156e28b431d5eb0e19a9dd798e861c",
+    "apps/web/public/flow-canvas.js": "9df55b873ce89bcb26efe7eee50f5bb649eb15aafc75d3e89e21c6f919fd5e4c",
+    "tests/hybrid-approved-browser.mjs": "aa46bdd7035de4fa2a96b831d8b72ad68b2311289c414882b70feabd3c97cdaa",
+    "tests/hybrid-package-smoke.mjs": "a359e44b8149aefd777123a737769817423d34802aea1444295c4df876a1038c"
+  },
+  "screenshots": {
+    "reference-basic.png": "23a76f9a51c2707e97875ad59c17822dcff3ecd05a34d08f20a1a83aff2fd2f2",
+    "09-mobile.png": "3ff374f0fce6d97ad21e313e496e03b7203ad247abc3b6af51b0f672adc31e7a",
+    "08-side-preview.png": "db38f577a6db2c34c2654433e4e35cbe5e3e745855768d0b12ac448d0adc6e5f",
+    "10-saved-reopened.png": "437b4962dd73c4e80138bc171d4cbfc08a19ad440129f44e0d5e7785692206db",
+    "05-buttons-editor.png": "a0a982adb56fbad0a9c2ef284efce3e887fb2932278eacef7baba8558241ea8b",
+    "11-mobile-preview.png": "6accaf06dddb7e6103b68233ddc2e72e0755c5e055e6fa46828f1260b292b44c",
+    "06-condition-editor.png": "010aefe7f60d3955590a3c338177b8afb11b79b117af36521bc1a37b0d7e18df",
+    "04-message-editor.png": "6072b7f26df97799a0cba57cf10fc879b3ca74990c0dbaa5ed151683d31f5823",
+    "03-component-library.png": "4ef0bf425c68843a2c320b97026d9b1200bad125edca11308c3ef196f9bbd9f2",
+    "01-flow-desktop.png": "4ef0bf425c68843a2c320b97026d9b1200bad125edca11308c3ef196f9bbd9f2",
+    "02-basic-desktop.png": "6fcb483f5d2be0f3e8cee5ba6152057a9ac2cd90e28ba6b12237f38fa25732da",
+    "07-insert-step.png": "d93647827332ef2ceff8d079011a82bf705e4e8d79d12ca35de115a6c4048d6e",
+    "reference-flow.png": "79f7279da520f1fb773070bf111b28f5c8d844744b912984b2d981a6b44db243"
+  }
+}

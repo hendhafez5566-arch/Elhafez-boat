@@ -1,0 +1,5 @@
+Starting actual Chromium
+PASS actual caret autocomplete inserts customer and trusted consent tokens via keyboard, preserves metadata and normal authenticated save
+PASS actual authenticated complete component/channel contract matrix distinguishes fallback, explicit unsupported route and internal draft-only assets
+PASS actual mobile mixed-script editor suggestions close with Escape and expose no customer values
+PASS 3 context/policy Chromium scenarios

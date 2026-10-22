@@ -1,0 +1,1 @@
+PASS production Node22/Alpine image: database health, login, authenticated bot API, four hybrid assets

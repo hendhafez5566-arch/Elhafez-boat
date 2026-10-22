@@ -1,0 +1,10 @@
+PASS immutable bot rollback, two concurrent editors, pinned version after publish/route change, new-session routing and non-destructive archive
+PASS contact-wide timeline pagination and all-or-nothing role-scoped bulk CRM state updates
+(node:3765) DeprecationWarning: Calling client.query() when the client is already executing a query is deprecated and will be removed in pg@9.0. Use async/await or an external async flow control mechanism instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+PASS analytics UTC calendar boundary, daily/KPI reconciliation, session-timezone independence and tenant isolation
+PASS real team lifecycle: concurrent case-insensitive duplicate rejection, seat limits, owner/manager/agent/viewer restrictions, cross-tenant denial, revoked and reused tokens denied, acceptance and role-change session invalidation
+PASS campaign review: actual consent/opt-out audience, tenant/role denial, no queued jobs or provider requests
+PASS real lead profile/conversation identity and bot session metrics with cross-company denial
+PASS actual PostgreSQL lead pagination: 20-row page, second-page uniqueness, company isolation, literal wildcard and invalid-page rejection
+PASS PostgreSQL: legacy backfill twice preserves versions; two independent bots; optimistic conflict; tenant/RLS and roles; unique channel routing; actual runtime and pinned bot

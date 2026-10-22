@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "create independent bot using real tourism template",
+    "Basic renders eight shared steps with three distinct destinations",
+    "message/button/condition editors and insertion preserve connected draft",
+    "switch Basic/Canvas, save and full reload retain same draft",
+    "duplicate, undo, redo, locate and safe delete reuse editor history",
+    "independent bot creation does not alter saved first bot",
+    "server simulation follows collected input and condition to handoff",
+    "docked preview runs real server engine and accepts branch selection",
+    "mobile fits viewport and shared preview uses accessible modal"
+  ],
+  "errors": []
+}
